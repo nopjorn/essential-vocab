@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Oxford 3000</title>
+<meta name="description" content="ฝึกจำคำศัพท์ Oxford 3000 ด้วยแฟลชการ์ดแบบทบทวนเป็นระยะและมินิเกม">
+<meta name="theme-color" content="#6c5ce7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Oxford 3000">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <h1 id="title">Oxford 3000</h1>
+    <div class="streak" id="streak" aria-label="วันต่อเนื่อง">🔥 0</div>
+  </header>
+
+  <main id="view" class="view"></main>
+
+  <nav class="tabbar" id="tabbar">
+    <button data-tab="home" class="active"><span class="ti">🏠</span><span>หน้าแรก</span></button>
+    <button data-tab="cards"><span class="ti">🃏</span><span>แฟลชการ์ด</span></button>
+    <button data-tab="games"><span class="ti">🎮</span><span>เกม</span></button>
+    <button data-tab="list"><span class="ti">📖</span><span>คำศัพท์</span></button>
+    <button data-tab="settings"><span class="ti">⚙️</span><span>ตั้งค่า</span></button>
+  </nav>
+</div>
+<div id="toast" class="toast"></div>
+<script src="words.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
