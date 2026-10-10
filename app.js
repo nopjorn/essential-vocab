@@ -1,9 +1,14 @@
 'use strict';
 
 /* ---------- data ---------- */
-// WORDS rows: [word, pos, level, ipa, thai]
-const W = window.WORDS.map(([w, p, l, i, t], idx) => ({ idx, w, p, l, i, t }));
-const LEVELS = ['A1', 'A2', 'B1', 'B2'];
+// WORDS rows: [word, pos, level, ipa, thai, 5 if Oxford 5000-only]
+// g = study group: A1–B2 are Oxford 3000; B2x and C1 are the extra Oxford 5000 words.
+const W = window.WORDS.map(([w, p, l, i, t, s], idx) => ({ idx, w, p, l, i, t, g: s === 5 ? (l === 'B2' ? 'B2x' : 'C1') : l }));
+const LEVELS = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1'];
+const LEVELS_3000 = ['A1', 'A2', 'B1', 'B2'];
+const LEVELS_5000 = ['B2x', 'C1'];
+const LV_LABEL = { A1: 'A1', A2: 'A2', B1: 'B1', B2: 'B2', B2x: 'B2+', C1: 'C1' };
+const lvNames = (ls) => ls.map((l) => LV_LABEL[l]).join(', ');
 const DAY = 86400000;
 // Review intervals (days) for each box. Box >= MASTERED counts as "จำได้แล้ว".
 const INTERVALS = [0, 1, 3, 7, 16, 35, 80, 180];
@@ -57,7 +62,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const pick = (a) => a[Math.random() * a.length | 0];
 const view = $('#view');
-const lvBadge = (l) => `<span class="lv ${l}">${l}</span>`;
+const lvBadge = (g) => `<span class="lv ${g}">${LV_LABEL[g]}</span>`;
 const thFirst = (t) => t.split(/[;,]/)[0].trim();
 
 let toastTimer;
@@ -72,7 +77,7 @@ function status(w) {
   if (!p) return 'new';
   return p.b >= MASTERED ? 'mastered' : 'learning';
 }
-const pool = () => W.filter((w) => S.settings.levels.includes(w.l));
+const pool = () => W.filter((w) => S.settings.levels.includes(w.g));
 const dueList = (list = pool()) => {
   const now = Date.now();
   return list.filter((w) => S.prog[w.w] && S.prog[w.w].d <= now).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d);
@@ -168,20 +173,22 @@ function renderHome() {
   const totalMastered = W.filter((w) => status(w) === 'mastered').length;
   const standalone = window.navigator.standalone || matchMedia('(display-mode: standalone)').matches;
 
-  const lvRows = LEVELS.map((l) => {
-    const ws = W.filter((w) => w.l === l);
+  const lvRow = (l) => {
+    const ws = W.filter((w) => w.g === l);
     const learned = ws.filter((w) => S.prog[w.w]).length;
     const mastered = ws.filter((w) => status(w) === 'mastered').length;
     return `<div class="lvl-row">${lvBadge(l)}
       <div class="grow"><div class="bar"><div class="l" style="width:${learned / ws.length * 100}%"></div><div class="m" style="width:${mastered / ws.length * 100}%"></div></div>
       <div class="small muted" style="margin-top:4px">เรียนแล้ว ${learned} · จำได้ ${mastered} / ${ws.length}</div></div></div>`;
-  }).join('');
+  };
+  const lvRows = `<div class="small muted" style="margin-top:8px"><b>Oxford 3000</b></div>${LEVELS_3000.map(lvRow).join('')}
+    <div class="small muted" style="margin-top:12px"><b>Oxford 5000</b> (คำเพิ่มเติม)</div>${LEVELS_5000.map(lvRow).join('')}`;
 
   view.innerHTML = `
     <div class="hero pop">
       <div class="small" style="opacity:.9">${greeting()}</div>
       <div class="big" style="margin-top:6px">${todo}</div>
-      <div>การ์ดที่รอวันนี้ (${S.settings.levels.join(', ')})</div>
+      <div>การ์ดที่รอวันนี้ (${lvNames(S.settings.levels)})</div>
       <div class="stats">
         <div class="stat"><b>${due}</b><span>ต้องทบทวน</span></div>
         <div class="stat"><b>${Math.min(newLeft, unseen)}</b><span>คำใหม่</span></div>
@@ -247,7 +254,7 @@ function renderCards(extra) {
   if (!total) {
     view.innerHTML = `<div class="card-box center pop" style="margin-top:30px">
       <div class="result-emoji">🎉</div><div class="h2">ไม่มีการ์ดค้างแล้ว!</div>
-      <p class="muted">ทบทวนครบทุกใบสำหรับระดับ ${S.settings.levels.join(', ')}</p>
+      <p class="muted">ทบทวนครบทุกใบสำหรับระดับ ${lvNames(S.settings.levels)}</p>
       <button class="btn primary block" id="more">เรียนคำใหม่เพิ่มอีก 10 คำ</button>
       <div style="height:10px"></div><button class="btn block" id="toGame">ไปเล่นเกม 🎮</button></div>`;
     $('#more').onclick = () => go('cards', true);
@@ -276,10 +283,10 @@ function renderCards(extra) {
     const p = S.prog[card.w];
     const isNew = !p;
     const enFront = S.settings.front === 'en';
-    const enFace = `<div class="top">${lvBadge(card.l)}<span class="pos">${esc(card.p)}</span></div>
+    const enFace = `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span></div>
       <div class="word">${esc(card.w)}</div><div class="ipa">${esc(card.i)}</div>
       <button class="speak" data-say aria-label="ฟังเสียง">🔊</button>`;
-    const thFace = `<div class="top">${lvBadge(card.l)}<span class="pos">${esc(card.p)}</span></div>
+    const thFace = `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span></div>
       <div class="th">${esc(card.t)}</div>`;
     const backExtra = `<a class="link" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(card.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">ดูความหมาย/ตัวอย่างใน Oxford ↗</a>`;
     $('#stage').innerHTML = `
@@ -288,7 +295,7 @@ function renderCards(extra) {
         <div class="fc-inner">
           <div class="face front">${enFront ? enFace : thFace}
             <div class="hint">${isNew ? '✨ คำใหม่ · ' : ''}แตะเพื่อพลิก · ปัดซ้าย/ขวา</div></div>
-          <div class="face back">${enFront ? `<div class="top">${lvBadge(card.l)}<span class="pos">${esc(card.p)}</span></div>
+          <div class="face back">${enFront ? `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span></div>
             <div class="th">${esc(card.t)}</div><div class="ipa" style="margin-top:14px">${esc(card.w)} ${esc(card.i)}</div>
             <button class="speak" data-say aria-label="ฟังเสียง">🔊</button>${backExtra}`
             : enFace + backExtra}</div>
@@ -395,7 +402,7 @@ function renderGames() {
     <div class="card-box">
       <div class="small muted" style="margin-bottom:8px">ใช้คำศัพท์จาก</div>
       <div class="chips" id="src">
-        <button class="chip" data-s="level">ระดับที่เลือก (${S.settings.levels.join(', ')})</button>
+        <button class="chip" data-s="level">ระดับที่เลือก (${lvNames(S.settings.levels)})</button>
         <button class="chip" data-s="learned">คำที่เรียนแล้ว</button>
         <button class="chip" data-s="all">ทุกระดับ</button>
       </div>
@@ -423,7 +430,7 @@ function distractors(w, n, field) {
   const out = [];
   const pos = w.p.split('/')[0];
   const tiers = [
-    shuffle(W.filter((x) => x.l === w.l && x.p.split('/')[0] === pos)),
+    shuffle(W.filter((x) => x.g === w.g && x.p.split('/')[0] === pos)),
     shuffle(W.filter((x) => x.p.split('/')[0] === pos)),
     shuffle(W),
   ];
@@ -477,7 +484,7 @@ function playQuiz(mode, src, gameId) {
     else if (m === 'th2en') prompt = `<div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>`;
     else prompt = `<button class="speak" data-say style="width:96px;height:96px;font-size:44px;margin:0">🔊</button><div class="muted small" style="margin-top:10px">แตะเพื่อฟังอีกครั้ง</div>`;
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop">${lvBadge(w.l)}<div style="height:8px"></div>${prompt}</div>
+      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>${prompt}</div>
       <div class="options">${opts.map((o) => `<button class="opt" data-i="${o.idx}">${esc(toTh ? o.t : o.w)}</button>`).join('')}</div>
       <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
@@ -500,7 +507,7 @@ function playQuiz(mode, src, gameId) {
   function qSpell(w) {
     const hint = w.w[0] + w.w.slice(1).replace(/[a-zA-Z]/g, '_');
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop">${lvBadge(w.l)}<div style="height:8px"></div>
+      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
         <div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>
         <div style="margin-top:12px;font-size:22px;letter-spacing:4px;font-weight:700" id="hint">${esc(hint)}</div>
       </div>
@@ -644,7 +651,7 @@ function renderList() {
   view.innerHTML = `
     <input class="search" id="q" type="search" placeholder="🔍 ค้นหาคำอังกฤษหรือคำแปลไทย" value="${esc(listFilter.q)}" autocapitalize="none" autocorrect="off">
     <div class="chips" id="lv" style="margin-bottom:8px">
-      ${['all', ...LEVELS].map((l) => `<button class="chip" data-v="${l}">${l === 'all' ? 'ทุกระดับ' : l}</button>`).join('')}
+      ${['all', ...LEVELS].map((l) => `<button class="chip" data-v="${l}">${l === 'all' ? 'ทุกระดับ' : LV_LABEL[l]}</button>`).join('')}
     </div>
     <div class="chips" id="st" style="margin-bottom:6px">
       ${[['all', 'ทั้งหมด'], ['new', 'ยังไม่เรียน'], ['learning', '🟡 กำลังเรียน'], ['mastered', '🟢 จำได้แล้ว']].map(([v, t]) => `<button class="chip" data-v="${v}">${t}</button>`).join('')}
@@ -663,12 +670,12 @@ function renderList() {
     rows.insertAdjacentHTML('beforeend', chunk.map((w) => `<div class="wrow" data-i="${w.idx}">
       <span class="dot ${status(w)}"></span>
       <div class="grow"><div><span class="w">${esc(w.w)}</span> <span class="pos">${esc(w.p)}</span></div><div class="t">${esc(w.t)}</div></div>
-      ${lvBadge(w.l)}</div>`).join(''));
+      ${lvBadge(w.g)}</div>`).join(''));
     shown += chunk.length;
   };
   const apply = () => {
     const q = listFilter.q.trim().toLowerCase();
-    items = W.filter((w) => (listFilter.lv === 'all' || w.l === listFilter.lv)
+    items = W.filter((w) => (listFilter.lv === 'all' || w.g === listFilter.lv)
       && (listFilter.st === 'all' || status(w) === listFilter.st)
       && (!q || w.w.toLowerCase().includes(q) || w.t.includes(q)));
     if (q) items.sort((a, b) => (b.w.toLowerCase().startsWith(q)) - (a.w.toLowerCase().startsWith(q)));
@@ -690,11 +697,15 @@ function renderList() {
 /* ---------- settings ---------- */
 function renderSettings() {
   const st = S.settings;
+  const lvChip = (l) => `<button class="chip" data-v="${l}">${LV_LABEL[l]} · ${W.filter((w) => w.g === l).length} คำ</button>`;
   view.innerHTML = `
     <div class="h2">ระดับคำศัพท์ที่เรียน</div>
     <div class="card-box">
-      <div class="chips" id="lvls">${LEVELS.map((l) => `<button class="chip" data-v="${l}">${l} · ${W.filter((w) => w.l === l).length} คำ</button>`).join('')}</div>
-      <p class="small muted" style="margin-bottom:0">A1–A2 = พื้นฐาน, B1–B2 = ระดับกลาง (เลือกได้หลายระดับ)</p>
+      <div class="small muted" style="margin-bottom:8px"><b>Oxford 3000</b> · คำหลักที่ต้องรู้</div>
+      <div class="chips" id="lvls">${LEVELS_3000.map(lvChip).join('')}</div>
+      <div class="small muted" style="margin:14px 0 8px"><b>Oxford 5000</b> · คำเพิ่มเติมระดับสูง</div>
+      <div class="chips" id="lvls5">${LEVELS_5000.map(lvChip).join('')}</div>
+      <p class="small muted" style="margin-bottom:0">A1–A2 = พื้นฐาน, B1–B2 = ระดับกลาง, B2+ และ C1 = ระดับสูง (เลือกได้หลายระดับ)</p>
     </div>
 
     <div class="h2">การเรียน</div>
@@ -726,11 +737,11 @@ function renderSettings() {
       <div style="height:10px"></div>
       <button class="btn danger block" id="reset">ล้างความคืบหน้าทั้งหมด</button>
     </div>
-    <p class="center small muted">รายการคำ: Oxford 3000 (${W.length} คำ) · คำแปลไทยสำหรับช่วยจำ</p>`;
+    <p class="center small muted">รายการคำ: Oxford 3000 + 5000 (${W.length} คำ) · คำแปลไทยสำหรับช่วยจำ</p>`;
 
-  const paint = () => view.querySelectorAll('#lvls .chip').forEach((c) => c.classList.toggle('on', st.levels.includes(c.dataset.v)));
+  const paint = () => view.querySelectorAll('#lvls .chip, #lvls5 .chip').forEach((c) => c.classList.toggle('on', st.levels.includes(c.dataset.v)));
   paint();
-  $('#lvls').onclick = (e) => {
+  $('#lvls').onclick = $('#lvls5').onclick = (e) => {
     const c = e.target.closest('.chip'); if (!c) return;
     const v = c.dataset.v;
     if (st.levels.includes(v)) { if (st.levels.length > 1) st.levels = st.levels.filter((x) => x !== v); else toast('ต้องเลือกอย่างน้อย 1 ระดับ'); }

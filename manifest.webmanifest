@@ -1,7 +1,7 @@
 {
   "name": "Oxford 3000 – ฝึกจำศัพท์",
   "short_name": "Oxford 3000",
-  "description": "ฝึกจำคำศัพท์ Oxford 3000 ด้วยแฟลชการ์ดและมินิเกม",
+  "description": "ฝึกจำคำศัพท์ Oxford 3000 และ 5000 ด้วยแฟลชการ์ดและมินิเกม",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

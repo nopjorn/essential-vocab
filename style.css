@@ -12,7 +12,7 @@
   --bad: #e17055;
   --border: #e3dffb;
   --shadow: 0 6px 24px rgba(76, 61, 190, .12);
-  --a1: #00b894; --a2: #0984e3; --b1: #e17055; --b2: #8e44ad;
+  --a1: #00b894; --a2: #0984e3; --b1: #e17055; --b2: #8e44ad; --b2x: #d35400; --c1: #c2185b;
   --radius: 20px;
   --tabbar-h: 64px;
   color-scheme: light dark;
@@ -104,6 +104,7 @@ button { touch-action: manipulation; cursor: pointer; }
 .chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
 .lv { display: inline-block; font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 8px; color: #fff; }
 .lv.A1 { background: var(--a1); } .lv.A2 { background: var(--a2); } .lv.B1 { background: var(--b1); } .lv.B2 { background: var(--b2); }
+.lv.B2x { background: var(--b2x); } .lv.C1 { background: var(--c1); }
 .pos { font-size: 13px; color: var(--muted); font-style: italic; }
 
 /* home */
