@@ -1,9 +1,9 @@
 'use strict';
 
 /* ---------- data ---------- */
-// WORDS rows: [word, pos, level, ipa, thai, 5 if Oxford 5000-only]
+// WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
 // g = study group: A1–B2 are Oxford 3000; B2x and C1 are the extra Oxford 5000 words.
-const W = window.WORDS.map(([w, p, l, i, t, s], idx) => ({ idx, w, p, l, i, t, g: s === 5 ? (l === 'B2' ? 'B2x' : 'C1') : l }));
+const W = window.WORDS.map(([w, p, l, i, t, e, et, s], idx) => ({ idx, w, p, l, i, t, e, et, g: s === 5 ? (l === 'B2' ? 'B2x' : 'C1') : l }));
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1'];
 const LEVELS_3000 = ['A1', 'A2', 'B1', 'B2'];
 const LEVELS_5000 = ['B2x', 'C1'];
@@ -18,10 +18,11 @@ const MASTERED = 4;
 const KEY = 'oxford3000.v1';
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], newPerDay: 20, autoSpeak: true, rate: 0.9, accent: 'en-US', front: 'en', order: 'shuffle' },
+  settings: { levels: ['A1'], newPerDay: 20, autoSpeak: true, rate: 0.9, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
+  hist: {},            // 'YYYY-MM-DD' -> cards/answers that day
 });
 let S = load();
 
@@ -46,6 +47,7 @@ function rollDay() {
 function markActive() {
   rollDay();
   const t = today();
+  S.hist[t] = (S.hist[t] || 0) + 1;
   if (S.streak.last === t) return;
   const y = new Date(Date.now() - DAY).toLocaleDateString('en-CA');
   S.streak.count = S.streak.last === y ? S.streak.count + 1 : 1;
@@ -64,6 +66,55 @@ const pick = (a) => a[Math.random() * a.length | 0];
 const view = $('#view');
 const lvBadge = (g) => `<span class="lv ${g}">${LV_LABEL[g]}</span>`;
 const thFirst = (t) => t.split(/[;,]/)[0].trim();
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Example sentence with the word (and simple inflections like -s/-ed/-ing) highlighted.
+function hlExample(w) {
+  const m = new RegExp('(^|[^A-Za-z])(' + reEsc(w.w) + '[a-z]*)', 'i').exec(w.e);
+  if (!m) return esc(w.e);
+  const at = m.index + m[1].length;
+  return esc(w.e.slice(0, at)) + '<mark>' + esc(m[2]) + '</mark>' + esc(w.e.slice(at + m[2].length));
+}
+// Words whose example sentence contains the exact word, usable for fill-in-the-blank.
+const clozeRe = (w) => new RegExp('(^|[^A-Za-z])' + reEsc(w.w) + '(?![A-Za-z])', 'i');
+const hasCloze = (w) => clozeRe(w).test(w.e);
+const exampleBox = (w) => `<div class="example"><div class="en">${hlExample(w)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(w.et)}</div></div>`;
+
+// Tiny sound effects with Web Audio (no files needed).
+let actx;
+function sfx(kind) {
+  if (!S.settings.sfx) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const notes = { ok: [660, 880], bad: [220, 160], win: [523, 659, 784, 1047] }[kind];
+    notes.forEach((f, k) => {
+      const o = actx.createOscillator(), g = actx.createGain();
+      const t0 = actx.currentTime + k * 0.09;
+      o.type = kind === 'bad' ? 'square' : 'sine';
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(kind === 'bad' ? 0.05 : 0.12, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+      o.connect(g).connect(actx.destination);
+      o.start(t0); o.stop(t0 + 0.18);
+    });
+  } catch (e) { /* audio unavailable */ }
+}
+function confetti() {
+  const box = document.createElement('div');
+  box.className = 'confetti';
+  const bits = ['🎉', '⭐', '✨', '💜', '🎊', '🔥'];
+  for (let k = 0; k < 36; k++) {
+    const b = document.createElement('span');
+    b.textContent = pick(bits);
+    b.style.left = Math.random() * 100 + 'vw';
+    b.style.animationDelay = Math.random() * 0.6 + 's';
+    b.style.fontSize = 16 + Math.random() * 18 + 'px';
+    box.appendChild(b);
+  }
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 3200);
+  sfx('win');
+}
 
 let toastTimer;
 function toast(msg) {
@@ -116,7 +167,10 @@ function intervalLabel(box) {
 function grade(w, g) {
   markActive();
   const p = S.prog[w.w];
-  if (!p) S.daily.fresh++; else S.daily.reviews++;
+  if (!p) {
+    S.daily.fresh++;
+    if (S.daily.fresh === S.settings.newPerDay) setTimeout(() => { confetti(); toast('🎯 ครบเป้าคำใหม่วันนี้แล้ว เก่งมาก!'); }, 300);
+  } else S.daily.reviews++;
   const b = nextBox(p, g);
   S.prog[w.w] = {
     b,
@@ -137,6 +191,18 @@ function gameResult(w, ok) {
   } else {
     S.prog[w.w] = { b: 0, d: Date.now(), s: (p ? p.s : 0) + 1, c: p ? p.c : 0, x: (p ? p.x || 0 : 0) + 1 };
   }
+  save();
+}
+
+// "I already know this": jump straight to a long interval so it stops appearing as new.
+function markKnown(w) {
+  markActive();
+  S.prog[w.w] = { b: MASTERED, d: Date.now() + INTERVALS[MASTERED] * DAY, s: 1, c: 1, x: 0 };
+  save();
+}
+function markForReview(w) {
+  const p = S.prog[w.w];
+  S.prog[w.w] = { b: 0, d: Date.now(), s: p ? p.s : 0, c: p ? p.c : 0, x: p ? p.x || 0 : 0 };
   save();
 }
 
@@ -202,9 +268,12 @@ function renderHome() {
     ${standalone ? '' : `<div class="card-box install-tip small">
       📲 <b>ติดตั้งเป็นแอปบน iPhone:</b> เปิดหน้านี้ใน Safari → กดปุ่ม <b>แชร์</b> (สี่เหลี่ยมมีลูกศร) → <b>เพิ่มไปยังหน้าจอโฮม</b> จะได้ใช้งานเต็มจอและออฟไลน์ได้</div>`}
 
+    <div class="h2">7 วันที่ผ่านมา</div>
+    <div class="card-box week">${weekChart()}</div>
+
     <div class="h2">เล่นเกมด่วน</div>
     <div class="game-grid">
-      ${gameTile('en2th')}${gameTile('match')}
+      ${gameTile('cloze')}${gameTile('match')}
     </div>
 
     <div class="h2">ความคืบหน้า</div>
@@ -217,6 +286,17 @@ function renderHome() {
     </div>`;
   $('#startBtn').onclick = () => go('cards', !todo);
   view.querySelectorAll('[data-game]').forEach((b) => (b.onclick = () => startGame(b.dataset.game)));
+}
+function weekChart() {
+  const names = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+  const days = [];
+  for (let k = 6; k >= 0; k--) {
+    const d = new Date(Date.now() - k * DAY);
+    const key = d.toLocaleDateString('en-CA');
+    days.push({ n: S.hist[key] || 0, label: k === 0 ? 'วันนี้' : names[d.getDay()] });
+  }
+  const max = Math.max(10, ...days.map((d) => d.n));
+  return days.map((d) => `<div class="wk"><div class="wk-n">${d.n || ''}</div><div class="wk-bar"><div style="height:${d.n / max * 100}%"></div></div><div class="wk-l">${d.label}</div></div>`).join('');
 }
 function greeting() {
   const h = new Date().getHours();
@@ -267,6 +347,7 @@ function renderCards(extra) {
       <button class="icon-btn" id="quit" aria-label="ออก">✕</button>
       <div class="progress"><div id="pbar" style="width:0"></div></div>
       <span class="small muted" id="pcount"></span>
+      <button class="icon-btn" id="undo" aria-label="ย้อนกลับ" style="visibility:hidden">↩︎</button>
     </div>
     <div class="stage" id="stage"></div>
     <div class="grade" id="grade"></div>`;
@@ -274,6 +355,16 @@ function renderCards(extra) {
 
   let card = null, flipped = false;
   const gradeBox = $('#grade');
+  // Undo stack: snapshots taken before each answer so a mis-tap can be reverted.
+  const history = [];
+  $('#undo').onclick = () => {
+    const h = history.pop(); if (!h) return;
+    if (h.prev) S.prog[h.w] = h.prev; else delete S.prog[h.w];
+    S.daily = h.daily; save();
+    queue.splice(0, queue.length, ...h.queue);
+    done = h.done; stats = h.stats;
+    show();
+  };
 
   function show() {
     if (!queue.length) return finish();
@@ -288,16 +379,16 @@ function renderCards(extra) {
       <button class="speak" data-say aria-label="ฟังเสียง">🔊</button>`;
     const thFace = `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span></div>
       <div class="th">${esc(card.t)}</div>`;
-    const backExtra = `<a class="link" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(card.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">ดูความหมาย/ตัวอย่างใน Oxford ↗</a>`;
+    const backExtra = exampleBox(card) + `<a class="link" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(card.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">ดูความหมาย/ตัวอย่างใน Oxford ↗</a>`;
     $('#stage').innerHTML = `
       <div class="fc" id="fc">
         <div class="swipe-tag l">ลืม</div><div class="swipe-tag r">จำได้</div>
         <div class="fc-inner">
           <div class="face front">${enFront ? enFace : thFace}
+            ${isNew ? '<button class="know-btn" data-know>✓ รู้คำนี้แล้ว ข้ามเลย</button>' : ''}
             <div class="hint">${isNew ? '✨ คำใหม่ · ' : ''}แตะเพื่อพลิก · ปัดซ้าย/ขวา</div></div>
           <div class="face back">${enFront ? `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span></div>
-            <div class="th">${esc(card.t)}</div><div class="ipa" style="margin-top:14px">${esc(card.w)} ${esc(card.i)}</div>
-            <button class="speak" data-say aria-label="ฟังเสียง">🔊</button>${backExtra}`
+            <div class="th">${esc(card.t)}</div><div class="ipa" style="margin-top:8px">${esc(card.w)} ${esc(card.i)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>${backExtra}`
             : enFace + backExtra}</div>
         </div>
       </div>`;
@@ -305,6 +396,7 @@ function renderCards(extra) {
       ['g-again', 'ลืม', 0], ['g-hard', 'ยาก', 1], ['g-good', 'จำได้', 2], ['g-easy', 'ง่าย', 3],
     ].map(([c, t, g]) => `<button class="btn ${c}" data-g="${g}">${t}<small>${intervalLabel(nextBox(p, g))}</small></button>`).join('');
     gradeBox.style.visibility = 'hidden';
+    $('#undo').style.visibility = history.length ? 'visible' : 'hidden';
     if (enFront && S.settings.autoSpeak) speak(card.w);
     bindCard();
   }
@@ -318,7 +410,12 @@ function renderCards(extra) {
     }
   }
 
+  function snapshot() {
+    history.push({ w: card.w, prev: S.prog[card.w] && { ...S.prog[card.w] }, daily: { ...S.daily }, queue: queue.slice(), done, stats: { ...stats } });
+    if (history.length > 30) history.shift();
+  }
   function answer(g) {
+    snapshot();
     grade(card, g);
     queue.shift();
     if (g === 0) {
@@ -334,6 +431,11 @@ function renderCards(extra) {
     const tl = $('.swipe-tag.l', fc), tr = $('.swipe-tag.r', fc);
     fc.addEventListener('click', (e) => {
       if (e.target.closest('[data-say]')) { e.stopPropagation(); speak(card.w); return; }
+      if (e.target.closest('[data-sayex]')) { e.stopPropagation(); speak(card.e); return; }
+      if (e.target.closest('[data-know]')) {
+        e.stopPropagation(); snapshot(); markKnown(card);
+        queue.shift(); stats.ok++; done++; toast('ข้าม "' + card.w + '" แล้ว 👍'); show(); return;
+      }
       if (e.target.closest('a')) return;
       if (!moved) flip();
     });
@@ -369,6 +471,7 @@ function renderCards(extra) {
 
   function finish() {
     updateStreak();
+    confetti();
     view.innerHTML = `<div class="card-box center pop" style="margin-top:30px">
       <div class="result-emoji">🏆</div><div class="h2">จบรอบแล้ว เก่งมาก!</div>
       <p>ทบทวน ${total} ใบ · กด "ลืม" ${stats.again} ครั้ง</p>
@@ -388,6 +491,7 @@ const GAMES = {
   th2en: { icon: '🇹🇭', name: 'ทายคำศัพท์', desc: 'ดูคำไทย เลือกคำอังกฤษ' },
   listen: { icon: '🎧', name: 'ฟังแล้วตอบ', desc: 'ฟังเสียง เลือกความหมาย' },
   spell: { icon: '⌨️', name: 'สะกดคำ', desc: 'ดูคำแปล พิมพ์คำอังกฤษ' },
+  cloze: { icon: '📝', name: 'เติมคำในประโยค', desc: 'เลือกคำที่หายไปจากประโยค' },
   match: { icon: '🧩', name: 'จับคู่ด่วน', desc: 'จับคู่คำกับคำแปลแข่งเวลา' },
   review: { icon: '🔁', name: 'คำที่ผิดบ่อย', desc: 'ฝึกคำที่เคยตอบผิด' },
 };
@@ -419,9 +523,9 @@ function gamePool(id) {
     return W.filter((w) => S.prog[w.w] && (S.prog[w.w].x || 0) > 0)
       .sort((a, b) => (S.prog[b.w].x - S.prog[a.w].x) || (S.prog[a.w].b - S.prog[b.w].b)).slice(0, 40);
   }
-  if (gameSource === 'learned') return W.filter((w) => S.prog[w.w]);
-  if (gameSource === 'all') return W;
-  return pool();
+  let list = gameSource === 'learned' ? W.filter((w) => S.prog[w.w]) : gameSource === 'all' ? W : pool();
+  if (id === 'cloze') list = list.filter(hasCloze);
+  return list;
 }
 
 function distractors(w, n, field) {
@@ -475,21 +579,27 @@ function playQuiz(mode, src, gameId) {
   function q() {
     if (i >= items.length) return result();
     const w = items[i];
-    const m = gameId === 'review' ? pick(['en2th', 'th2en', 'listen', 'spell']) : mode;
+    const m = gameId === 'review' ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'spell', 'cloze'] : ['en2th', 'th2en', 'listen', 'spell']) : mode;
     if (m === 'spell') return qSpell(w);
-    const toTh = m !== 'th2en';
+    const toTh = m !== 'th2en' && m !== 'cloze';
     const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
     let prompt;
     if (m === 'en2th') prompt = `<div class="word">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>`;
     else if (m === 'th2en') prompt = `<div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>`;
+    else if (m === 'cloze') {
+      const blank = w.e.replace(clozeRe(w), (all, pre) => pre + '\u0000');
+      prompt = `<div class="cloze">${esc(blank).replace('\u0000', '<span class="blank">_____</span>')}</div>
+        <button class="hint-btn" id="clozeHint">💡 ดูคำแปลประโยค</button><div class="thx" id="clozeTh" hidden>${esc(w.et)}</div>`;
+    }
     else prompt = `<button class="speak" data-say style="width:96px;height:96px;font-size:44px;margin:0">🔊</button><div class="muted small" style="margin-top:10px">แตะเพื่อฟังอีกครั้ง</div>`;
     view.innerHTML = `${header()}
       <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>${prompt}</div>
       <div class="options">${opts.map((o) => `<button class="opt" data-i="${o.idx}">${esc(toTh ? o.t : o.w)}</button>`).join('')}</div>
       <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
-    if (m !== 'th2en') speak(w.w);
+    if (m === 'en2th' || m === 'listen') speak(w.w);
     const say = view.querySelector('[data-say]'); if (say) say.onclick = () => speak(w.w);
+    const hb = $('#clozeHint'); if (hb) hb.onclick = () => { $('#clozeTh').hidden = false; hb.remove(); };
     let answered = false;
     view.querySelector('.options').onclick = (e) => {
       const b = e.target.closest('.opt'); if (!b || answered) return;
@@ -498,9 +608,13 @@ function playQuiz(mode, src, gameId) {
       view.querySelectorAll('.opt').forEach((o) => { if (+o.dataset.i === w.idx) o.classList.add('correct'); });
       if (!ok) b.classList.add('wrong');
       mark(w, ok);
-      $('#reveal').innerHTML = ok ? `✅ ถูกต้อง! <b>${esc(w.w)}</b> = ${esc(w.t)}` : `❌ <b>${esc(w.w)}</b> = ${esc(w.t)}`;
-      if (m === 'th2en' || m === 'listen') speak(w.w);
-      setTimeout(next, ok ? 900 : 2000);
+      $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! <b>${esc(w.w)}</b> = ${esc(w.t)}` : `❌ <b>${esc(w.w)}</b> = ${esc(w.t)}`)
+        + (m === 'cloze' || !ok ? exampleBox(w) : '')
+        + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('[data-sayex]').onclick = () => speak(w.e);
+      $('#nextQ').onclick = next;
+      if (m === 'cloze') speak(w.e); else if (m === 'th2en') speak(w.w);
+      if (ok && m !== 'cloze') setTimeout(() => { if (items[i] === w) next(); }, 1000);
     };
   }
 
@@ -528,9 +642,12 @@ function playQuiz(mode, src, gameId) {
       answered = true;
       mark(w, ok);
       inp.blur(); inp.value = w.w; inp.classList.add(ok ? 'ok' : 'no');
-      $('#reveal').innerHTML = ok ? `✅ ถูกต้อง! ${esc(w.i)}` : `❌ คำตอบคือ <b>${esc(w.w)}</b> ${esc(w.i)}`;
+      $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! ${esc(w.i)}` : `❌ คำตอบคือ <b>${esc(w.w)}</b> ${esc(w.i)}`)
+        + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('[data-sayex]').onclick = () => speak(w.e);
+      $('#nextQ').onclick = next;
       speak(w.w);
-      setTimeout(next, ok ? 1200 : 2200);
+      if (ok) setTimeout(() => { if (items[i] === w) next(); }, 1500);
     };
     $('#sf').onsubmit = (e) => {
       e.preventDefault(); if (answered) return;
@@ -546,6 +663,7 @@ function playQuiz(mode, src, gameId) {
 
   function mark(w, ok) {
     gameResult(w, ok);
+    sfx(ok ? 'ok' : 'bad');
     if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); score += 10 + Math.min(combo - 1, 5) * 2; }
     else { combo = 0; wrong.push(w); }
   }
@@ -556,6 +674,7 @@ function playQuiz(mode, src, gameId) {
     const isBest = prev == null || score > prev;
     if (isBest) { S.best[gameId] = score; save(); }
     const correct = items.length - wrong.length;
+    if (correct >= 8) confetti();
     const emoji = correct === items.length ? '🏆' : correct >= 7 ? '🎉' : correct >= 4 ? '💪' : '📚';
     view.innerHTML = `<div class="card-box center pop">
         <div class="result-emoji">${emoji}</div>
@@ -611,10 +730,10 @@ function playMatch(src) {
       const a = sel, b = t; sel = null; a.classList.remove('sel');
       if (a.dataset.i === b.dataset.i) {
         a.classList.add('done'); b.classList.add('done');
-        gameResult(W[+a.dataset.i], true);
+        gameResult(W[+a.dataset.i], true); sfx('ok');
         if (--left === 0) { round++; setTimeout(deal, 350); }
       } else {
-        mistakes++;
+        mistakes++; sfx('bad');
         [a, b].forEach((x) => { x.classList.remove('no'); void x.offsetWidth; x.classList.add('no'); });
         const enTile = a.dataset.k === 'en' ? a : b;
         gameResult(W[+enTile.dataset.i], false);
@@ -631,6 +750,7 @@ function playMatch(src) {
     const prev = S.best.match;
     const isBest = prev == null || score > prev;
     if (isBest) { S.best.match = score; save(); }
+    if (isBest || mistakes === 0) confetti();
     view.innerHTML = `<div class="card-box center pop">
         <div class="result-emoji">⚡</div>
         <div class="h2">${score} แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
@@ -681,17 +801,57 @@ function renderList() {
     if (q) items.sort((a, b) => (b.w.toLowerCase().startsWith(q)) - (a.w.toLowerCase().startsWith(q)));
     rows.innerHTML = ''; shown = 0; more();
     if (!items.length) rows.innerHTML = '<p class="center muted">ไม่พบคำศัพท์</p>';
-    $('#cnt').textContent = `${items.length} คำ · แตะเพื่อฟังเสียง`;
+    $('#cnt').textContent = `${items.length} คำ · แตะคำเพื่อดูตัวอย่างประโยค`;
     paint();
   };
   $('#q').oninput = (e) => { listFilter.q = e.target.value; apply(); };
   $('#lv').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { listFilter.lv = c.dataset.v; apply(); } };
   $('#st').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { listFilter.st = c.dataset.v; apply(); } };
-  rows.onclick = (e) => { const r = e.target.closest('.wrow'); if (r) speak(W[+r.dataset.i].w); };
+  rows.onclick = (e) => {
+    const r = e.target.closest('.wrow'); if (!r) return;
+    const w = W[+r.dataset.i];
+    speak(w.w);
+    openSheet(w, () => { r.querySelector('.dot').className = 'dot ' + status(w); });
+  };
   const io = new IntersectionObserver((es) => { if (es[0].isIntersecting && shown < items.length) more(); }, { root: view, rootMargin: '400px' });
   io.observe($('#sentinel'));
   cleanup = () => io.disconnect();
   apply();
+}
+
+/* ---------- word detail sheet ---------- */
+function openSheet(w, onChange) {
+  const st = status(w);
+  const stLabel = { new: 'ยังไม่เรียน', learning: '🟡 กำลังเรียน', mastered: '🟢 จำได้แล้ว' }[st];
+  const el = document.createElement('div');
+  el.className = 'sheet-wrap';
+  el.innerHTML = `<div class="sheet" role="dialog" aria-label="${esc(w.w)}">
+      <div class="grab"></div>
+      <div class="row" style="justify-content:space-between">${lvBadge(w.g)}<span class="small muted">${stLabel}</span></div>
+      <div class="sheet-word">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
+      <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
+      <div class="th" style="font-size:22px;margin:10px 0">${esc(w.t)}</div>
+      ${exampleBox(w)}
+      <div class="row" style="margin-top:14px">
+        <button class="btn grow" data-act="review">🔁 ทบทวนวันนี้</button>
+        <button class="btn grow" data-act="known">✓ รู้แล้ว</button>
+      </div>
+      <a class="link" style="display:block;text-align:center;margin-top:12px" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(w.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">ดูใน Oxford Dictionary ↗</a>
+    </div>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('open'));
+  const close = () => { el.classList.remove('open'); setTimeout(() => el.remove(), 250); };
+  el.onclick = (e) => {
+    if (e.target === el) return close();
+    if (e.target.closest('[data-say]')) return speak(w.w);
+    if (e.target.closest('[data-sayex]')) return speak(w.e);
+    const act = e.target.closest('[data-act]');
+    if (!act) return;
+    if (act.dataset.act === 'known') { markKnown(w); toast('ทำเครื่องหมายว่ารู้แล้ว 👍'); }
+    else { markForReview(w); toast('เพิ่มเข้ารายการทบทวนแล้ว 🔁'); }
+    if (onChange) onChange();
+    close();
+  };
 }
 
 /* ---------- settings ---------- */
@@ -722,6 +882,8 @@ function renderSettings() {
     <div class="card-box">
       <div class="set-row"><span>อ่านออกเสียงอัตโนมัติ</span>
         <label class="switch"><input type="checkbox" id="auto" ${st.autoSpeak ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>เสียงเอฟเฟกต์ในเกม</span>
+        <label class="switch"><input type="checkbox" id="sfx" ${st.sfx ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>สำเนียง</span>
         <select class="sel" id="acc"><option value="en-US" ${st.accent === 'en-US' ? 'selected' : ''}>🇺🇸 อเมริกัน</option><option value="en-GB" ${st.accent === 'en-GB' ? 'selected' : ''}>🇬🇧 อังกฤษ</option></select></div>
       <div class="set-row"><span>ความเร็วเสียง</span>
@@ -752,6 +914,7 @@ function renderSettings() {
   $('#ord').onchange = (e) => { st.order = e.target.value; save(); };
   $('#front').onchange = (e) => { st.front = e.target.value; save(); };
   $('#auto').onchange = (e) => { st.autoSpeak = e.target.checked; save(); };
+  $('#sfx').onchange = (e) => { st.sfx = e.target.checked; save(); sfx('ok'); };
   $('#acc').onchange = (e) => { st.accent = e.target.value; save(); speak('Hello! Nice to meet you.'); };
   $('#rate').onchange = (e) => { st.rate = +e.target.value; save(); speak('vocabulary'); };
   $('#test').onclick = () => speak('Hello! Let\'s learn English together.');

@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump VERSION whenever any cached file changes.
-const VERSION = 'o3k-v2';
+const VERSION = 'o3k-v3';
 const FILES = [
   './',
   'index.html',
