@@ -1,5 +1,8 @@
 'use strict';
 
+// App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
+const APP_VERSION = '1.3.0';
+
 /* ---------- data ---------- */
 // WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
 // g = study group: A1–B2 are Oxford 3000; B2x and C1 are the extra Oxford 5000 words.
@@ -283,7 +286,8 @@ function renderHome() {
       </div>
       ${lvRows}
       <div class="small muted" style="margin-top:8px">🟣 เรียนแล้ว &nbsp; 🟢 จำได้แล้ว (ทบทวนผ่านหลายรอบ)</div>
-    </div>`;
+    </div>
+    <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
   $('#startBtn').onclick = () => go('cards', !todo);
   view.querySelectorAll('[data-game]').forEach((b) => (b.onclick = () => startGame(b.dataset.game)));
 }
@@ -899,7 +903,7 @@ function renderSettings() {
       <div style="height:10px"></div>
       <button class="btn danger block" id="reset">ล้างความคืบหน้าทั้งหมด</button>
     </div>
-    <p class="center small muted">รายการคำ: Oxford 3000 + 5000 (${W.length} คำ) · คำแปลไทยสำหรับช่วยจำ</p>`;
+    <p class="center small muted">รายการคำ: Oxford 3000 + 5000 (${W.length} คำ) · คำแปลไทยสำหรับช่วยจำ<br>เวอร์ชัน ${APP_VERSION}</p>`;
 
   const paint = () => view.querySelectorAll('#lvls .chip, #lvls5 .chip').forEach((c) => c.classList.toggle('on', st.levels.includes(c.dataset.v)));
   paint();
