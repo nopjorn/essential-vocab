@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 
 /* ---------- data ---------- */
 // WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
@@ -513,21 +513,27 @@ function renderGames() {
         <button class="chip" data-s="level">ระดับที่เลือก (${lvNames(S.settings.levels)})</button>
         <button class="chip" data-s="learned">คำที่เรียนแล้ว</button>
         <button class="chip" data-s="all">ทุกระดับ</button>
+        <button class="chip" data-s="mastered">🟢 คำที่จำได้แล้ว (${masteredWords().length})</button>
       </div>
+      ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
     </div>
     <div class="game-grid">${Object.keys(GAMES).map(gameTile).join('')}</div>`;
   const paint = () => view.querySelectorAll('#src .chip').forEach((c) => c.classList.toggle('on', c.dataset.s === gameSource));
   paint();
-  $('#src').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { gameSource = c.dataset.s; paint(); } };
+  $('#src').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { gameSource = c.dataset.s; renderGames(); } };
   view.querySelectorAll('[data-game]').forEach((b) => (b.onclick = () => startGame(b.dataset.game)));
 }
+
+const masteredWords = () => W.filter((w) => S.prog[w.w] && S.prog[w.w].b >= MASTERED);
 
 function gamePool(id) {
   if (id === 'review') {
     return W.filter((w) => S.prog[w.w] && (S.prog[w.w].x || 0) > 0)
       .sort((a, b) => (S.prog[b.w].x - S.prog[a.w].x) || (S.prog[a.w].b - S.prog[b.w].b)).slice(0, 40);
   }
-  let list = gameSource === 'learned' ? W.filter((w) => S.prog[w.w]) : gameSource === 'all' ? W : pool();
+  let list = gameSource === 'learned' ? W.filter((w) => S.prog[w.w])
+    : gameSource === 'mastered' ? masteredWords()
+    : gameSource === 'all' ? W : pool();
   if (id === 'cloze') list = list.filter(hasCloze);
   return list;
 }
@@ -557,7 +563,9 @@ function startGame(id) {
   const src = gamePool(id);
   const min = id === 'match' ? 6 : 4;
   if (src.length < min) {
-    toast(id === 'review' ? 'ยังไม่มีคำที่ตอบผิด เก่งมาก! 👍' : 'คำศัพท์ยังน้อยไป ลองเลือก "ระดับที่เลือก" ก่อนนะ');
+    toast(id === 'review' ? 'ยังไม่มีคำที่ตอบผิด เก่งมาก! 👍'
+      : gameSource === 'mastered' ? `ต้องมีคำที่จำได้แล้วอย่างน้อย ${min} คำก่อนนะ`
+      : 'คำศัพท์ยังน้อยไป ลองเลือก "ระดับที่เลือก" ก่อนนะ');
     if (current !== 'games') go('games');
     return;
   }
