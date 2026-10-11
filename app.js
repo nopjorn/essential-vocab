@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.6.0';
+const APP_VERSION = '1.6.1';
 
 /* ---------- data ---------- */
 // WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
@@ -876,7 +876,8 @@ function playQuiz(mode, src, gameId) {
       $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! <b>${esc(w.w)}</b> = ${esc(w.t)}` : `❌ <b>${esc(w.w)}</b> = ${esc(w.t)}`)
         + (m === 'cloze' || !ok ? exampleBox(w) : '')
         + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
-      view.querySelector('[data-sayex]').onclick = () => speak(w.e);
+      const sayEx = view.querySelector('[data-sayex]'); // only present when the example is shown
+      if (sayEx) sayEx.onclick = () => speak(w.e);
       $('#nextQ').onclick = next;
       if (m === 'cloze') speak(w.e); else if (m === 'th2en') speak(w.w);
       if (ok && m !== 'cloze') setTimeout(() => { if (items[i] === w) next(); }, 1000);
