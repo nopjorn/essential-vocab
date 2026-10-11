@@ -1,7 +1,7 @@
 # Notes for Claude
 
-"Vocab 3000" — a vocabulary trainer for the Oxford 3000/5000 word lists: a static, vanilla-JS PWA hosted on GitHub Pages
-(`https://nopjorn.github.io/language-3000-oxfords/`, branch `master`, repo root).
+"ศัพท์ต้องรู้" (Essential Vocab) — a vocabulary trainer for the Oxford 3000/5000 word lists: a static, vanilla-JS PWA hosted on GitHub Pages
+(`https://nopjorn.github.io/essential-vocab/`, branch `master`, repo root).
 Main target is iPhone (Pro Max, home-screen app). The owner talks in Thai; reply in Thai.
 
 ## Release rules (every push)
@@ -50,7 +50,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 ## Content / copyright
 - Only word, POS, CEFR level and IPA came from the Oxford list (via a GitHub CSV). Thai meanings and
   all example sentences are original — never copy Oxford definitions or examples.
-- "Oxford 3000/5000" is an OUP trademark. Since 1.8.1 the app is branded "Vocab 3000": never use "Oxford"
+- "Oxford 3000/5000" is an OUP trademark. Since 1.8.1 the app has its own brand (now "ศัพท์ต้องรู้", repo `essential-vocab` since 1.8.2): never use "Oxford"
   in the app name, icon, titles or headings. Mention it only descriptively (the settings-page footer
   disclaimer, README "แหล่งข้อมูล", links to Oxford Learner's Dictionaries).
 - The word-list selection/CEFR levels/IPA are still OUP-derived: if the app is ever sold, flag that the

@@ -1,16 +1,16 @@
 BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Vocab 3000//Daily reminder//TH
+PRODID:-//Essential Vocab//Daily reminder//TH
 CALSCALE:GREGORIAN
 BEGIN:VEVENT
-UID:oxford3000-daily-0700@language-3000-oxfords
+UID:essential-vocab-daily-0700@nopjorn.github.io
 DTSTAMP:20260101T000000Z
 DTSTART:20260101T070000
 DTEND:20260101T071500
 RRULE:FREQ=DAILY
-SUMMARY:📚 ท่องศัพท์ Vocab 3000
-DESCRIPTION:ถึงเวลาทบทวนการ์ดและทำภารกิจวันนี้แล้ว\nhttps://nopjorn.github.io/language-3000-oxfords/
-URL:https://nopjorn.github.io/language-3000-oxfords/
+SUMMARY:📚 ท่องศัพท์ต้องรู้
+DESCRIPTION:ถึงเวลาทบทวนการ์ดและทำภารกิจวันนี้แล้ว\nhttps://nopjorn.github.io/essential-vocab/
+URL:https://nopjorn.github.io/essential-vocab/
 BEGIN:VALARM
 ACTION:DISPLAY
 DESCRIPTION:ถึงเวลาท่องศัพท์แล้ว 📚
