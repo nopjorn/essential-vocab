@@ -281,3 +281,31 @@ select.sel { background: var(--surface-2); border: 0; border-radius: 10px; paddi
 body { touch-action: manipulation; }
 
 .backup-nag { border: 2px solid var(--warn); }
+
+/* daily quest */
+.quest { border: 2px solid color-mix(in srgb, var(--primary) 35%, transparent); }
+.qbar { height: 10px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.qbar > div { height: 100%; background: linear-gradient(90deg, var(--primary), var(--pink)); border-radius: 99px; transition: width .4s; }
+
+/* review forecast */
+.fc-bar > div { background: linear-gradient(180deg, var(--warn), var(--primary)); }
+
+/* achievements */
+.ach-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 14px; }
+.ach { border: 0; background: var(--surface-2); border-radius: 14px; padding: 10px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--muted); font: inherit; }
+.ach span { font-size: 26px; filter: grayscale(1); opacity: .35; }
+.ach small { font-size: 11px; line-height: 1.2; text-align: center; }
+.ach.on { background: color-mix(in srgb, var(--primary) 14%, var(--surface)); color: var(--text); }
+.ach.on span { filter: none; opacity: 1; }
+
+/* stars */
+.star-btn { border: 0; background: none; font-size: 24px; line-height: 1; padding: 4px; color: var(--warn); cursor: pointer; }
+.star-mark { font-size: 14px; }
+
+/* speak game */
+.mic { width: 96px; height: 96px; border-radius: 50%; border: 0; font-size: 44px; margin: 18px auto 8px; display: block;
+  background: linear-gradient(135deg, var(--primary), var(--pink)); box-shadow: 0 8px 22px rgba(108, 92, 231, .35); }
+.mic.on { animation: pulse 1s infinite; }
+.mic.no { animation: shake .3s; }
+.mic:disabled { opacity: .5; }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); box-shadow: 0 0 0 12px color-mix(in srgb, var(--pink) 25%, transparent); } }

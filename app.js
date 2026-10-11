@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.6.0';
 
 /* ---------- data ---------- */
 // WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
@@ -28,6 +28,12 @@ const defaults = () => ({
   hist: {},            // 'YYYY-MM-DD' -> cards/answers that day
   backupAt: 0,         // ms of the last backup export
   backupSnooze: '',    // date the backup reminder was dismissed
+  star: {},            // word -> 1 for starred words
+  freeze: 0,           // streak freezes in stock (max MAX_FREEZE)
+  ach: {},             // achievement id -> date unlocked
+  quest: { date: '', n: 0, done: false },
+  counts: { quests: 0, speak: 0, perfect: 0 },
+  remind: '2000',      // daily reminder time for the calendar file (HHMM)
 });
 let S = load();
 
@@ -42,6 +48,7 @@ function load() {
   return defaults();
 }
 function save() {
+  if (typeof checkAch === 'function') checkAch();
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ }
 }
 
@@ -84,6 +91,10 @@ function mergeBackup(d) {
   } else if (d.daily && d.daily.date > S.daily.date) S.daily = d.daily;
   if (fresh && d.settings) S.settings = { ...defaults().settings, ...d.settings };
   S.backupAt = Math.max(S.backupAt || 0, d.backupAt || 0);
+  Object.assign(S.star, d.star || {});
+  for (const [k, v] of Object.entries(d.ach || {})) if (!S.ach[k]) S.ach[k] = v;
+  for (const [k, v] of Object.entries(d.counts || {})) S.counts[k] = Math.max(S.counts[k] || 0, v);
+  S.freeze = Math.max(S.freeze || 0, d.freeze || 0);
   save();
   return { added, updated };
 }
@@ -92,18 +103,116 @@ const today = () => new Date().toLocaleDateString('en-CA');
 function rollDay() {
   if (S.daily.date !== today()) S.daily = { date: today(), fresh: 0, reviews: 0 };
 }
+// Whole days between two 'YYYY-MM-DD' strings (a - b).
+const dayDiff = (a, b) => Math.round((Date.parse(a + 'T12:00:00') - Date.parse(b + 'T12:00:00')) / DAY);
+const MAX_FREEZE = 2;
 function markActive() {
   rollDay();
   const t = today();
   S.hist[t] = (S.hist[t] || 0) + 1;
   if (S.streak.last === t) return;
-  const y = new Date(Date.now() - DAY).toLocaleDateString('en-CA');
-  S.streak.count = S.streak.last === y ? S.streak.count + 1 : 1;
+  const missed = S.streak.last ? dayDiff(t, S.streak.last) - 1 : Infinity;
+  if (missed === 0) S.streak.count++;
+  else if (S.streak.count && missed <= S.freeze) {
+    // 🧊 Streak freezes cover the missed days.
+    S.freeze -= missed; S.streak.count++;
+    setTimeout(() => toast(`🧊 ใช้ตัวกันสตรีค ${missed} อัน สตรีคไม่ขาด!`), 400);
+  } else S.streak.count = 1;
   S.streak.last = t;
+  if (S.streak.count % 7 === 0 && S.freeze < MAX_FREEZE) {
+    S.freeze++;
+    setTimeout(() => toast('🧊 ได้ตัวกันสตรีคเพิ่ม 1 อัน (เรียนต่อเนื่องครบ 7 วัน)'), 1500);
+  }
+  updateStreak();
 }
 function streakNow() {
-  const y = new Date(Date.now() - DAY).toLocaleDateString('en-CA');
-  return (S.streak.last === today() || S.streak.last === y) ? S.streak.count : 0;
+  if (!S.streak.last) return 0;
+  const missed = dayDiff(today(), S.streak.last) - 1;
+  return missed <= 0 || missed <= S.freeze ? S.streak.count : 0;
+}
+
+/* ---------- stars ---------- */
+const isStar = (w) => !!S.star[w.w];
+function toggleStar(w) {
+  if (S.star[w.w]) delete S.star[w.w]; else S.star[w.w] = 1;
+  save();
+  toast(isStar(w) ? `⭐ ติดดาว "${w.w}" แล้ว` : `เอาดาวออกจาก "${w.w}" แล้ว`);
+  return isStar(w);
+}
+const starIcon = (w) => (isStar(w) ? '⭐' : '☆');
+
+/* ---------- daily quest ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const canListen = !!SR;
+const QUESTS = [
+  { id: 'cards', text: 'ทำแฟลชการ์ดให้ครบ 30 ใบ', target: 30 },
+  { id: 'fresh', text: 'เรียนคำใหม่ให้ครบเป้าวันนี้', target: () => S.settings.newPerDay },
+  { id: 'cloze', text: 'เติมคำในประโยค ถูก 8 ข้อขึ้นไปในรอบเดียว', target: 1, game: 'cloze' },
+  { id: 'listen', text: 'ฟังแล้วตอบ ถูก 8 ข้อขึ้นไปในรอบเดียว', target: 1, game: 'listen' },
+  { id: 'th2en', text: 'ทายคำศัพท์ ถูก 8 ข้อขึ้นไปในรอบเดียว', target: 1, game: 'th2en' },
+  { id: 'spell', text: 'สะกดคำถูกรวม 10 คำ', target: 10, game: 'spell' },
+  { id: 'match', text: 'จับคู่ด่วนให้จบ โดยผิดไม่เกิน 2 ครั้ง', target: 1, game: 'match' },
+  { id: 'combo', text: 'ทำคอมโบ x6 ในเกมไหนก็ได้', target: 1, game: 'en2th' },
+  { id: 'speak', text: 'พูดตามถูกรวม 10 คำ', target: 10, game: 'speak', needs: () => canListen },
+];
+function todayQuest() {
+  const t = today();
+  if (S.quest.date !== t) S.quest = { date: t, n: 0, done: false };
+  const list = QUESTS.filter((q) => !q.needs || q.needs());
+  let h = 7; for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return list[h % list.length];
+}
+const questTarget = (q) => (typeof q.target === 'function' ? q.target() : q.target);
+function questEvent(type, d = {}) {
+  const q = todayQuest();
+  if (S.quest.done) return save();
+  if (type === 'card' && q.id === 'cards') S.quest.n++;
+  if (type === 'card' && q.id === 'fresh') S.quest.n = S.daily.fresh;
+  if (type === 'answer' && d.ok && d.game === q.id && (q.id === 'spell' || q.id === 'speak')) S.quest.n++;
+  if (type === 'round' && d.game === q.id && d.correct >= 8) S.quest.n++;
+  if (type === 'round' && q.id === 'combo' && d.bestCombo >= 6) S.quest.n++;
+  if (type === 'match' && q.id === 'match' && d.mistakes <= 2) S.quest.n++;
+  if (S.quest.n >= questTarget(q)) {
+    S.quest.done = true;
+    S.counts.quests = (S.counts.quests || 0) + 1;
+    setTimeout(() => { confetti(); toast('🎯 ภารกิจวันนี้สำเร็จ! เก่งมาก'); }, 700);
+  }
+  save();
+}
+
+/* ---------- achievements ---------- */
+const ACH = [
+  { id: 'first', icon: '🌱', name: 'ก้าวแรก', desc: 'เรียนคำแรก', ok: (s) => s.learned >= 1 },
+  { id: 'l100', icon: '📗', name: 'ร้อยคำแรก', desc: 'เรียนครบ 100 คำ', ok: (s) => s.learned >= 100 },
+  { id: 'l500', icon: '📘', name: 'ห้าร้อยคำ', desc: 'เรียนครบ 500 คำ', ok: (s) => s.learned >= 500 },
+  { id: 'l1000', icon: '📙', name: 'พันคำ', desc: 'เรียนครบ 1,000 คำ', ok: (s) => s.learned >= 1000 },
+  { id: 'l3000', icon: '📚', name: 'สามพันคำ', desc: 'เรียนครบ 3,000 คำ', ok: (s) => s.learned >= 3000 },
+  { id: 'm10', icon: '🟢', name: 'จำได้แล้ว', desc: 'จำได้แล้ว 10 คำ', ok: (s) => s.mastered >= 10 },
+  { id: 'm100', icon: '🧠', name: 'สมองไว', desc: 'จำได้แล้ว 100 คำ', ok: (s) => s.mastered >= 100 },
+  { id: 'm500', icon: '💎', name: 'คลังศัพท์', desc: 'จำได้แล้ว 500 คำ', ok: (s) => s.mastered >= 500 },
+  { id: 'm1000', icon: '👑', name: 'เจ้าแห่งศัพท์', desc: 'จำได้แล้ว 1,000 คำ', ok: (s) => s.mastered >= 1000 },
+  { id: 's3', icon: '🔥', name: 'อุ่นเครื่อง', desc: 'เรียนต่อเนื่อง 3 วัน', ok: (s) => s.streak >= 3 },
+  { id: 's7', icon: '⚡', name: 'ครบสัปดาห์', desc: 'เรียนต่อเนื่อง 7 วัน', ok: (s) => s.streak >= 7 },
+  { id: 's30', icon: '🌟', name: 'ครบเดือน', desc: 'เรียนต่อเนื่อง 30 วัน', ok: (s) => s.streak >= 30 },
+  { id: 's100', icon: '🏆', name: 'ร้อยวัน', desc: 'เรียนต่อเนื่อง 100 วัน', ok: (s) => s.streak >= 100 },
+  { id: 'perfect', icon: '💯', name: 'เต็มสิบ', desc: 'ตอบถูก 10/10 ในเกม', ok: (s) => s.perfect >= 1 },
+  { id: 'q7', icon: '🎯', name: 'นักล่าภารกิจ', desc: 'ทำภารกิจรายวันสำเร็จ 7 ครั้ง', ok: (s) => s.quests >= 7 },
+  { id: 'speak50', icon: '🎤', name: 'นักพูด', desc: 'พูดตามถูก 50 คำ', ok: (s) => s.speak >= 50 },
+  ...LEVELS.map((l) => ({ id: 'lv' + l, icon: '🎓', name: `จบ ${LV_LABEL[l]}`, desc: `เรียนครบทุกคำในระดับ ${LV_LABEL[l]}`, ok: (s) => s.lv[l] })),
+];
+const GROUP = Object.fromEntries(LEVELS.map((l) => [l, W.filter((w) => w.g === l)]));
+function checkAch() {
+  const progs = Object.values(S.prog);
+  const s = {
+    learned: progs.length,
+    mastered: progs.filter((p) => p.b >= MASTERED).length,
+    streak: S.streak.count, perfect: S.counts.perfect || 0, quests: S.counts.quests || 0, speak: S.counts.speak || 0,
+    lv: Object.fromEntries(LEVELS.map((l) => [l, GROUP[l].every((w) => S.prog[w.w])])),
+  };
+  const got = ACH.filter((a) => !S.ach[a.id] && a.ok(s));
+  if (!got.length) return;
+  got.forEach((a) => (S.ach[a.id] = today()));
+  setTimeout(() => { confetti(); toast(`🏅 ได้เหรียญ "${got[0].icon} ${got[0].name}"${got.length > 1 ? ` และอีก ${got.length - 1} เหรียญ` : ''}`); }, 1100);
 }
 
 /* ---------- helpers ---------- */
@@ -227,7 +336,7 @@ function grade(w, g) {
     c: (p ? p.c : 0) + (g > 0 ? 1 : 0),
     x: (p ? p.x || 0 : 0) + (g === 0 ? 1 : 0),
   };
-  save();
+  questEvent('card');
 }
 // Lighter update from games: a right answer seeds/advances a little, a wrong one sends it back for review.
 function gameResult(w, ok) {
@@ -268,7 +377,7 @@ function go(tab, ...args) {
   ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings }[tab])(...args);
   updateStreak();
 }
-function updateStreak() { $('#streak').textContent = '🔥 ' + streakNow(); }
+function updateStreak() { $('#streak').textContent = '🔥 ' + streakNow() + (S.freeze ? ' · 🧊' + S.freeze : ''); }
 $('#tabbar').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (b) go(b.dataset.tab);
 });
@@ -321,8 +430,13 @@ function renderHome() {
     ${standalone ? '' : `<div class="card-box install-tip small">
       📲 <b>ติดตั้งเป็นแอปบน iPhone:</b> เปิดหน้านี้ใน Safari → กดปุ่ม <b>แชร์</b> (สี่เหลี่ยมมีลูกศร) → <b>เพิ่มไปยังหน้าจอโฮม</b> จะได้ใช้งานเต็มจอและออฟไลน์ได้</div>`}
 
+    ${questCard()}
+
     <div class="h2">7 วันที่ผ่านมา</div>
     <div class="card-box week">${weekChart()}</div>
+
+    <div class="h2">📅 การ์ดที่ต้องทบทวน 7 วันข้างหน้า</div>
+    <div class="card-box">${forecastChart()}</div>
 
     <div class="h2">เล่นเกมด่วน</div>
     <div class="game-grid">
@@ -337,6 +451,9 @@ function renderHome() {
       ${lvRows}
       <div class="small muted" style="margin-top:8px">🟣 เรียนแล้ว &nbsp; 🟢 จำได้แล้ว (ทบทวนผ่านหลายรอบ)</div>
     </div>
+
+    <div class="h2">🏅 เหรียญรางวัล <span class="small muted">${ACH.filter((a) => S.ach[a.id]).length}/${ACH.length}</span></div>
+    <div class="card-box ach-grid" id="ach">${ACH.map((a) => `<button class="ach ${S.ach[a.id] ? 'on' : ''}" data-ach="${a.id}"><span>${a.icon}</span><small>${a.name}</small></button>`).join('')}</div>
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
   $('#startBtn').onclick = () => go('cards', !todo);
   if ($('#bkNow')) {
@@ -344,6 +461,38 @@ function renderHome() {
     $('#bkLater').onclick = () => { S.backupSnooze = today(); save(); renderHome(); };
   }
   view.querySelectorAll('[data-game]').forEach((b) => (b.onclick = () => startGame(b.dataset.game)));
+  const qg = $('#questGo');
+  if (qg) qg.onclick = () => { const q = todayQuest(); if (q.game) startGame(q.game); else go('cards'); };
+  $('#ach').onclick = (e) => {
+    const b = e.target.closest('[data-ach]'); if (!b) return;
+    const a = ACH.find((x) => x.id === b.dataset.ach);
+    toast(`${a.icon} ${a.name}: ${a.desc}${S.ach[a.id] ? ' ✅' : ' 🔒'}`);
+  };
+}
+function questCard() {
+  const q = todayQuest(), target = questTarget(q), n = Math.min(S.quest.n, target);
+  return `<div class="card-box quest">
+    <div class="row" style="justify-content:space-between"><b>🎯 ภารกิจวันนี้</b><span class="small muted">${S.quest.done ? 'สำเร็จแล้ว ✅' : `${n}/${target}`}</span></div>
+    <div style="margin:6px 0 10px">${q.text}</div>
+    <div class="qbar"><div style="width:${S.quest.done ? 100 : n / target * 100}%"></div></div>
+    ${S.quest.done ? '' : '<button class="btn block" id="questGo" style="margin-top:12px">ไปทำภารกิจ →</button>'}
+  </div>`;
+}
+// Cards coming due in each of the next 7 days (selected levels), so the daily load is predictable.
+function forecastChart() {
+  const names = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  const days = Array.from({ length: 7 }, (_, k) => ({ n: 0, label: k === 0 ? 'วันนี้' : k === 1 ? 'พรุ่งนี้' : names[(start.getDay() + k) % 7] }));
+  for (const w of pool()) {
+    const pr = S.prog[w.w]; if (!pr) continue;
+    const k = Math.max(0, Math.floor((pr.d - start.getTime()) / DAY));
+    if (k < 7) days[k].n++;
+  }
+  const max = Math.max(10, ...days.map((d) => d.n));
+  const total = days.reduce((a, d) => a + d.n, 0);
+  const tip = total / 7 > 80 ? '<div class="small" style="margin-top:8px">⚠️ งานทบทวนเยอะแล้ว ลองลดจำนวนคำใหม่ต่อวันในตั้งค่า</div>' : '';
+  return `<div class="week">${days.map((d) => `<div class="wk"><div class="wk-n">${d.n || ''}</div><div class="wk-bar fc-bar"><div style="height:${d.n / max * 100}%"></div></div><div class="wk-l">${d.label}</div></div>`).join('')}</div>
+    <div class="small muted" style="margin-top:8px">รวม ${total} ใบ · ยังไม่รวมคำใหม่วันละ ${S.settings.newPerDay} คำ</div>${tip}`;
 }
 function weekChart() {
   const names = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
@@ -415,10 +564,18 @@ function renderCards(extra) {
   const gradeBox = $('#grade');
   // Undo stack: snapshots taken before each answer so a mis-tap can be reverted.
   const history = [];
+  // Words marked "ยาก" while new: shown again later this session before they're scheduled for tomorrow.
+  let relearn = new Set();
+  const gradeLabel = (p, g) => {
+    const re = relearn.has(card.w);
+    if ((!p || re) && g === 1) return 'วนอีกรอบ';
+    if (re && g > 1) return intervalLabel(g === 3 ? 2 : 1);
+    return intervalLabel(nextBox(p, g));
+  };
   $('#undo').onclick = () => {
     const h = history.pop(); if (!h) return;
     if (h.prev) S.prog[h.w] = h.prev; else delete S.prog[h.w];
-    S.daily = h.daily; save();
+    S.daily = h.daily; relearn = new Set(h.relearn); save();
     queue.splice(0, queue.length, ...h.queue);
     done = h.done; stats = h.stats;
     show();
@@ -432,10 +589,11 @@ function renderCards(extra) {
     const p = S.prog[card.w];
     const isNew = !p;
     const enFront = S.settings.front === 'en';
-    const enFace = `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span></div>
+    const star = `<button class="star-btn" data-star aria-label="ติดดาว">${starIcon(card)}</button>`;
+    const enFace = `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
       <div class="word">${esc(card.w)}</div><div class="ipa">${esc(card.i)}</div>
       <button class="speak" data-say aria-label="ฟังเสียง">🔊</button>`;
-    const thFace = `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span></div>
+    const thFace = `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
       <div class="th">${esc(card.t)}</div>`;
     const backExtra = exampleBox(card) + `<a class="link" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(card.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">ดูความหมาย/ตัวอย่างใน Oxford ↗</a>`;
     $('#stage').innerHTML = `
@@ -445,14 +603,14 @@ function renderCards(extra) {
           <div class="face front">${enFront ? enFace : thFace}
             ${isNew ? '<button class="know-btn" data-know>✓ รู้คำนี้แล้ว ข้ามเลย</button>' : ''}
             <div class="hint">${isNew ? '✨ คำใหม่ · ' : ''}แตะเพื่อพลิก · ปัดซ้าย/ขวา</div></div>
-          <div class="face back">${enFront ? `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span></div>
+          <div class="face back">${enFront ? `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
             <div class="th">${esc(card.t)}</div><div class="ipa" style="margin-top:8px">${esc(card.w)} ${esc(card.i)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>${backExtra}`
             : enFace + backExtra}</div>
         </div>
       </div>`;
     gradeBox.innerHTML = [
       ['g-again', 'ลืม', 0], ['g-hard', 'ยาก', 1], ['g-good', 'จำได้', 2], ['g-easy', 'ง่าย', 3],
-    ].map(([c, t, g]) => `<button class="btn ${c}" data-g="${g}">${t}<small>${intervalLabel(nextBox(p, g))}</small></button>`).join('');
+    ].map(([c, t, g]) => `<button class="btn ${c}" data-g="${g}">${t}<small>${gradeLabel(p, g)}</small></button>`).join('');
     gradeBox.style.visibility = 'hidden';
     $('#undo').style.visibility = history.length ? 'visible' : 'hidden';
     if (enFront && S.settings.autoSpeak) speak(card.w);
@@ -469,17 +627,28 @@ function renderCards(extra) {
   }
 
   function snapshot() {
-    history.push({ w: card.w, prev: S.prog[card.w] && { ...S.prog[card.w] }, daily: { ...S.daily }, queue: queue.slice(), done, stats: { ...stats } });
+    history.push({ w: card.w, prev: S.prog[card.w] && { ...S.prog[card.w] }, daily: { ...S.daily }, queue: queue.slice(), done, stats: { ...stats }, relearn: [...relearn] });
     if (history.length > 30) history.shift();
   }
+  const requeue = (min) => queue.splice(Math.min(queue.length, min + (Math.random() * 3 | 0)), 0, card);
   function answer(g) {
     snapshot();
-    grade(card, g);
+    const isNew = !S.prog[card.w], re = relearn.has(card.w);
     queue.shift();
-    if (g === 0) {
-      stats.again++;
-      queue.splice(Math.min(queue.length, 3 + (Math.random() * 3 | 0)), 0, card);
-    } else { stats.ok++; done++; }
+    if (re && g >= 2) {
+      // Second look at a "hard" new word: keep it at 1 day, or 3 days if it now feels easy.
+      relearn.delete(card.w);
+      markActive(); S.daily.reviews++;
+      const b = g === 3 ? 2 : 1;
+      S.prog[card.w] = { ...S.prog[card.w], b, d: Date.now() + INTERVALS[b] * DAY - 3600000, s: S.prog[card.w].s + 1, c: S.prog[card.w].c + 1 };
+      questEvent('card');
+      stats.ok++; done++;
+    } else {
+      grade(card, g);
+      if (g === 0) { relearn.delete(card.w); stats.again++; requeue(3); }
+      else if (g === 1 && (isNew || re)) { relearn.add(card.w); requeue(4); }
+      else { stats.ok++; done++; }
+    }
     show();
   }
 
@@ -490,6 +659,11 @@ function renderCards(extra) {
     fc.addEventListener('click', (e) => {
       if (e.target.closest('[data-say]')) { e.stopPropagation(); speak(card.w); return; }
       if (e.target.closest('[data-sayex]')) { e.stopPropagation(); speak(card.e); return; }
+      if (e.target.closest('[data-star]')) {
+        e.stopPropagation(); toggleStar(card);
+        fc.querySelectorAll('[data-star]').forEach((b) => (b.textContent = starIcon(card)));
+        return;
+      }
       if (e.target.closest('[data-know]')) {
         e.stopPropagation(); snapshot(); markKnown(card);
         queue.shift(); stats.ok++; done++; toast('ข้าม "' + card.w + '" แล้ว 👍'); show(); return;
@@ -543,6 +717,21 @@ function renderCards(extra) {
   show();
 }
 
+/* ---------- speech recognition matching ---------- */
+const NUM_WORDS = 'zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty'.split(' ');
+const TENS = { 30: 'thirty', 40: 'forty', 50: 'fifty', 60: 'sixty', 70: 'seventy', 80: 'eighty', 90: 'ninety', 100: 'hundred', 1000: 'thousand', 1000000: 'million' };
+const normSpoken = (s) => s.toLowerCase()
+  .replace(/\d+/g, (n) => NUM_WORDS[+n] || TENS[+n] || n)
+  .replace(/[’']/g, "'").replace(/[^a-z' ]+/g, ' ').replace(/\s+/g, ' ').trim();
+// True if what was heard contains the target word (or one of its variants like "a, an").
+function spokenMatch(heard, word) {
+  const h = ' ' + normSpoken(heard) + ' ';
+  return word.split(/\s*[,/]\s*/).some((v) => {
+    const t = normSpoken(v);
+    return t && (h.includes(' ' + t + ' ') || h.replace(/ /g, '').includes(t.replace(/ /g, '')) || (t === 'ok' && h.includes(' okay ')));
+  });
+}
+
 /* ---------- games ---------- */
 const GAMES = {
   en2th: { icon: '🇬🇧', name: 'ทายความหมาย', desc: 'ดูคำอังกฤษ เลือกคำแปลไทย' },
@@ -551,6 +740,7 @@ const GAMES = {
   spell: { icon: '⌨️', name: 'สะกดคำ', desc: 'ดูคำแปล พิมพ์คำอังกฤษ' },
   cloze: { icon: '📝', name: 'เติมคำในประโยค', desc: 'เลือกคำที่หายไปจากประโยค' },
   match: { icon: '🧩', name: 'จับคู่ด่วน', desc: 'จับคู่คำกับคำแปลแข่งเวลา' },
+  speak: { icon: '🎤', name: 'พูดตาม', desc: 'ดูคำแล้วพูดออกเสียง' },
   review: { icon: '🔁', name: 'คำที่ผิดบ่อย', desc: 'ฝึกคำที่เคยตอบผิด' },
 };
 function gameTile(id) {
@@ -568,6 +758,7 @@ function renderGames() {
         <button class="chip" data-s="learned">คำที่เรียนแล้ว</button>
         <button class="chip" data-s="all">ทุกระดับ</button>
         <button class="chip" data-s="mastered">🟢 คำที่จำได้แล้ว (${masteredWords().length})</button>
+        <button class="chip" data-s="star">⭐ คำติดดาว (${Object.keys(S.star).length})</button>
       </div>
       ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
     </div>
@@ -587,6 +778,7 @@ function gamePool(id) {
   }
   let list = gameSource === 'learned' ? W.filter((w) => S.prog[w.w])
     : gameSource === 'mastered' ? masteredWords()
+    : gameSource === 'star' ? W.filter(isStar)
     : gameSource === 'all' ? W : pool();
   if (id === 'cloze') list = list.filter(hasCloze);
   return list;
@@ -614,11 +806,17 @@ function distractors(w, n, field) {
 }
 
 function startGame(id) {
+  if (id === 'speak' && !canListen) {
+    toast('เบราว์เซอร์นี้ยังไม่รองรับการฟังเสียงพูด ลองเปิดใน Safari ดูนะ');
+    if (current !== 'games') go('games');
+    return;
+  }
   const src = gamePool(id);
   const min = id === 'match' ? 6 : 4;
   if (src.length < min) {
     toast(id === 'review' ? 'ยังไม่มีคำที่ตอบผิด เก่งมาก! 👍'
       : gameSource === 'mastered' ? `ต้องมีคำที่จำได้แล้วอย่างน้อย ${min} คำก่อนนะ`
+      : gameSource === 'star' ? `ติดดาวคำอย่างน้อย ${min} คำก่อนนะ (กด ☆ บนการ์ดหรือในหน้าคำศัพท์)`
       : 'คำศัพท์ยังน้อยไป ลองเลือก "ระดับที่เลือก" ก่อนนะ');
     if (current !== 'games') go('games');
     return;
@@ -647,6 +845,7 @@ function playQuiz(mode, src, gameId) {
     const w = items[i];
     const m = gameId === 'review' ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'spell', 'cloze'] : ['en2th', 'th2en', 'listen', 'spell']) : mode;
     if (m === 'spell') return qSpell(w);
+    if (m === 'speak') return qSpeak(w);
     const toTh = m !== 'th2en' && m !== 'cloze';
     const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
     let prompt;
@@ -727,8 +926,65 @@ function playQuiz(mode, src, gameId) {
     $('#skip').onclick = () => { if (!answered) done(false); };
   }
 
+  function qSpeak(w) {
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+        <div class="word">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
+        <div class="muted" style="margin-top:6px">${esc(w.t)}</div>
+        <button class="hint-btn" data-say>🔊 ฟังตัวอย่าง</button></div>
+      <div class="center"><button class="mic" id="mic" aria-label="กดแล้วพูด">🎤</button></div>
+      <div class="center small muted" id="heard">แตะไมค์แล้วพูดคำนี้</div>
+      <button class="btn block" id="skip" style="margin-top:12px">ข้าม / เฉลย</button>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    view.querySelector('[data-say]').onclick = () => speak(w.w);
+    const mic = $('#mic'), heard = $('#heard');
+    let tries = 0, answered = false, rec = null;
+    cleanup = () => { if (rec) try { rec.abort(); } catch (e) { /* ignore */ } };
+    const done = (ok) => {
+      answered = true; cleanup();
+      mark(w, ok);
+      mic.disabled = true;
+      $('#skip').remove();
+      $('#reveal').innerHTML = (ok ? `✅ ออกเสียงถูกแล้ว! <b>${esc(w.w)}</b>` : `👂 ลองฟังแล้วพูดตามอีกครั้งนะ <b>${esc(w.w)}</b> ${esc(w.i)}`)
+        + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('[data-sayex]').onclick = () => speak(w.e);
+      $('#nextQ').onclick = () => { cleanup = null; next(); };
+      if (!ok) speak(w.w);
+      else setTimeout(() => { if (items[i] === w) { cleanup = null; next(); } }, 1300);
+    };
+    mic.onclick = () => {
+      if (answered) return;
+      if (rec) { rec.stop(); return; }
+      if (window.speechSynthesis) speechSynthesis.cancel();
+      rec = new SR();
+      rec.lang = S.settings.accent; rec.interimResults = false; rec.maxAlternatives = 5; rec.continuous = false;
+      mic.classList.add('on'); heard.textContent = 'กำลังฟัง... พูดได้เลย';
+      rec.onresult = (e) => {
+        const alts = Array.from(e.results[0]).map((a) => a.transcript);
+        if (alts.some((a) => spokenMatch(a, w.w))) return done(true);
+        tries++;
+        heard.innerHTML = `ได้ยินว่า "<b>${esc(alts[0] || '')}</b>" ลองอีกครั้งนะ 💪 (${tries}/3)`;
+        mic.classList.remove('no'); void mic.offsetWidth; mic.classList.add('no');
+        if (tries >= 3) done(false);
+      };
+      rec.onerror = (e) => {
+        heard.textContent = e.error === 'not-allowed' || e.error === 'service-not-allowed'
+          ? 'ยังไม่ได้อนุญาตให้ใช้ไมค์/การรู้จำเสียง ลองเปิดในตั้งค่า iPhone ดูนะ'
+          : 'ไม่ได้ยินเสียง แตะไมค์แล้วลองอีกครั้งนะ';
+      };
+      rec.onend = () => { rec = null; mic.classList.remove('on'); };
+      try { rec.start(); } catch (err) { rec = null; mic.classList.remove('on'); heard.textContent = 'เปิดไมค์ไม่ได้ ลองอีกครั้งนะ'; }
+    };
+    $('#skip').onclick = () => { if (!answered) done(false); };
+    speak(w.w);
+  }
+
   function mark(w, ok) {
-    gameResult(w, ok);
+    // A missed pronunciation doesn't mean the meaning was forgotten, so it doesn't reset the card.
+    if (gameId === 'speak' && !ok) markActive(); else gameResult(w, ok);
+    if (gameId === 'speak' && ok) S.counts.speak = (S.counts.speak || 0) + 1;
+    questEvent('answer', { game: gameId, ok });
     sfx(ok ? 'ok' : 'bad');
     if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); score += 10 + Math.min(combo - 1, 5) * 2; }
     else { combo = 0; wrong.push(w); }
@@ -740,6 +996,8 @@ function playQuiz(mode, src, gameId) {
     const isBest = prev == null || score > prev;
     if (isBest) { S.best[gameId] = score; save(); }
     const correct = items.length - wrong.length;
+    if (correct === items.length && items.length >= 10) S.counts.perfect = (S.counts.perfect || 0) + 1;
+    questEvent('round', { game: gameId, correct, bestCombo });
     if (correct >= 8) confetti();
     const emoji = correct === items.length ? '🏆' : correct >= 7 ? '🎉' : correct >= 4 ? '💪' : '📚';
     view.innerHTML = `<div class="card-box center pop">
@@ -747,12 +1005,19 @@ function playQuiz(mode, src, gameId) {
         <div class="h2">${score} แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
         <p>ถูก ${correct}/${items.length} · คอมโบสูงสุด ${bestCombo}</p>
       </div>
-      ${wrong.length ? `<div class="card-box wrong-list"><b>คำที่ควรทบทวน</b> <span class="small muted">(ใส่ในแฟลชการ์ดให้แล้ว)</span>
-        ${wrong.map((w) => `<div class="wl"><span><b>${esc(w.w)}</b> <span class="pos">${esc(w.p)}</span></span><span class="muted">${esc(w.t)}</span></div>`).join('')}</div>` : ''}
+      ${wrong.length ? `<div class="card-box wrong-list"><b>${gameId === 'speak' ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b> <span class="small muted">${gameId === 'speak' ? '(แตะคำเพื่อฟังเสียง)' : '(ใส่ในแฟลชการ์ดให้แล้ว)'} · กด ☆ เพื่อติดดาว</span>
+        ${wrong.map((w) => `<div class="wl" data-i="${w.idx}"><span><b>${esc(w.w)}</b> <span class="pos">${esc(w.p)}</span></span><span class="muted grow" style="text-align:right">${esc(w.t)}</span><button class="star-btn" data-star>${starIcon(w)}</button></div>`).join('')}</div>` : ''}
       <button class="btn primary block" id="again">เล่นอีกรอบ</button>
       <div style="height:10px"></div><button class="btn block" id="back">เลือกเกมอื่น</button>`;
     $('#again').onclick = () => startGame(gameId);
     $('#back').onclick = () => go('games');
+    const wl = view.querySelector('.wrong-list');
+    if (wl) wl.onclick = (e) => {
+      const row = e.target.closest('.wl'); if (!row) return;
+      const w = W[+row.dataset.i];
+      const sb = e.target.closest('[data-star]');
+      if (sb) { toggleStar(w); sb.textContent = starIcon(w); } else speak(w.w);
+    };
     updateStreak();
   }
 
@@ -816,6 +1081,7 @@ function playMatch(src) {
     const prev = S.best.match;
     const isBest = prev == null || score > prev;
     if (isBest) { S.best.match = score; save(); }
+    questEvent('match', { mistakes });
     if (isBest || mistakes === 0) confetti();
     view.innerHTML = `<div class="card-box center pop">
         <div class="result-emoji">⚡</div>
@@ -840,7 +1106,7 @@ function renderList() {
       ${['all', ...LEVELS].map((l) => `<button class="chip" data-v="${l}">${l === 'all' ? 'ทุกระดับ' : LV_LABEL[l]}</button>`).join('')}
     </div>
     <div class="chips" id="st" style="margin-bottom:6px">
-      ${[['all', 'ทั้งหมด'], ['new', 'ยังไม่เรียน'], ['learning', '🟡 กำลังเรียน'], ['mastered', '🟢 จำได้แล้ว']].map(([v, t]) => `<button class="chip" data-v="${v}">${t}</button>`).join('')}
+      ${[['all', 'ทั้งหมด'], ['new', 'ยังไม่เรียน'], ['learning', '🟡 กำลังเรียน'], ['mastered', '🟢 จำได้แล้ว'], ['star', '⭐ ติดดาว']].map(([v, t]) => `<button class="chip" data-v="${v}">${t}</button>`).join('')}
     </div>
     <div class="small muted" id="cnt" style="margin:6px 4px"></div>
     <div class="card-box" style="padding:4px 14px" id="rows"></div>
@@ -856,13 +1122,13 @@ function renderList() {
     rows.insertAdjacentHTML('beforeend', chunk.map((w) => `<div class="wrow" data-i="${w.idx}">
       <span class="dot ${status(w)}"></span>
       <div class="grow"><div><span class="w">${esc(w.w)}</span> <span class="pos">${esc(w.p)}</span></div><div class="t">${esc(w.t)}</div></div>
-      ${lvBadge(w.g)}</div>`).join(''));
+      <span class="star-mark">${isStar(w) ? '⭐' : ''}</span>${lvBadge(w.g)}</div>`).join(''));
     shown += chunk.length;
   };
   const apply = () => {
     const q = listFilter.q.trim().toLowerCase();
     items = W.filter((w) => (listFilter.lv === 'all' || w.g === listFilter.lv)
-      && (listFilter.st === 'all' || status(w) === listFilter.st)
+      && (listFilter.st === 'all' || (listFilter.st === 'star' ? isStar(w) : status(w) === listFilter.st))
       && (!q || w.w.toLowerCase().includes(q) || w.t.includes(q)));
     if (q) items.sort((a, b) => (b.w.toLowerCase().startsWith(q)) - (a.w.toLowerCase().startsWith(q)));
     rows.innerHTML = ''; shown = 0; more();
@@ -877,7 +1143,7 @@ function renderList() {
     const r = e.target.closest('.wrow'); if (!r) return;
     const w = W[+r.dataset.i];
     speak(w.w);
-    openSheet(w, () => { r.querySelector('.dot').className = 'dot ' + status(w); });
+    openSheet(w, () => { r.querySelector('.dot').className = 'dot ' + status(w); r.querySelector('.star-mark').textContent = isStar(w) ? '⭐' : ''; });
   };
   const io = new IntersectionObserver((es) => { if (es[0].isIntersecting && shown < items.length) more(); }, { root: view, rootMargin: '400px' });
   io.observe($('#sentinel'));
@@ -898,7 +1164,8 @@ function openSheet(w, onChange) {
       <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
       <div class="th" style="font-size:22px;margin:10px 0">${esc(w.t)}</div>
       ${exampleBox(w)}
-      <div class="row" style="margin-top:14px">
+      <button class="btn block" data-act="star" style="margin-top:14px">${isStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาวคำนี้'}</button>
+      <div class="row" style="margin-top:10px">
         <button class="btn grow" data-act="review">🔁 ทบทวนวันนี้</button>
         <button class="btn grow" data-act="known">✓ รู้แล้ว</button>
       </div>
@@ -913,6 +1180,11 @@ function openSheet(w, onChange) {
     if (e.target.closest('[data-sayex]')) return speak(w.e);
     const act = e.target.closest('[data-act]');
     if (!act) return;
+    if (act.dataset.act === 'star') {
+      act.textContent = toggleStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาวคำนี้';
+      if (onChange) onChange();
+      return;
+    }
     if (act.dataset.act === 'known') { markKnown(w); toast('ทำเครื่องหมายว่ารู้แล้ว 👍'); }
     else { markForReview(w); toast('เพิ่มเข้ารายการทบทวนแล้ว 🔁'); }
     if (onChange) onChange();
@@ -921,6 +1193,8 @@ function openSheet(w, onChange) {
 }
 
 /* ---------- settings ---------- */
+// Pre-built calendar files in reminders/ (see README): one per time.
+const REMIND_TIMES = ['0600', '0700', '0800', '0900', '1200', '1700', '1800', '1900', '2000', '2100', '2200'];
 function renderSettings() {
   const st = S.settings;
   const lvChip = (l) => `<button class="chip" data-v="${l}">${LV_LABEL[l]} · ${W.filter((w) => w.g === l).length} คำ</button>`;
@@ -942,6 +1216,14 @@ function renderSettings() {
         <select class="sel" id="ord"><option value="shuffle" ${st.order === 'shuffle' ? 'selected' : ''}>สุ่ม</option><option value="alpha" ${st.order === 'alpha' ? 'selected' : ''}>เรียงตามตัวอักษร</option></select></div>
       <div class="set-row"><span>ด้านหน้าการ์ด</span>
         <select class="sel" id="front"><option value="en" ${st.front === 'en' ? 'selected' : ''}>อังกฤษ → ไทย</option><option value="th" ${st.front === 'th' ? 'selected' : ''}>ไทย → อังกฤษ</option></select></div>
+    </div>
+
+    <div class="h2">เตือนให้มาเรียนทุกวัน</div>
+    <div class="card-box">
+      <div class="set-row"><span>เวลาเตือน</span>
+        <select class="sel" id="remind">${REMIND_TIMES.map((t) => `<option value="${t}" ${t === S.remind ? 'selected' : ''}>${t.slice(0, 2)}:${t.slice(2)} น.</option>`).join('')}</select></div>
+      <a class="btn block" id="remindAdd" href="reminders/${S.remind}.ics" target="_blank" rel="noopener" style="margin-top:8px;text-decoration:none">📅 เพิ่มการเตือนลงปฏิทิน</a>
+      <p class="small muted" style="margin-bottom:0">จะเปิดหน้าปฏิทินของ iPhone ให้กด "เพิ่มทั้งหมด" ปฏิทินจะเตือนทุกวันตามเวลานี้ แตะการแจ้งเตือนแล้วกดลิงก์เพื่อเปิดแอป (ถ้าเปลี่ยนเวลา ให้ลบนัดเดิมในปฏิทินก่อน)</p>
     </div>
 
     <div class="h2">เสียง</div>
@@ -986,6 +1268,7 @@ function renderSettings() {
   $('#acc').onchange = (e) => { st.accent = e.target.value; save(); speak('Hello! Nice to meet you.'); };
   $('#rate').onchange = (e) => { st.rate = +e.target.value; save(); speak('vocabulary'); };
   $('#test').onclick = () => speak('Hello! Let\'s learn English together.');
+  $('#remind').onchange = (e) => { S.remind = e.target.value; save(); $('#remindAdd').href = `reminders/${S.remind}.ics`; };
 
   $('#exp').onclick = async () => { await exportBackup(); renderSettings(); };
   if (navigator.storage && navigator.storage.persisted) {

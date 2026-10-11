@@ -1,0 +1,20 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Oxford 3000//Daily reminder//TH
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+UID:oxford3000-daily-1200@language-3000-oxfords
+DTSTAMP:20260101T000000Z
+DTSTART:20260101T120000
+DTEND:20260101T121500
+RRULE:FREQ=DAILY
+SUMMARY:📚 ท่องศัพท์ Oxford 3000
+DESCRIPTION:ถึงเวลาทบทวนการ์ดและทำภารกิจวันนี้แล้ว\nhttps://nopjorn.github.io/language-3000-oxfords/
+URL:https://nopjorn.github.io/language-3000-oxfords/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:ถึงเวลาท่องศัพท์แล้ว 📚
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+END:VCALENDAR
