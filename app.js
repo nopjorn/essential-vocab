@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.8.0';
+const APP_VERSION = '1.8.1';
 
 /* ---------- data ---------- */
 // WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
@@ -59,11 +59,11 @@ function save() {
 const BACKUP_EVERY = 7; // days before the home screen nags about a backup
 
 async function exportBackup() {
-  const name = `oxford3000-backup-${today()}.json`;
+  const name = `vocab3000-backup-${today()}.json`;
   const done = () => { S.backupAt = Date.now(); save(); toast('สำรองข้อมูลแล้ว ✅'); };
   const file = new File([JSON.stringify({ ...S, backupAt: Date.now() })], name, { type: 'application/json' });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'Oxford 3000 backup' }); return done(); } catch (e) { if (e.name === 'AbortError') return; }
+    try { await navigator.share({ files: [file], title: 'Vocab 3000 backup' }); return done(); } catch (e) { if (e.name === 'AbortError') return; }
   }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(file); a.download = name; a.click();
@@ -387,14 +387,14 @@ function markForReview(w) {
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { home: 'Oxford 3000', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', feed: 'ไถศัพท์' };
+const TITLES = { home: 'Vocab 3000', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', feed: 'ไถศัพท์' };
 function go(tab, ...args) {
   if (cleanup) { cleanup(); cleanup = null; }
   if (window.speechSynthesis) speechSynthesis.cancel();
   current = tab;
   view.classList.remove('feed-mode');
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
-  $('#title').textContent = TITLES[tab] || 'Oxford 3000';
+  $('#title').textContent = TITLES[tab] || 'Vocab 3000';
   view.scrollTop = 0;
   ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, feed: renderFeed }[tab])(...args);
   updateStreak();
@@ -426,8 +426,8 @@ function renderHome() {
       <div class="grow"><div class="bar"><div class="l" style="width:${learned / ws.length * 100}%"></div><div class="m" style="width:${mastered / ws.length * 100}%"></div></div>
       <div class="small muted" style="margin-top:4px">เรียนแล้ว ${learned} · จำได้ ${mastered} / ${ws.length}</div></div></div>`;
   };
-  const lvRows = `<div class="small muted" style="margin-top:8px"><b>Oxford 3000</b></div>${LEVELS_3000.map(lvRow).join('')}
-    <div class="small muted" style="margin-top:12px"><b>Oxford 5000</b> (คำเพิ่มเติม)</div>${LEVELS_5000.map(lvRow).join('')}`;
+  const lvRows = `<div class="small muted" style="margin-top:8px"><b>ชุด 3000 คำ</b> (คำหลัก)</div>${LEVELS_3000.map(lvRow).join('')}
+    <div class="small muted" style="margin-top:12px"><b>ชุด 5000 คำ</b> (คำเพิ่มเติม)</div>${LEVELS_5000.map(lvRow).join('')}`;
 
   const lastBackup = S.backupAt ? Math.floor((Date.now() - S.backupAt) / DAY) : null;
   view.innerHTML = `
@@ -635,7 +635,7 @@ function renderCards(extra) {
       <button class="speak" data-say aria-label="ฟังเสียง">🔊</button>`;
     const thFace = `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
       <div class="th">${esc(card.t)}</div>`;
-    const backExtra = exampleBox(card) + `<a class="link" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(card.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">ดูความหมาย/ตัวอย่างใน Oxford ↗</a>`;
+    const backExtra = exampleBox(card) + `<a class="link" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(card.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">ดูความหมายเพิ่มใน Oxford Learner's Dictionaries ↗</a>`;
     $('#stage').innerHTML = `
       <div class="fc" id="fc">
         <div class="swipe-tag l">ลืม</div><div class="swipe-tag r">จำได้</div>
@@ -1369,7 +1369,7 @@ function openSheet(w, onChange) {
         <button class="btn grow" data-act="review">🔁 ทบทวนวันนี้</button>
         <button class="btn grow" data-act="known">✓ รู้แล้ว</button>
       </div>
-      <a class="link" style="display:block;text-align:center;margin-top:12px" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(w.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">ดูใน Oxford Dictionary ↗</a>
+      <a class="link" style="display:block;text-align:center;margin-top:12px" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(w.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">ดูใน Oxford Learner's Dictionaries ↗</a>
     </div>`;
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('open'));
@@ -1532,9 +1532,9 @@ function renderSettings() {
     <button class="card-box guide-link" id="guideBtn" style="margin-top:4px"><span>📘</span><div class="grow"><b>คู่มือการใช้งาน & ทริก</b><div class="small muted">วิธีใช้ทุกส่วนของแอป และวิธีจำศัพท์ให้ได้ผลที่สุด</div></div><span class="muted">›</span></button>
     <div class="h2">ระดับคำศัพท์ที่เรียน</div>
     <div class="card-box">
-      <div class="small muted" style="margin-bottom:8px"><b>Oxford 3000</b> · คำหลักที่ต้องรู้</div>
+      <div class="small muted" style="margin-bottom:8px"><b>ชุด 3000 คำ</b> · คำหลักที่ต้องรู้</div>
       <div class="chips" id="lvls">${LEVELS_3000.map(lvChip).join('')}</div>
-      <div class="small muted" style="margin:14px 0 8px"><b>Oxford 5000</b> · คำเพิ่มเติมระดับสูง</div>
+      <div class="small muted" style="margin:14px 0 8px"><b>ชุด 5000 คำ</b> · คำเพิ่มเติมระดับสูง</div>
       <div class="chips" id="lvls5">${LEVELS_5000.map(lvChip).join('')}</div>
       <p class="small muted" style="margin-bottom:0">A1–A2 = พื้นฐาน, B1–B2 = ระดับกลาง, B2+ และ C1 = ระดับสูง (เลือกได้หลายระดับ)</p>
     </div>
@@ -1582,7 +1582,7 @@ function renderSettings() {
       <div style="height:10px"></div>
       <button class="btn danger block" id="reset">ล้างความคืบหน้าทั้งหมด</button>
     </div>
-    <p class="center small muted">รายการคำ: Oxford 3000 + 5000 (${W.length} คำ) · คำแปลไทยสำหรับช่วยจำ<br>เวอร์ชัน ${APP_VERSION}</p>`;
+    <p class="center small muted">${W.length} คำ · คำแปลไทยและประโยคตัวอย่างเขียนขึ้นเองสำหรับช่วยจำ<br>รายการคำและระดับ CEFR อ้างอิงจากรายการ Oxford 3000™ และ Oxford 5000™ ซึ่งเป็นเครื่องหมายการค้าของ Oxford University Press<br>แอปนี้ไม่มีส่วนเกี่ยวข้องหรือได้รับการรับรองจาก Oxford University Press<br>เวอร์ชัน ${APP_VERSION}</p>`;
 
   const paint = () => view.querySelectorAll('#lvls .chip, #lvls5 .chip').forEach((c) => c.classList.toggle('on', st.levels.includes(c.dataset.v)));
   paint();

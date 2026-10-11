@@ -1,6 +1,6 @@
 # Notes for Claude
 
-Oxford 3000/5000 vocabulary trainer: a static, vanilla-JS PWA hosted on GitHub Pages
+"Vocab 3000" — a vocabulary trainer for the Oxford 3000/5000 word lists: a static, vanilla-JS PWA hosted on GitHub Pages
 (`https://nopjorn.github.io/language-3000-oxfords/`, branch `master`, repo root).
 Main target is iPhone (Pro Max, home-screen app). The owner talks in Thai; reply in Thai.
 
@@ -50,7 +50,11 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 ## Content / copyright
 - Only word, POS, CEFR level and IPA came from the Oxford list (via a GitHub CSV). Thai meanings and
   all example sentences are original — never copy Oxford definitions or examples.
-- "Oxford 3000/5000" is an OUP trademark: fine for personal use; flag it if the app is ever sold.
+- "Oxford 3000/5000" is an OUP trademark. Since 1.8.1 the app is branded "Vocab 3000": never use "Oxford"
+  in the app name, icon, titles or headings. Mention it only descriptively (the settings-page footer
+  disclaimer, README "แหล่งข้อมูล", links to Oxford Learner's Dictionaries).
+- The word-list selection/CEFR levels/IPA are still OUP-derived: if the app is ever sold, flag that the
+  list should be replaced (e.g. an openly licensed list such as NGSL).
 
 ## Testing
 - Serve: `nohup python3 -m http.server 8765 >/dev/null 2>&1 &`; stop with
