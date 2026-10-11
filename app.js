@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.6.2';
+const APP_VERSION = '1.7.0';
 
 /* ---------- data ---------- */
 // WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
@@ -366,7 +366,7 @@ function markForReview(w) {
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { home: 'Oxford 3000', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า' };
+const TITLES = { home: 'Oxford 3000', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน' };
 function go(tab, ...args) {
   if (cleanup) { cleanup(); cleanup = null; }
   if (window.speechSynthesis) speechSynthesis.cancel();
@@ -374,7 +374,7 @@ function go(tab, ...args) {
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   $('#title').textContent = TITLES[tab] || 'Oxford 3000';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide }[tab])(...args);
   updateStreak();
 }
 function updateStreak() { $('#streak').textContent = '🔥 ' + streakNow() + (S.freeze ? ' · 🧊' + S.freeze : ''); }
@@ -452,10 +452,13 @@ function renderHome() {
       <div class="small muted" style="margin-top:8px">🟣 เรียนแล้ว &nbsp; 🟢 จำได้แล้ว (ทบทวนผ่านหลายรอบ)</div>
     </div>
 
+    <button class="card-box guide-link" id="guideBtn"><span>📘</span><div class="grow"><b>คู่มือการใช้งาน & ทริก</b><div class="small muted">ลืมว่าใช้ยังไง หรืออยากจำศัพท์ให้ได้เร็วขึ้น อ่านตรงนี้</div></div><span class="muted">›</span></button>
+
     <div class="h2">🏅 เหรียญรางวัล <span class="small muted">${ACH.filter((a) => S.ach[a.id]).length}/${ACH.length}</span></div>
     <div class="card-box ach-grid" id="ach">${ACH.map((a) => `<button class="ach ${S.ach[a.id] ? 'on' : ''}" data-ach="${a.id}"><span>${a.icon}</span><small>${a.name}</small></button>`).join('')}</div>
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
   $('#startBtn').onclick = () => go('cards', !todo);
+  $('#guideBtn').onclick = () => go('guide', 'home');
   if ($('#bkNow')) {
     $('#bkNow').onclick = async () => { await exportBackup(); renderHome(); };
     $('#bkLater').onclick = () => { S.backupSnooze = today(); save(); renderHome(); };
@@ -1193,6 +1196,114 @@ function openSheet(w, onChange) {
   };
 }
 
+/* ---------- guide ---------- */
+// In-app user manual. Plain content; keep it in sync when features change.
+const GUIDE = [
+  ['🚀', 'เริ่มต้นใช้งาน', `
+    <ol>
+      <li>เปิดแอปใน <b>Safari</b> → กดปุ่ม <b>แชร์</b> → <b>เพิ่มไปยังหน้าจอโฮม</b> แล้วใช้จากไอคอนนั้นเสมอ (ข้อมูลใน Safari กับในไอคอนแยกกัน)</li>
+      <li>ไปที่ <b>⚙️ ตั้งค่า</b> เลือกระดับคำที่จะเรียน (แนะนำเริ่มที่ A1) และจำนวนคำใหม่ต่อวัน</li>
+      <li>กลับมาหน้าแรก กด <b>▶︎ เริ่มเรียนเลย</b></li>
+      <li>ตั้ง <b>การเตือนในปฏิทิน</b> (ในตั้งค่า) ให้เตือนทุกวันตามเวลาที่สะดวก</li>
+      <li>เรียนไปสักพักแล้ว <b>สำรองข้อมูล</b> เก็บไว้ใน iCloud Drive</li>
+    </ol>`],
+  ['🃏', 'แฟลชการ์ดและ 4 ปุ่ม', `
+    <p>แตะการ์ดเพื่อพลิกดูคำแปล แล้วกดปุ่มตามที่นึกออกจริงๆ</p>
+    <ul>
+      <li><b>ลืม</b> — นึกไม่ออกเลย การ์ดจะกลับมาอีกในรอบนี้ และเริ่มนับใหม่</li>
+      <li><b>ยาก</b> — นึกออกแต่ช้า/ไม่แน่ใจ ระยะทบทวนเท่าเดิม (คำใหม่จะ "วนอีกรอบ" ในรอบนี้)</li>
+      <li><b>จำได้</b> — นึกออก ระยะทบทวนยาวขึ้น 1 ขั้น</li>
+      <li><b>ง่าย</b> — รู้ทันที ยาวขึ้น 2 ขั้น</li>
+    </ul>
+    <p><b>ทางลัด:</b> ปัดการ์ดไปขวา = จำได้, ปัดไปซ้าย = ลืม</p>
+    <p>ระยะทบทวนคือ 1 → 3 → 7 → 16 → 35 → 80 → 180 วัน คำที่ผ่านถึงขั้น 16 วันขึ้นไปจะนับว่า <b>🟢 จำได้แล้ว</b></p>
+    <p>กดผิด? กด <b>↩︎</b> มุมขวาบนเพื่อย้อนการ์ดใบล่าสุด · แตะ ⭐ บนการ์ดเพื่อติดดาวคำที่อยากฝึกเพิ่ม</p>`],
+  ['🔁', 'เล่นหลายรอบในวันเดียว', `
+    <ul>
+      <li>ถ้ายังมีการ์ดค้าง เข้ามากี่ครั้งก็จะได้ทำต่อจากที่ค้างไว้</li>
+      <li>ทำครบแล้ว กด <b>"เรียนคำใหม่เพิ่มอีก 10 คำ"</b> ได้เรื่อยๆ</li>
+      <li>แอปจะไม่ให้ทวนคำที่ยังไม่ถึงกำหนดซ้ำ เพราะการเว้นระยะให้ลืมนิดหน่อยก่อนทวนช่วยให้จำได้นานกว่า อยากฝึกเพิ่มให้ไปเล่น <b>🎮 เกม</b> แทน</li>
+    </ul>`],
+  ['🎮', 'เกมทั้ง 8 แบบ', `
+    <ul>
+      <li><b>🇬🇧 ทายความหมาย / 🇹🇭 ทายคำศัพท์</b> — เลือกคำแปลที่ถูก</li>
+      <li><b>🎧 ฟังแล้วตอบ</b> — ฝึกหู ฟังเสียงแล้วเลือกความหมาย</li>
+      <li><b>⌨️ สะกดคำ</b> — พิมพ์คำอังกฤษเอง จำได้ลึกที่สุด</li>
+      <li><b>📝 เติมคำในประโยค</b> — ฝึกใช้คำในบริบท</li>
+      <li><b>🧩 จับคู่ด่วน</b> — แข่งกับเวลา เล่นสนุกตอนว่าง</li>
+      <li><b>🎤 พูดตาม</b> — กดไมค์แล้วพูดคำนั้น ลองได้ 3 ครั้ง (ต้องอนุญาตไมโครโฟน) พูดไม่ผ่านไม่ทำให้การ์ดถูกรีเซ็ต</li>
+      <li><b>🔁 คำที่ผิดบ่อย</b> — รวมคำที่เคยตอบผิดมาฝึกซ้ำ</li>
+    </ul>
+    <p><b>เลือกแหล่งคำ</b> ด้านบนหน้าเกมได้: ระดับที่เลือก, คำที่เรียนแล้ว, ทุกระดับ, 🟢 คำที่จำได้แล้ว (เช็คว่ายังจำได้จริง คำที่ตอบผิดจะกลับไปให้ทบทวนในแฟลชการ์ด) และ ⭐ คำติดดาว</p>
+    <p>หน้าสรุปผลแตะคำที่ตอบผิดเพื่อฟังเสียง หรือแตะ ⭐ เพื่อติดดาวไว้ฝึกต่อ</p>`],
+  ['📖', 'รายการคำศัพท์', `
+    <ul>
+      <li>ค้นหาคำ อังกฤษหรือไทยก็ได้ และกรองตามสถานะ (ยังไม่เรียน / กำลังเรียน / จำได้แล้ว / ⭐ ติดดาว) และตามระดับ</li>
+      <li>แตะคำเพื่อดูรายละเอียด ฟังเสียง และประโยคตัวอย่าง</li>
+      <li>ในหน้ารายละเอียด: <b>⭐ ติดดาว</b>, <b>🔁 ทบทวนวันนี้</b> (ดึงคำมาให้ทวนทันที), <b>✓ รู้แล้ว</b> (ข้ามคำที่รู้อยู่แล้ว)</li>
+    </ul>`],
+  ['🔥', 'สตรีค ภารกิจ และเหรียญ', `
+    <ul>
+      <li><b>🔥 สตรีค</b> — จำนวนวันที่เรียนต่อเนื่อง (มุมขวาบน)</li>
+      <li><b>🧊 ตัวกันสตรีคขาด</b> — ได้ 1 อันทุกครั้งที่เรียนครบ 7 วันติด เก็บได้สูงสุด 2 อัน ถ้าวันไหนลืมเรียน จะถูกใช้อัตโนมัติ สตรีคไม่ขาด</li>
+      <li><b>🎯 ภารกิจรายวัน</b> — เปลี่ยนทุกวัน ทำสำเร็จแล้วได้นับเหรียญนักล่าภารกิจ</li>
+      <li><b>🏅 เหรียญรางวัล</b> — แตะดูเงื่อนไขได้ในหน้าแรก</li>
+      <li><b>📅 กราฟ 7 วันข้างหน้า</b> — บอกว่าจะมีการ์ดทบทวนวันละเท่าไร ถ้าขึ้นเตือนว่าเยอะเกิน ให้ลดคำใหม่ต่อวันลง</li>
+    </ul>`],
+  ['💾', 'สำรองและกู้คืนข้อมูล', `
+    <p>ความคืบหน้าเก็บอยู่ในเครื่องนี้เท่านั้น <b>ถ้าลบไอคอนแอป ข้อมูลจะหาย</b></p>
+    <ul>
+      <li><b>สำรอง:</b> ตั้งค่า → 📤 ส่งออก → เลือก "บันทึกไปยังไฟล์" → iCloud Drive (แอปจะเตือนทุก 7 วัน)</li>
+      <li><b>กู้คืน:</b> ตั้งค่า → 📥 นำเข้า → เลือก <b>ไฟล์ล่าสุด</b> ไฟล์เดียวพอ</li>
+      <li>การนำเข้าเป็นแบบ <b>รวมข้อมูล</b> คำไหนในเครื่องก้าวหน้ากว่าไฟล์ จะเก็บของในเครื่องไว้ ไม่ต้องกลัวทับ</li>
+      <li>ย้ายเครื่องใหม่: ส่งออกจากเครื่องเก่า → นำเข้าในเครื่องใหม่</li>
+    </ul>`],
+  ['🔄', 'อัปเดตแอป', `
+    <ul>
+      <li>ปิดแอป (ปัดขึ้นออกจากหน้าสลับแอป) แล้วเปิดใหม่ตอนต่อเน็ต แอปจะโหลดเวอร์ชันใหม่เอง อาจต้องทำ 2 รอบ</li>
+      <li>เช็คเวอร์ชันได้ที่ท้ายหน้าแรกหรือหน้าตั้งค่า (ตอนนี้ ${APP_VERSION})</li>
+      <li><b>ไม่ต้อง</b> ลบไอคอนแล้วเพิ่มใหม่ เพราะจะทำให้ข้อมูลหาย</li>
+    </ul>`],
+  ['💡', 'ทริกให้จำได้เร็วและได้ผลที่สุด', `
+    <ol>
+      <li><b>ทำการ์ดทบทวนให้หมดทุกวัน</b> สำคัญที่สุด วันละ 15 นาทีทุกวัน ดีกว่า 2 ชั่วโมงแล้วหยุด 3 วัน</li>
+      <li><b>คำใหม่ 20–30 คำ/วัน</b> กำลังดี การ์ดทบทวนต่อวันจะประมาณ 4–6 เท่าของคำใหม่
+        <table class="g-table"><tr><th>คำใหม่/วัน</th><th>จบ 3000 คำ</th><th>เวลา/วัน</th></tr>
+        <tr><td>20</td><td>~5 เดือน</td><td>15–20 นาที</td></tr>
+        <tr><td>30</td><td>~3.5 เดือน</td><td>25–30 นาที</td></tr>
+        <tr><td>50</td><td>~2 เดือน</td><td>45+ นาที</td></tr></table></li>
+      <li><b>กดปุ่มตามจริง</b> อย่ากด "ง่าย" ทั้งที่ลังเล ไม่งั้นคำจะหายไปนานแล้วกลับมาลืม</li>
+      <li><b>ฟังและพูดออกเสียงทุกคำ</b> ใช้ทั้งตาและหู จำได้ดีกว่าอ่านเฉยๆ</li>
+      <li><b>อ่านประโยคตัวอย่าง</b> แล้วลองแต่งประโยคของตัวเองในหัว</li>
+      <li><b>ติด ⭐ คำที่ลืมบ่อย</b> แล้วเล่นเกมจาก "คำติดดาว" ตอนรอรถหรือว่างๆ</li>
+      <li><b>เรียงตามระดับ</b> จบ A1 ก่อนค่อยเพิ่ม A2 คำระดับต้นใช้บ่อยกว่า เห็นผลเร็ว</li>
+      <li><b>สลับด้านการ์ดเป็น ไทย → อังกฤษ</b> (ในตั้งค่า) เมื่อคล่องแล้ว จะฝึกการนึกคำเพื่อใช้พูด/เขียนจริง</li>
+      <li><b>เล่น ⌨️ สะกดคำ และ 🎤 พูดตาม</b> บ่อยๆ สองเกมนี้ต้องนึกเอง ไม่ใช่แค่เลือก จึงจำได้ลึกที่สุด</li>
+      <li><b>ถ้าการ์ดค้างเยอะ</b> (เช่นหายไปหลายวัน) ตั้งคำใหม่ต่อวันเป็น 5 ชั่วคราว จนเคลียร์การ์ดค้างหมดก่อน</li>
+    </ol>
+    <div class="g-plan"><b>📅 ตัวอย่างตารางต่อวัน</b><br>
+      เช้า 15 นาที: แฟลชการ์ดให้หมด<br>
+      เย็น 5–10 นาที: เกม 1–2 รอบ จากคำที่จำได้แล้ว หรือคำติดดาว<br>
+      ทุกสัปดาห์: สำรองข้อมูล 1 ครั้ง</div>`],
+  ['❓', 'ปัญหาที่พบบ่อย', `
+    <ul>
+      <li><b>ไม่มีเสียง:</b> ลองกด 🔊 ทดสอบเสียงในตั้งค่า, เพิ่มเสียง iPhone, และเสียงเอฟเฟกต์จะเงียบถ้าเปิดโหมดปิดเสียง</li>
+      <li><b>เกมพูดตามใช้ไม่ได้:</b> บางครั้ง iPhone ไม่รองรับการฟังเสียงในแอปบนหน้าจอโฮม ลองเปิดผ่าน Safari แทน</li>
+      <li><b>ความคืบหน้าหาย:</b> ตรวจว่าเปิดจากไอคอนเดิม (ไม่ใช่ Safari) ถ้าหายจริง นำเข้าไฟล์สำรองล่าสุด</li>
+      <li><b>ไม่เห็นฟีเจอร์ใหม่:</b> ปิดแอปแล้วเปิดใหม่ตอนต่อเน็ต แล้วเช็คเลขเวอร์ชัน</li>
+    </ul>`],
+];
+function renderGuide(from) {
+  const back = from || 'home';
+  view.innerHTML = `
+    <div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="gBack">‹ กลับ</button></div>
+    <p class="small muted" style="margin:0 4px 12px">แตะหัวข้อเพื่อเปิดอ่าน</p>
+    <div class="guide">${GUIDE.map(([icon, title, body], i) => `<details class="card-box"${i === GUIDE.length - 2 ? ' open' : ''}>
+      <summary><span>${icon}</span><b>${title}</b></summary><div class="g-body">${body}</div></details>`).join('')}</div>
+    <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
+  $('#gBack').onclick = () => go(back);
+}
+
 /* ---------- settings ---------- */
 // Pre-built calendar files in reminders/ (see README): one per time.
 const REMIND_TIMES = ['0600', '0700', '0800', '0900', '1200', '1700', '1800', '1900', '2000', '2100', '2200'];
@@ -1200,6 +1311,7 @@ function renderSettings() {
   const st = S.settings;
   const lvChip = (l) => `<button class="chip" data-v="${l}">${LV_LABEL[l]} · ${W.filter((w) => w.g === l).length} คำ</button>`;
   view.innerHTML = `
+    <button class="card-box guide-link" id="guideBtn" style="margin-top:4px"><span>📘</span><div class="grow"><b>คู่มือการใช้งาน & ทริก</b><div class="small muted">วิธีใช้ทุกส่วนของแอป และวิธีจำศัพท์ให้ได้ผลที่สุด</div></div><span class="muted">›</span></button>
     <div class="h2">ระดับคำศัพท์ที่เรียน</div>
     <div class="card-box">
       <div class="small muted" style="margin-bottom:8px"><b>Oxford 3000</b> · คำหลักที่ต้องรู้</div>
@@ -1261,6 +1373,7 @@ function renderSettings() {
     else st.levels = LEVELS.filter((l) => l === v || st.levels.includes(l));
     save(); paint();
   };
+  $('#guideBtn').onclick = () => go('guide', 'settings');
   $('#npd').onchange = (e) => { st.newPerDay = +e.target.value; save(); };
   $('#ord').onchange = (e) => { st.order = e.target.value; save(); };
   $('#front').onchange = (e) => { st.front = e.target.value; save(); };

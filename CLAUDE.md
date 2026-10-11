@@ -10,6 +10,8 @@ Main target is iPhone (Pro Max, home-screen app). The owner talks in Thai; reply
   Tell the user the new version number.
 - Patch (x.y.Z) for small fixes, minor (x.Y.0) for new features.
 - Push directly to `master` (no PRs unless asked).
+- The in-app manual (`GUIDE` / `renderGuide()` in `app.js`, route `guide`) describes every feature
+  in Thai: update it whenever a feature is added or changed.
 - The version is shown at the bottom of the home and settings screens so the user can
   check whether the iPhone has picked up the update.
 
