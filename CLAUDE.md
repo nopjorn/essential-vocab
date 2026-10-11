@@ -25,6 +25,7 @@ Main target is iPhone (Pro Max, home-screen app). The owner talks in Thai; reply
 | `sw.js` | Network-first service worker with versioned cache |
 | `reminders/HHMM.ics` | Static daily-reminder calendar files (app URL hardcoded inside) |
 | `icons/`, `manifest.webmanifest` | PWA install assets |
+| `tools/make-icons.js` | Playwright script that renders the icon SVG to all `icons/*.png` sizes |
 
 Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` = Oxford 5000-only
 (rows with trailing `5`).
