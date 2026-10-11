@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.5.0';
 
 /* ---------- data ---------- */
 // WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
@@ -26,6 +26,8 @@ const defaults = () => ({
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
   hist: {},            // 'YYYY-MM-DD' -> cards/answers that day
+  backupAt: 0,         // ms of the last backup export
+  backupSnooze: '',    // date the backup reminder was dismissed
 });
 let S = load();
 
@@ -41,6 +43,49 @@ function load() {
 }
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ }
+}
+
+/* ---------- backup ---------- */
+const BACKUP_EVERY = 7; // days before the home screen nags about a backup
+
+async function exportBackup() {
+  const name = `oxford3000-backup-${today()}.json`;
+  const done = () => { S.backupAt = Date.now(); save(); toast('สำรองข้อมูลแล้ว ✅'); };
+  const file = new File([JSON.stringify({ ...S, backupAt: Date.now() })], name, { type: 'application/json' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Oxford 3000 backup' }); return done(); } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  done();
+}
+
+const needsBackup = () => Object.keys(S.prog).length >= 10
+  && Date.now() - (S.backupAt || 0) > BACKUP_EVERY * DAY && S.backupSnooze !== today();
+
+// Merge a backup into the current state, keeping whichever side is further along for each word.
+function mergeBackup(d) {
+  const ahead = (a, b) => (a.b - b.b) || ((a.s || 0) - (b.s || 0)) || ((a.d || 0) - (b.d || 0));
+  let added = 0, updated = 0;
+  const fresh = Object.keys(S.prog).length === 0;
+  for (const [w, p] of Object.entries(d.prog || {})) {
+    if (!p || typeof p.b !== 'number') continue;
+    const cur = S.prog[w];
+    if (!cur) { S.prog[w] = p; added++; }
+    else if (ahead(p, cur) > 0) { S.prog[w] = p; updated++; }
+  }
+  for (const [k, v] of Object.entries(d.hist || {})) S.hist[k] = Math.max(S.hist[k] || 0, v);
+  for (const [k, v] of Object.entries(d.best || {})) S.best[k] = Math.max(S.best[k] || 0, v);
+  if (d.streak && ((d.streak.last || '') > (S.streak.last || '') || (d.streak.last === S.streak.last && d.streak.count > S.streak.count))) S.streak = d.streak;
+  if (d.daily && d.daily.date === S.daily.date) {
+    S.daily.fresh = Math.max(S.daily.fresh, d.daily.fresh || 0);
+    S.daily.reviews = Math.max(S.daily.reviews, d.daily.reviews || 0);
+  } else if (d.daily && d.daily.date > S.daily.date) S.daily = d.daily;
+  if (fresh && d.settings) S.settings = { ...defaults().settings, ...d.settings };
+  S.backupAt = Math.max(S.backupAt || 0, d.backupAt || 0);
+  save();
+  return { added, updated };
 }
 
 const today = () => new Date().toLocaleDateString('en-CA');
@@ -253,7 +298,12 @@ function renderHome() {
   const lvRows = `<div class="small muted" style="margin-top:8px"><b>Oxford 3000</b></div>${LEVELS_3000.map(lvRow).join('')}
     <div class="small muted" style="margin-top:12px"><b>Oxford 5000</b> (คำเพิ่มเติม)</div>${LEVELS_5000.map(lvRow).join('')}`;
 
+  const lastBackup = S.backupAt ? Math.floor((Date.now() - S.backupAt) / DAY) : null;
   view.innerHTML = `
+    ${needsBackup() ? `<div class="card-box backup-nag">
+      <div><b>💾 ถึงเวลาสำรองข้อมูลแล้ว</b><div class="small muted">${lastBackup === null ? 'ยังไม่เคยสำรองเลย' : `สำรองล่าสุด ${lastBackup} วันก่อน`} · กันความคืบหน้าหายตอนลบแอปหรือเปลี่ยนเครื่อง</div></div>
+      <div class="row" style="margin-top:10px"><button class="btn primary grow" id="bkNow">📤 สำรองเลย</button><button class="btn" id="bkLater">ไว้ทีหลัง</button></div>
+    </div>` : ''}
     <div class="hero pop">
       <div class="small" style="opacity:.9">${greeting()}</div>
       <div class="big" style="margin-top:6px">${todo}</div>
@@ -289,6 +339,10 @@ function renderHome() {
     </div>
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
   $('#startBtn').onclick = () => go('cards', !todo);
+  if ($('#bkNow')) {
+    $('#bkNow').onclick = async () => { await exportBackup(); renderHome(); };
+    $('#bkLater').onclick = () => { S.backupSnooze = today(); save(); renderHome(); };
+  }
   view.querySelectorAll('[data-game]').forEach((b) => (b.onclick = () => startGame(b.dataset.game)));
 }
 function weekChart() {
@@ -905,9 +959,11 @@ function renderSettings() {
 
     <div class="h2">สำรองข้อมูล</div>
     <div class="card-box">
-      <p class="small muted" style="margin-top:0">ความคืบหน้าเก็บไว้ในเครื่องนี้เท่านั้น แนะนำให้สำรองเป็นระยะ (เช่น ก่อนล้างข้อมูล Safari)</p>
+      <p class="small muted" style="margin-top:0">ความคืบหน้าเก็บไว้ในเครื่องนี้เท่านั้น ถ้าลบไอคอนแอปออกจากหน้าจอโฮม ข้อมูลจะหายด้วย แนะนำให้สำรองเก็บไว้ใน iCloud Drive (แอปจะเตือนทุก ${BACKUP_EVERY} วัน)</p>
+      <p class="small" style="margin-top:0"><b>สำรองล่าสุด:</b> ${S.backupAt ? new Date(S.backupAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : 'ยังไม่เคยสำรอง'}<br><span class="muted" id="persist"></span></p>
       <div class="row"><button class="btn grow" id="exp">📤 ส่งออก</button><button class="btn grow" id="imp">📥 นำเข้า</button></div>
       <input type="file" id="file" accept=".json,application/json" hidden>
+      <p class="small muted" style="margin-bottom:0">นำเข้าแบบรวมข้อมูล: คำไหนในเครื่องนี้ก้าวหน้ากว่าไฟล์สำรอง จะเก็บของเครื่องนี้ไว้</p>
       <div style="height:10px"></div>
       <button class="btn danger block" id="reset">ล้างความคืบหน้าทั้งหมด</button>
     </div>
@@ -931,26 +987,18 @@ function renderSettings() {
   $('#rate').onchange = (e) => { st.rate = +e.target.value; save(); speak('vocabulary'); };
   $('#test').onclick = () => speak('Hello! Let\'s learn English together.');
 
-  $('#exp').onclick = async () => {
-    const data = JSON.stringify(S);
-    const name = `oxford3000-backup-${today()}.json`;
-    const file = new File([data], name, { type: 'application/json' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: 'Oxford 3000 backup' }); return; } catch (e) { if (e.name === 'AbortError') return; }
-    }
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(file); a.download = name; a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-  };
+  $('#exp').onclick = async () => { await exportBackup(); renderSettings(); };
+  if (navigator.storage && navigator.storage.persisted) {
+    navigator.storage.persisted().then((ok) => { const el = $('#persist'); if (el) el.textContent = ok ? '🔒 เครื่องเก็บข้อมูลแบบถาวรแล้ว' : ''; }).catch(() => {});
+  }
   $('#imp').onclick = () => $('#file').click();
   $('#file').onchange = async (e) => {
     const f = e.target.files[0]; if (!f) return;
     try {
       const d = JSON.parse(await f.text());
       if (!d || typeof d.prog !== 'object') throw new Error('bad file');
-      const base = defaults();
-      S = { ...base, ...d, settings: { ...base.settings, ...(d.settings || {}) } };
-      save(); toast('นำเข้าข้อมูลเรียบร้อย ✅'); go('home');
+      const { added, updated } = mergeBackup(d);
+      toast(`นำเข้าแล้ว ✅ เพิ่ม ${added} คำ · อัปเดต ${updated} คำ`); go('home');
     } catch (err) { toast('ไฟล์ไม่ถูกต้อง'); }
   };
   $('#reset').onclick = () => {
@@ -962,6 +1010,8 @@ function renderSettings() {
 
 /* ---------- boot ---------- */
 go('home');
+// Ask the browser not to evict our localStorage under storage pressure / inactivity.
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
