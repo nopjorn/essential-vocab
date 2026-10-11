@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.8.0';
 
 /* ---------- data ---------- */
 // WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
@@ -21,7 +21,7 @@ const MASTERED = 4;
 const KEY = 'oxford3000.v1';
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], newPerDay: 20, autoSpeak: true, rate: 0.9, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true },
+  settings: { levels: ['A1'], newPerDay: 20, autoSpeak: true, rate: 0.9, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, start: 'home' },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -34,8 +34,11 @@ const defaults = () => ({
   quest: { date: '', n: 0, done: false },
   counts: { quests: 0, speak: 0, perfect: 0 },
   remind: '2000',      // daily reminder time for the calendar file (HHMM)
+  xp: null,            // experience points; null = not yet seeded from existing progress
 });
 let S = load();
+// Users from before 1.8.0 get XP for the work they already did.
+if (S.xp == null) S.xp = Object.values(S.prog).reduce((a, p) => a + (p.s || 0) + (p.c || 0), 0);
 
 function load() {
   try {
@@ -95,6 +98,7 @@ function mergeBackup(d) {
   for (const [k, v] of Object.entries(d.ach || {})) if (!S.ach[k]) S.ach[k] = v;
   for (const [k, v] of Object.entries(d.counts || {})) S.counts[k] = Math.max(S.counts[k] || 0, v);
   S.freeze = Math.max(S.freeze || 0, d.freeze || 0);
+  S.xp = Math.max(S.xp || 0, d.xp || 0);
   save();
   return { added, updated };
 }
@@ -180,6 +184,20 @@ function questEvent(type, d = {}) {
   save();
 }
 
+/* ---------- XP & levels ---------- */
+// Level L starts at 25·L·(L−1) XP: Lv1 0, Lv2 50, Lv3 150, Lv4 300, Lv5 500 …
+const levelOf = (xp) => Math.floor((1 + Math.sqrt(1 + (4 * (xp || 0)) / 25)) / 2);
+const levelStart = (L) => 25 * L * (L - 1);
+function addXP(n) {
+  if (!n) return;
+  const before = levelOf(S.xp);
+  S.xp = (S.xp || 0) + n;
+  const after = levelOf(S.xp);
+  if (after > before) setTimeout(() => { confetti(); toast(`⬆️ เลเวลอัป! ตอนนี้ Lv.${after}`); }, 400);
+  updateStreak();
+}
+const comboXP = (combo) => 2 + Math.min(combo - 1, 5); // 2 XP per right answer, up to +5 for a combo
+
 /* ---------- achievements ---------- */
 const ACH = [
   { id: 'first', icon: '🌱', name: 'ก้าวแรก', desc: 'เรียนคำแรก', ok: (s) => s.learned >= 1 },
@@ -197,6 +215,8 @@ const ACH = [
   { id: 's100', icon: '🏆', name: 'ร้อยวัน', desc: 'เรียนต่อเนื่อง 100 วัน', ok: (s) => s.streak >= 100 },
   { id: 'perfect', icon: '💯', name: 'เต็มสิบ', desc: 'ตอบถูก 10/10 ในเกม', ok: (s) => s.perfect >= 1 },
   { id: 'q7', icon: '🎯', name: 'นักล่าภารกิจ', desc: 'ทำภารกิจรายวันสำเร็จ 7 ครั้ง', ok: (s) => s.quests >= 7 },
+  { id: 'lvl5', icon: '⭐', name: 'เลเวล 5', desc: 'สะสม XP จนถึง Lv.5', ok: (s) => s.level >= 5 },
+  { id: 'lvl10', icon: '🌠', name: 'เลเวล 10', desc: 'สะสม XP จนถึง Lv.10', ok: (s) => s.level >= 10 },
   { id: 'speak50', icon: '🎤', name: 'นักพูด', desc: 'พูดตามถูก 50 คำ', ok: (s) => s.speak >= 50 },
   ...LEVELS.map((l) => ({ id: 'lv' + l, icon: '🎓', name: `จบ ${LV_LABEL[l]}`, desc: `เรียนครบทุกคำในระดับ ${LV_LABEL[l]}`, ok: (s) => s.lv[l] })),
 ];
@@ -206,7 +226,7 @@ function checkAch() {
   const s = {
     learned: progs.length,
     mastered: progs.filter((p) => p.b >= MASTERED).length,
-    streak: S.streak.count, perfect: S.counts.perfect || 0, quests: S.counts.quests || 0, speak: S.counts.speak || 0,
+    streak: S.streak.count, perfect: S.counts.perfect || 0, quests: S.counts.quests || 0, speak: S.counts.speak || 0, level: levelOf(S.xp),
     lv: Object.fromEntries(LEVELS.map((l) => [l, GROUP[l].every((w) => S.prog[w.w])])),
   };
   const got = ACH.filter((a) => !S.ach[a.id] && a.ok(s));
@@ -336,6 +356,7 @@ function grade(w, g) {
     c: (p ? p.c : 0) + (g > 0 ? 1 : 0),
     x: (p ? p.x || 0 : 0) + (g === 0 ? 1 : 0),
   };
+  addXP(g === 0 ? 1 : 2);
   questEvent('card');
 }
 // Lighter update from games: a right answer seeds/advances a little, a wrong one sends it back for review.
@@ -366,18 +387,19 @@ function markForReview(w) {
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { home: 'Oxford 3000', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน' };
+const TITLES = { home: 'Oxford 3000', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', feed: 'ไถศัพท์' };
 function go(tab, ...args) {
   if (cleanup) { cleanup(); cleanup = null; }
   if (window.speechSynthesis) speechSynthesis.cancel();
   current = tab;
+  view.classList.remove('feed-mode');
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   $('#title').textContent = TITLES[tab] || 'Oxford 3000';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, feed: renderFeed }[tab])(...args);
   updateStreak();
 }
-function updateStreak() { $('#streak').textContent = '🔥 ' + streakNow() + (S.freeze ? ' · 🧊' + S.freeze : ''); }
+function updateStreak() { $('#streak').textContent = '🔥 ' + streakNow() + (S.freeze ? ' · 🧊' + S.freeze : '') + ' · Lv.' + levelOf(S.xp); }
 $('#tabbar').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (b) go(b.dataset.tab);
 });
@@ -430,6 +452,12 @@ function renderHome() {
     ${standalone ? '' : `<div class="card-box install-tip small">
       📲 <b>ติดตั้งเป็นแอปบน iPhone:</b> เปิดหน้านี้ใน Safari → กดปุ่ม <b>แชร์</b> (สี่เหลี่ยมมีลูกศร) → <b>เพิ่มไปยังหน้าจอโฮม</b> จะได้ใช้งานเต็มจอและออฟไลน์ได้</div>`}
 
+    <div class="quick">
+      <button class="quick-btn feed-btn" id="qFeed"><span>📱</span><b>ไถศัพท์</b><small>ปัดขึ้นเรื่อยๆ เหมือนไถฟีด</small></button>
+      <button class="quick-btn" id="qPlay"><span>⚡</span><b>เล่นด่วน</b><small>เกมสุ่ม 10 ข้อ ~1 นาที</small></button>
+    </div>
+    ${levelCard()}
+
     ${questCard()}
 
     <div class="h2">7 วันที่ผ่านมา</div>
@@ -459,6 +487,8 @@ function renderHome() {
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
   $('#startBtn').onclick = () => go('cards', !todo);
   $('#guideBtn').onclick = () => go('guide', 'home');
+  $('#qFeed').onclick = () => go('feed');
+  $('#qPlay').onclick = quickPlay;
   if ($('#bkNow')) {
     $('#bkNow').onclick = async () => { await exportBackup(); renderHome(); };
     $('#bkLater').onclick = () => { S.backupSnooze = today(); save(); renderHome(); };
@@ -471,6 +501,13 @@ function renderHome() {
     const a = ACH.find((x) => x.id === b.dataset.ach);
     toast(`${a.icon} ${a.name}: ${a.desc}${S.ach[a.id] ? ' ✅' : ' 🔒'}`);
   };
+}
+function levelCard() {
+  const L = levelOf(S.xp), a = levelStart(L), b = levelStart(L + 1);
+  return `<div class="card-box lvl-card"><div class="lvl-num">Lv.${L}</div>
+    <div class="grow"><div class="row" style="justify-content:space-between"><b>คะแนนประสบการณ์</b><span class="small muted">${S.xp - a}/${b - a} XP</span></div>
+    <div class="bar" style="margin-top:6px"><div class="l" style="width:${(S.xp - a) / (b - a) * 100}%"></div></div>
+    <div class="small muted" style="margin-top:4px">ตอบถูกติดกันได้ XP เพิ่ม · อีก ${b - S.xp} XP ถึง Lv.${L + 1}</div></div></div>`;
 }
 function questCard() {
   const q = todayQuest(), target = questTarget(q), n = Math.min(S.quest.n, target);
@@ -990,7 +1027,7 @@ function playQuiz(mode, src, gameId) {
     if (gameId === 'speak' && ok) S.counts.speak = (S.counts.speak || 0) + 1;
     questEvent('answer', { game: gameId, ok });
     sfx(ok ? 'ok' : 'bad');
-    if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); score += 10 + Math.min(combo - 1, 5) * 2; }
+    if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); score += 10 + Math.min(combo - 1, 5) * 2; addXP(comboXP(combo)); }
     else { combo = 0; wrong.push(w); }
   }
   function next() { i++; q(); }
@@ -1085,6 +1122,7 @@ function playMatch(src) {
     const prev = S.best.match;
     const isBest = prev == null || score > prev;
     if (isBest) { S.best.match = score; save(); }
+    addXP(mistakes <= 2 ? 12 : 6);
     questEvent('match', { mistakes });
     if (isBest || mistakes === 0) confetti();
     view.innerHTML = `<div class="card-box center pop">
@@ -1099,6 +1137,164 @@ function playMatch(src) {
     updateStreak();
   }
   deal();
+}
+
+/* ---------- quick play ---------- */
+// One tap from home: a random multiple-choice game on words the user has started (or their levels).
+function quickPlay() {
+  gameSource = W.filter((w) => S.prog[w.w] && S.settings.levels.includes(w.g)).length >= 10 ? 'learned' : 'level';
+  let id = pick(['en2th', 'th2en', 'listen', 'cloze']);
+  if (gamePool(id).length < 4) id = 'en2th';
+  startGame(id);
+}
+
+/* ---------- feed (ไถศัพท์) ---------- */
+// Endless TikTok-style feed: one card per screen, swipe up for the next. Due words come first, then
+// new words (a "learn" card followed by a quiz on it a few cards later) up to the daily goal, then
+// practice on learned words. Answers use gameResult() like the games.
+function renderFeed() {
+  view.classList.add('feed-mode');
+  view.innerHTML = `<div class="feed-hud"><span id="fCombo" class="combo"></span><span class="small" id="fXp"></span></div><div class="feed" id="feed"></div>`;
+  const feed = $('#feed');
+  const seen = new Set();
+  const later = [];            // { at: card number, w } quizzes on words just introduced
+  const cards = [];            // card number -> { w, type, el, done, speakOnShow }
+  let n = 0, combo = 0, newDealt = 0, newDone = 0, activeN = -1;
+  const hud = () => {
+    const L = levelOf(S.xp);
+    $('#fXp').textContent = `Lv.${L} · ${S.xp - levelStart(L)}/${levelStart(L + 1) - levelStart(L)} XP`;
+    $('#fCombo').textContent = combo >= 2 ? `🔥 คอมโบ x${combo}` : '';
+  };
+  hud();
+
+  function chooseWord() {
+    if (later.length && later[0].at <= n) return [later.shift().w, 'quiz'];
+    const p = pool();
+    const due = dueList(p).find((w) => !seen.has(w.w));
+    if (due) return [due, 'quiz'];
+    if (S.daily.fresh + (newDealt - newDone) < S.settings.newPerDay) {
+      const fresh = shuffle(p.filter((w) => !S.prog[w.w] && !seen.has(w.w)))[0];
+      if (fresh) return [fresh, 'learn'];
+    }
+    // Practice: lower boxes first, with some randomness.
+    let learned = p.filter((w) => S.prog[w.w] && !seen.has(w.w));
+    if (!learned.length) learned = W.filter((w) => S.prog[w.w] && !seen.has(w.w));
+    if (learned.length) {
+      learned.sort((a, b) => S.prog[a.w].b - S.prog[b.w].b);
+      return [pick(learned.slice(0, 30)), 'quiz'];
+    }
+    // Nothing learned and today's new words used up (or everything seen): keep going anyway.
+    const rest = p.filter((w) => !seen.has(w.w));
+    if (!rest.length) seen.clear();
+    const w = pick(rest.length ? rest : p);
+    return [w, S.prog[w.w] ? 'quiz' : 'learn'];
+  }
+
+  const heart = (w) => `<button class="f-act" data-heart aria-label="ติดดาว">${isStar(w) ? '❤️' : '🤍'}<small>ชอบ</small></button>`;
+  function addCard() {
+    const [w, kind] = chooseWord();
+    seen.add(w.w);
+    const k = n++;
+    let type = kind, body;
+    if (kind === 'learn') {
+      newDealt++;
+      later.push({ at: k + 3, w });
+      body = `<div class="f-tag">✨ คำใหม่</div>
+        <div class="f-word">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
+        <div class="f-th">${esc(w.t)}</div>${exampleBox(w)}
+        <div class="small muted" style="margin-top:14px">จำไว้นะ อีกเดี๋ยวจะมีคำถามคำนี้ 😉</div>`;
+    } else {
+      type = pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'tf', 'cloze'] : ['en2th', 'th2en', 'listen', 'tf']);
+      let prompt, opts;
+      if (type === 'tf') {
+        const real = Math.random() < 0.5;
+        const shown = real ? w : distractors(w, 1, 't')[0];
+        cards[k] = { tfReal: real };
+        prompt = `<div class="f-tag">✅ ใช่หรือไม่?</div><div class="f-word">${esc(w.w)}</div><div class="muted">แปลว่า</div><div class="f-th">${esc(thFirst(shown.t))}</div>`;
+        opts = `<div class="options tf"><button class="opt" data-tf="1">⭕ ใช่</button><button class="opt" data-tf="0">❌ ไม่ใช่</button></div>`;
+      } else {
+        const toTh = type !== 'th2en' && type !== 'cloze';
+        const list = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
+        if (type === 'en2th') prompt = `<div class="f-tag">🇬🇧 แปลว่าอะไร?</div><div class="f-word">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>`;
+        else if (type === 'th2en') prompt = `<div class="f-tag">🇹🇭 ภาษาอังกฤษคือ?</div><div class="f-th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>`;
+        else if (type === 'listen') prompt = `<div class="f-tag">🎧 ฟังแล้วตอบ</div><button class="speak f-listen" data-say>🔊</button><div class="small muted">แตะเพื่อฟังอีกครั้ง</div>`;
+        else {
+          const blank = w.e.replace(clozeRe(w), (all, pre) => pre + '\u0000');
+          prompt = `<div class="f-tag">📝 เติมคำในประโยค</div><div class="cloze">${esc(blank).replace('\u0000', '<span class="blank">_____</span>')}</div><div class="thx">${esc(w.et)}</div>`;
+        }
+        opts = `<div class="options">${list.map((o) => `<button class="opt" data-i="${o.idx}">${esc(toTh ? o.t : o.w)}</button>`).join('')}</div>`;
+      }
+      body = `${prompt}${opts}<div class="reveal f-reveal"></div>`;
+    }
+    const el = document.createElement('section');
+    el.className = 'fcard';
+    el.dataset.n = k;
+    el.innerHTML = `<div class="f-in">${lvBadge(w.g)}<div class="f-body">${body}</div></div>
+      <div class="f-side">${heart(w)}<button class="f-act" data-say aria-label="ฟังเสียง">🔊<small>ฟัง</small></button></div>`;
+    cards[k] = { ...(cards[k] || {}), w, type, el, done: kind === 'learn' };
+    feed.appendChild(el);
+    io.observe(el);
+  }
+
+  function answer(k, ok, btn) {
+    const c = cards[k]; if (c.done) return;
+    c.done = true;
+    const w = c.w;
+    if (!S.prog[w.w]) { S.daily.fresh++; newDone++; }
+    gameResult(w, ok);
+    sfx(ok ? 'ok' : 'bad');
+    if (ok) { combo++; addXP(comboXP(combo)); } else combo = 0;
+    if (combo === 6) questEvent('round', { game: 'feed', correct: 0, bestCombo: combo });
+    questEvent('answer', { game: 'feed', ok });
+    hud();
+    if (c.type === 'tf') {
+      c.el.querySelectorAll('[data-tf]').forEach((o) => { if (+o.dataset.tf === (c.tfReal ? 1 : 0)) o.classList.add('correct'); });
+    } else {
+      c.el.querySelectorAll('[data-i]').forEach((o) => { if (+o.dataset.i === w.idx) o.classList.add('correct'); });
+    }
+    if (!ok && btn) btn.classList.add('wrong');
+    const rv = c.el.querySelector('.f-reveal');
+    rv.innerHTML = (ok ? `✅ ถูกต้อง! <b>${esc(w.w)}</b> = ${esc(w.t)}` : `❌ <b>${esc(w.w)}</b> = ${esc(w.t)}`)
+      + (ok ? '' : exampleBox(w) + '<div class="small muted" style="margin-top:8px">ใส่ในแฟลชการ์ดให้แล้ว · ปัดขึ้นเพื่อไปต่อ ↑</div>');
+    if (c.type === 'th2en' || c.type === 'cloze' || !ok) speak(w.w);
+    if (ok) setTimeout(() => { if (activeN === k) scrollToCard(k + 1); }, 900);
+  }
+
+  function scrollToCard(k) {
+    if (!cards[k]) addCard();
+    feed.scrollTo({ top: cards[k].el.offsetTop, behavior: 'smooth' });
+  }
+
+  feed.addEventListener('click', (e) => {
+    const el = e.target.closest('.fcard'); if (!el) return;
+    const k = +el.dataset.n, c = cards[k], w = c.w;
+    if (e.target.closest('[data-heart]')) {
+      toggleStar(w);
+      e.target.closest('[data-heart]').innerHTML = `${isStar(w) ? '❤️' : '🤍'}<small>ชอบ</small>`;
+      if (isStar(w)) toast('⭐ ติดดาวแล้ว ไปเล่นในเกมได้ที่ "คำติดดาว"');
+      return;
+    }
+    if (e.target.closest('[data-sayex]')) return speak(w.e);
+    if (e.target.closest('[data-say]')) return speak(w.w);
+    const tf = e.target.closest('[data-tf]');
+    if (tf) return answer(k, (tf.dataset.tf === '1') === c.tfReal, tf);
+    const o = e.target.closest('[data-i]');
+    if (o) answer(k, +o.dataset.i === w.idx, o);
+  });
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((en) => {
+      if (!en.isIntersecting) return;
+      const k = +en.target.dataset.n;
+      if (k === activeN) return;
+      activeN = k;
+      const c = cards[k];
+      if (S.settings.autoSpeak && (c.type === 'learn' || (!c.done && ['en2th', 'listen', 'tf'].includes(c.type)))) speak(c.w.w);
+      while (n - k < 4) addCard();
+    });
+  }, { root: feed, threshold: 0.6 });
+  cleanup = () => io.disconnect();
+  for (let k = 0; k < 4; k++) addCard();
 }
 
 /* ---------- word list ---------- */
@@ -1218,6 +1414,23 @@ const GUIDE = [
     <p><b>ทางลัด:</b> ปัดการ์ดไปขวา = จำได้, ปัดไปซ้าย = ลืม</p>
     <p>ระยะทบทวนคือ 1 → 3 → 7 → 16 → 35 → 80 → 180 วัน คำที่ผ่านถึงขั้น 16 วันขึ้นไปจะนับว่า <b>🟢 จำได้แล้ว</b></p>
     <p>กดผิด? กด <b>↩︎</b> มุมขวาบนเพื่อย้อนการ์ดใบล่าสุด · แตะ ⭐ บนการ์ดเพื่อติดดาวคำที่อยากฝึกเพิ่ม</p>`],
+  ['📱', 'ไถศัพท์ และเล่นด่วน', `
+    <p><b>📱 ไถศัพท์</b> (แท็บด้านล่าง หรือปุ่มสีชมพูในหน้าแรก) — ปัดขึ้นทีละคำเหมือนไถ TikTok ไม่มีวันจบ เหมาะกับช่วงว่างสั้นๆ</p>
+    <ul>
+      <li>แอปเอาคำที่ <b>ถึงวันทบทวน</b> มาก่อน แล้วค่อยแทรก <b>✨ คำใหม่</b> (นับรวมกับเป้าคำใหม่ต่อวัน) ที่เหลือเป็นการฝึกคำที่เรียนแล้ว</li>
+      <li>เจอคำใหม่ อ่านแล้วปัดผ่านไป อีก 3 ใบจะมีคำถามคำนั้นให้ตอบ</li>
+      <li>คำถามมีหลายแบบ: แปลความหมาย, ทายคำอังกฤษ, ฟังเสียง, ใช่หรือไม่, เติมคำในประโยค</li>
+      <li>ตอบถูกแล้วจะเลื่อนไปใบถัดไปเอง ตอบผิดจะมีเฉลยและประโยคตัวอย่าง แล้วคำนั้นจะไปอยู่ในแฟลชการ์ดให้ทบทวน</li>
+      <li>แตะ <b>🤍 ชอบ</b> เพื่อติดดาวคำนั้น · <b>🔊 ฟัง</b> เพื่อฟังเสียงอีกครั้ง</li>
+    </ul>
+    <p><b>⚡ เล่นด่วน</b> (หน้าแรก) — แตะครั้งเดียว แอปสุ่มเกมให้ 10 ข้อ ใช้คำที่เรียนแล้ว จบในราว 1 นาที</p>
+    <p>อยากให้เปิดแอปแล้วเข้าไถศัพท์ทันที: ⚙️ ตั้งค่า → <b>เปิดแอปแล้วไปที่</b> → 📱 ไถศัพท์</p>`],
+  ['⭐', 'XP และเลเวล', `
+    <ul>
+      <li>ได้ XP ทุกครั้งที่ทำแฟลชการ์ด (2 XP, กด "ลืม" ได้ 1 XP) ตอบถูกในเกม/ไถศัพท์ (2 XP)</li>
+      <li><b>ตอบถูกติดกัน</b> ได้โบนัสคอมโบเพิ่มสูงสุด +5 XP ต่อข้อ · จับคู่ด่วนจบรอบได้ 6–12 XP</li>
+      <li>เลเวลดูได้ที่มุมขวาบน (Lv.) และการ์ดเลเวลในหน้าแรก ยิ่งเลเวลสูง ต้องใช้ XP มากขึ้น</li>
+    </ul>`],
   ['🔁', 'เล่นหลายรอบในวันเดียว', `
     <ul>
       <li>ถ้ายังมีการ์ดค้าง เข้ามากี่ครั้งก็จะได้ทำต่อจากที่ค้างไว้</li>
@@ -1280,9 +1493,14 @@ const GUIDE = [
       <li><b>สลับด้านการ์ดเป็น ไทย → อังกฤษ</b> (ในตั้งค่า) เมื่อคล่องแล้ว จะฝึกการนึกคำเพื่อใช้พูด/เขียนจริง</li>
       <li><b>เล่น ⌨️ สะกดคำ และ 🎤 พูดตาม</b> บ่อยๆ สองเกมนี้ต้องนึกเอง ไม่ใช่แค่เลือก จึงจำได้ลึกที่สุด</li>
       <li><b>ถ้าการ์ดค้างเยอะ</b> (เช่นหายไปหลายวัน) ตั้งคำใหม่ต่อวันเป็น 5 ชั่วคราว จนเคลียร์การ์ดค้างหมดก่อน</li>
+      <li><b>ว่างเมื่อไรเปิด 📱 ไถศัพท์ แทนโซเชียล</b> ย้ายไอคอนแอปไว้หน้าแรกของ iPhone ตรงที่เคยวาง TikTok นิ้วจะเคยชินเอง</li>
     </ol>
+    <div class="g-plan"><b>📲 ให้ iPhone เตือนตอนเปิด TikTok</b><br>
+      แอป <b>คำสั่งลัด (Shortcuts)</b> → แท็บ <b>ระบบอัตโนมัติ</b> → <b>+</b> → <b>แอป</b> → เลือก TikTok → ติ๊ก <b>ถูกเปิด</b> → <b>เรียกใช้ทันที</b> → เพิ่มคำสั่ง <b>แสดงการแจ้งเตือน</b> พิมพ์ข้อความ เช่น "ไถศัพท์ 5 นาทีก่อนไหม? 📚"<br>
+      ทุกครั้งที่เปิด TikTok จะมีการแจ้งเตือนขึ้นมาเตือนใจ</div>
     <div class="g-plan"><b>📅 ตัวอย่างตารางต่อวัน</b><br>
       เช้า 15 นาที: แฟลชการ์ดให้หมด<br>
+      ช่วงว่างระหว่างวัน: 📱 ไถศัพท์ หรือ ⚡ เล่นด่วน แทนเปิดโซเชียล<br>
       เย็น 5–10 นาที: เกม 1–2 รอบ จากคำที่จำได้แล้ว หรือคำติดดาว<br>
       ทุกสัปดาห์: สำรองข้อมูล 1 ครั้ง</div>`],
   ['❓', 'ปัญหาที่พบบ่อย', `
@@ -1327,6 +1545,8 @@ function renderSettings() {
         <select class="sel" id="npd">${[5, 10, 15, 20, 30, 50, 100].map((n) => `<option ${n === st.newPerDay ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
       <div class="set-row"><span>ลำดับคำใหม่</span>
         <select class="sel" id="ord"><option value="shuffle" ${st.order === 'shuffle' ? 'selected' : ''}>สุ่ม</option><option value="alpha" ${st.order === 'alpha' ? 'selected' : ''}>เรียงตามตัวอักษร</option></select></div>
+      <div class="set-row"><span>เปิดแอปแล้วไปที่</span>
+        <select class="sel" id="start"><option value="home" ${st.start === 'home' ? 'selected' : ''}>🏠 หน้าแรก</option><option value="feed" ${st.start === 'feed' ? 'selected' : ''}>📱 ไถศัพท์</option><option value="cards" ${st.start === 'cards' ? 'selected' : ''}>🃏 แฟลชการ์ด</option></select></div>
       <div class="set-row"><span>ด้านหน้าการ์ด</span>
         <select class="sel" id="front"><option value="en" ${st.front === 'en' ? 'selected' : ''}>อังกฤษ → ไทย</option><option value="th" ${st.front === 'th' ? 'selected' : ''}>ไทย → อังกฤษ</option></select></div>
     </div>
@@ -1376,6 +1596,7 @@ function renderSettings() {
   $('#guideBtn').onclick = () => go('guide', 'settings');
   $('#npd').onchange = (e) => { st.newPerDay = +e.target.value; save(); };
   $('#ord').onchange = (e) => { st.order = e.target.value; save(); };
+  $('#start').onchange = (e) => { st.start = e.target.value; save(); };
   $('#front').onchange = (e) => { st.front = e.target.value; save(); };
   $('#auto').onchange = (e) => { st.autoSpeak = e.target.checked; save(); };
   $('#sfx').onchange = (e) => { st.sfx = e.target.checked; save(); sfx('ok'); };
@@ -1406,7 +1627,7 @@ function renderSettings() {
 }
 
 /* ---------- boot ---------- */
-go('home');
+go(['home', 'feed', 'cards'].includes(S.settings.start) ? S.settings.start : 'home');
 // Ask the browser not to evict our localStorage under storage pressure / inactivity.
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {

@@ -327,3 +327,35 @@ body { touch-action: manipulation; }
 .g-table th, .g-table td { border: 1px solid var(--border); padding: 6px; text-align: center; }
 .g-table th { background: var(--surface-2); }
 .g-plan { background: var(--surface-2); border-radius: 14px; padding: 12px 14px; margin-top: 10px; line-height: 1.7; }
+
+/* home quick actions + level */
+.quick { display: flex; gap: 12px; margin-bottom: 14px; }
+.quick-btn { flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 14px; border: 0; border-radius: var(--radius); background: var(--surface); color: var(--text); box-shadow: var(--shadow); font: inherit; text-align: left; }
+.quick-btn span { font-size: 28px; }
+.quick-btn b { font-size: 17px; }
+.quick-btn small { color: var(--muted); font-size: 12px; }
+.quick-btn.feed-btn { background: linear-gradient(135deg, var(--pink), #fd79a8); color: #fff; }
+.quick-btn.feed-btn small { color: rgba(255, 255, 255, .9); }
+.quick-btn:active { transform: scale(.97); }
+.lvl-card { display: flex; align-items: center; gap: 14px; }
+.lvl-num { flex: none; width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; color: #fff; background: linear-gradient(135deg, var(--primary), var(--pink)); }
+.tabbar button { font-size: 10px; }
+
+/* feed (ไถศัพท์) */
+.view.feed-mode { display: flex; flex-direction: column; overflow: hidden; padding: 0 0 calc(var(--tabbar-h) + env(safe-area-inset-bottom)); }
+.feed-hud { flex: none; display: flex; justify-content: space-between; align-items: center; padding: 2px 18px 6px; min-height: 26px; }
+.feed { flex: 1; min-height: 0; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.fcard { height: 100%; scroll-snap-align: start; scroll-snap-stop: always; position: relative; padding: 8px 16px 14px; box-sizing: border-box; display: flex; }
+.f-in { flex: 1; background: var(--surface); border-radius: 26px; box-shadow: var(--shadow); padding: 18px 70px 18px 18px; overflow-y: auto; display: flex; flex-direction: column; }
+.f-body { margin: auto 0; text-align: center; padding: 8px 0; }
+.f-tag { display: inline-block; background: var(--surface-2); color: var(--primary); font-weight: 700; font-size: 13px; border-radius: 999px; padding: 4px 12px; margin-bottom: 14px; }
+.f-word { font-size: clamp(32px, 10vw, 46px); font-weight: 800; word-break: break-word; line-height: 1.15; }
+.f-th { font-size: clamp(22px, 7vw, 30px); font-weight: 800; color: var(--primary); margin-top: 10px; }
+.f-listen { width: 90px; height: 90px; font-size: 40px; margin: 6px auto 8px; }
+.f-body .options { margin-top: 18px; }
+.f-body .options.tf { display: flex; gap: 10px; }
+.f-body .options.tf .opt { flex: 1; }
+.f-side { position: absolute; right: 22px; bottom: 30px; display: flex; flex-direction: column; gap: 14px; }
+.f-act { width: 52px; height: 58px; border: 0; border-radius: 16px; background: var(--surface-2); font-size: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
+.f-act small { font-size: 10px; color: var(--muted); font-weight: 600; }
+.f-in > .lv { align-self: flex-start; }
