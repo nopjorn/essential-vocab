@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.12.0';
+const APP_VERSION = '1.13.0';
 
 /* ---------- data ---------- */
 // WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
@@ -462,6 +462,7 @@ function go(tab, ...args) {
   if (window.speechSynthesis) speechSynthesis.cancel();
   current = tab;
   view.classList.remove('feed-mode');
+  view.dataset.route = tab; // CSS uses this for wide (iPad/landscape) layouts
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   view.scrollTop = 0;
@@ -509,7 +510,7 @@ function renderHome() {
     </div>
 
     ${standalone ? '' : `<div class="card-box install-tip small">
-      📲 <b>ติดตั้งเป็นแอปบน iPhone:</b> เปิดหน้านี้ใน Safari → กดปุ่ม <b>แชร์</b> (สี่เหลี่ยมมีลูกศร) → <b>เพิ่มไปยังหน้าจอโฮม</b> จะได้ใช้งานเต็มจอและออฟไลน์ได้</div>`}
+      📲 <b>ติดตั้งเป็นแอปบน iPhone/iPad:</b> เปิดหน้านี้ใน Safari → กดปุ่ม <b>แชร์</b> (สี่เหลี่ยมมีลูกศร) → <b>เพิ่มไปยังหน้าจอโฮม</b> จะได้ใช้งานเต็มจอและออฟไลน์ได้</div>`}
 
     <div class="quick">
       <button class="quick-btn feed-btn" id="qFeed"><span>📱</span><b>ไถศัพท์</b><small>ปัดขึ้นเรื่อยๆ เหมือนไถฟีด</small></button>
@@ -929,6 +930,9 @@ function startGame(id) {
     return;
   }
   if (cleanup) { cleanup(); cleanup = null; }
+  // Games can start from home/stats too: switch the route so the layout (and active tab) match.
+  current = 'games'; view.classList.remove('feed-mode'); view.dataset.route = 'games'; view.scrollTop = 0;
+  document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === 'games'));
   if (id === 'match') return playMatch(src);
   playQuiz(id === 'review' ? pick(['en2th', 'th2en', 'listen']) : id, src, id);
 }
@@ -2288,6 +2292,13 @@ const GUIDE = [
       <li>ตั้ง <b>การเตือนในปฏิทิน</b> (ในตั้งค่า) ให้เตือนทุกวันตามเวลาที่สะดวก</li>
       <li>เรียนไปสักพักแล้ว <b>สำรองข้อมูล</b> เก็บไว้ใน iCloud Drive</li>
     </ol>`],
+  ['📱', 'ใช้บน iPhone / iPad และแนวนอน', `
+    <ul>
+      <li>ใช้ได้ทั้ง iPhone และ iPad ติดตั้งแบบเดียวกัน (Safari → แชร์ → เพิ่มไปยังหน้าจอโฮม) หมุนจอได้ทั้งแนวตั้งและแนวนอน</li>
+      <li><b>iPad / แนวนอน:</b> เมนูย้ายไปอยู่แถบด้านซ้าย หน้าแรก เกม คำศัพท์ และห้องสมุดเรื่องสั้นจะแสดงหลายคอลัมน์</li>
+      <li><b>iPhone แนวนอน:</b> แฟลชการ์ดอยู่ซ้าย ปุ่มให้คะแนนอยู่ขวา · เกมและไถศัพท์ คำถามอยู่ซ้าย ตัวเลือกอยู่ขวา ไม่ต้องเลื่อนจอ</li>
+      <li>⚠️ ความคืบหน้าเก็บแยกในแต่ละเครื่อง ถ้าใช้ทั้ง iPhone และ iPad ให้เปิด <b>☁️ ซิงก์</b> หรือ <b>สำรองข้อมูล</b> จากเครื่องหนึ่งแล้ว <b>นำเข้า</b> ในอีกเครื่อง</li>
+    </ul>`],
   ['🎯', 'แบบทดสอบวัดระดับ', `
     <ul>
       <li>หน้าแรก (สำหรับคนเพิ่งเริ่ม) หรือ ⚙️ ตั้งค่า → <b>🎯 แบบทดสอบวัดระดับ</b></li>

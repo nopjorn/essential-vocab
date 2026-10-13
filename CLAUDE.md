@@ -2,7 +2,7 @@
 
 "ศัพท์ต้องรู้" (Essential Vocab) — a vocabulary trainer for the Oxford 3000/5000 word lists: a static, vanilla-JS PWA hosted on GitHub Pages
 (`https://nopjorn.github.io/essential-vocab/`, branch `master`, repo root).
-Main target is iPhone (Pro Max, home-screen app). The owner talks in Thai; reply in Thai.
+Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and** landscape. The owner talks in Thai; reply in Thai.
 
 ## Release rules (every push)
 - Bump the version on **every** push: `APP_VERSION` in `app.js` and `VERSION` in `sw.js`
@@ -99,6 +99,13 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 - `#view` is the scroll container (screenshots with `fullPage` won't scroll it; set `view.scrollTop`).
 - Things headless can't verify (say so to the user): real iOS speech synthesis/recognition, sound
   effects in silent mode, share sheet, adding `.ics` to the iPhone calendar.
+
+## Responsive layout (1.13+)
+- `go()` sets `view.dataset.route`; `startGame()` also sets it to `games` (games can start from home).
+- CSS block "responsive: iPad + landscape" at the end of `style.css`: ≥700px wide → left tab rail and
+  centred content (`--maxw` 760, 1100 for home/list/stats/games menu/library); ≥1100×700 → sidebar with labels;
+  ≤520px tall → compact, flashcards/quizzes/feed split into two columns via `:has()`; ≥900px → multi-column grids.
+- Check every change at 440×956, 956×440, 834×1210, 1210×834, 1032×1376, 1376×1032 (scratchpad `pw/resp.js`).
 
 ## iOS gotchas
 - Home-screen app storage is separate from Safari; deleting the icon deletes progress.
