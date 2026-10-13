@@ -1,12 +1,26 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.9.0';
+const APP_VERSION = '1.10.0';
 
 /* ---------- data ---------- */
 // WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
 // g = study group: A1–B2 are Oxford 3000; B2x and C1 are the extra Oxford 5000 words.
-const W = window.WORDS.map(([w, p, l, i, t, e, et, s], idx) => ({ idx, w, p, l, i, t, e, et, g: s === 5 ? (l === 'B2' ? 'B2x' : 'C1') : l }));
+// Topic per word: topics.js holds one letter per WORDS row ('a' = TOPICS[0], …).
+const TOPICS = [
+  ['people', '👪', 'คนและครอบครัว'], ['body', '💪', 'ร่างกายและสุขภาพ'], ['food', '🍜', 'อาหารและเครื่องดื่ม'],
+  ['home', '🏠', 'บ้านและของใช้'], ['clothes', '👕', 'เสื้อผ้าและการแต่งตัว'], ['nature', '🌿', 'ธรรมชาติ สัตว์ อากาศ'],
+  ['travel', '✈️', 'สถานที่และการเดินทาง'], ['work', '💼', 'งาน เงิน การซื้อขาย'], ['study', '🔬', 'การศึกษา วิทยาศาสตร์ เทคโนโลยี'],
+  ['media', '🎬', 'สื่อสาร ศิลปะ กีฬา งานอดิเรก'], ['society', '🏛️', 'สังคม การเมือง กฎหมาย'], ['time', '⏰', 'เวลา ตัวเลข ปริมาณ'],
+  ['feelings', '💭', 'อารมณ์ ความคิด นิสัย'], ['actions', '🏃', 'คำกริยาทั่วไป'], ['describe', '🎨', 'คำบรรยายลักษณะ'],
+  ['grammar', '🔗', 'คำไวยากรณ์ (the, of, and…)'],
+];
+const TOPIC_LABEL = Object.fromEntries(TOPICS.map(([id, ic, th]) => [id, `${ic} ${th}`]));
+const W = window.WORDS.map(([w, p, l, i, t, e, et, s], idx) => {
+  const tc = (window.TOPIC_CODES || '').charCodeAt(idx) - 97;
+  return { idx, w, p, l, i, t, e, et, g: s === 5 ? (l === 'B2' ? 'B2x' : 'C1') : l, tp: TOPICS[tc] ? TOPICS[tc][0] : '' };
+});
+const inTopic = (w) => !S.settings.topic || w.tp === S.settings.topic;
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1'];
 const LEVELS_3000 = ['A1', 'A2', 'B1', 'B2'];
 const LEVELS_5000 = ['B2x', 'C1'];
@@ -21,7 +35,7 @@ const MASTERED = 4;
 const KEY = 'oxford3000.v1';
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], newPerDay: 20, autoSpeak: true, rate: 0.9, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, start: 'home' },
+  settings: { levels: ['A1'], topic: '', newPerDay: 20, autoSpeak: true, rate: 0.9, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, start: 'home' },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -38,6 +52,10 @@ const defaults = () => ({
   chist: {},           // 'YYYY-MM-DD' -> flashcards graded that day (hist minus this = game/feed answers)
   snap: {},            // 'YYYY-MM-DD' -> [learned 3000, mastered 3000, learned all, mastered all]
   chistFrom: '',       // first day chist was recorded; earlier hist can't be split into cards/games
+  note: {},            // word -> the user's own memory hook
+  miss: {},            // 'YYYY-MM-DD' -> { word: times wrong that day } (last 21 days)
+  weekSeen: '',        // Monday key of the last weekly summary the user dismissed
+  read: {},            // story id -> date finished
 });
 let S = load();
 // Users from before 1.8.0 get XP for the work they already did.
@@ -57,6 +75,7 @@ function save() {
   if (typeof checkAch === 'function') checkAch();
   if (typeof takeSnap === 'function') takeSnap();
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ }
+  if (typeof schedulePush === 'function') schedulePush();
 }
 
 /* ---------- backup ---------- */
@@ -76,7 +95,8 @@ async function exportBackup() {
 }
 
 const needsBackup = () => Object.keys(S.prog).length >= 10
-  && Date.now() - (S.backupAt || 0) > BACKUP_EVERY * DAY && S.backupSnooze !== today();
+  && Date.now() - (S.backupAt || 0) > BACKUP_EVERY * DAY && S.backupSnooze !== today()
+  && !(typeof syncOn === 'function' && syncOn() && auth); // signed-in cloud sync is the backup
 
 // Merge a backup into the current state, keeping whichever side is further along for each word.
 function mergeBackup(d) {
@@ -102,8 +122,12 @@ function mergeBackup(d) {
   for (const [k, v] of Object.entries(d.ach || {})) if (!S.ach[k]) S.ach[k] = v;
   for (const [k, v] of Object.entries(d.counts || {})) S.counts[k] = Math.max(S.counts[k] || 0, v);
   S.freeze = Math.max(S.freeze || 0, d.freeze || 0);
+  if ((d.weekSeen || '') > (S.weekSeen || '')) S.weekSeen = d.weekSeen;
   S.xp = Math.max(S.xp || 0, d.xp || 0);
   if (d.chistFrom && (!S.chistFrom || d.chistFrom < S.chistFrom)) S.chistFrom = d.chistFrom;
+  for (const [k, v] of Object.entries(d.note || {})) if (!S.note[k]) S.note[k] = v;
+  for (const [k, v] of Object.entries(d.miss || {})) S.miss[k] = { ...v, ...(S.miss[k] || {}) };
+  for (const [k, v] of Object.entries(d.read || {})) if (!S.read[k]) S.read[k] = v;
   for (const [k, v] of Object.entries(d.chist || {})) S.chist[k] = Math.max(S.chist[k] || 0, v);
   for (const [k, v] of Object.entries(d.snap || {})) S.snap[k] = (S.snap[k] || [0, 0, 0, 0]).map((x, i) => Math.max(x, v[i] || 0));
   save();
@@ -334,19 +358,40 @@ function speak(text) {
 }
 
 /* ---------- spaced repetition ---------- */
+// Adaptive intervals (SM-2 style): each word keeps its own interval `i` (days) and ease `e`.
+// `b` (box) is derived from `i` so "จำได้แล้ว" (b >= MASTERED, i.e. i >= 16 days) works as before.
+// Words saved before 1.10.0 have no i/e and start from INTERVALS[b] with the default ease.
 // grade: 0 again, 1 hard, 2 good, 3 easy
-function nextBox(p, grade) {
-  const b = p ? p.b : 0;
-  if (grade === 0) return 0;
-  if (grade === 1) return Math.max(1, b);
-  if (grade === 2) return Math.min(b + 1, INTERVALS.length - 1);
-  return Math.min(b + 2, INTERVALS.length - 1);
+const EASE0 = 2.5, EASE_MIN = 1.3, EASE_MAX = 2.8, MAX_IVL = 365;
+const boxOf = (i) => { let b = 0; while (b + 1 < INTERVALS.length && INTERVALS[b + 1] <= i) b++; return b; };
+const ivlOf = (p) => (p ? (p.i != null ? p.i : INTERVALS[p.b]) : 0);
+function sched(p, g) {
+  const i0 = ivlOf(p), e0 = p && p.e ? p.e : EASE0;
+  // Remembered after a long gap: credit part of the extra time.
+  const late = p && p.d ? Math.max(0, (Date.now() - p.d) / DAY) : 0;
+  const base = i0 + Math.min(late, i0);
+  let i, e = e0;
+  if (g === 0) { i = 0; e = Math.max(EASE_MIN, e0 - 0.2); }
+  else if (g === 1) { i = i0 ? Math.max(1, Math.round(i0 * 1.2)) : 1; e = Math.max(EASE_MIN, e0 - 0.15); }
+  else if (g === 2) i = i0 ? Math.max(i0 + 1, Math.round(base * e0)) : 1;
+  else { i = i0 ? Math.max(i0 + 2, Math.round(base * e0 * 1.3)) : 3; e = Math.min(EASE_MAX, e0 + 0.15); }
+  i = Math.min(MAX_IVL, i);
+  return { i, e: Math.round(e * 100) / 100, b: boxOf(i) };
 }
-function intervalLabel(box) {
-  if (box === 0) return '< 1 นาที';
-  const d = INTERVALS[box];
-  if (d < 30) return d + ' วัน';
-  return Math.round(d / 30) + ' เดือน';
+const dueAt = (i) => (i === 0 ? Date.now() : Date.now() + i * DAY - 3600000);
+function daysLabel(i) {
+  if (i === 0) return '< 1 นาที';
+  if (i < 30) return i + ' วัน';
+  if (i < 365) return Math.round(i / 30) + ' เดือน';
+  return '1 ปี';
+}
+// Leeches ("คำดื้อ"): forgotten again and again.
+const LEECH = 4;
+const isLeech = (w) => !!(S.prog[w.w] && (S.prog[w.w].x || 0) >= LEECH);
+function logMiss(w) {
+  const t = today();
+  (S.miss[t] = S.miss[t] || {})[w.w] = (S.miss[t][w.w] || 0) + 1;
+  for (const k of Object.keys(S.miss)) if (dayDiff(t, k) > 21) delete S.miss[k];
 }
 function grade(w, g) {
   markActive();
@@ -355,14 +400,18 @@ function grade(w, g) {
     S.daily.fresh++;
     if (S.daily.fresh === S.settings.newPerDay) setTimeout(() => { confetti(); toast('🎯 ครบเป้าคำใหม่วันนี้แล้ว เก่งมาก!'); }, 300);
   } else S.daily.reviews++;
-  const b = nextBox(p, g);
+  const n = sched(p, g);
   S.prog[w.w] = {
-    b,
-    d: b === 0 ? Date.now() : Date.now() + INTERVALS[b] * DAY - 3600000,
+    b: n.b, i: n.i, e: n.e,
+    d: dueAt(n.i),
     s: (p ? p.s : 0) + 1,
     c: (p ? p.c : 0) + (g > 0 ? 1 : 0),
     x: (p ? p.x || 0 : 0) + (g === 0 ? 1 : 0),
   };
+  if (g === 0) {
+    logMiss(w);
+    if (S.prog[w.w].x === LEECH && !S.note[w.w]) setTimeout(() => toast(`🐢 "${w.w}" ลืมบ่อยแล้ว ลองเขียนวิธีจำดูนะ`), 600);
+  }
   addXP(g === 0 ? 1 : 2);
   S.chist[today()] = (S.chist[today()] || 0) + 1;
   questEvent('card');
@@ -372,10 +421,11 @@ function gameResult(w, ok) {
   markActive();
   const p = S.prog[w.w];
   if (ok) {
-    if (!p) S.prog[w.w] = { b: 1, d: Date.now() + DAY, s: 1, c: 1, x: 0 };
+    if (!p) S.prog[w.w] = { b: 1, i: 1, e: EASE0, d: dueAt(1), s: 1, c: 1, x: 0 };
     else { p.c++; p.s++; }
   } else {
-    S.prog[w.w] = { b: 0, d: Date.now(), s: (p ? p.s : 0) + 1, c: p ? p.c : 0, x: (p ? p.x || 0 : 0) + 1 };
+    S.prog[w.w] = { ...(p || {}), b: 0, i: 0, e: Math.max(EASE_MIN, ((p && p.e) || EASE0) - 0.2), d: Date.now(), s: (p ? p.s : 0) + 1, c: p ? p.c : 0, x: (p ? p.x || 0 : 0) + 1 };
+    logMiss(w);
   }
   save();
 }
@@ -383,20 +433,21 @@ function gameResult(w, ok) {
 // "I already know this": jump straight to a long interval so it stops appearing as new.
 function markKnown(w) {
   markActive();
-  S.prog[w.w] = { b: MASTERED, d: Date.now() + INTERVALS[MASTERED] * DAY, s: 1, c: 1, x: 0 };
+  S.prog[w.w] = { b: MASTERED, i: INTERVALS[MASTERED], e: EASE0 + 0.2, d: dueAt(INTERVALS[MASTERED]), s: 1, c: 1, x: 0 };
   save();
 }
 function markForReview(w) {
   const p = S.prog[w.w];
-  S.prog[w.w] = { b: 0, d: Date.now(), s: p ? p.s : 0, c: p ? p.c : 0, x: p ? p.x || 0 : 0 };
+  S.prog[w.w] = { ...(p || {}), b: 0, i: 0, d: Date.now(), s: p ? p.s : 0, c: p ? p.c : 0, x: p ? p.x || 0 : 0 };
   save();
 }
 
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', feed: 'ไถศัพท์', stats: 'สถิติ' };
+const TITLES = { home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น' };
 function go(tab, ...args) {
+  if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
   if (window.speechSynthesis) speechSynthesis.cancel();
   current = tab;
@@ -404,7 +455,7 @@ function go(tab, ...args) {
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, feed: renderFeed, stats: renderStats }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead }[tab])(...args);
   updateStreak();
 }
 function updateStreak() { $('#streak').textContent = '🔥 ' + streakNow() + (S.freeze ? ' · 🧊' + S.freeze : '') + ' · Lv.' + levelOf(S.xp); }
@@ -466,6 +517,7 @@ function renderHome() {
     </div>
     ${levelCard()}
 
+    ${S.weekSeen !== mondayKey() && weekStats(1).total ? `<div class="card-box week-card" id="weekCard"><b>📊 สรุปสัปดาห์ที่แล้ว</b>${weekBox(1, true)}</div>` : ''}
     ${questCard()}
 
     <div class="h2">7 วันที่ผ่านมา</div>
@@ -499,6 +551,12 @@ function renderHome() {
   $('#qFeed').onclick = () => go('feed');
   $('#statsBtn').onclick = () => go('stats', 'home');
   $('#qPlay').onclick = quickPlay;
+  const wc = $('#weekCard');
+  if (wc) wc.onclick = (e) => {
+    const b = e.target.closest('[data-wk]'); if (!b) return;
+    S.weekSeen = mondayKey(); save();
+    if (b.dataset.wk === 'drill') drillWeek(1); else wc.remove();
+  };
   if ($('#bkNow')) {
     $('#bkNow').onclick = async () => { await exportBackup(); renderHome(); };
     $('#bkLater').onclick = () => { S.backupSnooze = today(); save(); renderHome(); };
@@ -567,7 +625,7 @@ function buildQueue(extra) {
   rollDay();
   const p = pool();
   const due = dueList(p).slice(0, 200);
-  let fresh = p.filter((w) => !S.prog[w.w]);
+  let fresh = p.filter((w) => !S.prog[w.w] && inTopic(w));
   if (S.settings.order === 'shuffle') fresh = shuffle(fresh);
   const n = extra ? 10 : Math.max(0, S.settings.newPerDay - S.daily.fresh);
   fresh = fresh.slice(0, n);
@@ -619,8 +677,8 @@ function renderCards(extra) {
   const gradeLabel = (p, g) => {
     const re = relearn.has(card.w);
     if ((!p || re) && g === 1) return 'วนอีกรอบ';
-    if (re && g > 1) return intervalLabel(g === 3 ? 2 : 1);
-    return intervalLabel(nextBox(p, g));
+    if (re && g > 1) return daysLabel(g === 3 ? 3 : 1);
+    return daysLabel(sched(p, g).i);
   };
   $('#undo').onclick = () => {
     const h = history.pop(); if (!h) return;
@@ -645,14 +703,14 @@ function renderCards(extra) {
       <button class="speak" data-say aria-label="ฟังเสียง">🔊</button>`;
     const thFace = `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
       <div class="th">${esc(card.t)}</div>`;
-    const backExtra = exampleBox(card) + `<a class="link" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(card.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">ดูความหมายเพิ่มใน Oxford Learner's Dictionaries ↗</a>`;
+    const backExtra = noteBox(card) + exampleBox(card) + `<a class="link" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(card.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">ดูความหมายเพิ่มใน Oxford Learner's Dictionaries ↗</a>`;
     $('#stage').innerHTML = `
       <div class="fc" id="fc">
         <div class="swipe-tag l">ลืม</div><div class="swipe-tag r">จำได้</div>
         <div class="fc-inner">
           <div class="face front">${enFront ? enFace : thFace}
             ${isNew ? '<button class="know-btn" data-know>✓ รู้คำนี้แล้ว ข้ามเลย</button>' : ''}
-            <div class="hint">${isNew ? '✨ คำใหม่ · ' : ''}แตะเพื่อพลิก · ปัดซ้าย/ขวา</div></div>
+            <div class="hint">${isNew ? '✨ คำใหม่ · ' : ''}${isLeech(card) ? '🐢 คำดื้อ · ' : ''}แตะเพื่อพลิก · ปัดซ้าย/ขวา</div></div>
           <div class="face back">${enFront ? `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
             <div class="th">${esc(card.t)}</div><div class="ipa" style="margin-top:8px">${esc(card.w)} ${esc(card.i)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>${backExtra}`
             : enFace + backExtra}</div>
@@ -689,8 +747,8 @@ function renderCards(extra) {
       // Second look at a "hard" new word: keep it at 1 day, or 3 days if it now feels easy.
       relearn.delete(card.w);
       markActive(); S.daily.reviews++;
-      const b = g === 3 ? 2 : 1;
-      S.prog[card.w] = { ...S.prog[card.w], b, d: Date.now() + INTERVALS[b] * DAY - 3600000, s: S.prog[card.w].s + 1, c: S.prog[card.w].c + 1 };
+      const i = g === 3 ? 3 : 1;
+      S.prog[card.w] = { ...S.prog[card.w], b: boxOf(i), i, d: dueAt(i), s: S.prog[card.w].s + 1, c: S.prog[card.w].c + 1 };
       questEvent('card');
       stats.ok++; done++;
     } else {
@@ -712,6 +770,11 @@ function renderCards(extra) {
       if (e.target.closest('[data-star]')) {
         e.stopPropagation(); toggleStar(card);
         fc.querySelectorAll('[data-star]').forEach((b) => (b.textContent = starIcon(card)));
+        return;
+      }
+      if (e.target.closest('[data-note]')) {
+        e.stopPropagation();
+        editNote(card, () => { const nb = fc.querySelector('[data-note]'); if (nb) nb.outerHTML = noteBox(card); });
         return;
       }
       if (e.target.closest('[data-know]')) {
@@ -781,6 +844,12 @@ function spokenMatch(heard, word) {
     return t && (h.includes(' ' + t + ' ') || h.replace(/ /g, '').includes(t.replace(/ /g, '')) || (t === 'ok' && h.includes(' okay ')));
   });
 }
+// Sentence version: enough of the sentence's words were heard (in any order).
+function sentenceMatch(heard, sentence) {
+  const want = normSpoken(sentence).split(' ').filter(Boolean);
+  const got = new Set(normSpoken(heard).split(' '));
+  return want.length > 0 && want.filter((x) => got.has(x)).length / want.length >= 0.7;
+}
 
 /* ---------- games ---------- */
 const GAMES = {
@@ -791,6 +860,8 @@ const GAMES = {
   cloze: { icon: '📝', name: 'เติมคำในประโยค', desc: 'เลือกคำที่หายไปจากประโยค' },
   match: { icon: '🧩', name: 'จับคู่ด่วน', desc: 'จับคู่คำกับคำแปลแข่งเวลา' },
   speak: { icon: '🎤', name: 'พูดตาม', desc: 'ดูคำแล้วพูดออกเสียง' },
+  dict: { icon: '✍️', name: 'ฟังประโยคแล้วเขียน', desc: 'ฟังประโยค พิมพ์คำที่หายไป' },
+  speakS: { icon: '🗣️', name: 'พูดทั้งประโยค', desc: 'อ่านประโยคตัวอย่างออกเสียง' },
   review: { icon: '🔁', name: 'คำที่ผิดบ่อย', desc: 'ฝึกคำที่เคยตอบผิด' },
 };
 function gameTile(id) {
@@ -799,7 +870,10 @@ function gameTile(id) {
   return `<button class="game-tile" data-game="${id}"><div class="gi">${g.icon}</div><b>${g.name}</b><span>${g.desc}</span>${best}</button>`;
 }
 let gameSource = 'level';
+let gameTopic = 'food';
+let customWords = [];   // words for a one-off round, e.g. from the weekly summary
 function renderGames() {
+  if (gameSource === 'custom') gameSource = 'level';
   view.innerHTML = `
     <div class="card-box">
       <div class="small muted" style="margin-bottom:8px">ใช้คำศัพท์จาก</div>
@@ -809,12 +883,18 @@ function renderGames() {
         <button class="chip" data-s="all">ทุกระดับ</button>
         <button class="chip" data-s="mastered">🟢 คำที่จำได้แล้ว (${masteredWords().length})</button>
         <button class="chip" data-s="star">⭐ คำติดดาว (${Object.keys(S.star).length})</button>
+        <button class="chip" data-s="leech">🐢 คำดื้อ (${W.filter(isLeech).length})</button>
+        <button class="chip" data-s="topic">📂 ตามหมวด</button>
       </div>
+      ${gameSource === 'topic' ? `<select class="sel block-sel" id="gTopic" style="margin-top:10px">${TOPICS.map(([id]) => `<option value="${id}" ${gameTopic === id ? 'selected' : ''}>${TOPIC_LABEL[id]} (${W.filter((w) => w.tp === id).length})</option>`).join('')}</select>` : ''}
       ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
     </div>
+    ${STORIES.length ? `<button class="card-box guide-link" id="toRead"><span>📖</span><div class="grow"><b>อ่านเรื่องสั้น</b><div class="small muted">${STORIES.length} เรื่อง · อ่านแล้ว ${STORIES.filter((st) => S.read[st.id]).length} · แตะคำเพื่อดูความหมาย</div></div><span class="muted">›</span></button>` : ''}
     <div class="game-grid">${Object.keys(GAMES).map(gameTile).join('')}</div>`;
+  if ($('#toRead')) $('#toRead').onclick = () => go('read');
   const paint = () => view.querySelectorAll('#src .chip').forEach((c) => c.classList.toggle('on', c.dataset.s === gameSource));
   paint();
+  if ($('#gTopic')) $('#gTopic').onchange = (e) => { gameTopic = e.target.value; };
   $('#src').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { gameSource = c.dataset.s; renderGames(); } };
   view.querySelectorAll('[data-game]').forEach((b) => (b.onclick = () => startGame(b.dataset.game)));
 }
@@ -829,8 +909,11 @@ function gamePool(id) {
   let list = gameSource === 'learned' ? W.filter((w) => S.prog[w.w])
     : gameSource === 'mastered' ? masteredWords()
     : gameSource === 'star' ? W.filter(isStar)
+    : gameSource === 'leech' ? W.filter(isLeech)
+    : gameSource === 'custom' ? customWords
+    : gameSource === 'topic' ? W.filter((w) => w.tp === gameTopic)
     : gameSource === 'all' ? W : pool();
-  if (id === 'cloze') list = list.filter(hasCloze);
+  if (id === 'cloze' || id === 'dict') list = list.filter(hasCloze);
   return list;
 }
 
@@ -856,7 +939,7 @@ function distractors(w, n, field) {
 }
 
 function startGame(id) {
-  if (id === 'speak' && !canListen) {
+  if ((id === 'speak' || id === 'speakS') && !canListen) {
     toast('เบราว์เซอร์นี้ยังไม่รองรับการฟังเสียงพูด ลองเปิดใน Safari ดูนะ');
     if (current !== 'games') go('games');
     return;
@@ -867,6 +950,7 @@ function startGame(id) {
     toast(id === 'review' ? 'ยังไม่มีคำที่ตอบผิด เก่งมาก! 👍'
       : gameSource === 'mastered' ? `ต้องมีคำที่จำได้แล้วอย่างน้อย ${min} คำก่อนนะ`
       : gameSource === 'star' ? `ติดดาวคำอย่างน้อย ${min} คำก่อนนะ (กด ☆ บนการ์ดหรือในหน้าคำศัพท์)`
+      : gameSource === 'leech' ? `ยังมีคำดื้อไม่ถึง ${min} คำ เก่งมาก! 🐢`
       : 'คำศัพท์ยังน้อยไป ลองเลือก "ระดับที่เลือก" ก่อนนะ');
     if (current !== 'games') go('games');
     return;
@@ -896,6 +980,8 @@ function playQuiz(mode, src, gameId) {
     const m = gameId === 'review' ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'spell', 'cloze'] : ['en2th', 'th2en', 'listen', 'spell']) : mode;
     if (m === 'spell') return qSpell(w);
     if (m === 'speak') return qSpeak(w);
+    if (m === 'speakS') return qSpeak(w, true);
+    if (m === 'dict') return qDict(w);
     const toTh = m !== 'th2en' && m !== 'cloze';
     const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
     let prompt;
@@ -977,18 +1063,20 @@ function playQuiz(mode, src, gameId) {
     $('#skip').onclick = () => { if (!answered) done(false); };
   }
 
-  function qSpeak(w) {
+  function qSpeak(w, sentence) {
+    const target = sentence ? w.e : w.w;
     view.innerHTML = `${header()}
       <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
-        <div class="word">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
-        <div class="muted" style="margin-top:6px">${esc(w.t)}</div>
+        ${sentence ? `<div class="cloze">${hlExample(w)}</div><div class="thx" style="margin-top:6px">${esc(w.et)}</div>`
+          : `<div class="word">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
+        <div class="muted" style="margin-top:6px">${esc(w.t)}</div>`}
         <button class="hint-btn" data-say>🔊 ฟังตัวอย่าง</button></div>
       <div class="center"><button class="mic" id="mic" aria-label="กดแล้วพูด">🎤</button></div>
-      <div class="center small muted" id="heard">แตะไมค์แล้วพูดคำนี้</div>
+      <div class="center small muted" id="heard">แตะไมค์แล้วพูด${sentence ? 'ทั้งประโยค' : 'คำนี้'}</div>
       <button class="btn block" id="skip" style="margin-top:12px">ข้าม / เฉลย</button>
       <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
-    view.querySelector('[data-say]').onclick = () => speak(w.w);
+    view.querySelector('[data-say]').onclick = () => speak(target);
     const mic = $('#mic'), heard = $('#heard');
     let tries = 0, answered = false, rec = null;
     cleanup = () => { if (rec) try { rec.abort(); } catch (e) { /* ignore */ } };
@@ -1001,7 +1089,7 @@ function playQuiz(mode, src, gameId) {
         + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
       view.querySelector('[data-sayex]').onclick = () => speak(w.e);
       $('#nextQ').onclick = () => { cleanup = null; next(); };
-      if (!ok) speak(w.w);
+      if (!ok) speak(target);
       else setTimeout(() => { if (items[i] === w) { cleanup = null; next(); } }, 1300);
     };
     mic.onclick = () => {
@@ -1013,7 +1101,7 @@ function playQuiz(mode, src, gameId) {
       mic.classList.add('on'); heard.textContent = 'กำลังฟัง... พูดได้เลย';
       rec.onresult = (e) => {
         const alts = Array.from(e.results[0]).map((a) => a.transcript);
-        if (alts.some((a) => spokenMatch(a, w.w))) return done(true);
+        if (alts.some((a) => (sentence ? sentenceMatch(a, w.e) : spokenMatch(a, w.w)))) return done(true);
         tries++;
         heard.innerHTML = `ได้ยินว่า "<b>${esc(alts[0] || '')}</b>" ลองอีกครั้งนะ 💪 (${tries}/3)`;
         mic.classList.remove('no'); void mic.offsetWidth; mic.classList.add('no');
@@ -1028,13 +1116,61 @@ function playQuiz(mode, src, gameId) {
       try { rec.start(); } catch (err) { rec = null; mic.classList.remove('on'); heard.textContent = 'เปิดไมค์ไม่ได้ ลองอีกครั้งนะ'; }
     };
     $('#skip').onclick = () => { if (!answered) done(false); };
-    speak(w.w);
+    speak(target);
+  }
+
+  // Dictation: hear the example sentence, type the missing word.
+  function qDict(w) {
+    const blank = w.e.replace(clozeRe(w), (all, pre) => pre + '\u0000');
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+        <button class="speak" data-say style="width:76px;height:76px;font-size:34px;margin:0">🔊</button>
+        <div class="cloze" style="margin-top:12px">${esc(blank).replace('\u0000', '<span class="blank" id="hint">_____</span>')}</div>
+        <button class="hint-btn" id="dHint">💡 ดูคำแปลประโยค</button><div class="thx" id="dTh" hidden>${esc(w.et)}</div></div>
+      <form id="sf" autocomplete="off">
+        <input class="spell-input" id="si" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="พิมพ์คำที่ได้ยิน">
+        <div class="row" style="margin-top:10px">
+          <button type="button" class="btn grow" id="skip">ไม่รู้ / เฉลย</button>
+          <button type="submit" class="btn primary grow">ตรวจคำตอบ</button>
+        </div>
+      </form>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    view.querySelector('[data-say]').onclick = () => speak(w.e);
+    $('#dHint').onclick = () => { $('#dTh').hidden = false; $('#dHint').remove(); };
+    const inp = $('#si');
+    let tries = 0, answered = false;
+    const norm = (x) => x.trim().toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, ' ');
+    const answerWord = (w.e.match(clozeRe(w)) || ['', '', w.w])[0].replace(/^[^A-Za-z]/, '');
+    const done = (ok) => {
+      answered = true;
+      mark(w, ok);
+      inp.blur(); inp.value = answerWord; inp.classList.add(ok ? 'ok' : 'no');
+      $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! <b>${esc(w.w)}</b> = ${esc(w.t)}` : `❌ คำตอบคือ <b>${esc(answerWord)}</b> (${esc(w.t)})`)
+        + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      const sayEx = view.querySelector('[data-sayex]'); if (sayEx) sayEx.onclick = () => speak(w.e);
+      $('#nextQ').onclick = next;
+      if (ok) setTimeout(() => { if (items[i] === w) next(); }, 1500);
+    };
+    $('#sf').onsubmit = (e) => {
+      e.preventDefault(); if (answered) return;
+      if (norm(inp.value) === norm(answerWord) || norm(inp.value) === norm(w.w)) return done(tries === 0);
+      tries++;
+      inp.classList.remove('no'); void inp.offsetWidth; inp.classList.add('no');
+      if (tries >= 2) return done(false);
+      $('#reveal').textContent = 'ยังไม่ถูก ฟังอีกครั้งนะ 💪';
+      $('#hint').textContent = answerWord[0] + answerWord.slice(1).replace(/[a-zA-Z]/g, '_');
+      speak(w.e);
+    };
+    $('#skip').onclick = () => { if (!answered) done(false); };
+    setTimeout(() => speak(w.e), 200);
   }
 
   function mark(w, ok) {
     // A missed pronunciation doesn't mean the meaning was forgotten, so it doesn't reset the card.
-    if (gameId === 'speak' && !ok) markActive(); else gameResult(w, ok);
-    if (gameId === 'speak' && ok) S.counts.speak = (S.counts.speak || 0) + 1;
+    const spk = gameId === 'speak' || gameId === 'speakS';
+    if (spk && !ok) markActive(); else gameResult(w, ok);
+    if (spk && ok) S.counts.speak = (S.counts.speak || 0) + 1;
     questEvent('answer', { game: gameId, ok });
     sfx(ok ? 'ok' : 'bad');
     if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); score += 10 + Math.min(combo - 1, 5) * 2; addXP(comboXP(combo)); }
@@ -1056,7 +1192,7 @@ function playQuiz(mode, src, gameId) {
         <div class="h2">${score} แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
         <p>ถูก ${correct}/${items.length} · คอมโบสูงสุด ${bestCombo}</p>
       </div>
-      ${wrong.length ? `<div class="card-box wrong-list"><b>${gameId === 'speak' ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b> <span class="small muted">${gameId === 'speak' ? '(แตะคำเพื่อฟังเสียง)' : '(ใส่ในแฟลชการ์ดให้แล้ว)'} · กด ☆ เพื่อติดดาว</span>
+      ${wrong.length ? `<div class="card-box wrong-list"><b>${gameId.startsWith('speak') ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b> <span class="small muted">${gameId.startsWith('speak') ? '(แตะคำเพื่อฟังเสียง)' : '(ใส่ในแฟลชการ์ดให้แล้ว)'} · กด ☆ เพื่อติดดาว</span>
         ${wrong.map((w) => `<div class="wl" data-i="${w.idx}"><span><b>${esc(w.w)}</b> <span class="pos">${esc(w.p)}</span></span><span class="muted grow" style="text-align:right">${esc(w.t)}</span><button class="star-btn" data-star>${starIcon(w)}</button></div>`).join('')}</div>` : ''}
       <button class="btn primary block" id="again">เล่นอีกรอบ</button>
       <div style="height:10px"></div><button class="btn block" id="back">เลือกเกมอื่น</button>`;
@@ -1183,7 +1319,7 @@ function renderFeed() {
     const due = dueList(p).find((w) => !seen.has(w.w));
     if (due) return [due, 'quiz'];
     if (S.daily.fresh + (newDealt - newDone) < S.settings.newPerDay) {
-      const fresh = shuffle(p.filter((w) => !S.prog[w.w] && !seen.has(w.w)))[0];
+      const fresh = shuffle(p.filter((w) => !S.prog[w.w] && !seen.has(w.w) && inTopic(w)))[0];
       if (fresh) return [fresh, 'learn'];
     }
     // Practice: lower boxes first, with some randomness.
@@ -1211,7 +1347,7 @@ function renderFeed() {
       later.push({ at: k + 3, w });
       body = `<div class="f-tag">✨ คำใหม่</div>
         <div class="f-word">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
-        <div class="f-th">${esc(w.t)}</div>${exampleBox(w)}
+        <div class="f-th">${esc(w.t)}</div>${S.note[w.w] ? noteBox(w) : ''}${exampleBox(w)}
         <div class="small muted" style="margin-top:14px">จำไว้นะ อีกเดี๋ยวจะมีคำถามคำนี้ 😉</div>`;
     } else {
       type = pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'tf', 'cloze'] : ['en2th', 'th2en', 'listen', 'tf']);
@@ -1265,7 +1401,7 @@ function renderFeed() {
     if (!ok && btn) btn.classList.add('wrong');
     const rv = c.el.querySelector('.f-reveal');
     rv.innerHTML = (ok ? `✅ ถูกต้อง! <b>${esc(w.w)}</b> = ${esc(w.t)}` : `❌ <b>${esc(w.w)}</b> = ${esc(w.t)}`)
-      + (ok ? '' : exampleBox(w) + '<div class="small muted" style="margin-top:8px">ใส่ในแฟลชการ์ดให้แล้ว · ปัดขึ้นเพื่อไปต่อ ↑</div>');
+      + (ok ? '' : noteBox(w) + exampleBox(w) + '<div class="small muted" style="margin-top:8px">ใส่ในแฟลชการ์ดให้แล้ว · ปัดขึ้นเพื่อไปต่อ ↑</div>');
     if (c.type === 'th2en' || c.type === 'cloze' || !ok) speak(w.w);
     if (ok) setTimeout(() => { if (activeN === k) scrollToCard(k + 1); }, 900);
   }
@@ -1286,6 +1422,8 @@ function renderFeed() {
     }
     if (e.target.closest('[data-sayex]')) return speak(w.e);
     if (e.target.closest('[data-say]')) return speak(w.w);
+    const nb = e.target.closest('[data-note]');
+    if (nb) return editNote(w, () => { nb.outerHTML = noteBox(w); });
     const tf = e.target.closest('[data-tf]');
     if (tf) return answer(k, (tf.dataset.tf === '1') === c.tfReal, tf);
     const o = e.target.closest('[data-i]');
@@ -1307,8 +1445,96 @@ function renderFeed() {
   for (let k = 0; k < 4; k++) addCard();
 }
 
+/* ---------- reading (short stories) ---------- */
+// stories.js: window.STORIES = [{ id, level, title, titleTh, en: [paragraphs], th: [paragraphs], q: [{ q, o: [3], a }] }]
+const STORIES = window.STORIES || [];
+let WORD_INDEX = null;
+// Find the word-list entry for a token in a story, trying simple English endings.
+function lookupWord(tok) {
+  if (!WORD_INDEX) { WORD_INDEX = new Map(); W.forEach((w) => { const k = w.w.toLowerCase(); if (!/\s/.test(k) && !WORD_INDEX.has(k)) WORD_INDEX.set(k, w); }); }
+  const t = tok.toLowerCase().replace(/[’']s$/, '');
+  const tries = [t];
+  if (t.endsWith('ies')) tries.push(t.slice(0, -3) + 'y');
+  if (t.endsWith('es')) tries.push(t.slice(0, -2));
+  if (t.endsWith('s')) tries.push(t.slice(0, -1));
+  if (t.endsWith('ied')) tries.push(t.slice(0, -3) + 'y');
+  if (t.endsWith('ed')) tries.push(t.slice(0, -2), t.slice(0, -1), t.slice(0, -3));
+  if (t.endsWith('ing')) tries.push(t.slice(0, -3), t.slice(0, -3) + 'e', t.slice(0, -4));
+  if (t.endsWith('er')) tries.push(t.slice(0, -2), t.slice(0, -1));
+  if (t.endsWith('est')) tries.push(t.slice(0, -3), t.slice(0, -2));
+  if (t.endsWith('ly')) tries.push(t.slice(0, -2));
+  for (const x of tries) if (WORD_INDEX.has(x)) return WORD_INDEX.get(x);
+  return null;
+}
+function storyHTML(text) {
+  return esc(text).replace(/[A-Za-z][A-Za-z’']*/g, (tok) => {
+    const w = lookupWord(tok);
+    return w ? `<span class="rw ${status(w)}" data-i="${w.idx}">${tok}</span>` : tok;
+  });
+}
+function renderRead(id) {
+  if (!STORIES.length) { view.innerHTML = '<p class="center muted">ยังไม่มีเรื่องสั้น</p>'; return; }
+  if (id == null) {
+    const done = STORIES.filter((st) => S.read[st.id]).length;
+    view.innerHTML = `<div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="rBack">‹ เกม</button></div>
+      <p class="small muted" style="margin:0 4px 12px">อ่านแล้ว ${done}/${STORIES.length} เรื่อง · แตะคำในเรื่องเพื่อดูความหมาย แล้วตอบคำถามท้ายเรื่อง</p>
+      ${['A1', 'A2', 'B1'].map((lv) => `<div class="h2">${lvBadge(lv)} ${{ A1: 'ง่ายมาก', A2: 'ง่าย', B1: 'ปานกลาง' }[lv]}</div>
+        <div class="card-box" style="padding:4px 14px">${STORIES.filter((st) => st.level === lv).map((st) => `<button class="story-row" data-id="${st.id}">
+          <span class="grow"><b>${esc(st.title)}</b><br><span class="small muted">${esc(st.titleTh)}</span></span><span>${S.read[st.id] ? '✅' : '›'}</span></button>`).join('')}</div>`).join('')}`;
+    $('#rBack').onclick = () => go('games');
+    view.onclick = (e) => { const b = e.target.closest('.story-row'); if (b) { view.onclick = null; go('read', +b.dataset.id); } };
+    cleanup = () => { view.onclick = null; };
+    return;
+  }
+  const st = STORIES.find((x) => x.id === id);
+  $('#title').textContent = 'อ่านเรื่องสั้น';
+  let showTh = false;
+  const answers = [];
+  view.innerHTML = `<div class="row" style="margin:4px 0 12px;justify-content:space-between"><button class="btn ghost" id="rBack">‹ รายการ</button>
+      <button class="btn" id="rTh">🇹🇭 แสดงคำแปล</button></div>
+    <div class="card-box story">
+      <div class="row" style="justify-content:space-between">${lvBadge(st.level)}<button class="btn" id="rAll" style="padding:8px 14px">🔊 ฟังทั้งเรื่อง</button></div>
+      <div class="h2" style="margin:12px 0 2px">${esc(st.title)}</div><div class="muted small">${esc(st.titleTh)}</div>
+      ${st.en.map((para, k) => `<p class="st-p">${storyHTML(para)} <button class="say-ex" data-para="${k}" aria-label="ฟังย่อหน้านี้">🔊</button></p><p class="st-th" hidden>${esc(st.th[k] || '')}</p>`).join('')}
+      <div class="small muted">แตะคำที่ขีดเส้นใต้เพื่อดูความหมาย · <span class="rw learning">สีเหลือง</span> กำลังเรียน · <span class="rw mastered">สีเขียว</span> จำได้แล้ว</div>
+    </div>
+    <div class="h2">คำถามท้ายเรื่อง</div>
+    ${st.q.map((q, k) => `<div class="card-box"><b>${k + 1}. ${esc(q.q)}</b>
+      <div class="options" style="margin-top:10px" data-q="${k}">${q.o.map((o, j) => `<button class="opt" data-j="${j}">${esc(o)}</button>`).join('')}</div></div>`).join('')}
+    <div id="rDone"></div>`;
+  $('#rBack').onclick = () => go('read');
+  $('#rTh').onclick = () => { showTh = !showTh; view.querySelectorAll('.st-th').forEach((x) => (x.hidden = !showTh)); $('#rTh').textContent = showTh ? '🙈 ซ่อนคำแปล' : '🇹🇭 แสดงคำแปล'; };
+  $('#rAll').onclick = () => speak(st.en.join(' '));
+  view.onclick = (e) => {
+    const pb = e.target.closest('[data-para]'); if (pb) return speak(st.en[+pb.dataset.para]);
+    const rw = e.target.closest('.rw[data-i]');
+    if (rw) { const w = W[+rw.dataset.i]; speak(w.w); return openSheet(w, () => { view.querySelectorAll(`.rw[data-i="${w.idx}"]`).forEach((x) => (x.className = 'rw ' + status(w))); }); }
+    const ob = e.target.closest('.opt'), box = ob && ob.closest('[data-q]');
+    if (!ob || !box || box.dataset.done) return;
+    const k = +box.dataset.q, ok = +ob.dataset.j === st.q[k].a;
+    box.dataset.done = '1';
+    box.querySelectorAll('.opt').forEach((o) => { if (+o.dataset.j === st.q[k].a) o.classList.add('correct'); });
+    if (!ok) ob.classList.add('wrong');
+    sfx(ok ? 'ok' : 'bad'); markActive();
+    if (ok) addXP(5);
+    answers[k] = ok;
+    if (answers.filter((x) => x != null).length === st.q.length) {
+      const right = answers.filter(Boolean).length;
+      const first = !S.read[st.id];
+      S.read[st.id] = today(); save();
+      if (right === st.q.length) confetti();
+      const nextSt = STORIES.find((x) => !S.read[x.id]);
+      $('#rDone').innerHTML = `<div class="card-box center pop"><div class="result-emoji">${right === st.q.length ? '🏆' : '📖'}</div>
+        <div class="h2">ตอบถูก ${right}/${st.q.length}${first ? ' · อ่านจบเรื่องใหม่!' : ''}</div>
+        ${nextSt ? `<button class="btn primary block" id="rNext">เรื่องถัดไป: ${esc(nextSt.title)}</button>` : '<p>อ่านครบทุกเรื่องแล้ว เก่งมาก! 🎉</p>'}</div>`;
+      if (nextSt) $('#rNext').onclick = () => go('read', nextSt.id);
+    }
+  };
+  cleanup = () => { view.onclick = null; };
+}
+
 /* ---------- word list ---------- */
-let listFilter = { q: '', lv: 'all', st: 'all' };
+let listFilter = { q: '', lv: 'all', st: 'all', tp: '' };
 function renderList() {
   view.innerHTML = `
     <input class="search" id="q" type="search" placeholder="🔍 ค้นหาคำอังกฤษหรือคำแปลไทย" value="${esc(listFilter.q)}" autocapitalize="none" autocorrect="off">
@@ -1316,8 +1542,9 @@ function renderList() {
       ${['all', ...LEVELS].map((l) => `<button class="chip" data-v="${l}">${l === 'all' ? 'ทุกระดับ' : LV_LABEL[l]}</button>`).join('')}
     </div>
     <div class="chips" id="st" style="margin-bottom:6px">
-      ${[['all', 'ทั้งหมด'], ['new', 'ยังไม่เรียน'], ['learning', '🟡 กำลังเรียน'], ['mastered', '🟢 จำได้แล้ว'], ['star', '⭐ ติดดาว']].map(([v, t]) => `<button class="chip" data-v="${v}">${t}</button>`).join('')}
+      ${[['all', 'ทั้งหมด'], ['new', 'ยังไม่เรียน'], ['learning', '🟡 กำลังเรียน'], ['mastered', '🟢 จำได้แล้ว'], ['star', '⭐ ติดดาว'], ['leech', '🐢 คำดื้อ'], ['note', '💡 มีวิธีจำ']].map(([v, t]) => `<button class="chip" data-v="${v}">${t}</button>`).join('')}
     </div>
+    <select class="sel block-sel" id="tpSel"><option value="">📂 ทุกหมวด</option>${TOPICS.map(([id]) => `<option value="${id}" ${listFilter.tp === id ? 'selected' : ''}>${TOPIC_LABEL[id]}</option>`).join('')}</select>
     <div class="small muted" id="cnt" style="margin:6px 4px"></div>
     <div class="card-box" style="padding:4px 14px" id="rows"></div>
     <div id="sentinel" style="height:1px"></div>`;
@@ -1332,13 +1559,13 @@ function renderList() {
     rows.insertAdjacentHTML('beforeend', chunk.map((w) => `<div class="wrow" data-i="${w.idx}">
       <span class="dot ${status(w)}"></span>
       <div class="grow"><div><span class="w">${esc(w.w)}</span> <span class="pos">${esc(w.p)}</span></div><div class="t">${esc(w.t)}</div></div>
-      <span class="star-mark">${isStar(w) ? '⭐' : ''}</span>${lvBadge(w.g)}</div>`).join(''));
+      <span class="star-mark">${isLeech(w) ? '🐢' : ''}${isStar(w) ? '⭐' : ''}</span>${lvBadge(w.g)}</div>`).join(''));
     shown += chunk.length;
   };
   const apply = () => {
     const q = listFilter.q.trim().toLowerCase();
-    items = W.filter((w) => (listFilter.lv === 'all' || w.g === listFilter.lv)
-      && (listFilter.st === 'all' || (listFilter.st === 'star' ? isStar(w) : status(w) === listFilter.st))
+    items = W.filter((w) => (listFilter.lv === 'all' || w.g === listFilter.lv) && (!listFilter.tp || w.tp === listFilter.tp)
+      && (listFilter.st === 'all' || (listFilter.st === 'star' ? isStar(w) : listFilter.st === 'leech' ? isLeech(w) : listFilter.st === 'note' ? !!S.note[w.w] : status(w) === listFilter.st))
       && (!q || w.w.toLowerCase().includes(q) || w.t.includes(q)));
     if (q) items.sort((a, b) => (b.w.toLowerCase().startsWith(q)) - (a.w.toLowerCase().startsWith(q)));
     rows.innerHTML = ''; shown = 0; more();
@@ -1347,13 +1574,14 @@ function renderList() {
     paint();
   };
   $('#q').oninput = (e) => { listFilter.q = e.target.value; apply(); };
+  $('#tpSel').onchange = (e) => { listFilter.tp = e.target.value; apply(); };
   $('#lv').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { listFilter.lv = c.dataset.v; apply(); } };
   $('#st').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { listFilter.st = c.dataset.v; apply(); } };
   rows.onclick = (e) => {
     const r = e.target.closest('.wrow'); if (!r) return;
     const w = W[+r.dataset.i];
     speak(w.w);
-    openSheet(w, () => { r.querySelector('.dot').className = 'dot ' + status(w); r.querySelector('.star-mark').textContent = isStar(w) ? '⭐' : ''; });
+    openSheet(w, () => { r.querySelector('.dot').className = 'dot ' + status(w); r.querySelector('.star-mark').textContent = (isLeech(w) ? '🐢' : '') + (isStar(w) ? '⭐' : ''); });
   };
   const io = new IntersectionObserver((es) => { if (es[0].isIntersecting && shown < items.length) more(); }, { root: view, rootMargin: '400px' });
   io.observe($('#sentinel'));
@@ -1361,19 +1589,49 @@ function renderList() {
   apply();
 }
 
+/* ---------- memory notes ---------- */
+// Card/sheet snippet: the user's own memory hook, or a prompt to write one for leeches.
+function noteBox(w) {
+  if (S.note[w.w]) return `<button class="note-box" data-note>💡 <b>วิธีจำของฉัน:</b> ${esc(S.note[w.w])} <span class="muted">✏️</span></button>`;
+  return isLeech(w) ? '<button class="note-box empty" data-note>🐢 คำนี้ลืมบ่อย แตะเพื่อเขียนวิธีจำของตัวเอง</button>'
+    : '<button class="note-add" data-note>✏️ เขียนวิธีจำ</button>';
+}
+function editNote(w, onDone) {
+  const el = document.createElement('div');
+  el.className = 'sheet-wrap';
+  el.innerHTML = `<div class="sheet" role="dialog" aria-label="วิธีจำ ${esc(w.w)}">
+      <div class="grab"></div>
+      <div class="h2" style="margin:8px 0 4px">💡 วิธีจำ "${esc(w.w)}"</div>
+      <div class="muted small">${esc(w.t)}</div>
+      <textarea class="note-in" id="noteIn" maxlength="200" placeholder="เช่น เสียงคล้ายคำไทย, แต่งประโยคตลกๆ, นึกภาพ…">${esc(S.note[w.w] || '')}</textarea>
+      <div class="small muted">ตัวอย่าง: abandon = "อะ-แบน-ดอน" ทิ้งรถไว้จนยางแบน 🚗</div>
+      <div class="row" style="margin-top:12px">${S.note[w.w] ? '<button class="btn grow" data-act="del">ลบ</button>' : ''}<button class="btn primary grow" data-act="save">บันทึก</button></div>
+    </div>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('open'));
+  const close = () => { el.classList.remove('open'); setTimeout(() => el.remove(), 250); if (onDone) onDone(); };
+  el.onclick = (e) => {
+    if (e.target === el) return close();
+    const act = e.target.closest('[data-act]'); if (!act) return;
+    const v = $('#noteIn', el).value.trim();
+    if (act.dataset.act === 'del' || !v) delete S.note[w.w]; else S.note[w.w] = v;
+    save(); toast(S.note[w.w] ? 'บันทึกวิธีจำแล้ว 💡' : 'ลบวิธีจำแล้ว'); close();
+  };
+}
+
 /* ---------- word detail sheet ---------- */
 function openSheet(w, onChange) {
   const st = status(w);
-  const stLabel = { new: 'ยังไม่เรียน', learning: '🟡 กำลังเรียน', mastered: '🟢 จำได้แล้ว' }[st];
+  const stLabel = { new: 'ยังไม่เรียน', learning: '🟡 กำลังเรียน', mastered: '🟢 จำได้แล้ว' }[st] + (isLeech(w) ? ' · 🐢 คำดื้อ' : '');
   const el = document.createElement('div');
   el.className = 'sheet-wrap';
   el.innerHTML = `<div class="sheet" role="dialog" aria-label="${esc(w.w)}">
       <div class="grab"></div>
       <div class="row" style="justify-content:space-between">${lvBadge(w.g)}<span class="small muted">${stLabel}</span></div>
       <div class="sheet-word">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
-      <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
+      <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span>${w.tp ? ` · ${TOPIC_LABEL[w.tp]}` : ''}</div>
       <div class="th" style="font-size:22px;margin:10px 0">${esc(w.t)}</div>
-      ${exampleBox(w)}
+      ${noteBox(w)}${exampleBox(w)}
       <button class="btn block" data-act="star" style="margin-top:14px">${isStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาวคำนี้'}</button>
       <div class="row" style="margin-top:10px">
         <button class="btn grow" data-act="review">🔁 ทบทวนวันนี้</button>
@@ -1388,6 +1646,7 @@ function openSheet(w, onChange) {
     if (e.target === el) return close();
     if (e.target.closest('[data-say]')) return speak(w.w);
     if (e.target.closest('[data-sayex]')) return speak(w.e);
+    if (e.target.closest('[data-note]')) { close(); return editNote(w, onChange); }
     const act = e.target.closest('[data-act]');
     if (!act) return;
     if (act.dataset.act === 'star') {
@@ -1400,6 +1659,51 @@ function openSheet(w, onChange) {
     if (onChange) onChange();
     close();
   };
+}
+
+// Weekly summary. Weeks run Monday–Sunday; `off` = 0 for this week, 1 for last week, …
+function mondayKey(off = 0) {
+  const d = new Date(); d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - off * 7);
+  return d.toLocaleDateString('en-CA');
+}
+function weekStats(off) {
+  const mon = mondayKey(off), days = [];
+  for (let k = 0; k < 7; k++) { const d = new Date(Date.parse(mon + 'T12:00:00') + k * DAY).toLocaleDateString('en-CA'); if (d <= today()) days.push(d); }
+  const end = days[days.length - 1];
+  const snapAt = (key) => { const ks = Object.keys(S.snap).filter((k) => k <= key).sort(); return ks.length ? S.snap[ks[ks.length - 1]] : null; };
+  const before = new Date(Date.parse(mon + 'T12:00:00') - DAY).toLocaleDateString('en-CA');
+  const a = snapAt(before) || (Object.keys(S.snap).sort()[0] >= mon ? [0, 0, 0, 0] : null), b = snapAt(end);
+  const missed = {};
+  days.forEach((d) => Object.entries(S.miss[d] || {}).forEach(([w, n]) => (missed[w] = (missed[w] || 0) + n)));
+  const top = Object.entries(missed).sort((x, y) => y[1] - x[1]).slice(0, 5).map(([w, n]) => ({ w: W.find((x) => x.w === w), n })).filter((x) => x.w);
+  return {
+    mon, days: days.length,
+    active: days.filter((d) => S.hist[d]).length,
+    total: days.reduce((t, d) => t + (S.hist[d] || 0), 0),
+    learned: a && b ? b[2] - a[2] : null, mastered: a && b ? b[3] - a[3] : null,
+    top,
+  };
+}
+function weekBox(off, withActions) {
+  const w = weekStats(off), prev = weekStats(off + 1);
+  const diff = prev.total ? Math.round((w.total - prev.total) / prev.total * 100) : null;
+  const range = `${thDate(Date.parse(w.mon + 'T12:00:00'))} – ${off ? thDate(Date.parse(w.mon + 'T12:00:00') + 6 * DAY) : 'วันนี้'}`;
+  return `<div class="small muted">${range}</div>
+    <div class="tiles" style="margin:10px 0 6px">
+      <div class="tile-s"><b>${w.active}<small>/${w.days}</small></b><span>วันที่เล่น</span></div>
+      <div class="tile-s"><b>${w.total}</b><span>การ์ด+ข้อเกม</span></div>
+      <div class="tile-s"><b>${w.learned == null ? '–' : '+' + w.learned}</b><span>คำใหม่</span></div>
+      <div class="tile-s"><b>${w.mastered == null ? '–' : (w.mastered >= 0 ? '+' : '') + w.mastered}</b><span>จำได้เพิ่ม</span></div>
+    </div>
+    ${diff == null ? '' : `<div class="small">${diff >= 0 ? '📈' : '📉'} ทำ${diff >= 0 ? 'มากกว่า' : 'น้อยกว่า'}สัปดาห์ก่อน ${Math.abs(diff)}%</div>`}
+    ${w.top.length ? `<div class="small" style="margin-top:8px"><b>คำที่ผิดบ่อย:</b> ${w.top.map((x) => `${esc(x.w.w)} <span class="muted">(${x.n})</span>`).join(', ')}</div>` : ''}
+    ${withActions ? `<div class="row" style="margin-top:12px">${w.top.length >= 4 ? `<button class="btn primary grow" data-wk="drill" data-off="${off}">🎯 ฝึกคำที่ผิดบ่อย</button>` : ''}<button class="btn grow" data-wk="close">ปิด</button></div>` : ''}`;
+}
+function drillWeek(off) {
+  customWords = weekStats(off).top.map((x) => x.w);
+  gameSource = 'custom';
+  startGame(pick(['en2th', 'th2en', 'listen']));
 }
 
 /* ---------- stats & projections ---------- */
@@ -1500,6 +1804,10 @@ function renderStats(from) {
     </div>
     <div class="card-box"><div class="small muted" style="margin-bottom:6px">กิจกรรมต่อวัน (แตะแท่งเพื่อดูตัวเลข)</div>${activityChart(W_)}</div>
 
+    <div class="h2">สรุปรายสัปดาห์</div>
+    <div class="card-box"><b>สัปดาห์นี้</b>${weekBox(0)}</div>
+    <div class="card-box"><b>สัปดาห์ที่แล้ว</b>${weekBox(1)}</div>
+
     <div class="h2">แนวโน้มคำศัพท์</div>
     <div class="card-box">${trendChart(W_)}</div>
 
@@ -1595,6 +1903,113 @@ function bindChartTips() {
   });
 }
 
+/* ---------- cloud sync (Supabase, optional) ---------- */
+// Signs in with a 6-digit email code (works inside the home-screen app, unlike magic links, which
+// open Safari). Progress is one JSON row per user in table `progress`, protected by row-level
+// security. Sync = pull → mergeBackup() (keeps whichever side is further ahead) → push.
+const SYNC = Object.assign({ url: '', anonKey: '', requireLogin: false }, window.SYNC_CONFIG || {});
+const syncOn = () => !!(SYNC.url && SYNC.anonKey);
+const AUTH_KEY = 'o3k.auth';
+let auth = null;
+try { auth = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null'); } catch (e) { /* ignore */ }
+const setAuth = (a) => { auth = a; try { a ? localStorage.setItem(AUTH_KEY, JSON.stringify(a)) : localStorage.removeItem(AUTH_KEY); } catch (e) { /* ignore */ } };
+let syncState = { busy: false, last: 0, error: '' };
+
+async function sbFetch(path, opts = {}, retry = true) {
+  const headers = { apikey: SYNC.anonKey, 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  if (auth && auth.access_token && !opts.noAuth) headers.Authorization = 'Bearer ' + auth.access_token;
+  const res = await fetch(SYNC.url.replace(/\/$/, '') + path, { ...opts, headers });
+  if (res.status === 401 && retry && auth && auth.refresh_token && !opts.noAuth) {
+    if (await refreshAuth()) return sbFetch(path, opts, false);
+  }
+  return res;
+}
+async function refreshAuth() {
+  try {
+    const r = await sbFetch('/auth/v1/token?grant_type=refresh_token', { method: 'POST', noAuth: true, body: JSON.stringify({ refresh_token: auth.refresh_token }) }, false);
+    if (!r.ok) { setAuth(null); return false; }
+    const j = await r.json(); setAuth({ ...auth, ...j }); return true;
+  } catch (e) { return false; }
+}
+async function sendCode(email) {
+  // create_user:false → only people already invited in the Supabase dashboard can sign in.
+  const r = await sbFetch('/auth/v1/otp', { method: 'POST', noAuth: true, body: JSON.stringify({ email, create_user: false }) });
+  if (!r.ok) throw new Error(r.status === 422 || r.status === 400 ? 'อีเมลนี้ยังไม่ได้รับเชิญ' : 'ส่งรหัสไม่สำเร็จ (' + r.status + ')');
+}
+async function verifyCode(email, token) {
+  const r = await sbFetch('/auth/v1/verify', { method: 'POST', noAuth: true, body: JSON.stringify({ type: 'email', email, token }) });
+  if (!r.ok) throw new Error('รหัสไม่ถูกต้องหรือหมดอายุ');
+  const j = await r.json();
+  setAuth({ access_token: j.access_token, refresh_token: j.refresh_token, user: { id: j.user.id, email: j.user.email } });
+}
+let pushTimer = null, pulling = false;
+function schedulePush() {
+  if (!syncOn() || !auth || pulling) return;
+  clearTimeout(pushTimer); pushTimer = setTimeout(() => syncNow(), 4000);
+}
+async function syncNow(manual) {
+  if (!syncOn() || !auth || syncState.busy) return false;
+  syncState.busy = true; syncState.error = '';
+  try {
+    const uid = auth.user.id;
+    const r = await sbFetch(`/rest/v1/progress?select=data&user_id=eq.${encodeURIComponent(uid)}`);
+    if (!r.ok) throw new Error('โหลดข้อมูลไม่สำเร็จ (' + r.status + ')');
+    const rows = await r.json();
+    if (rows[0] && rows[0].data) { pulling = true; try { mergeBackup(rows[0].data); } finally { pulling = false; } }
+    const w = await sbFetch('/rest/v1/progress', {
+      method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ user_id: uid, data: S, updated_at: new Date().toISOString() }),
+    });
+    if (!w.ok) throw new Error('บันทึกขึ้นคลาวด์ไม่สำเร็จ (' + w.status + ')');
+    syncState.last = Date.now();
+    if (manual) toast('☁️ ซิงก์เรียบร้อย');
+    return true;
+  } catch (e) {
+    syncState.error = e.message || 'ซิงก์ไม่สำเร็จ';
+    if (manual) toast('⚠️ ' + syncState.error);
+    return false;
+  } finally { syncState.busy = false; }
+}
+// Login screen (also used as the lock screen when requireLogin is on).
+function renderLogin(locked) {
+  document.body.classList.toggle('locked', !!locked);
+  view.innerHTML = `<div class="card-box center pop" style="margin-top:20px">
+      <div class="result-emoji">☁️</div>
+      <div class="h2">${locked ? 'เข้าสู่ระบบเพื่อใช้งาน' : 'เข้าสู่ระบบเพื่อซิงก์'}</div>
+      <p class="small muted">ใช้อีเมลที่ได้รับเชิญ แอปจะส่งรหัส 6 หลักไปทางอีเมล</p>
+      <form id="lf" autocomplete="on">
+        <input class="spell-input" id="em" type="email" inputmode="email" autocomplete="email" placeholder="อีเมล" value="${esc((auth && auth.user && auth.user.email) || '')}">
+        <button class="btn primary block" style="margin-top:10px" id="lsend">ส่งรหัสไปที่อีเมล</button>
+      </form>
+      <form id="cf" hidden>
+        <input class="spell-input" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="รหัสจากอีเมล">
+        <button class="btn primary block" style="margin-top:10px">ยืนยัน</button>
+      </form>
+      <p class="small" id="lmsg" style="min-height:1.5em"></p>
+      ${locked ? '' : '<button class="btn ghost block" id="lback">‹ กลับ</button>'}
+    </div>`;
+  const msg = (t) => ($('#lmsg').textContent = t);
+  let email = '';
+  $('#lf').onsubmit = async (e) => {
+    e.preventDefault(); email = $('#em').value.trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(email)) return msg('กรอกอีเมลให้ถูกต้องก่อนนะ');
+    msg('กำลังส่งรหัส…');
+    try { await sendCode(email); $('#cf').hidden = false; $('#code').focus(); msg('ส่งรหัสแล้ว เช็คอีเมล (รวมถึงในโฟลเดอร์สแปม)'); } catch (err) { msg('⚠️ ' + err.message); }
+  };
+  $('#cf').onsubmit = async (e) => {
+    e.preventDefault(); msg('กำลังตรวจรหัส…');
+    try {
+      await verifyCode(email, $('#code').value.trim());
+      document.body.classList.remove('locked');
+      msg('เข้าสู่ระบบแล้ว กำลังซิงก์…');
+      await syncNow(true);
+      go(locked ? (['home', 'feed', 'cards'].includes(S.settings.start) ? S.settings.start : 'home') : 'settings');
+    } catch (err) { msg('⚠️ ' + err.message); }
+  };
+  if (!locked) $('#lback').onclick = () => go('settings');
+}
+const mustLogin = () => syncOn() && SYNC.requireLogin && !auth;
+
 /* ---------- guide ---------- */
 // In-app user manual. Plain content; keep it in sync when features change.
 const GUIDE = [
@@ -1615,7 +2030,7 @@ const GUIDE = [
       <li><b>ง่าย</b> — รู้ทันที ยาวขึ้น 2 ขั้น</li>
     </ul>
     <p><b>ทางลัด:</b> ปัดการ์ดไปขวา = จำได้, ปัดไปซ้าย = ลืม</p>
-    <p>ระยะทบทวนคือ 1 → 3 → 7 → 16 → 35 → 80 → 180 วัน คำที่ผ่านถึงขั้น 16 วันขึ้นไปจะนับว่า <b>🟢 จำได้แล้ว</b></p>
+    <p><b>ระยะทบทวนปรับตามแต่ละคำ</b> คำที่กด "ง่าย" บ่อยจะเว้นห่างเร็วขึ้น คำที่ลืมบ่อยจะกลับมาถี่ขึ้น (ตัวเลขใต้ปุ่มบอกว่าจะเจอคำนี้อีกเมื่อไร) คำที่ระยะทบทวนถึง 16 วันขึ้นไปจะนับว่า <b>🟢 จำได้แล้ว</b></p>
     <p>กดผิด? กด <b>↩︎</b> มุมขวาบนเพื่อย้อนการ์ดใบล่าสุด · แตะ ⭐ บนการ์ดเพื่อติดดาวคำที่อยากฝึกเพิ่ม</p>`],
   ['📱', 'ไถศัพท์ และเล่นด่วน', `
     <p><b>📱 ไถศัพท์</b> (แท็บด้านล่าง หรือปุ่มสีชมพูในหน้าแรก) — ปัดขึ้นทีละคำเหมือนไถ TikTok ไม่มีวันจบ เหมาะกับช่วงว่างสั้นๆ</p>
@@ -1641,6 +2056,7 @@ const GUIDE = [
       <li><b>กราฟกิจกรรมต่อวัน</b> — แท่งสีม่วงคือแฟลชการ์ด สีชมพูคือเกมกับไถศัพท์ แตะแท่งเพื่อดูตัวเลข</li>
       <li><b>กราฟแนวโน้ม</b> — จำนวนคำที่เรียนแล้วและจำได้แล้วในแต่ละวัน (เริ่มเก็บตั้งแต่เวอร์ชัน 1.9.0)</li>
       <li><b>คาดการณ์</b> — วันที่น่าจะจำได้ครบชุด 3000 คำ และครบ 5000 คำ คิดจากความเร็วที่เรียนคำใหม่ ความถี่ที่เล่น และความแม่นยำ</li>
+      <li><b>สรุปรายสัปดาห์</b> — สัปดาห์นี้กับสัปดาห์ที่แล้ว: เล่นกี่วัน, คำใหม่, จำได้เพิ่ม, คำที่ผิดบ่อย ทุกวันจันทร์จะมีการ์ดสรุปสัปดาห์ที่แล้วในหน้าแรก พร้อมปุ่มฝึกคำที่ผิดบ่อย</li>
       <li><b>ถ้าปรับจำนวนคำใหม่ต่อวัน</b> — ตารางเทียบว่าตั้ง 10/20/30/50 คำต่อวันจะจบเร็วขึ้นแค่ไหน และต้องทบทวนวันละประมาณเท่าไร</li>
     </ul>
     <p>ตัวเลขเป็นการประมาณ ยิ่งเล่นนาน ยิ่งแม่นขึ้น</p>`],
@@ -1650,7 +2066,14 @@ const GUIDE = [
       <li>ทำครบแล้ว กด <b>"เรียนคำใหม่เพิ่มอีก 10 คำ"</b> ได้เรื่อยๆ</li>
       <li>แอปจะไม่ให้ทวนคำที่ยังไม่ถึงกำหนดซ้ำ เพราะการเว้นระยะให้ลืมนิดหน่อยก่อนทวนช่วยให้จำได้นานกว่า อยากฝึกเพิ่มให้ไปเล่น <b>🎮 เกม</b> แทน</li>
     </ul>`],
-  ['🎮', 'เกมทั้ง 8 แบบ', `
+  ['🐢', 'คำดื้อ และวิธีจำของฉัน', `
+    <ul>
+      <li>คำที่กด "ลืม" หรือตอบผิดรวม 4 ครั้งขึ้นไป จะกลายเป็น <b>🐢 คำดื้อ</b></li>
+      <li>เจอคำดื้อ แตะ "เขียนวิธีจำ" บนการ์ดด้านหลัง แล้วจดวิธีจำของตัวเอง เช่น เสียงคล้ายคำไทย หรือประโยคตลกๆ ครั้งต่อไปจะโชว์ให้เห็นทุกครั้ง</li>
+      <li>เขียนวิธีจำให้คำไหนก็ได้ ไม่ต้องเป็นคำดื้อ (แตะ ✏️ เขียนวิธีจำ ในการ์ดหรือในหน้ารายละเอียดคำ)</li>
+      <li>ฝึกเฉพาะคำดื้อ: 🎮 เกม → เลือกแหล่งคำ <b>🐢 คำดื้อ</b> · ดูรายชื่อ: 📖 คำศัพท์ → ตัวกรอง 🐢 คำดื้อ</li>
+    </ul>`],
+  ['🎮', 'เกมทั้ง 10 แบบ', `
     <ul>
       <li><b>🇬🇧 ทายความหมาย / 🇹🇭 ทายคำศัพท์</b> — เลือกคำแปลที่ถูก</li>
       <li><b>🎧 ฟังแล้วตอบ</b> — ฝึกหู ฟังเสียงแล้วเลือกความหมาย</li>
@@ -1659,9 +2082,24 @@ const GUIDE = [
       <li><b>🧩 จับคู่ด่วน</b> — แข่งกับเวลา เล่นสนุกตอนว่าง</li>
       <li><b>🎤 พูดตาม</b> — กดไมค์แล้วพูดคำนั้น ลองได้ 3 ครั้ง (ต้องอนุญาตไมโครโฟน) พูดไม่ผ่านไม่ทำให้การ์ดถูกรีเซ็ต</li>
       <li><b>🔁 คำที่ผิดบ่อย</b> — รวมคำที่เคยตอบผิดมาฝึกซ้ำ</li>
+      <li><b>✍️ ฟังประโยคแล้วเขียน</b> — ฟังประโยคตัวอย่าง แล้วพิมพ์คำที่หายไป ฝึกหูกับการสะกดพร้อมกัน</li>
+      <li><b>🗣️ พูดทั้งประโยค</b> — อ่านประโยคตัวอย่างออกเสียง ผ่านเมื่อพูดถูกราว 70% ของคำในประโยค</li>
     </ul>
-    <p><b>เลือกแหล่งคำ</b> ด้านบนหน้าเกมได้: ระดับที่เลือก, คำที่เรียนแล้ว, ทุกระดับ, 🟢 คำที่จำได้แล้ว (เช็คว่ายังจำได้จริง คำที่ตอบผิดจะกลับไปให้ทบทวนในแฟลชการ์ด) และ ⭐ คำติดดาว</p>
+    <p><b>เลือกแหล่งคำ</b> ด้านบนหน้าเกมได้: ระดับที่เลือก, คำที่เรียนแล้ว, ทุกระดับ, 🟢 คำที่จำได้แล้ว (เช็คว่ายังจำได้จริง คำที่ตอบผิดจะกลับไปให้ทบทวนในแฟลชการ์ด), ⭐ คำติดดาว, 🐢 คำดื้อ และ 📂 ตามหมวด</p>
     <p>หน้าสรุปผลแตะคำที่ตอบผิดเพื่อฟังเสียง หรือแตะ ⭐ เพื่อติดดาวไว้ฝึกต่อ</p>`],
+  ['📂', 'เรียนตามหมวด', `
+    <ul>
+      <li>คำศัพท์ทุกคำถูกจัดเป็น 16 หมวด เช่น 🍜 อาหาร, ✈️ การเดินทาง, 💼 งานและเงิน, 💭 อารมณ์</li>
+      <li>⚙️ ตั้งค่า → <b>คำใหม่จากหมวด</b> เลือกหมวดที่สนใจ คำใหม่ในแฟลชการ์ดและไถศัพท์จะมาจากหมวดนั้นก่อน (คำที่ถึงวันทบทวนยังมาตามปกติ)</li>
+      <li>🎮 เกม → แหล่งคำ <b>📂 ตามหมวด</b> เล่นเกมเฉพาะหมวด · 📖 คำศัพท์ → เลือกหมวดเพื่อดูรายการ</li>
+    </ul>`],
+  ['📖', 'อ่านเรื่องสั้น', `
+    <ul>
+      <li>🎮 เกม → <b>📖 อ่านเรื่องสั้น</b> มีเรื่องสั้นภาษาอังกฤษ 3 ระดับ (A1 ง่ายมาก, A2 ง่าย, B1 ปานกลาง)</li>
+      <li>คำที่อยู่ในรายการคำศัพท์จะขีดเส้นใต้ แตะเพื่อดูความหมาย ฟังเสียง ติดดาว หรือเพิ่มเข้าทบทวน · <span class="rw learning">สีเหลือง</span> = กำลังเรียน <span class="rw mastered">สีเขียว</span> = จำได้แล้ว</li>
+      <li>กด 🔊 ฟังทีละย่อหน้าหรือทั้งเรื่อง กด 🇹🇭 เพื่อดูคำแปล (ลองอ่านเองก่อนค่อยดู)</li>
+      <li>ตอบคำถามท้ายเรื่อง ข้อละ 5 XP</li>
+    </ul>`],
   ['📖', 'รายการคำศัพท์', `
     <ul>
       <li>ค้นหาคำ อังกฤษหรือไทยก็ได้ และกรองตามสถานะ (ยังไม่เรียน / กำลังเรียน / จำได้แล้ว / ⭐ ติดดาว) และตามระดับ</li>
@@ -1683,6 +2121,13 @@ const GUIDE = [
       <li><b>กู้คืน:</b> ตั้งค่า → 📥 นำเข้า → เลือก <b>ไฟล์ล่าสุด</b> ไฟล์เดียวพอ</li>
       <li>การนำเข้าเป็นแบบ <b>รวมข้อมูล</b> คำไหนในเครื่องก้าวหน้ากว่าไฟล์ จะเก็บของในเครื่องไว้ ไม่ต้องกลัวทับ</li>
       <li>ย้ายเครื่องใหม่: ส่งออกจากเครื่องเก่า → นำเข้าในเครื่องใหม่</li>
+    </ul>`],
+  ['☁️', 'ซิงก์ข้อมูลอัตโนมัติ', `
+    <ul>
+      <li>ถ้าตั้งค่า Supabase แล้ว (ขั้นตอนในไฟล์ SYNC-SETUP.md บน GitHub): ⚙️ ตั้งค่า → ☁️ ซิงก์ข้อมูล → <b>เข้าสู่ระบบ</b> ด้วยอีเมลที่ได้รับเชิญ แล้วใส่รหัส 6 หลักจากอีเมล</li>
+      <li>หลังเข้าสู่ระบบ ความคืบหน้าซิงก์ขึ้นคลาวด์เองทุกครั้งที่เล่นและตอนเปิดแอป ใช้หลายเครื่องได้ ลบแอปแล้วเข้าสู่ระบบใหม่ ข้อมูลกลับมาครบ</li>
+      <li>ถ้าเปิดโหมดล็อก (requireLogin) คนที่ไม่ได้รับเชิญจะเข้าใช้แอปไม่ได้</li>
+      <li>ยังกด 📤 ส่งออกไฟล์สำรองได้เหมือนเดิม เผื่อไว้อีกชั้น</li>
     </ul>`],
   ['🔄', 'อัปเดตแอป', `
     <ul>
@@ -1749,7 +2194,10 @@ function renderSettings() {
       <div class="chips" id="lvls">${LEVELS_3000.map(lvChip).join('')}</div>
       <div class="small muted" style="margin:14px 0 8px"><b>ชุด 5000 คำ</b> · คำเพิ่มเติมระดับสูง</div>
       <div class="chips" id="lvls5">${LEVELS_5000.map(lvChip).join('')}</div>
-      <p class="small muted" style="margin-bottom:0">A1–A2 = พื้นฐาน, B1–B2 = ระดับกลาง, B2+ และ C1 = ระดับสูง (เลือกได้หลายระดับ)</p>
+      <p class="small muted">A1–A2 = พื้นฐาน, B1–B2 = ระดับกลาง, B2+ และ C1 = ระดับสูง (เลือกได้หลายระดับ)</p>
+      <div class="set-row" style="border-top:1px solid var(--border);padding-top:12px"><span>คำใหม่จากหมวด</span>
+        <select class="sel" id="topic"><option value="">📚 ทุกหมวด</option>${TOPICS.map(([id]) => `<option value="${id}" ${st.topic === id ? 'selected' : ''}>${TOPIC_LABEL[id]}</option>`).join('')}</select></div>
+      <p class="small muted" style="margin-bottom:0">เลือกหมวดแล้ว คำใหม่ในแฟลชการ์ดและไถศัพท์จะมาจากหมวดนั้น ส่วนคำที่ถึงวันทบทวนยังมาตามปกติ</p>
     </div>
 
     <div class="h2">การเรียน</div>
@@ -1785,6 +2233,14 @@ function renderSettings() {
       <button class="btn block" id="test" style="margin-top:8px">🔊 ทดสอบเสียง</button>
     </div>
 
+    <div class="h2">☁️ ซิงก์ข้อมูลอัตโนมัติ</div>
+    <div class="card-box">${!syncOn()
+      ? '<p class="small muted" style="margin:0">ยังไม่ได้เปิดใช้ ต้องตั้งค่า Supabase ในไฟล์ <code>config.js</code> ก่อน (ดูขั้นตอนใน SYNC-SETUP.md ใน GitHub) จากนั้นความคืบหน้าจะซิงก์ขึ้นคลาวด์เอง ลบแอปหรือเปลี่ยนเครื่องก็ไม่หาย</p>'
+      : auth ? `<p class="small" style="margin-top:0">เข้าสู่ระบบเป็น <b>${esc(auth.user.email)}</b><br><span class="muted">ซิงก์ล่าสุด: ${syncState.last ? new Date(syncState.last).toLocaleTimeString('th-TH', { timeStyle: 'short' }) : 'ยังไม่ได้ซิงก์ในรอบนี้'}${syncState.error ? ' · ⚠️ ' + esc(syncState.error) : ''}</span></p>
+        <div class="row"><button class="btn grow" id="syncNow">🔄 ซิงก์ตอนนี้</button><button class="btn grow" id="logout">ออกจากระบบ</button></div>`
+      : '<p class="small muted" style="margin-top:0">เข้าสู่ระบบด้วยอีเมลที่ได้รับเชิญ แล้วความคืบหน้าจะซิงก์ขึ้นคลาวด์อัตโนมัติ ใช้ได้หลายเครื่อง</p><button class="btn primary block" id="login">เข้าสู่ระบบ</button>'}
+    </div>
+
     <div class="h2">สำรองข้อมูล</div>
     <div class="card-box">
       <p class="small muted" style="margin-top:0">ความคืบหน้าเก็บไว้ในเครื่องนี้เท่านั้น ถ้าลบไอคอนแอปออกจากหน้าจอโฮม ข้อมูลจะหายด้วย แนะนำให้สำรองเก็บไว้ใน iCloud Drive (แอปจะเตือนทุก ${BACKUP_EVERY} วัน)</p>
@@ -1809,6 +2265,7 @@ function renderSettings() {
   $('#guideBtn').onclick = () => go('guide', 'settings');
   $('#npd').onchange = (e) => { st.newPerDay = +e.target.value; save(); };
   $('#ord').onchange = (e) => { st.order = e.target.value; save(); };
+  $('#topic').onchange = (e) => { st.topic = e.target.value; save(); };
   $('#start').onchange = (e) => { st.start = e.target.value; save(); };
   $('#front').onchange = (e) => { st.front = e.target.value; save(); };
   $('#auto').onchange = (e) => { st.autoSpeak = e.target.checked; save(); };
@@ -1818,6 +2275,12 @@ function renderSettings() {
   $('#test').onclick = () => speak('Hello! Let\'s learn English together.');
   $('#remind').onchange = (e) => { S.remind = e.target.value; save(); $('#remindAdd').href = `reminders/${S.remind}.ics`; };
 
+  if ($('#login')) $('#login').onclick = () => go('login');
+  if ($('#syncNow')) $('#syncNow').onclick = async () => { await syncNow(true); renderSettings(); };
+  if ($('#logout')) $('#logout').onclick = () => {
+    if (!confirm('ออกจากระบบ? ข้อมูลในเครื่องนี้ยังอยู่ แต่จะไม่ซิงก์จนกว่าจะเข้าสู่ระบบใหม่')) return;
+    setAuth(null); toast('ออกจากระบบแล้ว'); go(mustLogin() ? 'login' : 'settings');
+  };
   $('#exp').onclick = async () => { await exportBackup(); renderSettings(); };
   if (navigator.storage && navigator.storage.persisted) {
     navigator.storage.persisted().then((ok) => { const el = $('#persist'); if (el) el.textContent = ok ? '🔒 เครื่องเก็บข้อมูลแบบถาวรแล้ว' : ''; }).catch(() => {});
@@ -1847,5 +2310,10 @@ if (navigator.storage && navigator.storage.persist) navigator.storage.persist().
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
+if (syncOn() && auth) syncNow().then((ok) => { if (ok && current === 'home') renderHome(); });
+document.addEventListener('visibilitychange', () => {
+  if (!syncOn() || !auth) return;
+  if (document.hidden) { clearTimeout(pushTimer); syncNow(); } else syncNow().then((ok) => { if (ok && current === 'home') renderHome(); });
+});
 // Refresh counts when returning to the app after a while (e.g. next day).
 document.addEventListener('visibilitychange', () => { if (!document.hidden && current === 'home') renderHome(); });

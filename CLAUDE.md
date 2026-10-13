@@ -23,6 +23,9 @@ Main target is iPhone (Pro Max, home-screen app). The owner talks in Thai; reply
 | `style.css` | Mobile-first styles; colour tokens on `:root` with dark mode |
 | `words.js` | `window.WORDS = [[word, pos, level, ipa, thai, example, thaiExample, 5?], ...]` (4,957 rows) |
 | `sw.js` | Network-first service worker with versioned cache |
+| `topics.js` | `window.TOPIC_CODES`: one letter per WORDS row → `TOPICS` in app.js (`w.tp`) |
+| `stories.js` | `window.STORIES`: 40 original A1–B1 stories `{id, level, title, titleTh, en[], th[], q[{q,o,a}]}` |
+| `config.js` | `window.SYNC_CONFIG = {url, anonKey, requireLogin}` for Supabase sync (empty = off); see `SYNC-SETUP.md` |
 | `reminders/HHMM.ics` | Static daily-reminder calendar files (app URL hardcoded inside) |
 | `icons/`, `manifest.webmanifest` | PWA install assets |
 | `tools/make-icons.js` | Playwright script that renders the icon SVG to all `icons/*.png` sizes |
@@ -31,17 +34,22 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 (rows with trailing `5`).
 
 ## State (localStorage key `oxford3000.v1` — never rename it, or users lose progress)
-- `prog[word] = { b: box, d: due ms, s: seen, c: correct, x: wrong }`
+- `prog[word] = { b: box, i: interval days, e: ease, d: due ms, s: seen, c: correct, x: wrong }`
+  (`i`/`e` missing on pre-1.10 words → `ivlOf()` falls back to `INTERVALS[b]`)
 - `settings`, `daily`, `streak {last,count}`, `freeze`, `best`, `hist`, `star`, `ach`, `quest`,
   `counts`, `backupAt`, `backupSnooze`, `remind`, `xp` (seeded from existing progress when null),
   `chist` (flashcards per day; games = `hist` − `chist`), `chistFrom`, `snap` (daily
-  `[learned3000, mastered3000, learnedAll, masteredAll]`, written by `takeSnap()` in `save()`)
+  `[learned3000, mastered3000, learnedAll, masteredAll]`, written by `takeSnap()` in `save()`),
+  `note` (memory hooks), `miss` (date → word → wrong count, 21 days), `weekSeen`, `read` (story id → date),
+  `settings.topic`. Auth tokens live separately in localStorage `o3k.auth` (never in backups).
 - When adding a field: add it to `defaults()` (load() shallow-merges top-level keys) **and** handle it
   in `mergeBackup()` so importing a backup keeps it.
 - `save()` also runs `checkAch()` (achievements).
 
 ## Learning logic
-- Leitner boxes: `INTERVALS = [0, 1, 3, 7, 16, 35, 80, 180]` days; `b >= MASTERED (4)` = "จำได้แล้ว".
+- Scheduling (1.10+): SM-2 style `sched(p, g)` → `{i, e, b}`; `b = boxOf(i)` against
+  `INTERVALS = [0, 1, 3, 7, 16, 35, 80, 180]` so `b >= MASTERED (4)` (i ≥ 16 days) still = "จำได้แล้ว".
+- Leech ("คำดื้อ"): `x >= LEECH (4)`; `noteBox()`/`editNote()` for memory hooks; wrong answers go to `logMiss()`.
 - Grades: 0 ลืม (box 0, requeue in session), 1 ยาก (keep box; new cards "วนอีกรอบ" via `relearn`),
   2 จำได้ (+1), 3 ง่าย (+2). Games use the lighter `gameResult()`; a failed pronunciation in the
   speak game does not reset the card.
@@ -51,6 +59,9 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 - Stats page (`renderStats`, route `stats`): 28-day habits, learn rate from `snap` (≥7 days) else
   newPerDay × active-day ratio; ETA = remaining/rate + 11 days/accuracy/active-ratio. Chart colours are
   `--c-card/--c-game/--c-master` (validated with the dataviz palette checker in light and dark).
+- Sync: `syncNow()` = GET row → `mergeBackup()` → upsert; `save()` debounces a push (4 s); also on
+  start/visibility. Email OTP code login (`create_user:false` = invite-only). `requireLogin` locks the UI.
+  Tests mock Supabase with `page.route` and override `config.js`.
 - Streak freezes: +1 per 7-day streak, max 2, auto-used for missed days.
 
 ## Content / copyright
