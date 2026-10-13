@@ -22,6 +22,32 @@ create policy "own progress" on public.progress
 ```
 ทุกคนจะอ่าน/เขียนได้เฉพาะแถวของตัวเองเท่านั้น
 
+ถ้าอยากมี **อันดับเพื่อน** 🏆 และ **แจ้งเตือนรายวัน** 🔔 รันต่ออีกชุด:
+
+```sql
+-- อันดับเพื่อน: ทุกคนที่ล็อกอินเห็นอันดับ แต่แก้ได้เฉพาะแถวตัวเอง
+create table public.leaderboard (
+  user_id uuid primary key references auth.users on delete cascade,
+  name text, xp int default 0, week text, week_xp int default 0,
+  streak int default 0, mastered int default 0, updated_at timestamptz default now()
+);
+alter table public.leaderboard enable row level security;
+create policy "members read" on public.leaderboard for select to authenticated using (true);
+create policy "own insert" on public.leaderboard for insert to authenticated with check (auth.uid() = user_id);
+create policy "own update" on public.leaderboard for update to authenticated using (auth.uid() = user_id);
+
+-- แจ้งเตือน: เก็บการสมัครรับแจ้งเตือนของแต่ละเครื่อง
+create table public.push_subs (
+  endpoint text primary key,
+  user_id uuid not null references auth.users on delete cascade,
+  sub jsonb not null, remind text default '2000', tz text default 'Asia/Bangkok',
+  updated_at timestamptz default now()
+);
+alter table public.push_subs enable row level security;
+create policy "own subs" on public.push_subs
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+```
+
 ## 3. ตั้งค่าการเข้าสู่ระบบ
 1. **Authentication → Sign In / Providers** (หรือ **Providers**) → เปิด **Email**
 2. ปิด **Allow new users to sign up** → คนแปลกหน้าสมัครเองไม่ได้ ใช้ได้เฉพาะคนที่เชิญ
@@ -53,6 +79,30 @@ create policy "own progress" on public.progress
 ## 6. เข้าสู่ระบบในแอป
 ⚙️ ตั้งค่า → ☁️ ซิงก์ข้อมูลอัตโนมัติ → **เข้าสู่ระบบ** → ใส่อีเมล → ใส่รหัส 6 หลักจากอีเมล
 ความคืบหน้าในเครื่องจะถูกรวมกับบนคลาวด์ (คำไหนก้าวหน้ากว่าจะเก็บอันนั้น) แล้วซิงก์อัตโนมัติทุกครั้งที่เล่น
+
+## 7. แจ้งเตือนรายวันบน iPhone (ไม่บังคับ) 🔔
+ใช้ได้กับแอปที่ติดตั้งบนหน้าจอโฮม iOS 16.4 ขึ้นไป แจ้งเตือนตามเวลาที่ตั้งในแอป เฉพาะวันที่ยังไม่ได้เล่น
+
+1. สร้างคีย์ VAPID (ในคอมที่มี Node.js): `npx web-push generate-vapid-keys` จะได้ Public Key กับ Private Key
+2. ติดตั้ง Supabase CLI แล้วในโฟลเดอร์ repo นี้:
+   ```bash
+   supabase login
+   supabase link --project-ref <project-ref>
+   supabase secrets set VAPID_PUBLIC_KEY=<public> VAPID_PRIVATE_KEY=<private> VAPID_SUBJECT=mailto:<อีเมลคุณ>
+   supabase functions deploy daily-reminder
+   ```
+3. ตั้งให้ทำงานทุกชั่วโมง: **Database → Extensions** เปิด `pg_cron` และ `pg_net` แล้วรันใน SQL Editor
+   (แทน `<project-ref>` และ `<service-role-key>` จาก Project Settings → API — **อย่าใส่ service-role key ในโค้ดแอป**)
+   ```sql
+   select cron.schedule('daily-reminder', '0 * * * *', $$
+     select net.http_post(
+       url := 'https://<project-ref>.supabase.co/functions/v1/daily-reminder',
+       headers := '{"Authorization": "Bearer <service-role-key>"}'::jsonb
+     );
+   $$);
+   ```
+4. ใส่ Public Key ใน `config.js` → `vapidPublicKey: '<public>'` แล้ว push
+5. ในแอป: ⚙️ ตั้งค่า → ☁️ ซิงก์ → **🔔 แจ้งเตือนรายวัน → เปิด** → กดอนุญาต
 
 > หมายเหตุ: `requireLogin` ล็อกหน้าแอปและข้อมูลบนคลาวด์ แต่ไฟล์เว็บ (โค้ด/รายการคำ) บน GitHub Pages ยังเปิดดูได้
 > ถ้าต้องการปิดทั้งหมดจริงๆ ให้ย้ายไปวางบน Cloudflare Pages + Cloudflare Access

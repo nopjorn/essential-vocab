@@ -25,7 +25,8 @@ Main target is iPhone (Pro Max, home-screen app). The owner talks in Thai; reply
 | `sw.js` | Network-first service worker with versioned cache |
 | `topics.js` | `window.TOPIC_CODES`: one letter per WORDS row → `TOPICS` in app.js (`w.tp`) |
 | `stories.js` | `window.STORIES`: 40 original A1–B1 stories `{id, level, title, titleTh, en[], th[], q[{q,o,a}]}` |
-| `config.js` | `window.SYNC_CONFIG = {url, anonKey, requireLogin}` for Supabase sync (empty = off); see `SYNC-SETUP.md` |
+| `supabase/functions/daily-reminder/index.ts` | Hourly Edge Function sending Web Push reminders (VAPID secrets in Supabase) |
+| `config.js` | `window.SYNC_CONFIG = {url, anonKey, requireLogin, leaderboard, vapidPublicKey}` for Supabase sync (empty = off); see `SYNC-SETUP.md` |
 | `reminders/HHMM.ics` | Static daily-reminder calendar files (app URL hardcoded inside) |
 | `icons/`, `manifest.webmanifest` | PWA install assets |
 | `tools/make-icons.js` | Playwright script that renders the icon SVG to all `icons/*.png` sizes |
@@ -41,7 +42,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
   `chist` (flashcards per day; games = `hist` − `chist`), `chistFrom`, `snap` (daily
   `[learned3000, mastered3000, learnedAll, masteredAll]`, written by `takeSnap()` in `save()`),
   `note` (memory hooks), `miss` (date → word → wrong count, 21 days), `weekSeen`, `read` (story id → date),
-  `settings.topic`. Auth tokens live separately in localStorage `o3k.auth` (never in backups).
+  `settings.topic`, `placedAt`, `xpWeek` (Monday key → XP), `nick`. Auth tokens live separately in localStorage `o3k.auth` (never in backups).
 - When adding a field: add it to `defaults()` (load() shallow-merges top-level keys) **and** handle it
   in `mergeBackup()` so importing a backup keeps it.
 - `save()` also runs `checkAch()` (achievements).
@@ -59,6 +60,13 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 - Stats page (`renderStats`, route `stats`): 28-day habits, learn rate from `snap` (≥7 days) else
   newPerDay × active-day ratio; ETA = remaining/rate + 11 days/accuracy/active-ratio. Chart colours are
   `--c-card/--c-game/--c-master` (validated with the dataviz palette checker in light and dark).
+- Placement (`renderPlacement`, route `placement`): 8 MC questions per level, stops below 6/8; skipped words
+  get b=4/i=16 with first review spread over 7–30 days; moves `settings.levels` on if all were skipped.
+- `stories.js` is lazy-loaded by `loadStories()` (not in index.html); `STORY_COUNT` is shown before load.
+- Home is kept short (today, quick play, weekly card, quest, progress card); charts, per-level bars and
+  achievements live on the stats page.
+- Leaderboard (`pushBoard`/`loadBoard`, table `leaderboard`) and Web Push (`enablePush`, table `push_subs`,
+  `sw.js` push/notificationclick) only appear when sync is configured and signed in.
 - Sync: `syncNow()` = GET row → `mergeBackup()` → upsert; `save()` debounces a push (4 s); also on
   start/visibility. Email OTP code login (`create_user:false` = invite-only). `requireLogin` locks the UI.
   Tests mock Supabase with `page.route` and override `config.js`.

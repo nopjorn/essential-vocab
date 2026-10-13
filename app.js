@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.10.0';
+const APP_VERSION = '1.11.0';
 
 /* ---------- data ---------- */
 // WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
@@ -56,6 +56,9 @@ const defaults = () => ({
   miss: {},            // 'YYYY-MM-DD' -> { word: times wrong that day } (last 21 days)
   weekSeen: '',        // Monday key of the last weekly summary the user dismissed
   read: {},            // story id -> date finished
+  placedAt: '',        // date the placement test was taken/dismissed
+  xpWeek: {},          // Monday key -> XP earned that week (friends leaderboard)
+  nick: '',            // name shown on the friends leaderboard
 });
 let S = load();
 // Users from before 1.8.0 get XP for the work they already did.
@@ -127,6 +130,9 @@ function mergeBackup(d) {
   if (d.chistFrom && (!S.chistFrom || d.chistFrom < S.chistFrom)) S.chistFrom = d.chistFrom;
   for (const [k, v] of Object.entries(d.note || {})) if (!S.note[k]) S.note[k] = v;
   for (const [k, v] of Object.entries(d.miss || {})) S.miss[k] = { ...v, ...(S.miss[k] || {}) };
+  if (d.placedAt && !S.placedAt) S.placedAt = d.placedAt;
+  for (const [k, v] of Object.entries(d.xpWeek || {})) S.xpWeek[k] = Math.max(S.xpWeek[k] || 0, v);
+  if (d.nick && !S.nick) S.nick = d.nick;
   for (const [k, v] of Object.entries(d.read || {})) if (!S.read[k]) S.read[k] = v;
   for (const [k, v] of Object.entries(d.chist || {})) S.chist[k] = Math.max(S.chist[k] || 0, v);
   for (const [k, v] of Object.entries(d.snap || {})) S.snap[k] = (S.snap[k] || [0, 0, 0, 0]).map((x, i) => Math.max(x, v[i] || 0));
@@ -223,6 +229,7 @@ function addXP(n) {
   if (!n) return;
   const before = levelOf(S.xp);
   S.xp = (S.xp || 0) + n;
+  if (typeof mondayKey === 'function') { const k = mondayKey(); S.xpWeek[k] = (S.xpWeek[k] || 0) + n; }
   const after = levelOf(S.xp);
   if (after > before) setTimeout(() => { confetti(); toast(`⬆️ เลเวลอัป! ตอนนี้ Lv.${after}`); }, 400);
   updateStreak();
@@ -445,7 +452,7 @@ function markForReview(w) {
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น' };
+const TITLES = { home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ' };
 function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
@@ -455,7 +462,7 @@ function go(tab, ...args) {
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement }[tab])(...args);
   updateStreak();
 }
 function updateStreak() { $('#streak').textContent = '🔥 ' + streakNow() + (S.freeze ? ' · 🧊' + S.freeze : '') + ' · Lv.' + levelOf(S.xp); }
@@ -473,20 +480,7 @@ function renderHome() {
   const todo = due + Math.min(newLeft, unseen);
   const doneToday = S.daily.fresh + S.daily.reviews;
   const goal = S.settings.newPerDay;
-  const totalLearned = W.filter((w) => S.prog[w.w]).length;
-  const totalMastered = W.filter((w) => status(w) === 'mastered').length;
   const standalone = window.navigator.standalone || matchMedia('(display-mode: standalone)').matches;
-
-  const lvRow = (l) => {
-    const ws = W.filter((w) => w.g === l);
-    const learned = ws.filter((w) => S.prog[w.w]).length;
-    const mastered = ws.filter((w) => status(w) === 'mastered').length;
-    return `<div class="lvl-row">${lvBadge(l)}
-      <div class="grow"><div class="bar"><div class="l" style="width:${learned / ws.length * 100}%"></div><div class="m" style="width:${mastered / ws.length * 100}%"></div></div>
-      <div class="small muted" style="margin-top:4px">เรียนแล้ว ${learned} · จำได้ ${mastered} / ${ws.length}</div></div></div>`;
-  };
-  const lvRows = `<div class="small muted" style="margin-top:8px"><b>ชุด 3000 คำ</b> (คำหลัก)</div>${LEVELS_3000.map(lvRow).join('')}
-    <div class="small muted" style="margin-top:12px"><b>ชุด 5000 คำ</b> (คำเพิ่มเติม)</div>${LEVELS_5000.map(lvRow).join('')}`;
 
   const lastBackup = S.backupAt ? Math.floor((Date.now() - S.backupAt) / DAY) : null;
   view.innerHTML = `
@@ -494,6 +488,9 @@ function renderHome() {
       <div><b>💾 ถึงเวลาสำรองข้อมูลแล้ว</b><div class="small muted">${lastBackup === null ? 'ยังไม่เคยสำรองเลย' : `สำรองล่าสุด ${lastBackup} วันก่อน`} · กันความคืบหน้าหายตอนลบแอปหรือเปลี่ยนเครื่อง</div></div>
       <div class="row" style="margin-top:10px"><button class="btn primary grow" id="bkNow">📤 สำรองเลย</button><button class="btn" id="bkLater">ไว้ทีหลัง</button></div>
     </div>` : ''}
+    ${!S.placedAt && Object.keys(S.prog).length < 50 ? `<div class="card-box place-card" id="placeCard">
+      <b>🎯 รู้ศัพท์อยู่แล้วบ้างไหม?</b><div class="small muted" style="margin-top:4px">ทำแบบทดสอบวัดระดับ 3–5 นาที แล้วข้ามคำที่รู้แล้ว ไม่ต้องเรียน cat, house ทีละใบ</div>
+      <div class="row" style="margin-top:10px"><button class="btn primary grow" data-pl="go">วัดระดับ</button><button class="btn" data-pl="no">ไม่ต้อง</button></div></div>` : ''}
     <div class="hero pop">
       <div class="small" style="opacity:.9">${greeting()}</div>
       <div class="big" style="margin-top:6px">${todo}</div>
@@ -515,36 +512,21 @@ function renderHome() {
       <button class="quick-btn feed-btn" id="qFeed"><span>📱</span><b>ไถศัพท์</b><small>ปัดขึ้นเรื่อยๆ เหมือนไถฟีด</small></button>
       <button class="quick-btn" id="qPlay"><span>⚡</span><b>เล่นด่วน</b><small>เกมสุ่ม 10 ข้อ ~1 นาที</small></button>
     </div>
-    ${levelCard()}
 
     ${S.weekSeen !== mondayKey() && weekStats(1).total ? `<div class="card-box week-card" id="weekCard"><b>📊 สรุปสัปดาห์ที่แล้ว</b>${weekBox(1, true)}</div>` : ''}
     ${questCard()}
 
-    <div class="h2">7 วันที่ผ่านมา</div>
-    <div class="card-box week">${weekChart()}</div>
-
-    <div class="h2">📅 การ์ดที่ต้องทบทวน 7 วันข้างหน้า</div>
-    <div class="card-box">${forecastChart()}</div>
-
-    <div class="h2">เล่นเกมด่วน</div>
-    <div class="game-grid">
-      ${gameTile('cloze')}${gameTile('match')}
-    </div>
-
-    <div class="h2">ความคืบหน้า</div>
-    <div class="card-box">
-      <div class="row" style="justify-content:space-between;margin-bottom:6px">
-        <b>ทั้งหมด ${W.length} คำ</b><span class="small muted">เรียนแล้ว ${totalLearned} · จำได้ ${totalMastered}</span>
-      </div>
-      ${lvRows}
-      <div class="small muted" style="margin-top:8px">🟣 เรียนแล้ว &nbsp; 🟢 จำได้แล้ว (ทบทวนผ่านหลายรอบ)</div>
-      <button class="btn block" id="statsBtn" style="margin-top:12px">📈 สถิติและการคาดการณ์</button>
-    </div>
+    <button class="card-box prog-card" id="statsBtn">
+      <div class="row" style="justify-content:space-between"><b>📈 ความคืบหน้า</b><span class="small muted">ดูสถิติ ›</span></div>
+      ${[['ชุด 3000 คำ', in3000().size, (w) => in3000().has(w.w)], ['ครบ 5000 คำ', W.length, () => true]].map(([name, n, f]) => {
+        const l = W.filter((w) => f(w) && S.prog[w.w]).length, m = W.filter((w) => f(w) && status(w) === 'mastered').length;
+        return `<div class="small" style="margin-top:10px">${name} <span class="muted">· จำได้ ${m.toLocaleString()} · เรียนแล้ว ${l.toLocaleString()} / ${n.toLocaleString()}</span></div>
+          <div class="bar" style="margin-top:4px"><div class="l" style="width:${l / n * 100}%"></div><div class="m" style="width:${m / n * 100}%"></div></div>`;
+      }).join('')}
+      <div class="small muted" style="margin-top:10px">⭐ Lv.${levelOf(S.xp)} · 🏅 ${ACH.filter((x) => S.ach[x.id]).length}/${ACH.length} เหรียญ · 🟣 เรียนแล้ว 🟢 จำได้แล้ว</div>
+    </button>
 
     <button class="card-box guide-link" id="guideBtn"><span>📘</span><div class="grow"><b>คู่มือการใช้งาน & ทริก</b><div class="small muted">ลืมว่าใช้ยังไง หรืออยากจำศัพท์ให้ได้เร็วขึ้น อ่านตรงนี้</div></div><span class="muted">›</span></button>
-
-    <div class="h2">🏅 เหรียญรางวัล <span class="small muted">${ACH.filter((a) => S.ach[a.id]).length}/${ACH.length}</span></div>
-    <div class="card-box ach-grid" id="ach">${ACH.map((a) => `<button class="ach ${S.ach[a.id] ? 'on' : ''}" data-ach="${a.id}"><span>${a.icon}</span><small>${a.name}</small></button>`).join('')}</div>
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
   $('#startBtn').onclick = () => go('cards', !todo);
   $('#guideBtn').onclick = () => go('guide', 'home');
@@ -561,13 +543,12 @@ function renderHome() {
     $('#bkNow').onclick = async () => { await exportBackup(); renderHome(); };
     $('#bkLater').onclick = () => { S.backupSnooze = today(); save(); renderHome(); };
   }
-  view.querySelectorAll('[data-game]').forEach((b) => (b.onclick = () => startGame(b.dataset.game)));
   const qg = $('#questGo');
   if (qg) qg.onclick = () => { const q = todayQuest(); if (q.game) startGame(q.game); else go('cards'); };
-  $('#ach').onclick = (e) => {
-    const b = e.target.closest('[data-ach]'); if (!b) return;
-    const a = ACH.find((x) => x.id === b.dataset.ach);
-    toast(`${a.icon} ${a.name}: ${a.desc}${S.ach[a.id] ? ' ✅' : ' 🔒'}`);
+  const pc = $('#placeCard');
+  if (pc) pc.onclick = (e) => {
+    const b = e.target.closest('[data-pl]'); if (!b) return;
+    if (b.dataset.pl === 'go') go('placement'); else { S.placedAt = today(); save(); pc.remove(); }
   };
 }
 function levelCard() {
@@ -601,17 +582,6 @@ function forecastChart() {
   const tip = total / 7 > 80 ? '<div class="small" style="margin-top:8px">⚠️ งานทบทวนเยอะแล้ว ลองลดจำนวนคำใหม่ต่อวันในตั้งค่า</div>' : '';
   return `<div class="week">${days.map((d) => `<div class="wk"><div class="wk-n">${d.n || ''}</div><div class="wk-bar fc-bar"><div style="height:${d.n / max * 100}%"></div></div><div class="wk-l">${d.label}</div></div>`).join('')}</div>
     <div class="small muted" style="margin-top:8px">รวม ${total} ใบ · ยังไม่รวมคำใหม่วันละ ${S.settings.newPerDay} คำ</div>${tip}`;
-}
-function weekChart() {
-  const names = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
-  const days = [];
-  for (let k = 6; k >= 0; k--) {
-    const d = new Date(Date.now() - k * DAY);
-    const key = d.toLocaleDateString('en-CA');
-    days.push({ n: S.hist[key] || 0, label: k === 0 ? 'วันนี้' : names[d.getDay()] });
-  }
-  const max = Math.max(10, ...days.map((d) => d.n));
-  return days.map((d) => `<div class="wk"><div class="wk-n">${d.n || ''}</div><div class="wk-bar"><div style="height:${d.n / max * 100}%"></div></div><div class="wk-l">${d.label}</div></div>`).join('');
 }
 function greeting() {
   const h = new Date().getHours();
@@ -889,9 +859,9 @@ function renderGames() {
       ${gameSource === 'topic' ? `<select class="sel block-sel" id="gTopic" style="margin-top:10px">${TOPICS.map(([id]) => `<option value="${id}" ${gameTopic === id ? 'selected' : ''}>${TOPIC_LABEL[id]} (${W.filter((w) => w.tp === id).length})</option>`).join('')}</select>` : ''}
       ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
     </div>
-    ${STORIES.length ? `<button class="card-box guide-link" id="toRead"><span>📖</span><div class="grow"><b>อ่านเรื่องสั้น</b><div class="small muted">${STORIES.length} เรื่อง · อ่านแล้ว ${STORIES.filter((st) => S.read[st.id]).length} · แตะคำเพื่อดูความหมาย</div></div><span class="muted">›</span></button>` : ''}
+    <button class="card-box guide-link" id="toRead"><span>📖</span><div class="grow"><b>อ่านเรื่องสั้น</b><div class="small muted">${STORY_COUNT} เรื่อง · อ่านแล้ว ${Object.keys(S.read).length} · แตะคำเพื่อดูความหมาย</div></div><span class="muted">›</span></button>
     <div class="game-grid">${Object.keys(GAMES).map(gameTile).join('')}</div>`;
-  if ($('#toRead')) $('#toRead').onclick = () => go('read');
+  $('#toRead').onclick = () => go('read');
   const paint = () => view.querySelectorAll('#src .chip').forEach((c) => c.classList.toggle('on', c.dataset.s === gameSource));
   paint();
   if ($('#gTopic')) $('#gTopic').onchange = (e) => { gameTopic = e.target.value; };
@@ -1447,7 +1417,19 @@ function renderFeed() {
 
 /* ---------- reading (short stories) ---------- */
 // stories.js: window.STORIES = [{ id, level, title, titleTh, en: [paragraphs], th: [paragraphs], q: [{ q, o: [3], a }] }]
-const STORIES = window.STORIES || [];
+// Loaded on first use (≈100 KB) so app start stays fast; the service worker still caches it offline.
+let STORIES = window.STORIES || null;
+const STORY_COUNT = 40;
+function loadStories() {
+  if (STORIES) return Promise.resolve(STORIES);
+  return new Promise((res) => {
+    const sc = document.createElement('script');
+    sc.src = 'stories.js?v=' + APP_VERSION;
+    sc.onload = () => res((STORIES = window.STORIES || []));
+    sc.onerror = () => res((STORIES = []));
+    document.head.appendChild(sc);
+  });
+}
 let WORD_INDEX = null;
 // Find the word-list entry for a token in a story, trying simple English endings.
 function lookupWord(tok) {
@@ -1473,7 +1455,12 @@ function storyHTML(text) {
   });
 }
 function renderRead(id) {
-  if (!STORIES.length) { view.innerHTML = '<p class="center muted">ยังไม่มีเรื่องสั้น</p>'; return; }
+  if (!STORIES) {
+    view.innerHTML = '<p class="center muted" style="margin-top:40px">กำลังโหลดเรื่องสั้น…</p>';
+    loadStories().then(() => { if (current === 'read') renderRead(id); });
+    return;
+  }
+  if (!STORIES.length) { view.innerHTML = '<p class="center muted">โหลดเรื่องสั้นไม่สำเร็จ ลองต่อเน็ตแล้วเปิดใหม่นะ</p>'; return; }
   if (id == null) {
     const done = STORIES.filter((st) => S.read[st.id]).length;
     view.innerHTML = `<div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="rBack">‹ เกม</button></div>
@@ -1706,6 +1693,96 @@ function drillWeek(off) {
   startGame(pick(['en2th', 'th2en', 'listen']));
 }
 
+/* ---------- placement test ---------- */
+// Samples unseen words level by level (8 per level, multiple choice + "ไม่รู้"), stops after a level
+// scores below 6/8, then offers to mark the unseen words of well-known levels as known. Those words
+// get spread-out review dates, so any that weren't really known get caught at their first review.
+const PT_N = 8, PT_PASS = 6;
+function renderPlacement() {
+  const levels = LEVELS.filter((l) => GROUP[l].some((w) => !S.prog[w.w]));
+  const res = {};           // level -> correct count
+  let li = 0, qi = 0, items = [];
+  const start = () => {
+    view.innerHTML = `<div class="card-box center pop" style="margin-top:10px">
+      <div class="result-emoji">🎯</div><div class="h2">แบบทดสอบวัดระดับ</div>
+      <p>ตอบคำแปลของคำที่สุ่มมาจากแต่ละระดับ ระดับละ ${PT_N} ข้อ ราว 3–5 นาที</p>
+      <p class="small muted">ไม่รู้ให้กด "ไม่รู้" อย่าเดา ผลจะได้แม่น · ทดสอบเฉพาะคำที่ยังไม่เคยเรียน</p>
+      <button class="btn primary block" id="ptGo">เริ่มเลย</button>
+      <div style="height:10px"></div><button class="btn block" id="ptBack">ไว้ทีหลัง</button></div>`;
+    $('#ptGo').onclick = () => level();
+    $('#ptBack').onclick = () => go('home');
+  };
+  const level = () => {
+    if (li >= levels.length) return result();
+    const lv = levels[li];
+    items = shuffle(GROUP[lv].filter((w) => !S.prog[w.w])).slice(0, PT_N);
+    qi = 0; res[lv] = 0; q();
+  };
+  const q = () => {
+    if (qi >= items.length) {
+      const lv = levels[li];
+      if (res[lv] / items.length < PT_PASS / PT_N) return result();
+      li++; return level();
+    }
+    const w = items[qi], lv = levels[li];
+    const opts = shuffle([w, ...distractors(w, 3, 't')]);
+    view.innerHTML = `<div class="session-top"><button class="icon-btn" id="quit" aria-label="ออก">✕</button>
+        <div class="progress"><div style="width:${(li * PT_N + qi) / (levels.length * PT_N) * 100}%"></div></div>
+        <span class="small">${lvBadge(lv)}</span></div>
+      <div class="card-box q-prompt pop"><div class="word">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" data-i="${o.idx}">${esc(o.t)}</button>`).join('')}
+        <button class="opt idk" data-i="-1">🤷 ไม่รู้</button></div>`;
+    $('#quit').onclick = () => go('home');
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b) return;
+      if (+b.dataset.i === w.idx) res[lv]++;
+      qi++; q();
+    };
+  };
+  const result = () => {
+    // Levels answered at ≥ 6/8 count as known; the level where the test stopped is shown but not applied.
+    const rows = Object.entries(res).map(([lv, c]) => {
+      const n = GROUP[lv].filter((w) => !S.prog[w.w]).length;
+      return { lv, c, pct: c / PT_N, n, on: c >= PT_PASS };
+    });
+    const est = rows.reduce((a, r) => a + Math.round(r.n * r.pct), 0);
+    const paint = () => {
+      const pick = rows.filter((r) => r.on), skip = pick.reduce((a, r) => a + r.n, 0);
+      view.innerHTML = `<div class="card-box center pop"><div class="result-emoji">📋</div>
+          <div class="h2">ผลวัดระดับ</div><p>น่าจะรู้แล้วราว <b>${est.toLocaleString()}</b> คำจากคำที่ยังไม่เคยเรียน</p></div>
+        <div class="card-box">${rows.map((r) => `<label class="pt-row"><input type="checkbox" data-lv="${r.lv}" ${r.on ? 'checked' : ''} ${r.c < PT_PASS - 1 ? 'disabled' : ''}>
+            ${lvBadge(r.lv)}<span class="grow">ถูก ${r.c}/${PT_N}<div class="bar" style="margin-top:4px"><div class="m" style="width:${r.pct * 100}%"></div></div></span>
+            <span class="small muted">${r.n} คำ</span></label>`).join('')}
+          <p class="small muted" style="margin-bottom:0">ติ๊กระดับที่จะข้าม คำที่ข้ามจะถูกนับว่า "รู้แล้ว" และทยอยกลับมาให้ทบทวนใน 1–4 สัปดาห์ ถ้าจริงๆ ไม่รู้ ก็กด "ลืม" ตอนนั้นได้</p></div>
+        ${skip ? `<button class="btn primary block" id="ptApply">ข้าม ${skip.toLocaleString()} คำ</button><div style="height:10px"></div>` : ''}
+        <button class="btn block" id="ptDone">${skip ? 'ไม่ข้าม เรียนตามปกติ' : 'กลับหน้าแรก'}</button>`;
+      view.querySelectorAll('[data-lv]').forEach((cb) => (cb.onchange = () => { rows.find((r) => r.lv === cb.dataset.lv).on = cb.checked; paint(); }));
+      const ap = $('#ptApply');
+      if (ap) ap.onclick = () => {
+        const words = pick.flatMap((r) => GROUP[r.lv].filter((w) => !S.prog[w.w]));
+        words.forEach((w) => {
+          const i = INTERVALS[MASTERED];
+          // Spread first reviews over 7–30 days so they don't all land on one day.
+          S.prog[w.w] = { b: MASTERED, i, e: EASE0, d: Date.now() + (7 + Math.random() * 23) * DAY, s: 1, c: 1, x: 0 };
+        });
+        // If every level being studied was skipped, move on to the first level that wasn't.
+        const skipped = pick.map((r) => r.lv);
+        let moved = '';
+        if (S.settings.levels.every((l) => skipped.includes(l))) {
+          const nextLv = LEVELS.find((l) => !skipped.includes(l) && GROUP[l].some((w) => !S.prog[w.w]));
+          if (nextLv) { S.settings.levels = [nextLv]; moved = ` · เปลี่ยนไปเรียนระดับ ${LV_LABEL[nextLv]}`; }
+        }
+        S.placedAt = today(); markActive(); save(); confetti();
+        toast(`ข้าม ${words.length.toLocaleString()} คำแล้ว 🎉${moved}`);
+        go('home');
+      };
+      $('#ptDone').onclick = () => { S.placedAt = S.placedAt || today(); save(); go('home'); };
+    };
+    paint();
+  };
+  start();
+}
+
 /* ---------- stats & projections ---------- */
 // Function (not a const) so save() can call takeSnap() at any point during startup.
 function in3000() { return in3000.set || (in3000.set = new Set(W.filter((w) => LEVELS_3000.includes(w.g)).map((w) => w.w))); }
@@ -1793,9 +1870,26 @@ function renderStats(from) {
     return `<tr class="${n === S.settings.newPerDay ? 'cur' : ''}"><td>${n}${n === S.settings.newPerDay ? ' (ตอนนี้)' : ''}</td><td>${cell(e3, snap[1], in3000().size)}</td><td>${cell(e5, snap[3], W.length)}</td><td>~${n * 5}</td></tr>`;
   }).join('');
 
+  const lvRow = (l) => {
+    const ws = W.filter((w) => w.g === l);
+    const learned = ws.filter((w) => S.prog[w.w]).length;
+    const mastered = ws.filter((w) => status(w) === 'mastered').length;
+    return `<div class="lvl-row">${lvBadge(l)}
+      <div class="grow"><div class="bar"><div class="l" style="width:${learned / ws.length * 100}%"></div><div class="m" style="width:${mastered / ws.length * 100}%"></div></div>
+      <div class="small muted" style="margin-top:4px">เรียนแล้ว ${learned} · จำได้ ${mastered} / ${ws.length}</div></div></div>`;
+  };
+  const lvRows = `<div class="small muted" style="margin-top:8px"><b>ชุด 3000 คำ</b> (คำหลัก)</div>${LEVELS_3000.map(lvRow).join('')}
+    <div class="small muted" style="margin-top:12px"><b>ชุด 5000 คำ</b> (คำเพิ่มเติม)</div>${LEVELS_5000.map(lvRow).join('')}`;
+
   view.innerHTML = `
     <div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="sBack">‹ กลับ</button></div>
-    <div class="h2" style="margin-top:0">นิสัยการเล่น <span class="small muted">${h.span} วันล่าสุด</span></div>
+    ${levelCard()}
+    <div class="h2">ความคืบหน้าแต่ละระดับ</div>
+    <div class="card-box">${lvRows}
+      <div class="small muted" style="margin-top:8px">🟣 เรียนแล้ว &nbsp; 🟢 จำได้แล้ว (ทบทวนผ่านหลายรอบ)</div></div>
+    <div class="h2">📅 การ์ดที่ต้องทบทวน 7 วันข้างหน้า</div>
+    <div class="card-box">${forecastChart()}</div>
+    <div class="h2">นิสัยการเล่น <span class="small muted">${h.span} วันล่าสุด</span></div>
     <div class="tiles">
       <div class="tile-s"><b>${h.active}<small>/${h.span}</small></b><span>วันที่เล่น</span></div>
       <div class="tile-s"><b>${h.active ? Math.round(h.cards / h.active) : 0}</b><span>แฟลชการ์ด/วัน</span></div>
@@ -1804,6 +1898,7 @@ function renderStats(from) {
     </div>
     <div class="card-box"><div class="small muted" style="margin-bottom:6px">กิจกรรมต่อวัน (แตะแท่งเพื่อดูตัวเลข)</div>${activityChart(W_)}</div>
 
+    ${boardSection()}
     <div class="h2">สรุปรายสัปดาห์</div>
     <div class="card-box"><b>สัปดาห์นี้</b>${weekBox(0)}</div>
     <div class="card-box"><b>สัปดาห์ที่แล้ว</b>${weekBox(1)}</div>
@@ -1820,8 +1915,15 @@ function renderStats(from) {
       <table class="g-table whatif"><tr><th>คำใหม่/วัน</th><th>ครบ 3000</th><th>ครบ 5000</th><th>ทบทวน/วัน</th></tr>${whatIf}</table>
       <div class="small muted" style="margin-top:8px">คิดจากความถี่ที่เล่นตอนนี้ (${h.active}/${h.span} วัน)${h.ratio < 1 && h.since ? ' ถ้าเล่นทุกวันจะเร็วขึ้นอีก' : ''} · การ์ดทบทวนต่อวันเป็นค่าประมาณเมื่อเรียนไปได้สักระยะ</div>
     </div>
-    <p class="small muted center">เป็นการคาดการณ์คร่าวๆ จะแม่นขึ้นเรื่อยๆ เมื่อเล่นไปนานขึ้น</p>`;
+    <p class="small muted center">เป็นการคาดการณ์คร่าวๆ จะแม่นขึ้นเรื่อยๆ เมื่อเล่นไปนานขึ้น</p>
+    <div class="h2">🏅 เหรียญรางวัล <span class="small muted">${ACH.filter((a) => S.ach[a.id]).length}/${ACH.length}</span></div>
+    <div class="card-box ach-grid" id="ach">${ACH.map((a) => `<button class="ach ${S.ach[a.id] ? 'on' : ''}" data-ach="${a.id}"><span>${a.icon}</span><small>${a.name}</small></button>`).join('')}</div>`;
   $('#sBack').onclick = () => go(from || 'home');
+  $('#ach').onclick = (e) => {
+    const b = e.target.closest('[data-ach]'); if (!b) return;
+    const a = ACH.find((x) => x.id === b.dataset.ach);
+    toast(`${a.icon} ${a.name}: ${a.desc}${S.ach[a.id] ? ' ✅' : ' 🔒'}`);
+  };
   bindChartTips();
 }
 
@@ -1907,7 +2009,7 @@ function bindChartTips() {
 // Signs in with a 6-digit email code (works inside the home-screen app, unlike magic links, which
 // open Safari). Progress is one JSON row per user in table `progress`, protected by row-level
 // security. Sync = pull → mergeBackup() (keeps whichever side is further ahead) → push.
-const SYNC = Object.assign({ url: '', anonKey: '', requireLogin: false }, window.SYNC_CONFIG || {});
+const SYNC = Object.assign({ url: '', anonKey: '', requireLogin: false, vapidPublicKey: '', leaderboard: true }, window.SYNC_CONFIG || {});
 const syncOn = () => !!(SYNC.url && SYNC.anonKey);
 const AUTH_KEY = 'o3k.auth';
 let auth = null;
@@ -1962,6 +2064,7 @@ async function syncNow(manual) {
     });
     if (!w.ok) throw new Error('บันทึกขึ้นคลาวด์ไม่สำเร็จ (' + w.status + ')');
     syncState.last = Date.now();
+    if (SYNC.leaderboard) pushBoard().catch(() => {});
     if (manual) toast('☁️ ซิงก์เรียบร้อย');
     return true;
   } catch (e) {
@@ -1970,6 +2073,61 @@ async function syncNow(manual) {
     return false;
   } finally { syncState.busy = false; }
 }
+// Friends leaderboard: one public-to-members row per user (see SYNC-SETUP.md for the table).
+const boardName = () => S.nick || ((auth && auth.user && auth.user.email) || '').split('@')[0];
+async function pushBoard() {
+  const sn = S.snap[today()] || [0, 0, 0, 0];
+  await sbFetch('/rest/v1/leaderboard', {
+    method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({ user_id: auth.user.id, name: boardName(), xp: S.xp || 0, week: mondayKey(), week_xp: S.xpWeek[mondayKey()] || 0,
+      streak: streakNow(), mastered: sn[3], updated_at: new Date().toISOString() }),
+  });
+}
+async function loadBoard() {
+  const r = await sbFetch(`/rest/v1/leaderboard?select=user_id,name,week,week_xp,xp,streak,mastered&order=xp.desc&limit=50`);
+  if (!r.ok) throw new Error(r.status);
+  const wk = mondayKey();
+  return (await r.json()).map((x) => ({ ...x, week_xp: x.week === wk ? x.week_xp : 0 })).sort((a, b) => b.week_xp - a.week_xp || b.xp - a.xp);
+}
+function boardSection() {
+  if (!syncOn() || !auth || !SYNC.leaderboard) return '';
+  setTimeout(async () => {
+    const el = $('#board'); if (!el) return;
+    try {
+      const rows = await loadBoard();
+      el.innerHTML = rows.length < 2 ? '<p class="small muted" style="margin:0">ยังมีแค่คุณคนเดียว เชิญเพื่อนผ่าน Supabase (Authentication → Users) แล้วมาแข่งกัน!</p>'
+        : rows.map((x, k) => `<div class="lb-row ${x.user_id === auth.user.id ? 'me' : ''}"><span class="lb-n">${['🥇', '🥈', '🥉'][k] || k + 1}</span>
+          <span class="grow"><b>${esc(x.name || 'ไม่มีชื่อ')}</b><br><span class="small muted">🔥 ${x.streak} · 🟢 ${x.mastered} คำ · รวม ${x.xp} XP</span></span><b>${x.week_xp} XP</b></div>`).join('');
+    } catch (e) { el.innerHTML = '<p class="small muted" style="margin:0">โหลดอันดับไม่สำเร็จ (ตั้งค่าตาราง leaderboard แล้วหรือยัง?)</p>'; }
+  }, 0);
+  return `<div class="h2">🏆 อันดับเพื่อนสัปดาห์นี้</div><div class="card-box" id="board"><p class="small muted" style="margin:0">กำลังโหลด…</p></div>`;
+}
+
+// Web Push (iOS 16.4+ home-screen app): the subscription is stored in Supabase and a scheduled
+// Edge Function (supabase/functions/daily-reminder) sends the daily reminder.
+const canPush = () => syncOn() && !!SYNC.vapidPublicKey && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const b64u = (s) => { const p = '='.repeat((4 - s.length % 4) % 4), raw = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, (c) => c.charCodeAt(0)); };
+async function pushSub() { const reg = await navigator.serviceWorker.ready; return reg.pushManager.getSubscription(); }
+async function savePushSub(sub) {
+  const j = sub.toJSON();
+  const r = await sbFetch('/rest/v1/push_subs', {
+    method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({ endpoint: j.endpoint, user_id: auth.user.id, sub: j, remind: S.remind, tz: Intl.DateTimeFormat().resolvedOptions().timeZone, updated_at: new Date().toISOString() }),
+  });
+  if (!r.ok) throw new Error('บันทึกการแจ้งเตือนไม่สำเร็จ (' + r.status + ')');
+}
+async function enablePush() {
+  if ((await Notification.requestPermission()) !== 'granted') throw new Error('ยังไม่ได้อนุญาตการแจ้งเตือน');
+  const reg = await navigator.serviceWorker.ready;
+  const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(SYNC.vapidPublicKey) });
+  await savePushSub(sub);
+}
+async function disablePush() {
+  const sub = await pushSub(); if (!sub) return;
+  await sbFetch('/rest/v1/push_subs?endpoint=eq.' + encodeURIComponent(sub.endpoint), { method: 'DELETE' }).catch(() => {});
+  await sub.unsubscribe();
+}
+
 // Login screen (also used as the lock screen when requireLogin is on).
 function renderLogin(locked) {
   document.body.classList.toggle('locked', !!locked);
@@ -2021,6 +2179,13 @@ const GUIDE = [
       <li>ตั้ง <b>การเตือนในปฏิทิน</b> (ในตั้งค่า) ให้เตือนทุกวันตามเวลาที่สะดวก</li>
       <li>เรียนไปสักพักแล้ว <b>สำรองข้อมูล</b> เก็บไว้ใน iCloud Drive</li>
     </ol>`],
+  ['🎯', 'แบบทดสอบวัดระดับ', `
+    <ul>
+      <li>หน้าแรก (สำหรับคนเพิ่งเริ่ม) หรือ ⚙️ ตั้งค่า → <b>🎯 แบบทดสอบวัดระดับ</b></li>
+      <li>ตอบคำแปลระดับละ 8 ข้อ เริ่มจาก A1 ขึ้นไปเรื่อยๆ ไม่รู้ให้กด "ไม่รู้" อย่าเดา</li>
+      <li>ระดับที่ตอบถูก 6/8 ขึ้นไป เลือกข้ามได้ คำในระดับนั้นจะนับว่ารู้แล้ว และทยอยกลับมาให้ทบทวนใน 1–4 สัปดาห์ ถ้าไม่รู้จริงก็กด "ลืม" ตอนนั้น</li>
+      <li>ช่วยประหยัดเวลาไม่ต้องเรียนคำง่ายๆ ที่รู้อยู่แล้วทีละใบ</li>
+    </ul>`],
   ['🃏', 'แฟลชการ์ดและ 4 ปุ่ม', `
     <p>แตะการ์ดเพื่อพลิกดูคำแปล แล้วกดปุ่มตามที่นึกออกจริงๆ</p>
     <ul>
@@ -2050,7 +2215,7 @@ const GUIDE = [
       <li>เลเวลดูได้ที่มุมขวาบน (Lv.) และการ์ดเลเวลในหน้าแรก ยิ่งเลเวลสูง ต้องใช้ XP มากขึ้น</li>
     </ul>`],
   ['📈', 'สถิติและการคาดการณ์', `
-    <p>หน้าแรก → ส่วน "ความคืบหน้า" → <b>📈 สถิติและการคาดการณ์</b></p>
+    <p>หน้าแรก → แตะการ์ด <b>📈 ความคืบหน้า</b> (มีเลเวล, ความคืบหน้าแต่ละระดับ, การ์ดที่ต้องทบทวน 7 วันข้างหน้า, เหรียญรางวัล รวมอยู่ในหน้านี้)</p>
     <ul>
       <li><b>นิสัยการเล่น</b> — 28 วันล่าสุดเล่นกี่วัน แฟลชการ์ดและเกมเฉลี่ยวันละกี่ข้อ ตอบถูกกี่ %</li>
       <li><b>กราฟกิจกรรมต่อวัน</b> — แท่งสีม่วงคือแฟลชการ์ด สีชมพูคือเกมกับไถศัพท์ แตะแท่งเพื่อดูตัวเลข</li>
@@ -2128,6 +2293,8 @@ const GUIDE = [
       <li>หลังเข้าสู่ระบบ ความคืบหน้าซิงก์ขึ้นคลาวด์เองทุกครั้งที่เล่นและตอนเปิดแอป ใช้หลายเครื่องได้ ลบแอปแล้วเข้าสู่ระบบใหม่ ข้อมูลกลับมาครบ</li>
       <li>ถ้าเปิดโหมดล็อก (requireLogin) คนที่ไม่ได้รับเชิญจะเข้าใช้แอปไม่ได้</li>
       <li>ยังกด 📤 ส่งออกไฟล์สำรองได้เหมือนเดิม เผื่อไว้อีกชั้น</li>
+      <li><b>🏆 อันดับเพื่อน</b> — เห็น XP สัปดาห์นี้ สตรีค และคำที่จำได้ของคนที่ได้รับเชิญ ในหน้าสถิติ ตั้งชื่อที่แสดงได้ในหน้าตั้งค่า</li>
+      <li><b>🔔 แจ้งเตือนรายวัน</b> — ⚙️ ตั้งค่า → ☁️ ซิงก์ → แจ้งเตือนรายวัน → เปิด เตือนตามเวลาที่ตั้งไว้ เฉพาะวันที่ยังไม่ได้เล่น (ต้องตั้งค่าเพิ่มตาม SYNC-SETUP.md ข้อ 7 และใช้ได้กับแอปบนหน้าจอโฮม iOS 16.4 ขึ้นไป)</li>
     </ul>`],
   ['🔄', 'อัปเดตแอป', `
     <ul>
@@ -2206,6 +2373,7 @@ function renderSettings() {
         <select class="sel" id="npd">${[5, 10, 15, 20, 30, 50, 100].map((n) => `<option ${n === st.newPerDay ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
       <div class="set-row"><span>ลำดับคำใหม่</span>
         <select class="sel" id="ord"><option value="shuffle" ${st.order === 'shuffle' ? 'selected' : ''}>สุ่ม</option><option value="alpha" ${st.order === 'alpha' ? 'selected' : ''}>เรียงตามตัวอักษร</option></select></div>
+      <button class="btn block" id="toPlace" style="margin:4px 0 8px">🎯 แบบทดสอบวัดระดับ (ข้ามคำที่รู้แล้ว)</button>
       <div class="set-row"><span>เปิดแอปแล้วไปที่</span>
         <select class="sel" id="start"><option value="home" ${st.start === 'home' ? 'selected' : ''}>🏠 หน้าแรก</option><option value="feed" ${st.start === 'feed' ? 'selected' : ''}>📱 ไถศัพท์</option><option value="cards" ${st.start === 'cards' ? 'selected' : ''}>🃏 แฟลชการ์ด</option></select></div>
       <div class="set-row"><span>ด้านหน้าการ์ด</span>
@@ -2237,6 +2405,8 @@ function renderSettings() {
     <div class="card-box">${!syncOn()
       ? '<p class="small muted" style="margin:0">ยังไม่ได้เปิดใช้ ต้องตั้งค่า Supabase ในไฟล์ <code>config.js</code> ก่อน (ดูขั้นตอนใน SYNC-SETUP.md ใน GitHub) จากนั้นความคืบหน้าจะซิงก์ขึ้นคลาวด์เอง ลบแอปหรือเปลี่ยนเครื่องก็ไม่หาย</p>'
       : auth ? `<p class="small" style="margin-top:0">เข้าสู่ระบบเป็น <b>${esc(auth.user.email)}</b><br><span class="muted">ซิงก์ล่าสุด: ${syncState.last ? new Date(syncState.last).toLocaleTimeString('th-TH', { timeStyle: 'short' }) : 'ยังไม่ได้ซิงก์ในรอบนี้'}${syncState.error ? ' · ⚠️ ' + esc(syncState.error) : ''}</span></p>
+        ${SYNC.leaderboard ? `<div class="set-row"><span>ชื่อในอันดับเพื่อน</span><input class="sel" id="nick" maxlength="20" style="width:140px" value="${esc(boardName())}"></div>` : ''}
+        ${canPush() ? '<div class="set-row"><span>🔔 แจ้งเตือนรายวัน</span><button class="btn" id="pushBtn" style="padding:8px 14px">…</button></div><p class="small muted" id="pushNote" style="margin-top:0">เตือนตามเวลาที่ตั้งไว้ด้านบน เฉพาะวันที่ยังไม่ได้เล่น (iPhone ต้องเปิดจากไอคอนบนหน้าจอโฮม iOS 16.4 ขึ้นไป)</p>' : ''}
         <div class="row"><button class="btn grow" id="syncNow">🔄 ซิงก์ตอนนี้</button><button class="btn grow" id="logout">ออกจากระบบ</button></div>`
       : '<p class="small muted" style="margin-top:0">เข้าสู่ระบบด้วยอีเมลที่ได้รับเชิญ แล้วความคืบหน้าจะซิงก์ขึ้นคลาวด์อัตโนมัติ ใช้ได้หลายเครื่อง</p><button class="btn primary block" id="login">เข้าสู่ระบบ</button>'}
     </div>
@@ -2265,6 +2435,7 @@ function renderSettings() {
   $('#guideBtn').onclick = () => go('guide', 'settings');
   $('#npd').onchange = (e) => { st.newPerDay = +e.target.value; save(); };
   $('#ord').onchange = (e) => { st.order = e.target.value; save(); };
+  $('#toPlace').onclick = () => go('placement');
   $('#topic').onchange = (e) => { st.topic = e.target.value; save(); };
   $('#start').onchange = (e) => { st.start = e.target.value; save(); };
   $('#front').onchange = (e) => { st.front = e.target.value; save(); };
@@ -2273,9 +2444,25 @@ function renderSettings() {
   $('#acc').onchange = (e) => { st.accent = e.target.value; save(); speak('Hello! Nice to meet you.'); };
   $('#rate').onchange = (e) => { st.rate = +e.target.value; save(); speak('vocabulary'); };
   $('#test').onclick = () => speak('Hello! Let\'s learn English together.');
-  $('#remind').onchange = (e) => { S.remind = e.target.value; save(); $('#remindAdd').href = `reminders/${S.remind}.ics`; };
+  $('#remind').onchange = (e) => {
+    S.remind = e.target.value; save(); $('#remindAdd').href = `reminders/${S.remind}.ics`;
+    if (canPush() && auth) pushSub().then((sub) => sub && savePushSub(sub)).catch(() => {});
+  };
 
   if ($('#login')) $('#login').onclick = () => go('login');
+  if ($('#nick')) $('#nick').onchange = (e) => { S.nick = e.target.value.trim().slice(0, 20); save(); };
+  const pb = $('#pushBtn');
+  if (pb) {
+    const paintPush = async () => { pb.textContent = (await pushSub()) && Notification.permission === 'granted' ? 'ปิด' : 'เปิด'; };
+    paintPush();
+    pb.onclick = async () => {
+      pb.disabled = true;
+      try {
+        if (pb.textContent === 'ปิด') { await disablePush(); toast('ปิดการแจ้งเตือนแล้ว'); } else { await enablePush(); toast('🔔 เปิดการแจ้งเตือนแล้ว'); }
+      } catch (err) { toast('⚠️ ' + (err.message || err)); }
+      pb.disabled = false; paintPush();
+    };
+  }
   if ($('#syncNow')) $('#syncNow').onclick = async () => { await syncNow(true); renderSettings(); };
   if ($('#logout')) $('#logout').onclick = () => {
     if (!confirm('ออกจากระบบ? ข้อมูลในเครื่องนี้ยังอยู่ แต่จะไม่ซิงก์จนกว่าจะเข้าสู่ระบบใหม่')) return;

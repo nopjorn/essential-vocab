@@ -413,3 +413,18 @@ code { background: var(--surface-2); border-radius: 6px; padding: 1px 5px; font-
 .rw { text-decoration: underline dotted var(--primary-2); text-underline-offset: 4px; cursor: pointer; }
 .rw.learning { background: color-mix(in srgb, var(--warn) 30%, transparent); border-radius: 4px; }
 .rw.mastered { background: color-mix(in srgb, var(--good) 22%, transparent); border-radius: 4px; }
+
+/* placement test */
+.opt.idk { text-align: center; color: var(--muted); border-style: dashed; }
+.pt-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.pt-row:last-of-type { border-bottom: 0; }
+.pt-row input { width: 22px; height: 22px; accent-color: var(--primary); }
+.prog-card { display: block; width: 100%; border: 0; font: inherit; color: inherit; text-align: left; }
+.place-card { border: 2px solid var(--primary-2); }
+
+/* friends leaderboard */
+.lb-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.lb-row:last-child { border-bottom: 0; }
+.lb-row.me b { color: var(--primary); }
+.lb-n { width: 28px; text-align: center; font-weight: 800; }
+input.sel { color: var(--text); font: inherit; }
