@@ -33,7 +33,9 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 ## State (localStorage key `oxford3000.v1` — never rename it, or users lose progress)
 - `prog[word] = { b: box, d: due ms, s: seen, c: correct, x: wrong }`
 - `settings`, `daily`, `streak {last,count}`, `freeze`, `best`, `hist`, `star`, `ach`, `quest`,
-  `counts`, `backupAt`, `backupSnooze`, `remind`, `xp` (seeded from existing progress when null)
+  `counts`, `backupAt`, `backupSnooze`, `remind`, `xp` (seeded from existing progress when null),
+  `chist` (flashcards per day; games = `hist` − `chist`), `chistFrom`, `snap` (daily
+  `[learned3000, mastered3000, learnedAll, masteredAll]`, written by `takeSnap()` in `save()`)
 - When adding a field: add it to `defaults()` (load() shallow-merges top-level keys) **and** handle it
   in `mergeBackup()` so importing a backup keeps it.
 - `save()` also runs `checkAch()` (achievements).
@@ -46,6 +48,9 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 - XP: `addXP()`; level L starts at 25·L·(L−1) XP. Flashcard 2 (ลืม 1), right answer `comboXP(combo)`.
 - Feed (`renderFeed`, route/tab `feed`): due → new (learn card, quiz 3 cards later, counts toward
   `daily.fresh`) → practice. Uses `gameResult()`. Start screen: `settings.start`.
+- Stats page (`renderStats`, route `stats`): 28-day habits, learn rate from `snap` (≥7 days) else
+  newPerDay × active-day ratio; ETA = remaining/rate + 11 days/accuracy/active-ratio. Chart colours are
+  `--c-card/--c-game/--c-master` (validated with the dataviz palette checker in light and dark).
 - Streak freezes: +1 per 7-day streak, max 2, auto-used for missed days.
 
 ## Content / copyright
