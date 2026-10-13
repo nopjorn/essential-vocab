@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.11.0';
+const APP_VERSION = '1.12.0';
 
 /* ---------- data ---------- */
 // WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
@@ -35,7 +35,7 @@ const MASTERED = 4;
 const KEY = 'oxford3000.v1';
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', newPerDay: 20, autoSpeak: true, rate: 0.9, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, start: 'home' },
+  settings: { levels: ['A1'], topic: '', newPerDay: 20, autoSpeak: true, rate: 0.9, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, start: 'home', rFont: 1 },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -56,6 +56,7 @@ const defaults = () => ({
   miss: {},            // 'YYYY-MM-DD' -> { word: times wrong that day } (last 21 days)
   weekSeen: '',        // Monday key of the last weekly summary the user dismissed
   read: {},            // story id -> date finished
+  readScore: {},       // story id -> [best right answers, questions]
   placedAt: '',        // date the placement test was taken/dismissed
   xpWeek: {},          // Monday key -> XP earned that week (friends leaderboard)
   nick: '',            // name shown on the friends leaderboard
@@ -134,6 +135,7 @@ function mergeBackup(d) {
   for (const [k, v] of Object.entries(d.xpWeek || {})) S.xpWeek[k] = Math.max(S.xpWeek[k] || 0, v);
   if (d.nick && !S.nick) S.nick = d.nick;
   for (const [k, v] of Object.entries(d.read || {})) if (!S.read[k]) S.read[k] = v;
+  for (const [k, v] of Object.entries(d.readScore || {})) if (!S.readScore[k] || v[0] > S.readScore[k][0]) S.readScore[k] = v;
   for (const [k, v] of Object.entries(d.chist || {})) S.chist[k] = Math.max(S.chist[k] || 0, v);
   for (const [k, v] of Object.entries(d.snap || {})) S.snap[k] = (S.snap[k] || [0, 0, 0, 0]).map((x, i) => Math.max(x, v[i] || 0));
   save();
@@ -362,6 +364,7 @@ function speak(text) {
   const v = voices.find((v) => v.lang === lang && /Samantha|Daniel|Karen|Ava|Siri/i.test(v.name)) || voices.find((v) => v.lang === lang) || voices.find((v) => v.lang && v.lang.startsWith('en'));
   if (v) u.voice = v;
   speechSynthesis.speak(u);
+  return u;
 }
 
 /* ---------- spaced repetition ---------- */
@@ -1419,7 +1422,7 @@ function renderFeed() {
 // stories.js: window.STORIES = [{ id, level, title, titleTh, en: [paragraphs], th: [paragraphs], q: [{ q, o: [3], a }] }]
 // Loaded on first use (≈100 KB) so app start stays fast; the service worker still caches it offline.
 let STORIES = window.STORIES || null;
-const STORY_COUNT = 40;
+const STORY_COUNT = 80;
 function loadStories() {
   if (STORIES) return Promise.resolve(STORIES);
   return new Promise((res) => {
@@ -1454,6 +1457,33 @@ function storyHTML(text) {
     return w ? `<span class="rw ${status(w)}" data-i="${w.idx}">${tok}</span>` : tok;
   });
 }
+const RLEVELS = ['A1', 'A2', 'B1', 'B2'];
+const RLV_TH = { A1: 'ง่ายมาก', A2: 'ง่าย', B1: 'ปานกลาง', B2: 'ท้าทาย' };
+const FONT_SIZES = [16, 18, 21];
+let readFilter = 'all';
+// Per-story numbers for the list and the header: length, minutes, list words, unknown list words.
+const storyInfoCache = new Map();
+function storyInfo(st) {
+  if (!storyInfoCache.has(st.id)) {
+    const toks = st.en.join(' ').match(/[A-Za-z][A-Za-z’']*/g) || [];
+    const seen = new Map();
+    toks.forEach((t) => { const w = lookupWord(t); if (w) seen.set(w.idx, w); });
+    storyInfoCache.set(st.id, { words: toks.length, mins: Math.max(1, Math.round(toks.length / 110)), list: [...seen.values()] });
+  }
+  const inf = storyInfoCache.get(st.id);
+  const fresh = inf.list.filter((w) => status(w) === 'new');
+  return { ...inf, fresh, known: inf.list.length ? Math.round(100 * (1 - fresh.length / inf.list.length)) : 100 };
+}
+// The suggested story: first unread one at the highest level the user studies (else the lowest unread).
+function nextStory() {
+  const lv = S.settings.levels.map((g) => (g === 'B2x' || g === 'C1' ? 'B2' : g)).filter((g) => RLEVELS.includes(g)).sort().pop() || 'A1';
+  return STORIES.find((st) => st.level === lv && !S.read[st.id]) || STORIES.find((st) => !S.read[st.id]) || null;
+}
+const scoreTag = (st) => {
+  const sc = S.readScore[st.id];
+  if (!S.read[st.id]) return '';
+  return sc ? `<span class="st-score ${sc[0] === sc[1] ? 'full' : ''}">${sc[0] === sc[1] ? '★' : '✓'} ${sc[0]}/${sc[1]}</span>` : '<span class="st-score full">✓</span>';
+};
 function renderRead(id) {
   if (!STORIES) {
     view.innerHTML = '<p class="center muted" style="margin-top:40px">กำลังโหลดเรื่องสั้น…</p>';
@@ -1461,41 +1491,72 @@ function renderRead(id) {
     return;
   }
   if (!STORIES.length) { view.innerHTML = '<p class="center muted">โหลดเรื่องสั้นไม่สำเร็จ ลองต่อเน็ตแล้วเปิดใหม่นะ</p>'; return; }
-  if (id == null) {
-    const done = STORIES.filter((st) => S.read[st.id]).length;
-    view.innerHTML = `<div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="rBack">‹ เกม</button></div>
-      <p class="small muted" style="margin:0 4px 12px">อ่านแล้ว ${done}/${STORIES.length} เรื่อง · แตะคำในเรื่องเพื่อดูความหมาย แล้วตอบคำถามท้ายเรื่อง</p>
-      ${['A1', 'A2', 'B1'].map((lv) => `<div class="h2">${lvBadge(lv)} ${{ A1: 'ง่ายมาก', A2: 'ง่าย', B1: 'ปานกลาง' }[lv]}</div>
-        <div class="card-box" style="padding:4px 14px">${STORIES.filter((st) => st.level === lv).map((st) => `<button class="story-row" data-id="${st.id}">
-          <span class="grow"><b>${esc(st.title)}</b><br><span class="small muted">${esc(st.titleTh)}</span></span><span>${S.read[st.id] ? '✅' : '›'}</span></button>`).join('')}</div>`).join('')}`;
-    $('#rBack').onclick = () => go('games');
-    view.onclick = (e) => { const b = e.target.closest('.story-row'); if (b) { view.onclick = null; go('read', +b.dataset.id); } };
-    cleanup = () => { view.onclick = null; };
-    return;
-  }
+  if (id == null) return renderLibrary();
   const st = STORIES.find((x) => x.id === id);
+  if (!st) return go('read');
   $('#title').textContent = 'อ่านเรื่องสั้น';
-  let showTh = false;
+  const inf = storyInfo(st);
+  let showTh = false, playing = -1, token = 0;
   const answers = [];
-  view.innerHTML = `<div class="row" style="margin:4px 0 12px;justify-content:space-between"><button class="btn ghost" id="rBack">‹ รายการ</button>
-      <button class="btn" id="rTh">🇹🇭 แสดงคำแปล</button></div>
-    <div class="card-box story">
-      <div class="row" style="justify-content:space-between">${lvBadge(st.level)}<button class="btn" id="rAll" style="padding:8px 14px">🔊 ฟังทั้งเรื่อง</button></div>
-      <div class="h2" style="margin:12px 0 2px">${esc(st.title)}</div><div class="muted small">${esc(st.titleTh)}</div>
-      ${st.en.map((para, k) => `<p class="st-p">${storyHTML(para)} <button class="say-ex" data-para="${k}" aria-label="ฟังย่อหน้านี้">🔊</button></p><p class="st-th" hidden>${esc(st.th[k] || '')}</p>`).join('')}
-      <div class="small muted">แตะคำที่ขีดเส้นใต้เพื่อดูความหมาย · <span class="rw learning">สีเหลือง</span> กำลังเรียน · <span class="rw mastered">สีเขียว</span> จำได้แล้ว</div>
+  const font = () => FONT_SIZES[S.settings.rFont != null ? S.settings.rFont : 1];
+  view.innerHTML = `<div class="read-bar"><div class="read-prog" id="rProg"></div></div>
+    <div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="rBack">‹ ห้องสมุด</button></div>
+    <div class="st-hero lv-${st.level}">
+      <div class="st-emoji">${st.emoji || '📖'}</div>
+      <div class="st-h1">${esc(st.title)}</div><div class="st-h2">${esc(st.titleTh)}</div>
+      <div class="st-meta"><span>${LV_LABEL[st.level]} · ${RLV_TH[st.level]}</span><span>⏱ ${inf.mins} นาที</span><span>📝 ${inf.words} คำ</span><span>${inf.known ? `🧠 รู้แล้ว ${inf.known}%` : `✨ คำใหม่ ${inf.fresh.length}`}</span></div>
     </div>
-    <div class="h2">คำถามท้ายเรื่อง</div>
-    ${st.q.map((q, k) => `<div class="card-box"><b>${k + 1}. ${esc(q.q)}</b>
+    <div class="st-tools">
+      <button class="tool" id="rAll"><span>▶️</span>ฟังทั้งเรื่อง</button>
+      <button class="tool" id="rTh"><span>🇹🇭</span>คำแปล</button>
+      <button class="tool" id="rFont"><span>Aa</span>ขนาดตัวอักษร</button>
+    </div>
+    <article class="card-box story" id="rText" style="--st-font:${font()}px">
+      ${st.en.map((para, k) => `<div class="st-para" data-k="${k}"><p class="st-p">${storyHTML(para)}</p>
+        <div class="st-row"><button class="st-say" data-para="${k}" aria-label="ฟังย่อหน้านี้">🔊</button><button class="st-thbtn" data-th="${k}">แปลย่อหน้านี้</button></div>
+        <p class="st-th" hidden>${esc(st.th[k] || '')}</p></div>`).join('')}
+      <div class="st-legend small muted">แตะคำที่ขีดเส้นใต้เพื่อดูความหมาย · <span class="rw learning">กำลังเรียน</span> <span class="rw mastered">จำได้แล้ว</span></div>
+    </article>
+    ${inf.fresh.length ? `<div class="h2">✨ คำใหม่ในเรื่องนี้ <span class="small muted">${inf.fresh.length} คำ</span></div>
+      <div class="card-box"><div class="chips st-words">${[...inf.fresh].sort((a, b) => LEVELS.indexOf(b.g) - LEVELS.indexOf(a.g)).slice(0, 16).map((w) => `<button class="chip" data-wi="${w.idx}">${esc(w.w)}</button>`).join('')}</div>
+      <p class="small muted" style="margin:10px 2px 0">แตะคำเพื่อดูความหมาย แล้วกด ⭐ ติดดาวไว้ทบทวนทีหลังได้</p></div>` : ''}
+    <div class="h2">❓ คำถามท้ายเรื่อง</div>
+    ${st.q.map((q, k) => `<div class="card-box st-q"><div class="st-qn">ข้อ ${k + 1}/${st.q.length}</div><b>${esc(q.q)}</b>
       <div class="options" style="margin-top:10px" data-q="${k}">${q.o.map((o, j) => `<button class="opt" data-j="${j}">${esc(o)}</button>`).join('')}</div></div>`).join('')}
     <div id="rDone"></div>`;
+  const paras = [...view.querySelectorAll('.st-para')];
+  const stop = () => { token++; playing = -1; paras.forEach((p) => p.classList.remove('playing')); $('#rAll').innerHTML = '<span>▶️</span>ฟังทั้งเรื่อง'; if (window.speechSynthesis) speechSynthesis.cancel(); };
+  // Read paragraph k, highlight it, then continue with the next one when `chain` is set.
+  const play = (k, chain) => {
+    const my = ++token;
+    paras.forEach((p, j) => p.classList.toggle('playing', j === k));
+    playing = k;
+    $('#rAll').innerHTML = chain ? '<span>⏸</span>หยุดฟัง' : '<span>▶️</span>ฟังทั้งเรื่อง';
+    if (chain) paras[k].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const u = speak(st.en[k]);
+    const next = () => { if (my !== token || current !== 'read') return; if (chain && k + 1 < paras.length) play(k + 1, true); else stop(); };
+    if (u) { u.onend = next; u.onerror = () => { if (my === token) stop(); }; } else stop();
+  };
   $('#rBack').onclick = () => go('read');
-  $('#rTh').onclick = () => { showTh = !showTh; view.querySelectorAll('.st-th').forEach((x) => (x.hidden = !showTh)); $('#rTh').textContent = showTh ? '🙈 ซ่อนคำแปล' : '🇹🇭 แสดงคำแปล'; };
-  $('#rAll').onclick = () => speak(st.en.join(' '));
+  $('#rTh').onclick = () => {
+    showTh = !showTh;
+    view.querySelectorAll('.st-th').forEach((x) => (x.hidden = !showTh));
+    view.querySelectorAll('.st-thbtn').forEach((x) => (x.textContent = showTh ? 'ซ่อนคำแปล' : 'แปลย่อหน้านี้'));
+    $('#rTh').classList.toggle('on', showTh);
+  };
+  $('#rFont').onclick = () => { S.settings.rFont = ((S.settings.rFont != null ? S.settings.rFont : 1) + 1) % FONT_SIZES.length; save(); $('#rText').style.setProperty('--st-font', font() + 'px'); };
+  $('#rAll').onclick = () => (playing >= 0 && $('#rAll').textContent.includes('หยุด') ? stop() : play(0, true));
+  const onScroll = () => { const max = view.scrollHeight - view.clientHeight; const bar = $('#rProg'); if (bar) bar.style.width = (max > 0 ? Math.min(100, (100 * view.scrollTop) / max) : 100) + '%'; };
+  view.addEventListener('scroll', onScroll, { passive: true });
   view.onclick = (e) => {
-    const pb = e.target.closest('[data-para]'); if (pb) return speak(st.en[+pb.dataset.para]);
-    const rw = e.target.closest('.rw[data-i]');
-    if (rw) { const w = W[+rw.dataset.i]; speak(w.w); return openSheet(w, () => { view.querySelectorAll(`.rw[data-i="${w.idx}"]`).forEach((x) => (x.className = 'rw ' + status(w))); }); }
+    const pb = e.target.closest('[data-para]'); if (pb) return play(+pb.dataset.para, false);
+    const tb = e.target.closest('[data-th]');
+    if (tb) { const th = tb.closest('.st-para').querySelector('.st-th'); th.hidden = !th.hidden; tb.textContent = th.hidden ? 'แปลย่อหน้านี้' : 'ซ่อนคำแปล'; return; }
+    const rw = e.target.closest('.rw[data-i], [data-wi]');
+    if (rw) {
+      const w = W[+(rw.dataset.i || rw.dataset.wi)]; speak(w.w);
+      return openSheet(w, () => { view.querySelectorAll(`.rw[data-i="${w.idx}"]`).forEach((x) => (x.className = 'rw ' + status(w))); });
+    }
     const ob = e.target.closest('.opt'), box = ob && ob.closest('[data-q]');
     if (!ob || !box || box.dataset.done) return;
     const k = +box.dataset.q, ok = +ob.dataset.j === st.q[k].a;
@@ -1506,16 +1567,64 @@ function renderRead(id) {
     if (ok) addXP(5);
     answers[k] = ok;
     if (answers.filter((x) => x != null).length === st.q.length) {
-      const right = answers.filter(Boolean).length;
+      const right = answers.filter(Boolean).length, all = st.q.length;
       const first = !S.read[st.id];
-      S.read[st.id] = today(); save();
-      if (right === st.q.length) confetti();
-      const nextSt = STORIES.find((x) => !S.read[x.id]);
-      $('#rDone').innerHTML = `<div class="card-box center pop"><div class="result-emoji">${right === st.q.length ? '🏆' : '📖'}</div>
-        <div class="h2">ตอบถูก ${right}/${st.q.length}${first ? ' · อ่านจบเรื่องใหม่!' : ''}</div>
-        ${nextSt ? `<button class="btn primary block" id="rNext">เรื่องถัดไป: ${esc(nextSt.title)}</button>` : '<p>อ่านครบทุกเรื่องแล้ว เก่งมาก! 🎉</p>'}</div>`;
+      S.read[st.id] = today();
+      const prev = S.readScore[st.id];
+      if (!prev || right > prev[0]) S.readScore[st.id] = [right, all];
+      save();
+      if (right === all) confetti();
+      const nextSt = nextStory();
+      const done = STORIES.filter((x) => S.read[x.id]).length;
+      $('#rDone').innerHTML = `<div class="card-box center pop st-done">
+        <div class="result-emoji">${right === all ? '🏆' : right ? '📖' : '💪'}</div>
+        <div class="h2" style="margin:4px 0">ตอบถูก ${right}/${all}</div>
+        <div class="muted small">${first ? 'อ่านจบเรื่องใหม่! ' : ''}ห้องสมุดของคุณ ${done}/${STORIES.length} เรื่อง</div>
+        <div class="st-stars">${Array.from({ length: all }, (_, i) => `<span class="${i < right ? 'on' : ''}">★</span>`).join('')}</div>
+        ${nextSt ? `<button class="btn primary block" id="rNext">${nextSt.emoji || '📖'} เรื่องถัดไป: ${esc(nextSt.title)}</button>` : '<p>อ่านครบทุกเรื่องแล้ว เก่งมาก! 🎉</p>'}
+        <button class="btn ghost block" id="rLib" style="margin-top:8px">กลับห้องสมุด</button></div>`;
       if (nextSt) $('#rNext').onclick = () => go('read', nextSt.id);
+      $('#rLib').onclick = () => go('read');
+      $('#rDone').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+  };
+  cleanup = () => { view.onclick = null; view.removeEventListener('scroll', onScroll); token++; if (window.speechSynthesis) speechSynthesis.cancel(); };
+}
+function renderLibrary() {
+  const done = STORIES.filter((st) => S.read[st.id]).length;
+  const pick = nextStory();
+  const pi = pick && storyInfo(pick);
+  const counts = Object.fromEntries(RLEVELS.map((lv) => [lv, STORIES.filter((st) => st.level === lv)]));
+  view.innerHTML = `<div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="rBack">‹ เกม</button></div>
+    <div class="card-box lib-head">
+      <div class="row" style="justify-content:space-between;align-items:flex-end"><div><div class="h2" style="margin:0">📚 ห้องสมุดเรื่องสั้น</div>
+        <div class="small muted">อ่านแล้ว ${done} จาก ${STORIES.length} เรื่อง</div></div><div class="lib-pct">${Math.round((100 * done) / STORIES.length)}%</div></div>
+      <div class="lib-bars">${RLEVELS.map((lv) => { const n = counts[lv].length, r = counts[lv].filter((st) => S.read[st.id]).length; return n ? `<div class="lib-bar"><div class="lib-fill lv-${lv}" style="width:${(100 * r) / n}%"></div><span>${LV_LABEL[lv]} ${r}/${n}</span></div>` : ''; }).join('')}</div>
+    </div>
+    ${pick ? `<button class="st-pick lv-${pick.level}" data-id="${pick.id}">
+      <div class="st-pick-tag">แนะนำให้อ่านต่อ</div>
+      <div class="row" style="gap:14px;align-items:center"><div class="st-pick-emoji">${pick.emoji || '📖'}</div>
+      <div class="grow"><div class="st-pick-t">${esc(pick.title)}</div><div class="st-pick-s">${esc(pick.titleTh)}</div>
+      <div class="st-pick-m">${LV_LABEL[pick.level]} · ⏱ ${pi.mins} นาที · ${pi.known ? `🧠 รู้แล้ว ${pi.known}%` : `📝 ${pi.words} คำ`}</div></div><span class="st-pick-go">▶</span></div></button>` : '<div class="card-box center">🎉 อ่านครบทุกเรื่องแล้ว อ่านซ้ำเพื่อทบทวนได้เลย</div>'}
+    <div class="chips" id="rf" style="margin:14px 0 6px">${[['all', 'ทั้งหมด'], ...RLEVELS.filter((lv) => counts[lv].length).map((lv) => [lv, LV_LABEL[lv]]), ['unread', 'ยังไม่อ่าน']].map(([v, t]) => `<button class="chip${readFilter === v ? ' on' : ''}" data-v="${v}">${t}</button>`).join('')}</div>
+    <div id="rList"></div>`;
+  const paint = () => {
+    view.querySelectorAll('#rf .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === readFilter));
+    const lvs = RLEVELS.includes(readFilter) ? [readFilter] : RLEVELS;
+    $('#rList').innerHTML = lvs.map((lv) => {
+      const list = counts[lv].filter((st) => readFilter !== 'unread' || !S.read[st.id]);
+      if (!list.length) return '';
+      return `<div class="h2 lib-lv">${lvBadge(lv)} ${RLV_TH[lv]}</div>${list.map((st) => { const inf = storyInfo(st); return `<button class="st-card${S.read[st.id] ? ' read' : ''}" data-id="${st.id}">
+        <span class="st-tile lv-${st.level}">${st.emoji || '📖'}</span>
+        <span class="grow"><b>${esc(st.title)}</b><span class="small muted st-th2">${esc(st.titleTh)}</span>
+        <span class="st-sub">⏱ ${inf.mins} นาที · ${!inf.fresh.length ? '🧠 รู้ทุกคำแล้ว' : inf.known ? `🧠 รู้แล้ว ${inf.known}%` : `📝 ${inf.words} คำ`}</span></span>${scoreTag(st) || '<span class="muted">›</span>'}</button>`; }).join('')}`;
+    }).join('') || '<p class="center muted">อ่านครบทุกเรื่องในหมวดนี้แล้ว 🎉</p>';
+  };
+  paint();
+  $('#rBack').onclick = () => go('games');
+  view.onclick = (e) => {
+    const c = e.target.closest('#rf .chip'); if (c) { readFilter = c.dataset.v; return paint(); }
+    const b = e.target.closest('[data-id]'); if (b) { view.onclick = null; go('read', +b.dataset.id); }
   };
   cleanup = () => { view.onclick = null; };
 }
@@ -2260,10 +2369,13 @@ const GUIDE = [
     </ul>`],
   ['📖', 'อ่านเรื่องสั้น', `
     <ul>
-      <li>🎮 เกม → <b>📖 อ่านเรื่องสั้น</b> มีเรื่องสั้นภาษาอังกฤษ 3 ระดับ (A1 ง่ายมาก, A2 ง่าย, B1 ปานกลาง)</li>
+      <li>🎮 เกม → <b>📖 อ่านเรื่องสั้น</b> เปิด 📚 ห้องสมุด มี 80 เรื่อง 4 ระดับ (A1 ง่ายมาก, A2 ง่าย, B1 ปานกลาง, B2 ท้าทาย)</li>
+      <li>การ์ดใหญ่ด้านบน = <b>เรื่องแนะนำ</b> (เรื่องที่ยังไม่อ่านในระดับที่เรากำลังเรียน) · กรองตามระดับหรือ "ยังไม่อ่าน" ได้ · แต่ละเรื่องบอกเวลาอ่านและ % คำที่รู้แล้ว</li>
       <li>คำที่อยู่ในรายการคำศัพท์จะขีดเส้นใต้ แตะเพื่อดูความหมาย ฟังเสียง ติดดาว หรือเพิ่มเข้าทบทวน · <span class="rw learning">สีเหลือง</span> = กำลังเรียน <span class="rw mastered">สีเขียว</span> = จำได้แล้ว</li>
-      <li>กด 🔊 ฟังทีละย่อหน้าหรือทั้งเรื่อง กด 🇹🇭 เพื่อดูคำแปล (ลองอ่านเองก่อนค่อยดู)</li>
-      <li>ตอบคำถามท้ายเรื่อง ข้อละ 5 XP</li>
+      <li><b>▶️ ฟังทั้งเรื่อง</b> จะไฮไลต์ย่อหน้าที่กำลังอ่านให้ตามไปพร้อมกัน (กดอีกครั้งเพื่อหยุด) · 🔊 ใต้ย่อหน้า = ฟังเฉพาะย่อหน้านั้น</li>
+      <li><b>🇹🇭 คำแปล</b> เปิดคำแปลทั้งเรื่อง หรือกด "แปลย่อหน้านี้" ทีละย่อหน้า (ลองอ่านเองก่อนค่อยดู) · <b>Aa</b> เปลี่ยนขนาดตัวอักษร (จำค่าไว้ให้)</li>
+      <li>ท้ายเรื่องมี <b>✨ คำใหม่ในเรื่องนี้</b> แตะเพื่อดูความหมายแล้วกด ⭐ ติดดาวไว้ทบทวน</li>
+      <li>ตอบคำถามท้ายเรื่อง ข้อละ 5 XP · ห้องสมุดจะเก็บคะแนนที่ดีที่สุดของแต่ละเรื่อง (★ = ถูกหมด)</li>
     </ul>`],
   ['📖', 'รายการคำศัพท์', `
     <ul>
