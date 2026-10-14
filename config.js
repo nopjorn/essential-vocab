@@ -3,7 +3,7 @@
 window.SYNC_CONFIG = {
   url: 'https://licmgyeouepaddeqlhlo.supabase.co', // e.g. 'https://abcdefgh.supabase.co'
   anonKey: 'sb_publishable_zVN55stwEpYsy1yXkOUpQQ_oCfIaGhR', // the "anon public" key — designed to be public, safe to commit
-  requireLogin: false, // true = the app stays locked until an invited user signs in
+  requireLogin: true,  // true = the app stays locked until an invited user signs in
   leaderboard: true,   // show the friends leaderboard (needs the leaderboard table)
   vapidPublicKey: '',  // Web Push public key for daily notifications (optional, see SYNC-SETUP.md step 7)
 };
