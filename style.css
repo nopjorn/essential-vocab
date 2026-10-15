@@ -46,6 +46,7 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; height: 100%; }
+body { overflow: hidden; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -59,7 +60,8 @@ body {
 button, input, select { font: inherit; color: inherit; }
 button { touch-action: manipulation; cursor: pointer; }
 
-#app { display: flex; flex-direction: column; height: 100dvh; max-width: 640px; margin: 0 auto; }
+/* --app-h: set by fixAppHeight() in app.js (iOS home-screen apps launch with a too-short viewport) */
+#app { display: flex; flex-direction: column; position: relative; height: var(--app-h, 100dvh); max-width: 640px; margin: 0 auto; }
 
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
@@ -75,7 +77,7 @@ button { touch-action: manipulation; cursor: pointer; }
 }
 
 .tabbar {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 10;
   display: flex; justify-content: space-around;
   max-width: 640px; margin: 0 auto;
   padding: 6px 4px calc(env(safe-area-inset-bottom) + 6px);

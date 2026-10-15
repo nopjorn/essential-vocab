@@ -1,7 +1,25 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.16.1';
+const APP_VERSION = '1.16.2';
+
+// iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
+// short by the status-bar height, so the tab bar floats above the bottom edge until the
+// next resize. In standalone mode use the full screen height when it is only slightly larger.
+function fixAppHeight() {
+  const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  let h = window.innerHeight;
+  if (standalone && screen.width && screen.height) {
+    const portrait = window.innerWidth < window.innerHeight + 120;
+    const full = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+    const fullW = portrait ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
+    if (Math.abs(window.innerWidth - fullW) < 2 && full > h && full - h <= 100) h = full;
+  }
+  document.documentElement.style.setProperty('--app-h', h + 'px');
+}
+fixAppHeight();
+['resize', 'orientationchange', 'pageshow'].forEach(e => window.addEventListener(e, () => { fixAppHeight(); setTimeout(fixAppHeight, 300); }));
+document.addEventListener('visibilitychange', () => { if (!document.hidden) fixAppHeight(); });
 
 /* ---------- data ---------- */
 // WORDS rows (words/<level>.js): [word, pos, level, ipa, thai, example, thai example, topic id, 5 if Oxford 5000-only]
