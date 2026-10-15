@@ -1,12 +1,11 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.16.0';
+const APP_VERSION = '1.16.1';
 
 /* ---------- data ---------- */
-// WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
+// WORDS rows (words/<level>.js): [word, pos, level, ipa, thai, example, thai example, topic id, 5 if Oxford 5000-only]
 // g = study group: A1–B2 are Oxford 3000; B2x and C1 are the extra Oxford 5000 words.
-// Topic per word: topics.js holds one letter per WORDS row ('a' = TOPICS[0], …).
 const TOPICS = [
   ['people', '👪', 'คนและครอบครัว'], ['body', '💪', 'ร่างกายและสุขภาพ'], ['food', '🍜', 'อาหารและเครื่องดื่ม'],
   ['home', '🏠', 'บ้านและของใช้'], ['clothes', '👕', 'เสื้อผ้าและการแต่งตัว'], ['nature', '🌿', 'ธรรมชาติ สัตว์ อากาศ'],
@@ -16,10 +15,8 @@ const TOPICS = [
   ['grammar', '🔗', 'คำไวยากรณ์ (the, of, and…)'],
 ];
 const TOPIC_LABEL = Object.fromEntries(TOPICS.map(([id, ic, th]) => [id, `${ic} ${th}`]));
-const W = window.WORDS.map(([w, p, l, i, t, e, et, s], idx) => {
-  const tc = (window.TOPIC_CODES || '').charCodeAt(idx) - 97;
-  return { idx, w, p, l, i, t, e, et, g: s === 5 ? (l === 'B2' ? 'B2x' : 'C1') : l, tp: TOPICS[tc] ? TOPICS[tc][0] : '' };
-});
+const W = window.WORDS.slice().sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+  .map(([w, p, l, i, t, e, et, tp, s], idx) => ({ idx, w, p, l, i, t, e, et, g: s === 5 ? (l === 'B2' ? 'B2x' : 'C1') : l, tp: tp || '' }));
 const inTopic = (w) => !S.settings.topic || w.tp === S.settings.topic;
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1'];
 const LEVELS_3000 = ['A1', 'A2', 'B1', 'B2'];

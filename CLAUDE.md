@@ -21,9 +21,8 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
 | `index.html` | Shell: top bar, `#view`, tab bar |
 | `app.js` | All logic (single file, sections marked `/* ---------- name ---------- */`) |
 | `style.css` | Mobile-first styles; colour tokens on `:root` with dark mode |
-| `words.js` | `window.WORDS = [[word, pos, level, ipa, thai, example, thaiExample, 5?], ...]` (4,957 rows) |
+| `words/<level>.js` | `a1 a2 b1 b2 b2plus c1` (Oxford 5000-only rows in `b2plus`/`c1`), one row per line, each pushes onto `window.WORDS`: `[word, pos, level, ipa, thai, example, thaiExample, topicId, 5?]` (4,957 rows total; app.js sorts them A–Z, topic id → `w.tp`) |
 | `sw.js` | Network-first service worker with versioned cache |
-| `topics.js` | `window.TOPIC_CODES`: one letter per WORDS row → `TOPICS` in app.js (`w.tp`) |
 | `collocations.js` | `window.COLLOC = {headword: [[phrase, thai], ...]}` original collocation data, lazy-loaded by `loadColloc()` (word sheet + `colloc` game) |
 | `pairs.js` | `window.CONFUSE` (confusable pairs `{a,b,tip,q:[[sentence ___, right, wrong, thai]]}`), `window.MINPAIRS` (`[a, aTh, b, bTh, group]`) + `MINPAIRS_TIP`; original, lazy-loaded by `loadPairs()` |
 | `stories/<level>.js` | One file per level (`a1`…`c2`, `STORY_FILES` in app.js), each pushes onto `window.STORIES`: 105 original A1–C2 stories (ids unique across files) `{id, level, emoji, title, titleTh, en[], th[], q[{q,o,a}]}` |
