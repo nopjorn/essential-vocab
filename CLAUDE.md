@@ -25,6 +25,7 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
 | `sw.js` | Network-first service worker with versioned cache |
 | `topics.js` | `window.TOPIC_CODES`: one letter per WORDS row → `TOPICS` in app.js (`w.tp`) |
 | `collocations.js` | `window.COLLOC = {headword: [[phrase, thai], ...]}` original collocation data, lazy-loaded by `loadColloc()` (word sheet + `colloc` game) |
+| `pairs.js` | `window.CONFUSE` (confusable pairs `{a,b,tip,q:[[sentence ___, right, wrong, thai]]}`), `window.MINPAIRS` (`[a, aTh, b, bTh, group]`) + `MINPAIRS_TIP`; original, lazy-loaded by `loadPairs()` |
 | `stories.js` | `window.STORIES`: 100 original A1–C1 stories `{id, level, emoji, title, titleTh, en[], th[], q[{q,o,a}]}` |
 | `supabase/functions/daily-reminder/index.ts` | Hourly Edge Function sending Web Push reminders (VAPID secrets in Supabase) |
 | `config.js` | `window.SYNC_CONFIG = {url, anonKey, requireLogin, leaderboard, vapidPublicKey}` for Supabase sync (empty = off); see `SYNC-SETUP.md` |
@@ -43,7 +44,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
   `chist` (flashcards per day; games = `hist` − `chist`), `chistFrom`, `snap` (daily
   `[learned3000, mastered3000, learnedAll, masteredAll]`, written by `takeSnap()` in `save()`),
   `note` (memory hooks), `miss` (date → word → wrong count, 21 days), `weekSeen`, `read` (story id → date), `readScore` (story id → [best right, questions]),
-  `settings.topic`, `settings.voice` (voiceURI, '' = auto), `settings.theme` (auto/light/dark → `html[data-theme]`, mirrored to localStorage `o3k.theme` for the early script in index.html), `monthSeen`, `placedAt`, `xpWeek` (Monday key → XP), `nick`. Auth tokens live separately in localStorage `o3k.auth` (never in backups).
+  `settings.topic`, `settings.voice` (voiceURI, '' = auto), `settings.theme` (auto/light/dark → `html[data-theme]`, mirrored to localStorage `o3k.theme` for the early script in index.html), `monthSeen`, `stk` (topic → sticker tier 1–4), `placedAt`, `xpWeek` (Monday key → XP), `nick`. Auth tokens live separately in localStorage `o3k.auth` (never in backups).
 - When adding a field: add it to `defaults()` (load() shallow-merges top-level keys) **and** handle it
   in `mergeBackup()` so importing a backup keeps it.
 - `save()` also runs `checkAch()` (achievements).
@@ -69,6 +70,8 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 - Games added in 1.14: `order` (rebuild example sentence; `qOrder`), `colloc` (`qColloc`), story games `sCloze`/`sOrder`
   (`STORY_GAMES`, items from `storyItems()` = copies of list words carrying `_s/_tok/_opts/_st`). Order games and failed
   pronunciation use the soft path in `mark()` (no card reset). Monthly summary: `monthStats()/monthBox()` (stats page; home card days 1–7).
+- 1.15: `PAIR_GAMES` `confuse` (`qConfuse`) and `minpair` (`qMinpair`) use items with `idx: -1` → `mark()` only calls `markActive()` (no SRS); pair list page `renderPairs()`.
+  Sticker book: `STK_TIERS`, `topicStat()`, `checkStickers()` (run from `checkAch()`), `stickerBook()` on the stats page.
 - Home is kept short (today, quick play, weekly card, quest, progress card); charts, per-level bars and
   achievements live on the stats page.
 - Leaderboard (`pushBoard`/`loadBoard`, table `leaderboard`) and Web Push (`enablePush`, table `push_subs`,

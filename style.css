@@ -328,6 +328,34 @@ body { touch-action: manipulation; }
 /* in-app guide */
 .guide-link { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border: 0; font: inherit; color: inherit; cursor: pointer; }
 .guide-link > span:first-child { font-size: 28px; }
+.guide-link + .guide-link { margin-top: -4px; }
+/* confusable pairs + minimal pairs (1.15) */
+.options.two { grid-template-columns: 1fr 1fr; }
+.opt.mp { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.opt.mp b { font-size: 22px; }
+.opt.mp small { color: var(--muted); font-size: 13px; font-weight: 500; }
+.tip-box { margin-top: 10px; background: color-mix(in srgb, var(--warn) 22%, var(--surface)); border-radius: 14px; padding: 10px 12px; text-align: left; font-size: 14px; line-height: 1.5; }
+.pair-h { font-size: 20px; }
+.pair-ex { display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left; border: 0; border-top: 1px solid var(--border); background: none; color: inherit; font: inherit; padding: 10px 2px; margin-top: 8px; cursor: pointer; }
+.pair-ex mark { background: none; color: var(--pink); font-weight: 800; }
+/* sticker book */
+.stk-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.stk { position: relative; border: 2px solid transparent; background: var(--surface-2); border-radius: 16px; padding: 10px 4px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text); font: inherit; cursor: pointer; }
+.stk-ic { font-size: 30px; line-height: 1.1; }
+.stk.t0 .stk-ic { filter: grayscale(1); opacity: .35; }
+.stk small { font-size: 10.5px; line-height: 1.2; text-align: center; color: var(--muted); min-height: 2.4em; }
+.stk-tier { position: absolute; top: 2px; right: 4px; font-size: 16px; }
+.stk-bar { width: 80%; height: 4px; border-radius: 4px; background: var(--border); overflow: hidden; }
+.stk-bar span { display: block; height: 100%; background: var(--primary); }
+.stk.t1 { border-color: #cd8a4f; }
+.stk.t2 { border-color: #a9b4c2; }
+.stk.t3 { border-color: #e9b928; background: color-mix(in srgb, #f6d365 18%, var(--surface-2)); }
+.stk.t4 { border-color: #5cc8f5; background: color-mix(in srgb, #8fd8ff 22%, var(--surface-2)); }
+.stk.t4 .stk-bar { visibility: hidden; }
+.stk.sel { outline: 3px solid var(--primary); outline-offset: 1px; }
+.stk-info { color: var(--text); font-size: 14px; }
+.stk-row { margin-top: 6px; }
+.stk-row.done b { color: var(--good); }
 .guide details { padding: 0; overflow: hidden; }
 .guide summary { list-style: none; display: flex; align-items: center; gap: 10px; padding: 16px 18px; cursor: pointer; font-size: 17px; }
 .guide summary::-webkit-details-marker { display: none; }
@@ -612,6 +640,8 @@ input.sel { color: var(--text); font: inherit; }
   #rows { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
   #rows > p { grid-column: 1 / -1; }
   .ach-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+  .stk-grid { grid-template-columns: repeat(8, 1fr); }
+  .pair-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; align-items: start; }
 }
 
 /* segmented control (theme) */

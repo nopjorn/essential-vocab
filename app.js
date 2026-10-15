@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.14.2';
+const APP_VERSION = '1.15.0';
 
 /* ---------- data ---------- */
 // WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
@@ -61,6 +61,7 @@ const defaults = () => ({
   placedAt: '',        // date the placement test was taken/dismissed
   xpWeek: {},          // Monday key -> XP earned that week (friends leaderboard)
   nick: '',            // name shown on the friends leaderboard
+  stk: {},             // topic id -> sticker tier reached (1 bronze … 4 diamond)
 });
 let S = load();
 // Users from before 1.8.0 get XP for the work they already did.
@@ -137,6 +138,7 @@ function mergeBackup(d) {
   for (const [k, v] of Object.entries(d.xpWeek || {})) S.xpWeek[k] = Math.max(S.xpWeek[k] || 0, v);
   if (d.nick && !S.nick) S.nick = d.nick;
   for (const [k, v] of Object.entries(d.read || {})) if (!S.read[k]) S.read[k] = v;
+  for (const [k, v] of Object.entries(d.stk || {})) S.stk[k] = Math.max(S.stk[k] || 0, v);
   for (const [k, v] of Object.entries(d.readScore || {})) if (!S.readScore[k] || v[0] > S.readScore[k][0]) S.readScore[k] = v;
   for (const [k, v] of Object.entries(d.chist || {})) S.chist[k] = Math.max(S.chist[k] || 0, v);
   for (const [k, v] of Object.entries(d.snap || {})) S.snap[k] = (S.snap[k] || [0, 0, 0, 0]).map((x, i) => Math.max(x, v[i] || 0));
@@ -271,10 +273,61 @@ function checkAch() {
     streak: S.streak.count, perfect: S.counts.perfect || 0, quests: S.counts.quests || 0, speak: S.counts.speak || 0, level: levelOf(S.xp),
     lv: Object.fromEntries(LEVELS.map((l) => [l, GROUP[l].every((w) => S.prog[w.w])])),
   };
+  checkStickers();
   const got = ACH.filter((a) => !S.ach[a.id] && a.ok(s));
   if (!got.length) return;
   got.forEach((a) => (S.ach[a.id] = today()));
   setTimeout(() => { confetti(); toast(`🏅 ได้เหรียญ "${got[0].icon} ${got[0].name}"${got.length > 1 ? ` และอีก ${got.length - 1} เหรียญ` : ''}`); }, 1100);
+}
+
+/* ---------- sticker book ---------- */
+// One sticker per topic, upgraded as the topic's words are learned/mastered.
+const STK_TIERS = [
+  { icon: '🥉', name: 'บรอนซ์', desc: 'เรียนแล้ว 20% ของคำชุด 3000 ในหมวด', need: (t) => [t.l3, Math.ceil(t.n3 * 0.2), 'เรียนแล้ว'] },
+  { icon: '🥈', name: 'เงิน', desc: 'จำได้แล้ว 30% ของคำชุด 3000 ในหมวด', need: (t) => [t.m3, Math.ceil(t.n3 * 0.3), 'จำได้แล้ว'] },
+  { icon: '🥇', name: 'ทอง', desc: 'จำได้แล้ว 70% ของคำชุด 3000 ในหมวด', need: (t) => [t.m3, Math.ceil(t.n3 * 0.7), 'จำได้แล้ว'] },
+  { icon: '💎', name: 'เพชร', desc: 'จำได้แล้ว 70% ของทุกคำในหมวด (รวมชุด 5000)', need: (t) => [t.mAll, Math.ceil(t.nAll * 0.7), 'จำได้แล้ว (ทุกคำ)'] },
+];
+let TOPIC_WORDS = null;
+function topicStat(id) {
+  if (!TOPIC_WORDS) { TOPIC_WORDS = {}; W.forEach((w) => { if (w.tp) (TOPIC_WORDS[w.tp] = TOPIC_WORDS[w.tp] || []).push(w); }); }
+  const t = { n3: 0, l3: 0, m3: 0, nAll: 0, mAll: 0 };
+  for (const w of TOPIC_WORDS[id] || []) {
+    const p = S.prog[w.w], m = p && p.b >= MASTERED, in3 = LEVELS_3000.includes(w.g);
+    t.nAll++; if (m) t.mAll++;
+    if (in3) { t.n3++; if (p) t.l3++; if (m) t.m3++; }
+  }
+  return t;
+}
+const tierOf = (t) => { let k = 0; while (k < STK_TIERS.length && t.n3 && (() => { const [h, n] = STK_TIERS[k].need(t); return h >= n; })()) k++; return k; };
+function checkStickers() {
+  if (!S.stk) S.stk = {};
+  const up = [];
+  TOPICS.forEach(([id]) => { const k = tierOf(topicStat(id)); if (k > (S.stk[id] || 0)) { S.stk[id] = k; up.push([id, k]); } });
+  if (!up.length) return;
+  const [id, k] = up[0];
+  setTimeout(() => { confetti(); toast(`📒 ได้สติกเกอร์ ${STK_TIERS[k - 1].icon} ${STK_TIERS[k - 1].name} หมวด ${TOPIC_LABEL[id]}${up.length > 1 ? ` และอีก ${up.length - 1} อัน` : ''}`); }, 1600);
+}
+function stickerBook() {
+  const n = TOPICS.reduce((a, [id]) => a + (S.stk[id] || 0), 0);
+  return `<div class="h2">📒 สมุดสติกเกอร์ <span class="small muted">${n}/${TOPICS.length * STK_TIERS.length}</span></div>
+    <div class="card-box"><div class="stk-grid" id="stk">${TOPICS.map(([id, ic, th]) => {
+      const t = topicStat(id), k = tierOf(t), nx = STK_TIERS[k];
+      const pct = nx ? (() => { const [h, need] = nx.need(t); return Math.min(100, h / Math.max(1, need) * 100); })() : 100;
+      return `<button class="stk t${k}" data-stk="${id}"><span class="stk-ic">${ic}</span>${k ? `<span class="stk-tier">${STK_TIERS[k - 1].icon}</span>` : ''}<small>${esc(th)}</small><span class="stk-bar"><span style="width:${pct}%"></span></span></button>`;
+    }).join('')}</div><div id="stkInfo" class="small muted" style="margin-top:10px">แตะสติกเกอร์เพื่อดูว่าต้องทำอีกเท่าไร · 🥉 → 🥈 → 🥇 → 💎</div></div>`;
+}
+function bindStickers() {
+  const g = $('#stk'); if (!g) return;
+  g.onclick = (e) => {
+    const b = e.target.closest('[data-stk]'); if (!b) return;
+    const id = b.dataset.stk, t = topicStat(id), k = tierOf(t);
+    g.querySelectorAll('.stk').forEach((x) => x.classList.toggle('sel', x === b));
+    $('#stkInfo').innerHTML = `<div class="stk-info"><b>${TOPIC_LABEL[id]}</b> <span class="muted">· ${t.n3} คำในชุด 3000 · ${t.nAll} คำทั้งหมด</span>
+      ${STK_TIERS.map((tr, j) => { const [h, need, lab] = tr.need(t); return `<div class="stk-row ${j < k ? 'done' : ''}">${j < k ? '✅' : tr.icon} <b>${tr.name}</b> <span class="muted">${lab} ${Math.min(h, need)}/${need}</span></div>`; }).join('')}
+      <button class="btn primary block" id="stkPlay" style="margin-top:10px">🎮 ฝึกหมวดนี้ในเกม</button></div>`;
+    $('#stkPlay').onclick = () => { gameSource = 'topic'; gameTopic = id; go('games'); };
+  };
 }
 
 /* ---------- helpers ---------- */
@@ -868,10 +921,14 @@ const GAMES = {
   colloc: { icon: '🔗', name: 'คำคู่กัน', desc: 'เลือกคำที่ใช้คู่กัน เช่น ___ a decision' },
   sCloze: { icon: '📖', name: 'เติมคำจากเรื่อง', desc: 'ประโยคจากเรื่องสั้นที่อ่านแล้ว' },
   sOrder: { icon: '🧱', name: 'เรียงประโยคจากเรื่อง', desc: 'ต่อประโยคจากเรื่องที่อ่านแล้ว' },
+  confuse: { icon: '🤔', name: 'คำที่มักสับสน', desc: 'เลือกให้ถูก เช่น borrow / lend' },
+  minpair: { icon: '👂', name: 'ฝึกหูแยกเสียง', desc: 'ฟังแล้วเลือก ship หรือ sheep' },
   review: { icon: '🔁', name: 'คำที่ผิดบ่อย', desc: 'ฝึกคำที่เคยตอบผิด' },
 };
 // Games whose data is lazy-loaded (stories / collocations) or built from sentences instead of the word pool.
 const STORY_GAMES = ['sCloze', 'sOrder'];
+// Games built from pairs.js (confusable words, minimal pairs): not tied to the word list or its schedule.
+const PAIR_GAMES = ['confuse', 'minpair'];
 function gameTile(id) {
   const g = GAMES[id];
   const best = S.best[id] != null ? `<span>🏅 สถิติ: ${S.best[id]}</span>` : '';
@@ -898,13 +955,30 @@ function renderGames() {
       ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
     </div>
     <button class="card-box guide-link" id="toRead"><span>📖</span><div class="grow"><b>อ่านเรื่องสั้น</b><div class="small muted">${STORY_COUNT} เรื่อง · อ่านแล้ว ${Object.keys(S.read).length} · แตะคำเพื่อดูความหมาย</div></div><span class="muted">›</span></button>
+    <button class="card-box guide-link" id="toPairs"><span>🤔</span><div class="grow"><b>คู่คำที่คนไทยสับสนบ่อย</b><div class="small muted">borrow / lend, bored / boring … อ่านวิธีแยกแล้วไปเล่นเกม</div></div><span class="muted">›</span></button>
     <div class="game-grid">${Object.keys(GAMES).map(gameTile).join('')}</div>`;
   $('#toRead').onclick = () => go('read');
+  $('#toPairs').onclick = () => renderPairs();
   const paint = () => view.querySelectorAll('#src .chip').forEach((c) => c.classList.toggle('on', c.dataset.s === gameSource));
   paint();
   if ($('#gTopic')) $('#gTopic').onchange = (e) => { gameTopic = e.target.value; };
   $('#src').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { gameSource = c.dataset.s; renderGames(); } };
   view.querySelectorAll('[data-game]').forEach((b) => (b.onclick = () => startGame(b.dataset.game)));
+}
+
+// Browse the confusable pairs with their Thai tips and example sentences.
+function renderPairs() {
+  if (!CONFUSE) { loadPairs().then(renderPairs); return; }
+  $('#title').textContent = 'คำที่มักสับสน';
+  view.scrollTop = 0;
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="pBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="pPlay">🤔 เล่นเกม</button></div>
+    <p class="small muted" style="margin:0 4px 12px">${CONFUSE.length} คู่ที่คนไทยใช้สลับกันบ่อย แตะประโยคเพื่อฟังเสียง</p>
+    <div class="pair-list">${CONFUSE.map((c) => `<div class="card-box pair-card"><div class="pair-h"><b>${esc(c.a)}</b> <span class="muted">vs</span> <b>${esc(c.b)}</b></div>
+      <div class="tip-box">💡 ${esc(c.tip)}</div>
+      ${c.q.map(([sn, r, , th]) => { const f = sn.replace('___', r); return `<button class="pair-ex" data-say="${esc(f)}"><span>${esc(sn).replace('___', `<mark>${esc(r)}</mark>`)}</span><small class="muted">${esc(th)}</small></button>`; }).join('')}</div>`).join('')}</div>`;
+  $('#pBack').onclick = () => go('games');
+  $('#pPlay').onclick = () => startGame('confuse');
+  view.querySelector('.pair-list').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
 }
 
 const masteredWords = () => W.filter((w) => S.prog[w.w] && S.prog[w.w].b >= MASTERED);
@@ -931,6 +1005,8 @@ function storyItems(id) {
 }
 function gamePool(id) {
   if (STORY_GAMES.includes(id)) return storyItems(id);
+  if (id === 'confuse') return CONFUSE.flatMap((c) => c.q.map((q) => ({ idx: -1, w: `${c.a} / ${c.b}`, t: '', p: '', g: '', _c: c, _q: q })));
+  if (id === 'minpair') return MINPAIRS.map((m) => ({ idx: -1, w: `${m[0]} / ${m[2]}`, t: `${m[1]} / ${m[3]}`, p: '', g: '', _m: m }));
   if (id === 'review') {
     return W.filter((w) => S.prog[w.w] && (S.prog[w.w].x || 0) > 0)
       .sort((a, b) => (S.prog[b.w].x - S.prog[a.w].x) || (S.prog[a.w].b - S.prog[b.w].b)).slice(0, 40);
@@ -977,6 +1053,7 @@ function startGame(id) {
   }
   if (STORY_GAMES.includes(id) && !STORIES) { loadStories().then(() => startGame(id)); return; }
   if (id === 'colloc' && !COLLOC) { loadColloc().then(() => startGame(id)); return; }
+  if (PAIR_GAMES.includes(id) && !CONFUSE) { loadPairs().then(() => startGame(id)); return; }
   if (STORY_GAMES.includes(id) && !Object.keys(S.read).length) { toast('อ่านเรื่องสั้นให้จบอย่างน้อย 1 เรื่องก่อนนะ 📖'); if (current !== 'games') go('games'); return; }
   const src = gamePool(id);
   const min = id === 'match' ? 6 : 4;
@@ -1023,6 +1100,8 @@ function playQuiz(mode, src, gameId) {
     if (m === 'sOrder') return qOrder(w, w._s, '', w._st);
     if (m === 'sCloze') return qSCloze(w);
     if (m === 'colloc') return qColloc(w);
+    if (m === 'confuse') return qConfuse(w);
+    if (m === 'minpair') return qMinpair(w);
     const toTh = m !== 'th2en' && m !== 'cloze';
     const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
     let prompt;
@@ -1312,11 +1391,74 @@ function playQuiz(mode, src, gameId) {
     };
   }
 
+  // Confusable words: pick the right one of a pair in a sentence, then see the Thai tip.
+  function qConfuse(w) {
+    const c = w._c, [sent, right, bad, th] = w._q;
+    const opts = shuffle([right, bad]);
+    const full = sent.replace('___', right);
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop"><div class="small muted">${esc(c.a)} หรือ ${esc(c.b)}?</div>
+        <div class="cloze" style="margin-top:8px">${esc(sent).replace('___', '<span class="blank">_____</span>')}</div>
+        <button class="hint-btn" id="cHint">💡 ดูคำแปลประโยค</button><div class="thx" id="cTh" hidden>${esc(th)}</div></div>
+      <div class="options two">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    $('#cHint').onclick = () => { $('#cTh').hidden = false; $('#cHint').remove(); };
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === right;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : `❌ คำที่ถูกคือ <b>${esc(right)}</b>`}
+        <div class="example"><div class="en">${esc(full)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(th)}</div></div>
+        <div class="tip-box">💡 ${esc(c.tip)}</div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('[data-sayex]').onclick = () => speak(full);
+      $('#nextQ').onclick = next;
+      speak(full);
+    };
+  }
+
+  // Minimal pairs: hear one word of a pair (ship / sheep) and pick which one it was.
+  function qMinpair(w) {
+    const [a, aTh, b, bTh, cat] = w._m;
+    const target = Math.random() < 0.5 ? a : b;
+    const ipa = (x) => { const e = WORD_BY[x]; return e && e.i ? ` <span class="muted">${esc(e.i)}</span>` : ''; };
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop">
+        <button class="speak" data-say style="width:96px;height:96px;font-size:44px;margin:0">🔊</button>
+        <div class="muted small" style="margin-top:10px">ได้ยินคำไหน? แตะเพื่อฟังอีกครั้ง</div></div>
+      <div class="options two">${[[a, aTh], [b, bTh]].map(([x, t]) => `<button class="opt mp" data-o="${esc(x)}"><b>${esc(x)}</b><small>${esc(t)}</small></button>`).join('')}</div>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    view.querySelector('[data-say]').onclick = () => speak(target);
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const bt = e.target.closest('.opt'); if (!bt || answered) return;
+      answered = true;
+      const ok = bt.dataset.o === target;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === target) o.classList.add('correct'); });
+      if (!ok) bt.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌'} ที่ได้ยินคือ <b>${esc(target)}</b>
+        <div class="example"><div class="en"><b>${esc(a)}</b>${ipa(a)} · <b>${esc(b)}</b>${ipa(b)}</div><div class="thx">${esc(MINPAIRS_TIP[cat] || '')}</div></div>
+        <button class="btn block" id="mpCmp" style="margin-top:10px">🔁 ฟังเทียบ ${esc(a)} → ${esc(b)}</button>
+        <button class="btn primary block" id="nextQ" style="margin-top:10px">ถัดไป →</button>`;
+      $('#mpCmp').onclick = () => { const u = speak(a); if (u) u.onend = () => setTimeout(() => { if (items[i] === w) speak(b); }, 250); };
+      $('#nextQ').onclick = next;
+      if (ok) setTimeout(() => { if (items[i] === w) next(); }, 1600);
+    };
+    setTimeout(() => speak(target), 200);
+  }
+
   function mark(w, ok) {
     // A missed pronunciation or word order doesn't mean the meaning was forgotten, so it doesn't reset the card.
     const spk = gameId === 'speak' || gameId === 'speakS';
     const soft = spk || gameId === 'order' || gameId === 'sOrder';
-    if (soft && !ok) markActive(); else gameResult(w, ok);
+    if (w.idx < 0 || (soft && !ok)) markActive(); else gameResult(w, ok);
     if (spk && ok) S.counts.speak = (S.counts.speak || 0) + 1;
     questEvent('answer', { game: gameId, ok });
     sfx(ok ? 'ok' : 'bad');
@@ -1339,8 +1481,9 @@ function playQuiz(mode, src, gameId) {
         <div class="h2">${score} แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
         <p>ถูก ${correct}/${items.length} · คอมโบสูงสุด ${bestCombo}</p>
       </div>
-      ${wrong.length ? `<div class="card-box wrong-list"><b>${gameId.startsWith('speak') ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b> <span class="small muted">${gameId.startsWith('speak') ? '(แตะคำเพื่อฟังเสียง)' : '(ใส่ในแฟลชการ์ดให้แล้ว)'} · กด ☆ เพื่อติดดาว</span>
-        ${wrong.map((w) => `<div class="wl" data-i="${w.idx}"><span><b>${esc(w.w)}</b> <span class="pos">${esc(w.p)}</span></span><span class="muted grow" style="text-align:right">${esc(w.t)}</span><button class="star-btn" data-star>${starIcon(w)}</button></div>`).join('')}</div>` : ''}
+      ${wrong.length ? `<div class="card-box wrong-list"><b>${gameId.startsWith('speak') ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b> <span class="small muted">${gameId.startsWith('speak') ? '(แตะคำเพื่อฟังเสียง)' : PAIR_GAMES.includes(gameId) ? '(แตะเพื่อฟังเสียง)' : '(ใส่ในแฟลชการ์ดให้แล้ว) · กด ☆ เพื่อติดดาว'}</span>
+        ${wrong.map((w) => w.idx < 0 ? `<div class="wl" data-i="-1" data-say="${esc(w._q ? w._q[0].replace('___', w._q[1]) : w._m[0] + ', ' + w._m[2])}"><span><b>${esc(w.w)}</b></span><span class="muted grow" style="text-align:right">${esc(w._q ? w._q[3] : w.t)}</span></div>`
+          : `<div class="wl" data-i="${w.idx}"><span><b>${esc(w.w)}</b> <span class="pos">${esc(w.p)}</span></span><span class="muted grow" style="text-align:right">${esc(w.t)}</span><button class="star-btn" data-star>${starIcon(w)}</button></div>`).join('')}</div>` : ''}
       <button class="btn primary block" id="again">เล่นอีกรอบ</button>
       <div style="height:10px"></div><button class="btn block" id="back">เลือกเกมอื่น</button>`;
     $('#again').onclick = () => startGame(gameId);
@@ -1349,6 +1492,7 @@ function playQuiz(mode, src, gameId) {
     if (wl) wl.onclick = (e) => {
       const row = e.target.closest('.wl'); if (!row) return;
       const w = W[+row.dataset.i];
+      if (!w) return speak(row.dataset.say || '');
       const sb = e.target.closest('[data-star]');
       if (sb) { toggleStar(w); sb.textContent = starIcon(w); } else speak(w.w);
     };
@@ -1616,6 +1760,18 @@ function loadColloc() {
     sc.src = 'collocations.js?v=' + APP_VERSION;
     sc.onload = () => res((COLLOC = window.COLLOC || {}));
     sc.onerror = () => res((COLLOC = {}));
+    document.head.appendChild(sc);
+  });
+}
+// pairs.js: window.CONFUSE (confusable words) + window.MINPAIRS (sound pairs) — lazy-loaded.
+let CONFUSE = window.CONFUSE || null, MINPAIRS = window.MINPAIRS || [], MINPAIRS_TIP = window.MINPAIRS_TIP || {};
+function loadPairs() {
+  if (CONFUSE) return Promise.resolve(CONFUSE);
+  return new Promise((res) => {
+    const sc = document.createElement('script');
+    sc.src = 'pairs.js?v=' + APP_VERSION;
+    const done = () => { CONFUSE = window.CONFUSE || []; MINPAIRS = window.MINPAIRS || []; MINPAIRS_TIP = window.MINPAIRS_TIP || {}; res(CONFUSE); };
+    sc.onload = done; sc.onerror = done;
     document.head.appendChild(sc);
   });
 }
@@ -2271,9 +2427,11 @@ function renderStats(from) {
       <div class="small muted" style="margin-top:8px">คิดจากความถี่ที่เล่นตอนนี้ (${h.active}/${h.span} วัน)${h.ratio < 1 && h.since ? ' ถ้าเล่นทุกวันจะเร็วขึ้นอีก' : ''} · การ์ดทบทวนต่อวันเป็นค่าประมาณเมื่อเรียนไปได้สักระยะ</div>
     </div>
     <p class="small muted center">เป็นการคาดการณ์คร่าวๆ จะแม่นขึ้นเรื่อยๆ เมื่อเล่นไปนานขึ้น</p>
+    ${stickerBook()}
     <div class="h2">🏅 เหรียญรางวัล <span class="small muted">${ACH.filter((a) => S.ach[a.id]).length}/${ACH.length}</span></div>
     <div class="card-box ach-grid" id="ach">${ACH.map((a) => `<button class="ach ${S.ach[a.id] ? 'on' : ''}" data-ach="${a.id}"><span>${a.icon}</span><small>${a.name}</small></button>`).join('')}</div>`;
   $('#sBack').onclick = () => go(from || 'home');
+  bindStickers();
   $('#ach').onclick = (e) => {
     const b = e.target.closest('[data-ach]'); if (!b) return;
     const a = ACH.find((x) => x.id === b.dataset.ach);
@@ -2601,7 +2759,7 @@ const GUIDE = [
       <li>เขียนวิธีจำให้คำไหนก็ได้ ไม่ต้องเป็นคำดื้อ (แตะ ✏️ เขียนวิธีจำ ในการ์ดหรือในหน้ารายละเอียดคำ)</li>
       <li>ฝึกเฉพาะคำดื้อ: 🎮 เกม → เลือกแหล่งคำ <b>🐢 คำดื้อ</b> · ดูรายชื่อ: 📖 คำศัพท์ → ตัวกรอง 🐢 คำดื้อ</li>
     </ul>`],
-  ['🎮', 'เกมทั้ง 14 แบบ', `
+  ['🎮', 'เกมทั้ง 16 แบบ', `
     <ul>
       <li><b>🇬🇧 ทายความหมาย / 🇹🇭 ทายคำศัพท์</b> — เลือกคำแปลที่ถูก</li>
       <li><b>🎧 ฟังแล้วตอบ</b> — ฝึกหู ฟังเสียงแล้วเลือกความหมาย</li>
@@ -2615,7 +2773,10 @@ const GUIDE = [
       <li><b>🔀 เรียงประโยค</b> — ดูคำแปลไทย แล้วแตะคำที่สลับกันให้เรียงเป็นประโยค (แตะคำในกล่องบนเพื่อเอาออก) · กด 🔊 ฟังประโยคเป็นตัวช่วยได้ แต่ข้อนั้นจะไม่นับว่าถูก · เรียงผิดไม่ทำให้การ์ดถูกรีเซ็ต</li>
       <li><b>🔗 คำคู่กัน</b> — เช่น "___ a decision = ตัดสินใจ" เลือกคำที่ใช้คู่กันให้ถูก (make) ช่วยให้พูดได้เป็นธรรมชาติ</li>
       <li><b>📖 เติมคำจากเรื่อง / 🧱 เรียงประโยคจากเรื่อง</b> — ใช้ประโยคจากเรื่องสั้นที่อ่านจบแล้ว ยิ่งอ่านมาก ยิ่งมีข้อให้เล่นมาก</li>
+      <li><b>🤔 คำที่มักสับสน</b> — 44 คู่ที่คนไทยใช้สลับกันบ่อย เช่น borrow / lend, bored / boring, lose / miss เลือกคำที่ถูกในประโยค แล้วดูวิธีจำความต่าง · อ่านทุกคู่พร้อมตัวอย่างได้ที่ปุ่ม <b>🤔 คู่คำที่คนไทยสับสนบ่อย</b> ในหน้าเกม</li>
+      <li><b>👂 ฝึกหูแยกเสียง</b> — ฟังคำหนึ่งแล้วเลือกว่าเป็นคำไหน เช่น ship / sheep, light / right, fan / van, bat / bad (เสียงที่คนไทยแยกยาก) ตอบแล้วกด 🔁 ฟังเทียบสองคำได้</li>
     </ul>
+    <p>สองเกมนี้ฝึกทักษะ ไม่ได้นับเป็นการทบทวนคำในแฟลชการ์ด และไม่ขึ้นกับแหล่งคำที่เลือก</p>
     <p><b>เลือกแหล่งคำ</b> ด้านบนหน้าเกมได้: ระดับที่เลือก, คำที่เรียนแล้ว, ทุกระดับ, 🟢 คำที่จำได้แล้ว (เช็คว่ายังจำได้จริง คำที่ตอบผิดจะกลับไปให้ทบทวนในแฟลชการ์ด), ⭐ คำติดดาว, 🐢 คำดื้อ และ 📂 ตามหมวด</p>
     <p>หน้าสรุปผลแตะคำที่ตอบผิดเพื่อฟังเสียง หรือแตะ ⭐ เพื่อติดดาวไว้ฝึกต่อ</p>`],
   ['📂', 'เรียนตามหมวด', `
@@ -2653,7 +2814,8 @@ const GUIDE = [
       <li><b>🔥 สตรีค</b> — จำนวนวันที่เรียนต่อเนื่อง (มุมขวาบน)</li>
       <li><b>🧊 ตัวกันสตรีคขาด</b> — ได้ 1 อันทุกครั้งที่เรียนครบ 7 วันติด เก็บได้สูงสุด 2 อัน ถ้าวันไหนลืมเรียน จะถูกใช้อัตโนมัติ สตรีคไม่ขาด</li>
       <li><b>🎯 ภารกิจรายวัน</b> — เปลี่ยนทุกวัน ทำสำเร็จแล้วได้นับเหรียญนักล่าภารกิจ</li>
-      <li><b>🏅 เหรียญรางวัล</b> — แตะดูเงื่อนไขได้ในหน้าแรก</li>
+      <li><b>🏅 เหรียญรางวัล</b> — แตะดูเงื่อนไขได้ในหน้าความคืบหน้า</li>
+      <li><b>📒 สมุดสติกเกอร์</b> — หน้าความคืบหน้า มีสติกเกอร์ 16 หมวด (อาหาร เดินทาง งาน …) อัปเกรดได้ 4 ขั้น: 🥉 เรียนแล้ว 20% ของคำชุด 3000 ในหมวด → 🥈 จำได้แล้ว 30% → 🥇 จำได้แล้ว 70% → 💎 จำได้แล้ว 70% ของทุกคำในหมวดรวมชุด 5000 · แตะสติกเกอร์เพื่อดูว่าขาดอีกกี่คำ แล้วกด 🎮 ฝึกหมวดนี้</li>
       <li><b>📅 กราฟ 7 วันข้างหน้า</b> — บอกว่าจะมีการ์ดทบทวนวันละเท่าไร ถ้าขึ้นเตือนว่าเยอะเกิน ให้ลดคำใหม่ต่อวันลง</li>
     </ul>`],
   ['💾', 'สำรองและกู้คืนข้อมูล', `
