@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.15.0';
+const APP_VERSION = '1.15.1';
 
 /* ---------- data ---------- */
 // WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
@@ -1737,19 +1737,21 @@ function renderFeed() {
 }
 
 /* ---------- reading (short stories) ---------- */
-// stories.js: window.STORIES = [{ id, level, title, titleTh, en: [paragraphs], th: [paragraphs], q: [{ q, o: [3], a }] }]
-// Loaded on first use (≈100 KB) so app start stays fast; the service worker still caches it offline.
-let STORIES = window.STORIES || null;
+// stories/<level>.js: each file pushes { id, level, emoji, title, titleTh, en: [paragraphs], th: [paragraphs], q: [{ q, o: [3], a }] }
+// onto window.STORIES. Loaded on first use so app start stays fast; the service worker still caches them offline.
+const STORY_FILES = ['a1', 'a2', 'b1', 'b2', 'c1'];
+let STORIES = null;
 const STORY_COUNT = 100;
 function loadStories() {
   if (STORIES) return Promise.resolve(STORIES);
-  return new Promise((res) => {
+  window.STORIES = [];
+  const one = (f) => new Promise((res) => {
     const sc = document.createElement('script');
-    sc.src = 'stories.js?v=' + APP_VERSION;
-    sc.onload = () => res((STORIES = window.STORIES || []));
-    sc.onerror = () => res((STORIES = []));
+    sc.src = 'stories/' + f + '.js?v=' + APP_VERSION;
+    sc.onload = sc.onerror = res;
     document.head.appendChild(sc);
   });
+  return Promise.all(STORY_FILES.map(one)).then(() => (STORIES = window.STORIES.sort((a, b) => a.id - b.id)));
 }
 // collocations.js: window.COLLOC = { headword: [[phrase, thai], ...] } — lazy-loaded like stories.
 let COLLOC = window.COLLOC || null;

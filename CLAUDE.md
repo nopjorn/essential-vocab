@@ -26,7 +26,7 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
 | `topics.js` | `window.TOPIC_CODES`: one letter per WORDS row → `TOPICS` in app.js (`w.tp`) |
 | `collocations.js` | `window.COLLOC = {headword: [[phrase, thai], ...]}` original collocation data, lazy-loaded by `loadColloc()` (word sheet + `colloc` game) |
 | `pairs.js` | `window.CONFUSE` (confusable pairs `{a,b,tip,q:[[sentence ___, right, wrong, thai]]}`), `window.MINPAIRS` (`[a, aTh, b, bTh, group]`) + `MINPAIRS_TIP`; original, lazy-loaded by `loadPairs()` |
-| `stories.js` | `window.STORIES`: 100 original A1–C1 stories `{id, level, emoji, title, titleTh, en[], th[], q[{q,o,a}]}` |
+| `stories/<level>.js` | One file per level (`a1`…`c1`, `STORY_FILES` in app.js), each pushes onto `window.STORIES`: 100 original A1–C1 stories (ids unique across files) `{id, level, emoji, title, titleTh, en[], th[], q[{q,o,a}]}` |
 | `supabase/functions/daily-reminder/index.ts` | Hourly Edge Function sending Web Push reminders (VAPID secrets in Supabase) |
 | `config.js` | `window.SYNC_CONFIG = {url, anonKey, requireLogin, leaderboard, vapidPublicKey}` for Supabase sync (empty = off); see `SYNC-SETUP.md` |
 | `reminders/HHMM.ics` | Static daily-reminder calendar files (app URL hardcoded inside) |
@@ -64,7 +64,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
   `--c-card/--c-game/--c-master` (validated with the dataviz palette checker in light and dark).
 - Placement (`renderPlacement`, route `placement`): 8 MC questions per level, stops below 6/8; skipped words
   get b=4/i=16 with first review spread over 7–30 days; moves `settings.levels` on if all were skipped.
-- `stories.js` is lazy-loaded by `loadStories()` (not in index.html); `STORY_COUNT` (keep in sync with the file) is shown before load.
+- `stories/*.js` are lazy-loaded by `loadStories()` (not in index.html; sorted by id); `STORY_COUNT` (keep in sync with the files) is shown before load.
   Library = `renderLibrary()` (suggested story `nextStory()`, filters `readFilter`); reader chains `speak()` per paragraph
   (speak returns the utterance; `onend` → next) with a token so leaving/stopping cancels; font size `settings.rFont` (0–2).
 - Games added in 1.14: `order` (rebuild example sentence; `qOrder`), `colloc` (`qColloc`), story games `sCloze`/`sOrder`
