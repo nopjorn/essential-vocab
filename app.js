@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.15.1';
+const APP_VERSION = '1.16.0';
 
 /* ---------- data ---------- */
 // WORDS rows: [word, pos, level, ipa, thai, example, thai example, 5 if Oxford 5000-only]
@@ -24,7 +24,7 @@ const inTopic = (w) => !S.settings.topic || w.tp === S.settings.topic;
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1'];
 const LEVELS_3000 = ['A1', 'A2', 'B1', 'B2'];
 const LEVELS_5000 = ['B2x', 'C1'];
-const LV_LABEL = { A1: 'A1', A2: 'A2', B1: 'B1', B2: 'B2', B2x: 'B2+', C1: 'C1' };
+const LV_LABEL = { A1: 'A1', A2: 'A2', B1: 'B1', B2: 'B2', B2x: 'B2+', C1: 'C1', C2: 'C2' };
 const lvNames = (ls) => ls.map((l) => LV_LABEL[l]).join(', ');
 const DAY = 86400000;
 // Review intervals (days) for each box. Box >= MASTERED counts as "จำได้แล้ว".
@@ -1739,9 +1739,9 @@ function renderFeed() {
 /* ---------- reading (short stories) ---------- */
 // stories/<level>.js: each file pushes { id, level, emoji, title, titleTh, en: [paragraphs], th: [paragraphs], q: [{ q, o: [3], a }] }
 // onto window.STORIES. Loaded on first use so app start stays fast; the service worker still caches them offline.
-const STORY_FILES = ['a1', 'a2', 'b1', 'b2', 'c1'];
+const STORY_FILES = ['a1', 'a2', 'b1', 'b2', 'c1', 'c2'];
 let STORIES = null;
-const STORY_COUNT = 100;
+const STORY_COUNT = 105;
 function loadStories() {
   if (STORIES) return Promise.resolve(STORIES);
   window.STORIES = [];
@@ -1802,8 +1802,8 @@ function storyHTML(text) {
     return w ? `<span class="rw ${status(w)}" data-i="${w.idx}">${tok}</span>` : tok;
   });
 }
-const RLEVELS = ['A1', 'A2', 'B1', 'B2', 'C1'];
-const RLV_TH = { A1: 'ง่ายมาก', A2: 'ง่าย', B1: 'ปานกลาง', B2: 'ท้าทาย', C1: 'ขั้นสูง' };
+const RLEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+const RLV_TH = { A1: 'ง่ายมาก', A2: 'ง่าย', B1: 'ปานกลาง', B2: 'ท้าทาย', C1: 'ขั้นสูง', C2: 'ระดับเชี่ยวชาญ' };
 const FONT_SIZES = [16, 18, 21];
 let readFilter = 'all';
 // Per-story numbers for the list and the header: length, minutes, list words, unknown list words.
@@ -2789,7 +2789,7 @@ const GUIDE = [
     </ul>`],
   ['📖', 'อ่านเรื่องสั้น', `
     <ul>
-      <li>🎮 เกม → <b>📖 อ่านเรื่องสั้น</b> เปิด 📚 ห้องสมุด มี 100 เรื่อง 5 ระดับ (A1 ง่ายมาก, A2 ง่าย, B1 ปานกลาง, B2 ท้าทาย, C1 ขั้นสูง)</li>
+      <li>🎮 เกม → <b>📖 อ่านเรื่องสั้น</b> เปิด 📚 ห้องสมุด มี 105 เรื่อง 6 ระดับ (A1 ง่ายมาก, A2 ง่าย, B1 ปานกลาง, B2 ท้าทาย, C1 ขั้นสูง, C2 ระดับเชี่ยวชาญ)</li>
       <li>การ์ดใหญ่ด้านบน = <b>เรื่องแนะนำ</b> (เรื่องที่ยังไม่อ่านในระดับที่เรากำลังเรียน) · กรองตามระดับหรือ "ยังไม่อ่าน" ได้ · แต่ละเรื่องบอกเวลาอ่านและ % คำที่รู้แล้ว</li>
       <li>คำที่อยู่ในรายการคำศัพท์จะขีดเส้นใต้ แตะเพื่อดูความหมาย ฟังเสียง ติดดาว หรือเพิ่มเข้าทบทวน · <span class="rw learning">สีเหลือง</span> = กำลังเรียน <span class="rw mastered">สีเขียว</span> = จำได้แล้ว</li>
       <li><b>▶️ ฟังทั้งเรื่อง</b> จะไฮไลต์ย่อหน้าที่กำลังอ่านให้ตามไปพร้อมกัน (กดอีกครั้งเพื่อหยุด) · 🔊 ใต้ย่อหน้า = ฟังเฉพาะย่อหน้านั้น</li>
