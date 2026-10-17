@@ -69,3 +69,53 @@ test('flashcards: flip, grade, undo, progress is saved', async ({ page }) => {
   expect(Object.keys(st.prog).length).toBeGreaterThan(0);
   expect(errors).toEqual([]);
 });
+
+test('feed: special cards, boss, timer, fever, summary and double-tap like', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => {
+    const a1 = W.filter((w) => w.g === 'A1');
+    a1.slice(0, 40).forEach((w) => (S.prog[w.w] = { b: 2, i: 3, e: 2.5, d: Date.now() + 5 * DAY, s: 3, c: 2, x: 0 }));
+    S.prog[a1[50].w] = { b: 0, i: 0, e: 1.5, d: Date.now() + 5 * DAY, s: 8, c: 2, x: 5 }; // leech → boss
+    save();
+    go('feed');
+  });
+  // Double-tap the first card (not a button) = like.
+  const first = page.locator('.fcard[data-n="0"] .f-word');
+  await first.click(); await first.click();
+  expect(await page.evaluate(() => Object.keys(S.star).length)).toBe(1);
+  await expect(page.locator('.fcard[data-n="0"] [data-heart]')).toContainText('❤️');
+
+  const types = new Set();
+  let fever = false, timed = false;
+  for (let i = 0; i < 42; i++) {
+    const card = page.locator(`.fcard[data-n="${i}"]`);
+    await expect(card).toHaveCount(1);
+    await page.evaluate((i) => { const f = document.querySelector('#feed'); f.scrollTop = document.querySelector(`.fcard[data-n="${i}"]`).offsetTop; }, i);
+    await page.waitForTimeout(200);
+    const type = await card.getAttribute('data-type');
+    types.add(type);
+    if (type === 'sum') await expect(card).toContainText('สรุปช่วงนี้');
+    if (await card.locator('.f-timer.run').count()) timed = true;
+    if (!(await card.locator('.opt').count())) continue;
+    const ok = type === 'boss' || ![3, 10, 38].includes(i);
+    const at = await card.locator('.opt').evaluateAll((els, ok) => {
+      const right = els[0].closest('.fcard')._right;
+      return els.findIndex((e) => (e.dataset.o === right) === ok);
+    }, ok);
+    await card.locator('.opt').nth(at).click();
+    await expect(card.locator('.f-reveal')).not.toBeEmpty();
+    await expect(card.locator('.opt.correct')).toHaveCount(1);
+    if (!ok) await expect(card.locator('.opt.wrong')).toHaveCount(1);
+    if (await card.locator('[data-hint]').count()) { await card.locator('[data-hint]').click(); await expect(card.locator('.thx').first()).toBeVisible(); }
+    if (await page.locator('#feed.fever').count()) fever = true;
+  }
+  for (const t of ['learn', 'fam', 'colloc', 'conf', 'story', 'sum', 'boss']) expect([...types], t).toContain(t);
+  expect(timed).toBe(true);
+  expect(fever).toBe(true);
+  // The story card links to the full story.
+  const read = page.locator('.fcard [data-read]').first();
+  await read.scrollIntoViewIfNeeded();
+  await read.click();
+  await expect(page.locator('#rProg')).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
