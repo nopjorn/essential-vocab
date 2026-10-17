@@ -23,6 +23,8 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
 | `style.css` | Mobile-first styles; colour tokens on `:root` with dark mode |
 | `words/<level>.js` | `a1 a2 b1 b2 b2plus c1` (Oxford 5000-only rows in `b2plus`/`c1`), one row per line, each pushes onto `window.WORDS`: `[word, pos, level, ipa, thai, example, thaiExample, topicId, 5?]` (4,957 rows total; app.js sorts them A–Z, topic id → `w.tp`) |
 | `sw.js` | Network-first service worker with versioned cache |
+| `families.js` | `window.FAMILIES = [{f: [[word, pos, thai], ...], q: [[sentence ___, answer, thai], ...]}]` original word families (a word is in one family only), lazy-loaded by `loadFamilies()`; `familyOf(word)` → family (word sheet box, `wform` game, `renderFamilies()` browser) |
+| `tests/*.spec.js`, `playwright.config.js` | Playwright test suite (`npm test`), run by `.github/workflows/test.yml` on every push to `master` |
 | `collocations.js` | `window.COLLOC = {headword: [[phrase, thai], ...]}` original collocation data, lazy-loaded by `loadColloc()` (word sheet + `colloc` game) |
 | `pairs.js` | `window.CONFUSE` (confusable pairs `{a,b,tip,q:[[sentence ___, right, wrong, thai]]}`), `window.MINPAIRS` (`[a, aTh, b, bTh, group]`) + `MINPAIRS_TIP`; original, lazy-loaded by `loadPairs()` |
 | `stories/<level>.js` | One file per level (`a1`…`c2`, `STORY_FILES` in app.js), each pushes onto `window.STORIES`: 105 original A1–C2 stories (ids unique across files) `{id, level, emoji, title, titleTh, en[], th[], q[{q,o,a}]}` |
@@ -70,6 +72,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
   (`STORY_GAMES`, items from `storyItems()` = copies of list words carrying `_s/_tok/_opts/_st`). Order games and failed
   pronunciation use the soft path in `mark()` (no card reset). Monthly summary: `monthStats()/monthBox()` (stats page; home card days 1–7).
 - 1.15: `PAIR_GAMES` `confuse` (`qConfuse`) and `minpair` (`qMinpair`) use items with `idx: -1` → `mark()` only calls `markActive()` (no SRS); pair list page `renderPairs()`.
+  1.17: `wform` (`qWform`, items from `FAMILIES`, `idx: -1`); `SKILL_GAMES` = `PAIR_GAMES` + `wform`.
   Sticker book: `STK_TIERS`, `topicStat()`, `checkStickers()` (run from `checkAch()`), `stickerBook()` on the stats page.
 - Home is kept short (today, quick play, weekly card, quest, progress card); charts, per-level bars and
   achievements live on the stats page.
@@ -90,11 +93,19 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
   list should be replaced (e.g. an openly licensed list such as NGSL).
 
 ## Testing
-- Serve: `nohup python3 -m http.server 8765 >/dev/null 2>&1 &`; stop with
-  `kill $(pgrep -f "[h]ttp.server 8765")` (`pkill -f` kills the calling shell).
-- Playwright scripts live in the scratchpad (`pw/`), using
+- Run before every push: `npm ci` (once) then `PW_CHROMIUM=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm test`
+  (the config starts `python3 -m http.server 8765` itself). CI (GitHub Actions "Tests") runs the same suite on every
+  push to `master`; it must stay green.
+- `tests/data.spec.js` (no browser): version in app.js/sw.js/README, sw.js file list, word rows, families, pairs,
+  collocations, stories. `app.spec.js`: every route, word sheet, family browser, flashcards. `games.spec.js`: every
+  game plays a full round with right **and** wrong answers to the result screen. `responsive.spec.js`: no sideways
+  overflow at the 6 target sizes. Add tests here when adding a game/screen/data file.
+- `tests/helpers.js` `openApp(page, state)`: overrides `config.js` (sync off), fakes speech synthesis
+  (`window.__said`) and recognition (hears `window.__heard`), collects `pageerror`s (assert none).
+- One-off scripts (screenshots etc.) go in the scratchpad (`pw/`), using
   `executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'`, `args: ['--headless=new']`,
-  viewport 440×956. Collect `pageerror` events and assert none.
+  viewport 440×956. Manual serve: `nohup python3 -m http.server 8765 >/dev/null 2>&1 &`; stop with
+  `kill $(pgrep -f "[h]ttp.server 8765")` (`pkill -f` kills the calling shell).
 - Seed state by writing `localStorage['oxford3000.v1']` and reloading; app functions
   (`go`, `questEvent`, `W`, …) are globals and can be called via `page.evaluate`.
 - Speech recognition mock must replace **both** `window.SpeechRecognition` and

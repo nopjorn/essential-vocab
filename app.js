@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.16.2';
+const APP_VERSION = '1.17.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -938,12 +938,15 @@ const GAMES = {
   sOrder: { icon: '🧱', name: 'เรียงประโยคจากเรื่อง', desc: 'ต่อประโยคจากเรื่องที่อ่านแล้ว' },
   confuse: { icon: '🤔', name: 'คำที่มักสับสน', desc: 'เลือกให้ถูก เช่น borrow / lend' },
   minpair: { icon: '👂', name: 'ฝึกหูแยกเสียง', desc: 'ฟังแล้วเลือก ship หรือ sheep' },
+  wform: { icon: '🧬', name: 'เปลี่ยนรูปคำ', desc: 'เลือกรูปคำให้เข้ากับประโยค เช่น decide → decision' },
   review: { icon: '🔁', name: 'คำที่ผิดบ่อย', desc: 'ฝึกคำที่เคยตอบผิด' },
 };
 // Games whose data is lazy-loaded (stories / collocations) or built from sentences instead of the word pool.
 const STORY_GAMES = ['sCloze', 'sOrder'];
 // Games built from pairs.js (confusable words, minimal pairs): not tied to the word list or its schedule.
 const PAIR_GAMES = ['confuse', 'minpair'];
+// Skill games with their own items (idx -1): practice only, no flashcard scheduling.
+const SKILL_GAMES = [...PAIR_GAMES, 'wform'];
 function gameTile(id) {
   const g = GAMES[id];
   const best = S.best[id] != null ? `<span>🏅 สถิติ: ${S.best[id]}</span>` : '';
@@ -971,9 +974,11 @@ function renderGames() {
     </div>
     <button class="card-box guide-link" id="toRead"><span>📖</span><div class="grow"><b>อ่านเรื่องสั้น</b><div class="small muted">${STORY_COUNT} เรื่อง · อ่านแล้ว ${Object.keys(S.read).length} · แตะคำเพื่อดูความหมาย</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="toPairs"><span>🤔</span><div class="grow"><b>คู่คำที่คนไทยสับสนบ่อย</b><div class="small muted">borrow / lend, bored / boring … อ่านวิธีแยกแล้วไปเล่นเกม</div></div><span class="muted">›</span></button>
+    <button class="card-box guide-link" id="toFams"><span>🧬</span><div class="grow"><b>ครอบครัวคำ</b><div class="small muted">decide → decision → decisive … คำนาม กริยา คุณศัพท์ จากรากเดียวกัน</div></div><span class="muted">›</span></button>
     <div class="game-grid">${Object.keys(GAMES).map(gameTile).join('')}</div>`;
   $('#toRead').onclick = () => go('read');
   $('#toPairs').onclick = () => renderPairs();
+  $('#toFams').onclick = () => renderFamilies();
   const paint = () => view.querySelectorAll('#src .chip').forEach((c) => c.classList.toggle('on', c.dataset.s === gameSource));
   paint();
   if ($('#gTopic')) $('#gTopic').onchange = (e) => { gameTopic = e.target.value; };
@@ -995,6 +1000,32 @@ function renderPairs() {
   $('#pPlay').onclick = () => startGame('confuse');
   view.querySelector('.pair-list').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
 }
+
+// Browse word families (one card per root), with a search box.
+let famQuery = '';
+function renderFamilies() {
+  if (!FAMILIES) { loadFamilies().then(renderFamilies); return; }
+  $('#title').textContent = 'ครอบครัวคำ';
+  view.scrollTop = 0;
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="fBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="fPlay">🧬 เล่นเกม</button></div>
+    <p class="small muted" style="margin:0 4px 10px">${FAMILIES.length} ครอบครัว · คำจากรากเดียวกันที่เปลี่ยนหน้าที่ในประโยค (n = นาม, v = กริยา, adj = คุณศัพท์, adv = กริยาวิเศษณ์) แตะคำหรือประโยคเพื่อฟังเสียง</p>
+    <input class="search" id="fq" type="search" placeholder="ค้นหาคำ เช่น decide" value="${esc(famQuery)}" autocapitalize="none" autocorrect="off" spellcheck="false">
+    <div class="pair-list" id="famList"></div>`;
+  const paint = () => {
+    const q = famQuery.trim().toLowerCase();
+    const list = q ? FAMILIES.filter((f) => f.f.some(([w, , th]) => w.includes(q) || th.includes(q))) : FAMILIES;
+    $('#famList').innerHTML = list.length ? list.map((f) => `<div class="card-box pair-card">${famRows(f)}
+      ${f.q.map(([sn, a, th]) => `<button class="pair-ex" data-say="${esc(sn.replace('___', a))}"><span>${esc(sn).replace('___', `<mark>${esc(a)}</mark>`)}</span><small class="muted">${esc(th)}</small></button>`).join('')}</div>`).join('')
+      : '<p class="muted center">ไม่พบคำนี้ในครอบครัวคำ</p>';
+  };
+  paint();
+  $('#fq').oninput = (e) => { famQuery = e.target.value; paint(); };
+  $('#fBack').onclick = () => go('games');
+  $('#fPlay').onclick = () => startGame('wform');
+  $('#famList').onclick = (e) => { const b = e.target.closest('[data-say],[data-col]'); if (b) speak(b.dataset.say || b.dataset.col); };
+}
+// One tappable row per family member: word + part of speech, Thai on the right. `hi` = word to highlight.
+const famRows = (f, hi) => f.f.map(([w, p, th]) => `<button class="col-row${w === hi ? ' on' : ''}" data-col="${esc(w)}"><b>${esc(w)} <span class="pos">${esc(p)}</span></b><span>${esc(th)}</span></button>`).join('');
 
 const masteredWords = () => W.filter((w) => S.prog[w.w] && S.prog[w.w].b >= MASTERED);
 
@@ -1021,6 +1052,7 @@ function storyItems(id) {
 function gamePool(id) {
   if (STORY_GAMES.includes(id)) return storyItems(id);
   if (id === 'confuse') return CONFUSE.flatMap((c) => c.q.map((q) => ({ idx: -1, w: `${c.a} / ${c.b}`, t: '', p: '', g: '', _c: c, _q: q })));
+  if (id === 'wform') return FAMILIES.flatMap((f) => f.q.map(([sn, a, th]) => ({ idx: -1, w: a, t: '', p: '', g: '', _f: f, _q: [sn, a, '', th] })));
   if (id === 'minpair') return MINPAIRS.map((m) => ({ idx: -1, w: `${m[0]} / ${m[2]}`, t: `${m[1]} / ${m[3]}`, p: '', g: '', _m: m }));
   if (id === 'review') {
     return W.filter((w) => S.prog[w.w] && (S.prog[w.w].x || 0) > 0)
@@ -1069,6 +1101,7 @@ function startGame(id) {
   if (STORY_GAMES.includes(id) && !STORIES) { loadStories().then(() => startGame(id)); return; }
   if (id === 'colloc' && !COLLOC) { loadColloc().then(() => startGame(id)); return; }
   if (PAIR_GAMES.includes(id) && !CONFUSE) { loadPairs().then(() => startGame(id)); return; }
+  if (id === 'wform' && !FAMILIES) { loadFamilies().then(() => startGame(id)); return; }
   if (STORY_GAMES.includes(id) && !Object.keys(S.read).length) { toast('อ่านเรื่องสั้นให้จบอย่างน้อย 1 เรื่องก่อนนะ 📖'); if (current !== 'games') go('games'); return; }
   const src = gamePool(id);
   const min = id === 'match' ? 6 : 4;
@@ -1117,6 +1150,7 @@ function playQuiz(mode, src, gameId) {
     if (m === 'colloc') return qColloc(w);
     if (m === 'confuse') return qConfuse(w);
     if (m === 'minpair') return qMinpair(w);
+    if (m === 'wform') return qWform(w);
     const toTh = m !== 'th2en' && m !== 'cloze';
     const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
     let prompt;
@@ -1437,6 +1471,38 @@ function playQuiz(mode, src, gameId) {
     };
   }
 
+  // Word forms: pick the family member that fits the sentence, then see the whole family.
+  function qWform(w) {
+    const f = w._f, [sent, right, , th] = w._q;
+    const opts = shuffle([right, ...shuffle(f.f.map((x) => x[0]).filter((x) => x !== right)).slice(0, 3)]);
+    const full = sent.replace('___', right);
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop"><div class="small muted">เลือกรูปคำที่เข้ากับประโยค</div>
+        <div class="cloze" style="margin-top:8px">${esc(sent).replace('___', '<span class="blank">_____</span>')}</div>
+        <button class="hint-btn" id="fHint">💡 ดูคำแปลประโยค</button><div class="thx" id="fTh" hidden>${esc(th)}</div></div>
+      <div class="options${opts.length === 2 ? ' two' : ''}">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    $('#fHint').onclick = () => { $('#fTh').hidden = false; $('#fHint').remove(); };
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === right;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : `❌ คำที่ถูกคือ <b>${esc(right)}</b>`}
+        <div class="example"><div class="en">${esc(full)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(th)}</div></div>
+        <div class="fam-box"><div class="small muted" style="margin:10px 0 6px"><b>🧬 ครอบครัวคำ</b> (แตะเพื่อฟัง)</div>${famRows(f, right)}</div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('[data-sayex]').onclick = () => speak(full);
+      view.querySelector('.fam-box').onclick = (ev) => { const c = ev.target.closest('[data-col]'); if (c) speak(c.dataset.col); };
+      $('#nextQ').onclick = next;
+      speak(full);
+    };
+  }
+
   // Minimal pairs: hear one word of a pair (ship / sheep) and pick which one it was.
   function qMinpair(w) {
     const [a, aTh, b, bTh, cat] = w._m;
@@ -1496,7 +1562,7 @@ function playQuiz(mode, src, gameId) {
         <div class="h2">${score} แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
         <p>ถูก ${correct}/${items.length} · คอมโบสูงสุด ${bestCombo}</p>
       </div>
-      ${wrong.length ? `<div class="card-box wrong-list"><b>${gameId.startsWith('speak') ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b> <span class="small muted">${gameId.startsWith('speak') ? '(แตะคำเพื่อฟังเสียง)' : PAIR_GAMES.includes(gameId) ? '(แตะเพื่อฟังเสียง)' : '(ใส่ในแฟลชการ์ดให้แล้ว) · กด ☆ เพื่อติดดาว'}</span>
+      ${wrong.length ? `<div class="card-box wrong-list"><b>${gameId.startsWith('speak') ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b> <span class="small muted">${gameId.startsWith('speak') ? '(แตะคำเพื่อฟังเสียง)' : SKILL_GAMES.includes(gameId) ? '(แตะเพื่อฟังเสียง)' : '(ใส่ในแฟลชการ์ดให้แล้ว) · กด ☆ เพื่อติดดาว'}</span>
         ${wrong.map((w) => w.idx < 0 ? `<div class="wl" data-i="-1" data-say="${esc(w._q ? w._q[0].replace('___', w._q[1]) : w._m[0] + ', ' + w._m[2])}"><span><b>${esc(w.w)}</b></span><span class="muted grow" style="text-align:right">${esc(w._q ? w._q[3] : w.t)}</span></div>`
           : `<div class="wl" data-i="${w.idx}"><span><b>${esc(w.w)}</b> <span class="pos">${esc(w.p)}</span></span><span class="muted grow" style="text-align:right">${esc(w.t)}</span><button class="star-btn" data-star>${starIcon(w)}</button></div>`).join('')}</div>` : ''}
       <button class="btn primary block" id="again">เล่นอีกรอบ</button>
@@ -1791,6 +1857,23 @@ function loadPairs() {
     sc.onload = done; sc.onerror = done;
     document.head.appendChild(sc);
   });
+}
+// families.js: window.FAMILIES = [{ f: [[word, pos, thai], ...], q: [[sentence ___, answer, thai], ...] }] — lazy-loaded.
+let FAMILIES = window.FAMILIES || null, FAMILY_OF = null;
+function loadFamilies() {
+  if (FAMILIES) return Promise.resolve(FAMILIES);
+  return new Promise((res) => {
+    const sc = document.createElement('script');
+    sc.src = 'families.js?v=' + APP_VERSION;
+    const done = () => { FAMILIES = window.FAMILIES || []; res(FAMILIES); };
+    sc.onload = done; sc.onerror = done;
+    document.head.appendChild(sc);
+  });
+}
+// The family a list word belongs to (or undefined).
+function familyOf(word) {
+  if (!FAMILY_OF) { FAMILY_OF = new Map(); FAMILIES.forEach((f) => f.f.forEach(([w]) => FAMILY_OF.set(w, f))); }
+  return FAMILY_OF.get(word.toLowerCase());
 }
 const WORD_BY = new Proxy({}, { get: (_, k) => { if (!WORD_INDEX) lookupWord('a'); return WORD_INDEX.get(String(k).toLowerCase()); } });
 let WORD_INDEX = null;
@@ -2096,7 +2179,7 @@ function openSheet(w, onChange) {
       <div class="sheet-word">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
       <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span>${w.tp ? ` · ${TOPIC_LABEL[w.tp]}` : ''}</div>
       <div class="th" style="font-size:22px;margin:10px 0">${esc(w.t)}</div>
-      ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div>
+      ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div>
       <button class="btn block" data-act="star" style="margin-top:14px">${isStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาวคำนี้'}</button>
       <div class="row" style="margin-top:10px">
         <button class="btn grow" data-act="review">🔁 ทบทวนวันนี้</button>
@@ -2110,6 +2193,10 @@ function openSheet(w, onChange) {
     const box = el.querySelector('#colBox'), list = c[w.w];
     if (box && list) box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🔗 คำที่มักใช้คู่กัน</b> (แตะเพื่อฟัง)</div>
       ${list.map(([en, th]) => `<button class="col-row" data-col="${esc(en)}"><b>${esc(en)}</b><span>${esc(th)}</span></button>`).join('')}`;
+  });
+  loadFamilies().then(() => {
+    const box = el.querySelector('#famBox'), f = familyOf(w.w);
+    if (box && f) box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🧬 ครอบครัวคำ</b> (แตะเพื่อฟัง)</div>${famRows(f, w.w.toLowerCase())}`;
   });
   const close = () => { el.classList.remove('open'); setTimeout(() => el.remove(), 250); };
   el.onclick = (e) => {
@@ -2792,8 +2879,9 @@ const GUIDE = [
       <li><b>📖 เติมคำจากเรื่อง / 🧱 เรียงประโยคจากเรื่อง</b> — ใช้ประโยคจากเรื่องสั้นที่อ่านจบแล้ว ยิ่งอ่านมาก ยิ่งมีข้อให้เล่นมาก</li>
       <li><b>🤔 คำที่มักสับสน</b> — 44 คู่ที่คนไทยใช้สลับกันบ่อย เช่น borrow / lend, bored / boring, lose / miss เลือกคำที่ถูกในประโยค แล้วดูวิธีจำความต่าง · อ่านทุกคู่พร้อมตัวอย่างได้ที่ปุ่ม <b>🤔 คู่คำที่คนไทยสับสนบ่อย</b> ในหน้าเกม</li>
       <li><b>👂 ฝึกหูแยกเสียง</b> — ฟังคำหนึ่งแล้วเลือกว่าเป็นคำไหน เช่น ship / sheep, light / right, fan / van, bat / bad (เสียงที่คนไทยแยกยาก) ตอบแล้วกด 🔁 ฟังเทียบสองคำได้</li>
+      <li><b>🧬 เปลี่ยนรูปคำ</b> — เลือกรูปคำที่เข้ากับประโยค เช่น "make a ___" → decision ไม่ใช่ decide / decisive ตอบแล้วเห็นทั้งครอบครัวคำพร้อมชนิดคำและคำแปล · อ่านครอบครัวคำทั้งหมด (ค้นหาได้) ที่ปุ่ม <b>🧬 ครอบครัวคำ</b> ในหน้าเกม</li>
     </ul>
-    <p>สองเกมนี้ฝึกทักษะ ไม่ได้นับเป็นการทบทวนคำในแฟลชการ์ด และไม่ขึ้นกับแหล่งคำที่เลือก</p>
+    <p>สามเกมนี้ฝึกทักษะ ไม่ได้นับเป็นการทบทวนคำในแฟลชการ์ด และไม่ขึ้นกับแหล่งคำที่เลือก</p>
     <p><b>เลือกแหล่งคำ</b> ด้านบนหน้าเกมได้: ระดับที่เลือก, คำที่เรียนแล้ว, ทุกระดับ, 🟢 คำที่จำได้แล้ว (เช็คว่ายังจำได้จริง คำที่ตอบผิดจะกลับไปให้ทบทวนในแฟลชการ์ด), ⭐ คำติดดาว, 🐢 คำดื้อ และ 📂 ตามหมวด</p>
     <p>หน้าสรุปผลแตะคำที่ตอบผิดเพื่อฟังเสียง หรือแตะ ⭐ เพื่อติดดาวไว้ฝึกต่อ</p>`],
   ['📂', 'เรียนตามหมวด', `
@@ -2816,6 +2904,7 @@ const GUIDE = [
   ['📖', 'รายการคำศัพท์', `
     <ul>
       <li>หน้ารายละเอียดคำ (แตะคำไหนก็ได้) มี <b>🔗 คำที่มักใช้คู่กัน</b> สำหรับคำที่ใช้บ่อย ราว 900 คำ เช่น make → make a decision, make a mistake · แตะเพื่อฟังเสียง</li>
+      <li>คำที่มีครอบครัวคำ (ราว 770 คำ) จะมี <b>🧬 ครอบครัวคำ</b> ในหน้ารายละเอียดคำ เช่น decide → decision (n), decisive (adj), decisively (adv) ช่วยให้ใช้คำถูกชนิดในประโยค</li>
       <li>ค้นหาคำ อังกฤษหรือไทยก็ได้ และกรองตามสถานะ (ยังไม่เรียน / กำลังเรียน / จำได้แล้ว / ⭐ ติดดาว) และตามระดับ</li>
       <li>แตะคำเพื่อดูรายละเอียด ฟังเสียง และประโยคตัวอย่าง</li>
       <li>ในหน้ารายละเอียด: <b>⭐ ติดดาว</b>, <b>🔁 ทบทวนวันนี้</b> (ดึงคำมาให้ทวนทันที), <b>✓ รู้แล้ว</b> (ข้ามคำที่รู้อยู่แล้ว)</li>

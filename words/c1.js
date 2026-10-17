@@ -947,7 +947,7 @@
   ["rebellion","n","C1","/rɪˈbeljən/","การกบฏ","The rebellion failed.","การกบฏล้มเหลว","society",5],
   ["recipient","n","C1","/rɪˈsɪpiənt/","ผู้รับ","She was the recipient of an award.","เธอเป็นผู้ได้รับรางวัล","people",5],
   ["reconstruction","n","C1","/ˌriːkənˈstrʌkʃn/","การฟื้นฟู, การสร้างใหม่","The reconstruction of the bridge took two years.","การสร้างสะพานใหม่ใช้เวลาสองปี","actions",5],
-  ["recount","v","C1","","เล่า, นับใหม่","He recounted his adventures.","เขาเล่าการผจญภัยของเขา","media",5],
+  ["recount","v","C1","/rɪˈkaʊnt/","เล่า, นับใหม่","He recounted his adventures.","เขาเล่าการผจญภัยของเขา","media",5],
   ["referendum","n","C1","/ˌrefəˈrendəm/","การลงประชามติ","They held a referendum.","พวกเขาจัดการลงประชามติ","society",5],
   ["reflection","n","C1","/rɪˈflekʃn/","ภาพสะท้อน, การไตร่ตรอง","She saw her reflection in the water.","เธอเห็นเงาสะท้อนของตัวเองในน้ำ","feelings",5],
   ["reform","n/v","C1","/rɪˈfɔːrm/","การปฏิรูป; ปฏิรูป","The government promised reform.","รัฐบาลสัญญาว่าจะปฏิรูป","society",5],

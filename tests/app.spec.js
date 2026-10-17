@@ -1,0 +1,71 @@
+// Screens, word sheet and the flashcard session.
+const { test, expect } = require('@playwright/test');
+const { openApp, readState } = require('./helpers');
+
+const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'read', 'placement'];
+
+test('every screen renders without errors and shows the version', async ({ page }) => {
+  const errors = await openApp(page);
+  const version = await page.evaluate(() => APP_VERSION);
+  await expect(page.locator('#view')).toContainText(version);
+  for (const r of ROUTES) {
+    await page.evaluate((r) => go(r), r);
+    await expect(page.locator('#view'), r).not.toBeEmpty();
+  }
+  await page.evaluate(() => go('settings'));
+  await expect(page.locator('#view')).toContainText(version);
+  expect(errors).toEqual([]);
+});
+
+test('word sheet shows the word family and collocations', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.evaluate(() => openSheet(W.find((w) => w.w === 'decide')));
+  const sheet = page.locator('.sheet');
+  await expect(sheet.locator('#famBox')).toContainText('decision');
+  await expect(sheet.locator('#famBox .col-row.on')).toContainText('decide');
+  await sheet.locator('#famBox [data-col="decisive"]').click();
+  expect(await page.evaluate(() => window.__said.at(-1))).toBe('decisive');
+  // A word without a family gets no family box.
+  await page.mouse.click(5, 5);
+  await expect(page.locator('.sheet-wrap')).toHaveCount(0);
+  await page.evaluate(() => openSheet(W.find((w) => w.w === 'cat')));
+  await expect(page.locator('.sheet .sheet-word')).toContainText('cat');
+  await page.waitForTimeout(300);
+  await expect(page.locator('#famBox')).toBeEmpty();
+  expect(errors).toEqual([]);
+});
+
+test('word family browser filters and plays', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.evaluate(() => go('games'));
+  await page.locator('#toFams').click();
+  await expect(page.locator('#famList .pair-card').first()).toBeVisible();
+  await page.locator('#fq').fill('decis');
+  await expect(page.locator('#famList .pair-card')).toHaveCount(1);
+  await page.locator('#fq').fill('zzzz');
+  await expect(page.locator('#famList')).toContainText('ไม่พบ');
+  await page.locator('#fPlay').click();
+  await expect(page.locator('.opt').first()).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('flashcards: flip, grade, undo, progress is saved', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => go('cards'));
+  for (const g of [2, 0, 3, 1]) {
+    await page.locator('#fc').click();
+    await expect(page.locator('#grade')).toBeVisible();
+    await page.locator(`#grade [data-g="${g}"]`).click();
+  }
+  let st = await readState(page);
+  const n = Object.keys(st.prog).length;
+  expect(n).toBeGreaterThanOrEqual(3);
+  await page.locator('#undo').click();
+  await expect(page.locator('#undo')).toBeVisible();
+  st = await readState(page);
+  expect(Object.keys(st.prog).length).toBeLessThanOrEqual(n);
+  await page.reload();
+  st = await readState(page);
+  expect(Object.keys(st.prog).length).toBeGreaterThan(0);
+  expect(errors).toEqual([]);
+});

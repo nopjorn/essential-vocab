@@ -678,3 +678,9 @@ input.sel { color: var(--text); font: inherit; }
 /* collocations in the word sheet */
 .col-row { display: flex; justify-content: space-between; gap: 12px; width: 100%; padding: 9px 12px; margin-bottom: 6px; border: 0; border-radius: 12px; background: var(--surface-2); color: var(--text); font: inherit; font-size: 15px; text-align: left; }
 .col-row span { color: var(--muted); text-align: right; }
+
+/* word families (1.17) */
+.col-row b .pos { font-weight: 500; font-size: 12px; margin-left: 4px; }
+.col-row.on { box-shadow: inset 0 0 0 2px var(--pink); }
+.fam-box { text-align: left; }
+#famList { margin-top: 12px; }

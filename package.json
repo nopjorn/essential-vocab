@@ -1,0 +1,11 @@
+{
+  "name": "essential-vocab",
+  "private": true,
+  "description": "Automated browser tests for the ศัพท์ต้องรู้ PWA (the app itself has no build step).",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}
