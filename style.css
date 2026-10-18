@@ -260,12 +260,14 @@ select.sel { background: var(--surface-2); border: 0; border-radius: 10px; paddi
 
 .upd-bar {
   position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 12px); transform: translateX(-50%); z-index: 70;
-  display: flex; align-items: center; gap: 12px; max-width: 94vw; padding: 10px 12px 10px 18px; border-radius: 22px;
+  display: flex; align-items: center; gap: 10px; width: max-content; max-width: calc(100vw - 24px); padding: 8px 8px 8px 18px; border-radius: 99px;
   background: var(--text); color: var(--bg); font-weight: 700; font-size: 15px; box-shadow: 0 6px 24px rgba(0, 0, 0, .35);
   animation: updin .3s ease-out;
 }
-.upd-bar .btn { padding: 8px 16px; font-size: 15px; white-space: nowrap; }
-.upd-x { background: none; border: 0; color: inherit; font-size: 20px; padding: 4px 8px; opacity: .7; cursor: pointer; }
+.upd-bar span { white-space: nowrap; }
+.upd-bar .btn { flex: none; min-height: 40px; padding: 0 16px; border-radius: 99px; font-size: 15px; white-space: nowrap; }
+.upd-x { flex: none; background: none; border: 0; color: inherit; font-size: 18px; padding: 6px 10px; opacity: .7; cursor: pointer; }
+@media (max-width: 360px) { .upd-bar { font-size: 13px; gap: 6px; padding-left: 14px; } .upd-bar .btn { padding: 0 12px; font-size: 13px; } .upd-x { padding: 6px; } }
 @keyframes updin { from { opacity: 0; transform: translateX(-50%) translateY(-16px); } }
 
 .install-tip { border: 2px dashed var(--primary-2); }
