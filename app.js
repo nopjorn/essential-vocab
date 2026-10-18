@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.29.1';
+const APP_VERSION = '1.29.2';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -2609,13 +2609,15 @@ function openSheet(w, onChange) {
   const stLabel = { new: 'ยังไม่เรียน', learning: '🟡 กำลังเรียน', mastered: '🟢 จำได้แล้ว' }[st] + (isLeech(w) ? ' · 🐢 คำดื้อ' : '');
   const el = document.createElement('div');
   el.className = 'sheet-wrap';
-  el.innerHTML = `<div class="sheet" role="dialog" aria-label="${esc(w.w)}">
+  el.innerHTML = `<div class="sheet wsheet" role="dialog" aria-label="${esc(w.w)}">
       <div class="grab"></div>
+      <div class="sheet-body">
       <div class="row" style="justify-content:space-between">${lvBadge(w.g)}<a class="oxl" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(w.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener" aria-label="ดูใน Oxford Learner's Dictionaries">📖 Oxford ↗</a><span class="st-pill ${st}">${stLabel}</span></div>
       <div class="sheet-word">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
       <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span>${w.tp ? ` · ${TOPIC_LABEL[w.tp]}` : ''}</div>
       <div class="th" style="font-size:22px;margin:10px 0">${esc(w.t)}</div>
       ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div>
+      </div>
       <div class="sheet-acts">
         <button class="btn" data-act="star">${isStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาว'}</button>
         <button class="btn" data-act="review" aria-label="ทบทวนวันนี้">🔁 ทบทวน</button>

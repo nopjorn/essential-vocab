@@ -334,5 +334,9 @@ test('UI polish 2: sheet action bar, session title counter, empty forecast', asy
   await expect(star).toContainText('เอาดาวออก');
   await expect(page.locator('.sheet .st-pill')).toBeVisible();
   await expect(page.locator('.sheet .oxl')).toBeInViewport();
+  // action bar sits flush with the bottom of the sheet; the body scrolls on its own
+  const geo = await page.evaluate(() => { const s = document.querySelector('.sheet').getBoundingClientRect(), a = document.querySelector('.sheet-acts').getBoundingClientRect(), b = document.querySelector('.sheet-body'); return { gap: Math.round(s.bottom - a.bottom), scrolls: getComputedStyle(b).overflowY === 'auto' }; });
+  expect(geo.gap).toBeLessThanOrEqual(1);
+  expect(geo.scrolls).toBe(true);
   expect(errors).toEqual([]);
 });

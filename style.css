@@ -860,13 +860,11 @@ details.set-group[open] > summary::after { transform: rotate(-90deg); }
 .st-pill.mastered { background: color-mix(in srgb, var(--good) 22%, var(--surface)); color: var(--text); }
 .note-add { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border: 2px dashed var(--border); border-radius: 12px; text-decoration: none; color: var(--primary-text); font-weight: 700; }
 .oxl { display: inline-flex; align-items: center; min-height: 36px; padding: 0 12px; border-radius: 99px; background: var(--surface-2); color: var(--primary-text); font-size: var(--fs-sm); font-weight: 700; text-decoration: none; }
-.sheet-acts {
-  position: sticky; bottom: 0; z-index: 2; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px;
-  margin-bottom: calc(-1 * (env(safe-area-inset-bottom) + 20px)); padding: 10px 0 calc(env(safe-area-inset-bottom) + 20px); background: var(--surface);
-  box-shadow: 0 -8px 12px -8px rgba(0, 0, 0, .12);
-}
+.sheet.wsheet { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0; }
+.wsheet .sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-bottom: 12px; }
+.sheet-acts { flex: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 0 calc(env(safe-area-inset-bottom) + 14px); border-top: 1px solid var(--border); background: var(--surface); }
 .sheet-acts .btn { padding: 8px 4px; font-size: var(--fs-md); }
-@media (min-width: 700px) { .sheet-acts { margin-bottom: -24px; padding-bottom: 24px; } }
+@media (min-width: 700px) { .sheet-acts { padding-bottom: 20px; } }
 /* tab labels never wrap (landscape phone rail) */
 .tabbar button > span:last-child { white-space: nowrap; }
 @media (min-width: 700px) and (max-height: 520px) { :root { --rail-w: 88px; } .tabbar button { font-size: var(--fs-xs); } }
