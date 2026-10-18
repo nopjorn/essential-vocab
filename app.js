@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.20.2';
+const APP_VERSION = '1.21.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -644,7 +644,12 @@ function renderHome() {
   const wd = $('#wotd');
   if (wd) wd.onclick = (e) => {
     const w = wotd();
-    if (e.target.closest('[data-say]')) speak(w.w); else openSheet(w, renderHome);
+    if (e.target.closest('[data-rand]')) {
+      const p = pool().filter((x) => x !== w); if (!p.length) return;
+      const n = p[Math.floor(Math.random() * p.length)];
+      wotdAlt = { day: today(), w: n };
+      wd.innerHTML = wotdInner(n);
+    } else if (e.target.closest('[data-say]')) speak(w.w); else openSheet(w, renderHome);
   };
   const mc = $('#monthCard');
   if (mc) mc.onclick = (e) => { if (e.target.closest('[data-mo]')) { S.monthSeen = monthKey(); save(); mc.remove(); } };
@@ -690,19 +695,23 @@ function homeBlocks() {
   return out;
 }
 // Word of the day: the same word all day (picked from the selected levels by date), tap for the full sheet.
+let wotdAlt = null; // {day, w}: word picked with the 🎲 button, kept until the day changes
 function wotd() {
   const p = pool(); if (!p.length) return null;
+  if (wotdAlt && wotdAlt.day === today() && p.includes(wotdAlt.w)) return wotdAlt.w;
   let h = 0; for (const c of today()) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return p[h % p.length];
 }
 function wotdCard() {
   const w = wotd(); if (!w) return '';
-  return `<div class="card-box wotd" id="wotd" role="button" tabindex="0">
-    <div class="row" style="justify-content:space-between"><b>✨ คำประจำวัน</b><span class="small muted">${lvBadge(w.g)}</span></div>
+  return `<div class="card-box wotd" id="wotd" role="button" tabindex="0">${wotdInner(w)}</div>`;
+}
+function wotdInner(w) {
+  return `<div class="row" style="justify-content:space-between"><b>✨ คำประจำวัน</b><span class="row small muted" style="gap:8px">${lvBadge(w.g)}<button class="say-ex" data-rand aria-label="สุ่มคำใหม่">🎲</button></span></div>
     <div class="wotd-word">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
     <div class="muted small">${esc(w.i)} · ${esc(w.p)}</div>
     <div class="th" style="margin:6px 0 8px">${esc(w.t)}</div>
-    <div class="small">${hlExample(w)}</div><div class="small muted">${esc(w.et)}</div></div>`;
+    <div class="small">${hlExample(w)}</div><div class="small muted">${esc(w.et)}</div>`;
 }
 function levelCard() {
   const L = levelOf(S.xp), a = levelStart(L), b = levelStart(L + 1);
@@ -3162,7 +3171,7 @@ const GUIDE = [
       <li><b>👾 บอสคำดื้อ</b> — คำที่ลืมบ่อยจะกลายเป็นบอสมีหัวใจ 3 ดวง ตอบถูก 3 ครั้ง (บอสจะวนกลับมาเรื่อยๆ) เพื่อปราบบอส ได้ ${BOSS_XP} XP · ตอบผิดบอสฟื้นพลังเต็ม ผิด 3 ครั้งบอสหนีไปก่อน</li>
       <li><b>🏆 การ์ดสรุป</b> — ทุก 20 ใบ ดูว่าตอบถูกกี่ %, คำใหม่, คอมโบสูงสุด, XP ที่ได้ และเวลาที่ใช้</li>
     </ul>
-    <p><b>✨ คำประจำวัน</b> (หน้าแรก) — ทุกวันมี 1 คำจากระดับที่เลือก แตะเพื่อดูรายละเอียด หรือกด 🔊 ฟังเสียง</p>
+    <p><b>✨ คำประจำวัน</b> (หน้าแรก) — ทุกวันมี 1 คำจากระดับที่เลือก แตะเพื่อดูรายละเอียด กด 🔊 ฟังเสียง หรือกด 🎲 เพื่อสุ่มเป็นคำอื่น (กลับเป็นคำเดิมของวันเมื่อวันเปลี่ยน)</p>
     <p><b>⚡ เล่นด่วน</b> (หน้าแรก) — แตะครั้งเดียว แอปสุ่มเกมให้ 10 ข้อ ใช้คำที่เรียนแล้ว จบในราว 1 นาที</p>
     <p>อยากให้เปิดแอปแล้วเข้าไถศัพท์ทันที: ⚙️ ตั้งค่า → <b>เปิดแอปแล้วไปที่</b> → 📱 ไถศัพท์</p>`],
   ['⭐', 'XP และเลเวล', `
