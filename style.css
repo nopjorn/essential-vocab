@@ -411,7 +411,11 @@ body { touch-action: manipulation; }
 
 /* feed (ไถศัพท์) */
 .view.feed-mode { display: flex; flex-direction: column; overflow: hidden; padding: 0 0 calc(var(--tabbar-h) + env(safe-area-inset-bottom)); }
-.feed-hud { flex: none; display: flex; justify-content: space-between; align-items: center; padding: 2px 18px 6px; min-height: 26px; }
+.feed-hud { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 2px 18px 6px; min-height: 26px; white-space: nowrap; }
+.feed-hud > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.feed-hud > #fGoal { flex: 1 1 auto; text-align: center; }
+.feed-hud > #fCombo, .feed-hud > #fXp { flex: none; }
+.fcard.sum .f-in { padding-right: 18px; }
 .feed { flex: 1; min-height: 0; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .fcard { height: 100%; scroll-snap-align: start; scroll-snap-stop: always; position: relative; padding: 8px 16px 14px; box-sizing: border-box; display: flex; }
 .f-in { flex: 1; background: var(--surface); border-radius: 26px; box-shadow: var(--shadow); padding: 18px 70px 18px 18px; overflow-y: auto; display: flex; flex-direction: column; }

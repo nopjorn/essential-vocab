@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.29.3';
+const APP_VERSION = '1.29.4';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -2079,7 +2079,7 @@ function renderFeed() {
     const body = c.type === 'sum' ? '<div class="f-sum"></div>' : `${c.body}${c.done ? '' : '<div class="reveal f-reveal"></div>'}`;
     const side = c.type === 'sum' ? '' : `<div class="f-side">${c.sp ? '' : heart(c.w)}${sayBtn}</div>`;
     const el = document.createElement('section');
-    el.className = 'fcard' + (c.isBoss ? ' boss' : '');
+    el.className = 'fcard' + (c.isBoss ? ' boss' : '') + (c.type === 'sum' ? ' sum' : '');
     el.dataset.n = k;
     el.dataset.type = c.isBoss ? 'boss' : c.type;
     el.style.setProperty('--hue', look[1]);
