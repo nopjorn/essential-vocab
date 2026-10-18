@@ -55,7 +55,9 @@ test('word sheet shows the word family and collocations', async ({ page }) => {
   await sheet.locator('#famBox [data-col="decisive"]').click();
   expect(await page.evaluate(() => window.__said.at(-1))).toBe('decisive');
   // A word without a family gets no family box.
-  await page.mouse.click(5, 5);
+  // the sheet must sit above the full-screen view (really clickable, not covered)
+  await page.locator('.sheet [data-act=star]').click();
+  await page.locator('.sheet [data-act=review]').click();
   await expect(page.locator('.sheet-wrap')).toHaveCount(0);
   await page.evaluate(() => openSheet(W.find((w) => w.w === 'cat')));
   await expect(page.locator('.sheet .sheet-word')).toContainText('cat');
@@ -157,6 +159,33 @@ test('quest card hides once done, unless the setting keeps it', async ({ page })
   await expect(page.locator('.card-box.quest')).toContainText('สำเร็จแล้ว');
   await page.evaluate(() => { S.quest.done = false; go('home'); });
   await expect(page.locator('#questGo')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('word of the day: full screen view, random, back, star, details, close', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.locator('#wotd [data-full]').click();
+  const wf = page.locator('.wf');
+  await expect(wf).toBeVisible();
+  const first = await wf.locator('.wf-word').innerText();
+  await expect(wf.locator('[data-back]')).toBeDisabled();
+  await wf.locator('[data-next]').click();
+  expect(await wf.locator('.wf-word').innerText()).not.toBe(first);
+  await expect(wf.locator('.example')).toBeVisible();
+  await wf.locator('[data-say]').click();
+  await wf.locator('[data-star]').click();
+  await expect(wf.locator('[data-star]')).toHaveText('★');
+  await wf.locator('[data-back]').click();
+  expect(await wf.locator('.wf-word').innerText()).toBe(first);
+  await wf.locator('[data-more]').click();
+  await expect(page.locator('.sheet')).toBeVisible();
+  // the sheet must sit above the full-screen view (really clickable, not covered)
+  await page.locator('.sheet [data-act=star]').click();
+  await page.locator('.sheet [data-act=review]').click();
+  await expect(page.locator('.sheet-wrap')).toHaveCount(0);
+  await wf.locator('[data-x]').click();
+  await expect(page.locator('.wf')).toHaveCount(0);
+  await expect(page.locator('#wotd')).toBeVisible();
   expect(errors).toEqual([]);
 });
 

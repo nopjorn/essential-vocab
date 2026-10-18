@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.25.1';
+const APP_VERSION = '1.26.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -662,7 +662,8 @@ function renderHome() {
   const wd = $('#wotd');
   if (wd) wd.onclick = (e) => {
     const w = wotd();
-    if (e.target.closest('[data-rand]')) {
+    if (e.target.closest('[data-full]')) wotdFull(w);
+    else if (e.target.closest('[data-rand]')) {
       const n = wotdRandom(w); if (n) wd.innerHTML = wotdInner(n);
     } else if (e.target.closest('[data-say]')) speak(w.w); else openSheet(w, renderHome);
   };
@@ -751,11 +752,50 @@ function wotdCard() {
   return `<div class="card-box wotd" id="wotd" role="button" tabindex="0">${wotdInner(w)}</div>`;
 }
 function wotdInner(w) {
-  return `<div class="row" style="justify-content:space-between"><b>✨ คำประจำวัน</b><span class="row small muted" style="gap:8px">${lvBadge(w.g)}<button class="say-ex" data-rand aria-label="สุ่มคำใหม่">🎲</button></span></div>
+  return `<div class="row" style="justify-content:space-between"><b>✨ คำประจำวัน</b><span class="row small muted" style="gap:8px">${lvBadge(w.g)}<button class="say-ex" data-rand aria-label="สุ่มคำใหม่">🎲</button><button class="say-ex" data-full aria-label="ขยายเต็มหน้าจอ">⛶</button></span></div>
     <div class="wotd-word">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
     <div class="muted small">${esc(w.i)} · ${esc(w.p)}</div>
     <div class="th" style="margin:6px 0 8px">${esc(w.t)}</div>
     <div class="small">${hlExample(w)}</div><div class="small muted">${esc(w.et)}</div>`;
+}
+// Full-screen word of the day: 🎲 keeps drawing random words (from the same pool) for casual browsing; ◀ goes back through the ones just seen.
+function wotdFull(start) {
+  const el = document.createElement('div');
+  el.className = 'wf';
+  document.body.appendChild(el);
+  const hist = [start]; let at = 0;
+  const paint = () => {
+    const w = hist[at];
+    const stLabel = { new: '🆕 ยังไม่เรียน', learning: '🟡 กำลังเรียน', mastered: '🟢 จำได้แล้ว' }[status(w)] + (isLeech(w) ? ' · 🐢 คำดื้อ' : '');
+    el.innerHTML = `<div class="wf-top"><button class="btn ghost" data-x aria-label="ปิด">✕ ปิด</button><span class="small muted">${hist.length > 1 ? `ดูมาแล้ว ${hist.length} คำ` : '✨ คำประจำวัน'}</span></div>
+      <div class="wf-body">
+        <div class="row" style="justify-content:space-between">${lvBadge(w.g)}<span class="small muted">${stLabel}</span></div>
+        <div class="wf-word">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
+        <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span>${w.tp ? ` · ${TOPIC_LABEL[w.tp]}` : ''}</div>
+        <div class="th wf-th">${esc(w.t)}</div>
+        ${exampleBox(w)}${S.note[w.w] ? `<div class="note-box">💡 <b>วิธีจำของฉัน:</b> ${esc(S.note[w.w])}</div>` : ''}
+      </div>
+      <div class="wf-bar"><button class="btn" data-back ${at ? '' : 'disabled'} aria-label="คำก่อนหน้า">◀</button><button class="btn" data-star>${isStar(w) ? '★' : '⭐'}</button><button class="btn" data-more>รายละเอียด</button><button class="btn primary grow" data-next>🎲 สุ่มคำใหม่</button></div>`;
+  };
+  const next = () => {
+    if (at < hist.length - 1) { at++; return paint(); }
+    const p = (wotdPool().length ? wotdPool() : pool()).filter((x) => x !== hist[at]); if (!p.length) return;
+    hist.push(p[Math.floor(Math.random() * p.length)]); at = hist.length - 1; paint();
+  };
+  const close = () => { el.remove(); document.removeEventListener('keydown', key); renderHome(); };
+  const key = (e) => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') next(); else if (e.key === 'ArrowLeft' && at) { at--; paint(); } };
+  document.addEventListener('keydown', key);
+  el.onclick = (e) => {
+    const w = hist[at];
+    if (e.target.closest('[data-x]')) close();
+    else if (e.target.closest('[data-say]')) speak(w.w);
+    else if (e.target.closest('[data-sayex]')) speak(w.e);
+    else if (e.target.closest('[data-next]')) next();
+    else if (e.target.closest('[data-back]')) { if (at) { at--; paint(); } }
+    else if (e.target.closest('[data-star]')) { toggleStar(w); paint(); }
+    else if (e.target.closest('[data-more]')) openSheet(w, paint);
+  };
+  paint();
 }
 function levelCard() {
   const L = levelOf(S.xp), a = levelStart(L), b = levelStart(L + 1);
@@ -3215,7 +3255,7 @@ const GUIDE = [
       <li><b>👾 บอสคำดื้อ</b> — คำที่ลืมบ่อยจะกลายเป็นบอสมีหัวใจ 3 ดวง ตอบถูก 3 ครั้ง (บอสจะวนกลับมาเรื่อยๆ) เพื่อปราบบอส ได้ ${BOSS_XP} XP · ตอบผิดบอสฟื้นพลังเต็ม ผิด 3 ครั้งบอสหนีไปก่อน</li>
       <li><b>🏆 การ์ดสรุป</b> — ทุก 20 ใบ ดูว่าตอบถูกกี่ %, คำใหม่, คอมโบสูงสุด, XP ที่ได้ และเวลาที่ใช้</li>
     </ul>
-    <p><b>✨ คำประจำวัน</b> (หน้าแรก) — ทุกวันมี 1 คำจากระดับที่เลือก แตะเพื่อดูรายละเอียด กด 🔊 ฟังเสียง หรือกด 🎲 เพื่อสุ่มเป็นคำอื่น (คำที่สุ่มจะค้างไว้ทั้งวัน) · ตั้งเงื่อนไขได้ที่ ตั้งค่า → ตั้งค่าคำประจำวัน เช่น เฉพาะ A1 ที่กำลังเรียน คำดื้อ หรือหมวดที่อยากเน้น เลือกผสมกันได้</p>
+    <p><b>✨ คำประจำวัน</b> (หน้าแรก) — ทุกวันมี 1 คำจากระดับที่เลือก แตะเพื่อดูรายละเอียด กด 🔊 ฟังเสียง หรือกด 🎲 เพื่อสุ่มเป็นคำอื่น (คำที่สุ่มจะค้างไว้ทั้งวัน) · กด ⛶ เพื่อขยายเต็มหน้าจอ: กด 🎲 สุ่มคำใหม่ได้เรื่อยๆ ให้ผ่านตา มีปุ่ม ◀ ย้อนดูคำที่ผ่านมา ⭐ ติดดาว และ "รายละเอียด" (เปิดคีย์บอร์ด: ← → ใช้ย้อน/สุ่ม) · ตั้งเงื่อนไขได้ที่ ตั้งค่า → ตั้งค่าคำประจำวัน เช่น เฉพาะ A1 ที่กำลังเรียน คำดื้อ หรือหมวดที่อยากเน้น เลือกผสมกันได้</p>
     <p><b>⚡ เล่นด่วน</b> (หน้าแรก) — แตะครั้งเดียว แอปสุ่มเกมให้ 10 ข้อ ใช้คำที่เรียนแล้ว จบในราว 1 นาที</p>
     <p>อยากให้เปิดแอปแล้วเข้าไถศัพท์ทันที: ⚙️ ตั้งค่า → <b>เปิดแอปแล้วไปที่</b> → 📱 ไถศัพท์</p>`],
   ['⭐', 'XP และเลเวล', `

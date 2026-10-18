@@ -763,3 +763,16 @@ input.sel { color: var(--text); font: inherit; }
 .hc-mv { display: inline-flex; gap: 6px; }
 .hc-mv button { width: 38px; height: 34px; border: 0; border-radius: 10px; background: var(--surface-2); color: var(--text); font: inherit; font-weight: 800; }
 .hc-mv button:disabled { opacity: .3; }
+
+/* full-screen word of the day */
+.wf { position: fixed; inset: 0; z-index: 30; background: var(--bg); display: flex; flex-direction: column; padding: calc(env(safe-area-inset-top) + 12px) 20px calc(env(safe-area-inset-bottom) + 16px); max-width: 760px; margin: 0 auto; }
+.wf-top { display: flex; align-items: center; justify-content: space-between; }
+.wf-top .btn { padding: 8px 14px; }
+.wf-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.wf-word { font-size: clamp(40px, 12vw, 72px); font-weight: 800; line-height: 1.1; margin-top: 8px; }
+.wf-th { font-size: 26px; margin: 10px 0 14px; }
+.wf-bar { display: flex; gap: 10px; }
+.wf-bar .btn[disabled] { opacity: .4; }
+.wf mark { background: var(--accent-soft, rgba(108, 92, 231, .2)); color: inherit; border-radius: 3px; }
+@media (min-width: 700px) { .wf { left: var(--rail-w); } }
+@media (max-height: 520px) { .wf-word { font-size: 40px; } .wf-th { margin: 4px 0 8px; } }
