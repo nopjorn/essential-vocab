@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.22.1';
+const APP_VERSION = '1.22.2';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -814,8 +814,7 @@ function nextSteps(learned) {
     ${b('play', '⚡', 'เล่นด่วน', 'เกมสุ่ม 10 ข้อ ~1 นาที')}
     ${b('read', '📖', 'อ่านเรื่องสั้น', 'ได้เจอคำศัพท์ในบริบทจริง')}
     ${leech ? b('leech', '🐢', 'ฝึกคำดื้อ', leech + ' คำที่ลืมบ่อย') : ''}
-    ${star ? b('star', '⭐', 'ฝึกคำติดดาว', star + ' คำที่ติดดาวไว้') : ''}
-    ${b('home', '🏠', 'กลับหน้าแรก', 'ดูภารกิจและความคืบหน้า')}</div>`;
+    ${star ? b('star', '⭐', 'ฝึกคำติดดาว', star + ' คำที่ติดดาวไว้') : ''}</div>`;
 }
 function bindNextSteps() {
   view.querySelectorAll('[data-ns]').forEach((el) => {
