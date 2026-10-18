@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.25.0';
+const APP_VERSION = '1.25.1';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -3394,6 +3394,7 @@ function loadChangelog() {
   });
 }
 const verNum = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (+x || 0), 0);
+const thaiDate = (d) => new Date(d + 'T12:00:00').toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
 function renderChangelog(from) {
   const back = from || 'settings';
   view.innerHTML = `<div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="clBack">‹ กลับ</button></div><div id="clBody" class="center muted" style="padding:24px">กำลังโหลด…</div>`;
@@ -3402,8 +3403,8 @@ function renderChangelog(from) {
     if (current !== 'changelog') return;
     $('#clBody').className = '';
     $('#clBody').removeAttribute('style');
-    $('#clBody').innerHTML = (list.length ? list : [[APP_VERSION, 'โหลดประวัติไม่สำเร็จ ลองใหม่ตอนต่อเน็ตนะ']]).map(([v, t], i) => `
-      <div class="card-box cl-row${i === 0 ? ' cl-new' : ''}"><div class="cl-v">${esc(v)}${v === APP_VERSION ? ' <span class="cl-tag">เวอร์ชันนี้</span>' : ''}</div><div class="cl-t">${esc(t)}</div></div>`).join('')
+    $('#clBody').innerHTML = (list.length ? list : [[APP_VERSION, 'โหลดประวัติไม่สำเร็จ ลองใหม่ตอนต่อเน็ตนะ']]).map(([v, t, d], i) => `
+      <div class="card-box cl-row${i === 0 ? ' cl-new' : ''}"><div class="cl-v">${esc(v)}${v === APP_VERSION ? ' <span class="cl-tag">เวอร์ชันนี้</span>' : ''}${d ? `<span class="cl-d">${thaiDate(d)}</span>` : ''}</div><div class="cl-t">${esc(t)}</div></div>`).join('')
       + `<p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
   });
 }

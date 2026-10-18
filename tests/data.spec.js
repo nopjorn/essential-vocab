@@ -24,7 +24,7 @@ test('changelog.js lists every README version, newest first', () => {
   const { CHANGELOG } = load('changelog.js');
   const readme = [...read('README.md').matchAll(/^\| (\d+\.\d+\.\d+) \|/gm)].map((m) => m[1]);
   expect(CHANGELOG.map((r) => r[0])).toEqual(readme);
-  CHANGELOG.forEach(([v, t]) => { expect(typeof t).toBe('string'); expect(t.length, v).toBeGreaterThan(5); });
+  CHANGELOG.forEach(([v, t, d]) => { expect(typeof t).toBe('string'); expect(t.length, v).toBeGreaterThan(5); expect(d, v).toMatch(/^\d{4}-\d{2}-\d{2}$/); });
 });
 
 test('every file the service worker caches exists', () => {
