@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.28.0';
+const APP_VERSION = '1.29.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -588,6 +588,7 @@ function updateStreak() {
   el.textContent = '🔥 ' + streakNow() + (S.freeze ? ' · 🧊' + S.freeze : '') + ' · Lv.' + L;
   el.style.setProperty('--xp', Math.min(100, Math.max(0, ((S.xp || 0) - levelStart(L)) / (50 * L) * 100)) + '%'); // progress to the next level
 }
+view.addEventListener('click', (e) => { const g = e.target.closest('[data-go]'); if (g) go(g.dataset.go); });
 $('#streak').addEventListener('click', () => { if (current !== 'stats') go('stats', 'home'); });
 // Sub pages carry their own "‹ กลับ" button (id ending in Back); mirror it in the top bar and hide the in-page one.
 new MutationObserver(() => document.body.classList.toggle('has-back', !!view.querySelector('[id$="Back"]'))).observe(view, { childList: true });
@@ -853,6 +854,7 @@ function forecastChart() {
   }
   const max = Math.max(10, ...days.map((d) => d.n));
   const total = days.reduce((a, d) => a + d.n, 0);
+  if (!total) return `<div class="empty-box"><div class="em">🌱</div><div>ยังไม่มีการ์ดที่ต้องทบทวน<div class="small muted">เรียนคำแรกแล้วตารางนี้จะเริ่มขึ้นเอง</div></div><button class="btn primary" data-go="cards">▶︎ เริ่มเรียน</button></div>`;
   const tip = total / 7 > 80 ? '<div class="small" style="margin-top:8px">⚠️ งานทบทวนเยอะแล้ว ลองลดจำนวนคำใหม่ต่อวันในตั้งค่า</div>' : '';
   return `<div class="week">${days.map((d) => `<div class="wk"><div class="wk-n">${d.n || ''}</div><div class="wk-bar fc-bar"><div style="height:${d.n / max * 100}%"></div></div><div class="wk-l">${d.label}</div></div>`).join('')}</div>
     <div class="small muted" style="margin-top:8px">รวม ${total} ใบ · ยังไม่รวมคำใหม่วันละ ${S.settings.newPerDay} คำ</div>${tip}`;
@@ -1335,6 +1337,7 @@ function playQuiz(mode, src, gameId) {
   $('#title').textContent = GAMES[gameId].name;
 
   function header() {
+    if (i < items.length) $('#title').textContent = `${GAMES[gameId].name} · ${i + 1}/${items.length}`;
     return `<div class="session-top">
       <button class="icon-btn" id="quit" aria-label="ออก">✕</button>
       <div class="progress"><div style="width:${i / items.length * 100}%"></div></div>
@@ -2608,17 +2611,17 @@ function openSheet(w, onChange) {
   el.className = 'sheet-wrap';
   el.innerHTML = `<div class="sheet" role="dialog" aria-label="${esc(w.w)}">
       <div class="grab"></div>
-      <div class="row" style="justify-content:space-between">${lvBadge(w.g)}<span class="small muted">${stLabel}</span></div>
+      <div class="row" style="justify-content:space-between">${lvBadge(w.g)}<span class="st-pill ${st}">${stLabel}</span></div>
       <div class="sheet-word">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
       <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span>${w.tp ? ` · ${TOPIC_LABEL[w.tp]}` : ''}</div>
       <div class="th" style="font-size:22px;margin:10px 0">${esc(w.t)}</div>
       ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div>
-      <button class="btn block" data-act="star" style="margin-top:14px">${isStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาวคำนี้'}</button>
-      <div class="row" style="margin-top:10px">
-        <button class="btn grow" data-act="review">🔁 ทบทวนวันนี้</button>
-        <button class="btn grow" data-act="known">✓ รู้แล้ว</button>
+      <a class="btn ghost block oxl" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(w.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">ดูใน Oxford Learner's Dictionaries ↗</a>
+      <div class="sheet-acts">
+        <button class="btn" data-act="star">${isStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาว'}</button>
+        <button class="btn" data-act="review" aria-label="ทบทวนวันนี้">🔁 ทบทวน</button>
+        <button class="btn" data-act="known">✓ รู้แล้ว</button>
       </div>
-      <a class="link" style="display:block;text-align:center;margin-top:12px" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(w.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">ดูใน Oxford Learner's Dictionaries ↗</a>
     </div>`;
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('open'));
@@ -2641,7 +2644,7 @@ function openSheet(w, onChange) {
     const act = e.target.closest('[data-act]');
     if (!act) return;
     if (act.dataset.act === 'star') {
-      act.textContent = toggleStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาวคำนี้';
+      act.textContent = toggleStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาว';
       if (onChange) onChange();
       return;
     }
@@ -3225,7 +3228,7 @@ const GUIDE = [
     <ol>
       <li>เปิดแอปใน <b>Safari</b> → กดปุ่ม <b>แชร์</b> → <b>เพิ่มไปยังหน้าจอโฮม</b> แล้วใช้จากไอคอนนั้นเสมอ (ข้อมูลใน Safari กับในไอคอนแยกกัน)</li>
       <li>ไปที่ <b>⚙️ ตั้งค่า</b> เลือกระดับคำที่จะเรียน (แนะนำเริ่มที่ A1) และจำนวนคำใหม่ต่อวัน</li>
-      <li>หน้าตั้งค่าแบ่งเป็นกลุ่มที่แตะเพื่อพับ/ขยายได้ · แตะชิป 🔥 Lv. ด้านบนขวาเพื่อไปหน้าสถิติ · หน้ารองมีปุ่ม ‹ ย้อนกลับที่มุมซ้ายบน · หน้าเกมแตะ "คำจาก" เพื่อเปลี่ยนแหล่งคำ · แบนเนอร์ติดตั้ง/วัดระดับบนหน้าแรกกด ✕ เพื่อปิดได้</li>
+      <li>หน้าตั้งค่าแบ่งเป็นกลุ่มที่แตะเพื่อพับ/ขยายได้ · แตะชิป 🔥 Lv. ด้านบนขวาเพื่อไปหน้าสถิติ · หน้ารองมีปุ่ม ‹ ย้อนกลับที่มุมซ้ายบน · หน้าเกมแตะ "คำจาก" เพื่อเปลี่ยนแหล่งคำ · ระหว่างเล่นเกม หัวข้อด้านบนบอกว่าถึงข้อไหนแล้ว · ในหน้ารายละเอียดคำ ปุ่มติดดาว/ทบทวน/รู้แล้วจะติดอยู่ด้านล่างเสมอ · แบนเนอร์ติดตั้ง/วัดระดับบนหน้าแรกกด ✕ เพื่อปิดได้</li>
       <li>กลับมาหน้าแรก กด <b>▶︎ เริ่มเรียนเลย</b></li>
       <li>ตั้ง <b>การเตือนในปฏิทิน</b> (ในตั้งค่า) ให้เตือนทุกวันตามเวลาที่สะดวก</li>
       <li>เรียนไปสักพักแล้ว <b>สำรองข้อมูล</b> เก็บไว้ใน iCloud Drive</li>
@@ -3368,7 +3371,7 @@ const GUIDE = [
       <li>คำที่มีครอบครัวคำ (ราว 770 คำ) จะมี <b>🧬 ครอบครัวคำ</b> ในหน้ารายละเอียดคำ เช่น decide → decision (n), decisive (adj), decisively (adv) ช่วยให้ใช้คำถูกชนิดในประโยค</li>
       <li>ค้นหาคำ อังกฤษหรือไทยก็ได้ และกรองตามสถานะ (ยังไม่เรียน / กำลังเรียน / จำได้แล้ว / ⭐ ติดดาว) และตามระดับ</li>
       <li>แตะคำเพื่อดูรายละเอียด ฟังเสียง และประโยคตัวอย่าง</li>
-      <li>ในหน้ารายละเอียด: <b>⭐ ติดดาว</b>, <b>🔁 ทบทวนวันนี้</b> (ดึงคำมาให้ทวนทันที), <b>✓ รู้แล้ว</b> (ข้ามคำที่รู้อยู่แล้ว)</li>
+      <li>ในหน้ารายละเอียด: <b>⭐ ติดดาว</b>, <b>🔁 ทบทวน</b> (ดึงคำมาให้ทวนวันนี้ทันที), <b>✓ รู้แล้ว</b> (ข้ามคำที่รู้อยู่แล้ว)</li>
     </ul>`],
   ['🎨', 'เสียงอ่านและธีม', `
     <ul>

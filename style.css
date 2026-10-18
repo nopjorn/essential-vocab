@@ -838,3 +838,44 @@ details.set-group[open] > summary::after { transform: rotate(-90deg); }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 .chips[hidden] { display: none; }
+
+/* ---------- UI polish 2 (1.29) ---------- */
+/* contrast: badge/grade colours were white-on-light; text-safe primary for light and dark */
+:root { --primary-text: #5b4bd6; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --primary-text: #a29bfe; } }
+:root[data-theme="dark"] { --primary-text: #a29bfe; }
+.lv.A1 { background: #007a62; } .lv.A2 { background: #0b6fc4; } .lv.B1 { background: #c0482c; } .lv.B2x { background: #b84700; }
+.g-again { background: #c0482c !important; } .g-hard { background: #a85f00 !important; } .g-good { background: #007a62 !important; } .g-easy { background: #0b6fc4 !important; }
+.btn.danger { background: #c0482c; }
+.tabbar button.active, .src-btn b { color: var(--primary-text); }
+/* stats: equal badge column so the level bars line up */
+.lvl-row .lv { flex: none; width: 46px; text-align: center; padding-left: 0; padding-right: 0; }
+.empty-box { display: flex; align-items: center; gap: 12px; padding: 6px 2px; }
+.empty-box > div:nth-child(2) { flex: 1; font-weight: 700; }
+.empty-box .em { font-size: 34px; }
+.empty-box .btn { flex: none; min-height: 44px; padding: 0 16px; }
+/* word sheet: status pill, real note button, sticky action bar */
+.st-pill { font-size: var(--fs-xs); font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--surface-2); color: var(--muted); }
+.st-pill.learning { background: color-mix(in srgb, var(--warn) 35%, var(--surface)); color: var(--text); }
+.st-pill.mastered { background: color-mix(in srgb, var(--good) 22%, var(--surface)); color: var(--text); }
+.note-add { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border: 2px dashed var(--border); border-radius: 12px; text-decoration: none; color: var(--primary-text); font-weight: 700; }
+.oxl { margin-top: 14px; min-height: 44px; font-size: var(--fs-md); text-decoration: none; }
+.sheet-acts {
+  position: sticky; bottom: 0; z-index: 2; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px;
+  margin-bottom: calc(-1 * (env(safe-area-inset-bottom) + 20px)); padding: 10px 0 calc(env(safe-area-inset-bottom) + 20px); background: var(--surface);
+  box-shadow: 0 -8px 12px -8px rgba(0, 0, 0, .12);
+}
+.sheet-acts .btn { padding: 8px 4px; font-size: var(--fs-md); }
+@media (min-width: 700px) { .sheet-acts { margin-bottom: -24px; padding-bottom: 24px; } }
+/* tab labels never wrap (landscape phone rail) */
+.tabbar button > span:last-child { white-space: nowrap; }
+@media (min-width: 700px) and (max-height: 520px) { :root { --rail-w: 88px; } .tabbar button { font-size: var(--fs-xs); } }
+/* flashcard + quiz sessions: fill the screen, answers sit in the thumb zone */
+@media (min-height: 521px) {
+  .view:has(> #stage), .view:has(> .q-prompt) { display: flex; flex-direction: column; }
+  .view:has(> #stage) > *, .view:has(> .q-prompt) > * { flex-shrink: 0; }
+  .view:has(> #stage) > .stage { flex: 1 1 auto; height: auto; min-height: 280px; max-height: 640px; }
+  .view:has(> .q-prompt) > .q-prompt { flex: 1 1 auto; flex-shrink: 1; min-height: 120px; max-height: 46dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .view:has(> .q-prompt) > .options { margin-top: auto; }
+  .opt { min-height: 60px; font-size: 18px; }
+}

@@ -317,3 +317,21 @@ test('UI polish: top-bar back + level chip, collapsible settings, game source pi
   await expect(page.locator('#srcBtn')).toContainText('ทุกระดับ');
   expect(errors).toEqual([]);
 });
+
+test('UI polish 2: sheet action bar, session title counter, empty forecast', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.evaluate(() => go('stats'));
+  await expect(page.locator('#view [data-go="cards"]')).toBeVisible();
+  await page.locator('#view [data-go="cards"]').click();
+  await expect(page.locator('#stage')).toBeVisible();
+  await page.evaluate(() => startGame('en2th'));
+  await expect(page.locator('#title')).toContainText('1/10');
+  await page.evaluate(() => go('list'));
+  await page.locator('.wrow').first().click();
+  const star = page.locator('.sheet-acts [data-act="star"]');
+  await expect(star).toContainText('ติดดาว');
+  await star.click();
+  await expect(star).toContainText('เอาดาวออก');
+  await expect(page.locator('.sheet .st-pill')).toBeVisible();
+  expect(errors).toEqual([]);
+});
