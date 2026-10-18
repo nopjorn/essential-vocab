@@ -333,5 +333,6 @@ test('UI polish 2: sheet action bar, session title counter, empty forecast', asy
   await star.click();
   await expect(star).toContainText('เอาดาวออก');
   await expect(page.locator('.sheet .st-pill')).toBeVisible();
+  await expect(page.locator('.sheet .oxl')).toBeInViewport();
   expect(errors).toEqual([]);
 });

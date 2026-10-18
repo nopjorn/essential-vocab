@@ -859,7 +859,7 @@ details.set-group[open] > summary::after { transform: rotate(-90deg); }
 .st-pill.learning { background: color-mix(in srgb, var(--warn) 35%, var(--surface)); color: var(--text); }
 .st-pill.mastered { background: color-mix(in srgb, var(--good) 22%, var(--surface)); color: var(--text); }
 .note-add { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border: 2px dashed var(--border); border-radius: 12px; text-decoration: none; color: var(--primary-text); font-weight: 700; }
-.oxl { margin-top: 14px; min-height: 44px; font-size: var(--fs-md); text-decoration: none; }
+.oxl { display: inline-flex; align-items: center; min-height: 36px; padding: 0 12px; border-radius: 99px; background: var(--surface-2); color: var(--primary-text); font-size: var(--fs-sm); font-weight: 700; text-decoration: none; }
 .sheet-acts {
   position: sticky; bottom: 0; z-index: 2; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px;
   margin-bottom: calc(-1 * (env(safe-area-inset-bottom) + 20px)); padding: 10px 0 calc(env(safe-area-inset-bottom) + 20px); background: var(--surface);
