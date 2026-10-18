@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.23.2';
+const APP_VERSION = '1.24.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -3330,7 +3330,8 @@ const GUIDE = [
     </ul>`],
   ['🔄', 'อัปเดตแอป', `
     <ul>
-      <li>ปิดแอป (ปัดขึ้นออกจากหน้าสลับแอป) แล้วเปิดใหม่ตอนต่อเน็ต แอปจะโหลดเวอร์ชันใหม่เอง อาจต้องทำ 2 รอบ</li>
+      <li>ถ้ากำลังเปิดแอปค้างไว้แล้วมีเวอร์ชันใหม่ จะมีแถบ "มีเวอร์ชันใหม่พร้อมใช้งาน" เด้งขึ้นมา กด <b>โหลดใหม่</b> ได้เลย (กด ✕ เพื่อปิดไว้ก่อนก็ได้)</li>
+      <li>หรือปิดแอป (ปัดขึ้นออกจากหน้าสลับแอป) แล้วเปิดใหม่ตอนต่อเน็ต แอปจะโหลดเวอร์ชันใหม่เอง อาจต้องทำ 2 รอบ</li>
       <li>เช็คเวอร์ชันได้ที่ท้ายหน้าแรกหรือหน้าตั้งค่า (ตอนนี้ ${APP_VERSION})</li>
       <li><b>ไม่ต้อง</b> ลบไอคอนแล้วเพิ่มใหม่ เพราะจะทำให้ข้อมูลหาย</li>
     </ul>`],
@@ -3629,8 +3630,28 @@ if (!S.chistFrom) S.chistFrom = today();
 go(['home', 'feed', 'cards'].includes(S.settings.start) ? S.settings.start : 'home');
 // Ask the browser not to evict our localStorage under storage pressure / inactivity.
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+// New-version banner: sw.js skips waiting, so when a new worker takes over a page that already had one,
+// this page is still running the old code -> offer a reload. Also re-check for a new sw.js regularly.
+function showUpdate() {
+  if ($('#updBar')) return;
+  const b = document.createElement('div');
+  b.id = 'updBar'; b.className = 'upd-bar'; b.setAttribute('role', 'status');
+  b.innerHTML = '<span>มีเวอร์ชันใหม่พร้อมใช้งาน</span><button class="btn primary" data-upd="go">โหลดใหม่</button><button class="upd-x" data-upd="x" aria-label="ปิด">✕</button>';
+  b.onclick = (e) => {
+    const a = e.target.dataset.upd;
+    if (a === 'go') location.reload();
+    else if (a === 'x') b.remove();
+  };
+  document.body.appendChild(b);
+}
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  const hadSW = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js').then((reg) => {
+    const check = () => reg.update().catch(() => {});
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+    setInterval(check, 15 * 60 * 1000);
+  }).catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadSW) showUpdate(); });
 }
 if (syncOn() && auth) syncNow().then((ok) => { if (ok && current === 'home') renderHome(); });
 document.addEventListener('visibilitychange', () => {

@@ -258,6 +258,16 @@ select.sel { background: var(--surface-2); border: 0; border-radius: 10px; paddi
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+.upd-bar {
+  position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 12px); transform: translateX(-50%); z-index: 70;
+  display: flex; align-items: center; gap: 12px; max-width: 94vw; padding: 10px 12px 10px 18px; border-radius: 22px;
+  background: var(--text); color: var(--bg); font-weight: 700; font-size: 15px; box-shadow: 0 6px 24px rgba(0, 0, 0, .35);
+  animation: updin .3s ease-out;
+}
+.upd-bar .btn { padding: 8px 16px; font-size: 15px; white-space: nowrap; }
+.upd-x { background: none; border: 0; color: inherit; font-size: 20px; padding: 4px 8px; opacity: .7; cursor: pointer; }
+@keyframes updin { from { opacity: 0; transform: translateX(-50%) translateY(-16px); } }
+
 .install-tip { border: 2px dashed var(--primary-2); }
 .pop { animation: pop .35s; }
 @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }

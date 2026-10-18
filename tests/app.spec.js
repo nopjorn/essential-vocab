@@ -17,6 +17,20 @@ test('every screen renders without errors and shows the version', async ({ page 
   expect(errors).toEqual([]);
 });
 
+test('update banner appears, can be dismissed, and reloads', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.evaluate(() => showUpdate());
+  await page.evaluate(() => showUpdate());
+  const bar = page.locator('#updBar');
+  await expect(bar).toHaveCount(1);
+  await expect(bar).toContainText('มีเวอร์ชันใหม่พร้อมใช้งาน');
+  await bar.locator('[data-upd=x]').click();
+  await expect(bar).toHaveCount(0);
+  await page.evaluate(() => showUpdate());
+  await Promise.all([page.waitForEvent('load'), page.locator('#updBar [data-upd=go]').click()]);
+  expect(errors).toEqual([]);
+});
+
 test('word sheet shows the word family and collocations', async ({ page }) => {
   const errors = await openApp(page);
   await page.evaluate(() => openSheet(W.find((w) => w.w === 'decide')));
