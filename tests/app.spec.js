@@ -180,7 +180,7 @@ test('word of the day: full screen view, random, back, star, details, close', as
   await expect(wf.locator('[data-review]')).toBeVisible();
   await wf.locator('[data-review]').click();
   await wf.locator('[data-known]').click();
-  await expect(wf.locator('a.link')).toBeVisible();
+  await expect(wf.locator('a.oxl')).toBeVisible();
   await wf.locator('[data-note]').first().click();
   await expect(page.locator('.sheet')).toBeVisible();
   await page.locator('.sheet [data-act=save]').click();

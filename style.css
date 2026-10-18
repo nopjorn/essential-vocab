@@ -877,3 +877,5 @@ details.set-group[open] > summary::after { transform: rotate(-90deg); }
   .view:has(> .q-prompt) > .options { margin-top: auto; }
   .opt { min-height: 60px; font-size: 18px; }
 }
+
+.face .oxl { margin-top: 14px; min-height: 40px; }
