@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.23.0';
+const APP_VERSION = '1.23.1';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -764,6 +764,7 @@ function levelCard() {
     <div class="small muted" style="margin-top:4px">ตอบถูกติดกันได้ XP เพิ่ม · อีก ${b - S.xp} XP ถึง Lv.${L + 1}</div></div></div>`;
 }
 function questCard() {
+  if (S.quest.done && !S.settings.questShowDone) return '';
   const q = todayQuest(), target = questTarget(q), n = Math.min(S.quest.n, target);
   return `<div class="card-box quest">
     <div class="row" style="justify-content:space-between"><b>🎯 ภารกิจวันนี้</b><span class="small muted">${S.quest.done ? 'สำเร็จแล้ว ✅' : `${n}/${target}`}</span></div>
@@ -3304,7 +3305,7 @@ const GUIDE = [
     <ul>
       <li><b>🔥 สตรีค</b> — จำนวนวันที่เรียนต่อเนื่อง (มุมขวาบน)</li>
       <li><b>🧊 ตัวกันสตรีคขาด</b> — ได้ 1 อันทุกครั้งที่เรียนครบ 7 วันติด เก็บได้สูงสุด 2 อัน ถ้าวันไหนลืมเรียน จะถูกใช้อัตโนมัติ สตรีคไม่ขาด</li>
-      <li><b>🎯 ภารกิจรายวัน</b> — เปลี่ยนทุกวัน ทำสำเร็จแล้วได้นับเหรียญนักล่าภารกิจ</li>
+      <li><b>🎯 ภารกิจรายวัน</b> — เปลี่ยนทุกวัน ทำสำเร็จแล้วได้นับเหรียญนักล่าภารกิจ ทำครบแล้วการ์ดจะหายจากหน้าแรกจนถึงพรุ่งนี้ (ถ้าอยากให้แสดง "สำเร็จแล้ว ✅" ค้างไว้ ไปที่ ⚙️ ตั้งค่า → เปิด "แสดงการ์ดภารกิจต่อ แม้ทำครบแล้ว")</li>
       <li><b>🏅 เหรียญรางวัล</b> — แตะดูเงื่อนไขได้ในหน้าความคืบหน้า</li>
       <li><b>📒 สมุดสติกเกอร์</b> — หน้าความคืบหน้า มีสติกเกอร์ 16 หมวด (อาหาร เดินทาง งาน …) อัปเกรดได้ 4 ขั้น: 🥉 เรียนแล้ว 20% ของคำชุด 3000 ในหมวด → 🥈 จำได้แล้ว 30% → 🥇 จำได้แล้ว 70% → 💎 จำได้แล้ว 70% ของทุกคำในหมวดรวมชุด 5000 · แตะสติกเกอร์เพื่อดูว่าขาดอีกกี่คำ แล้วกด 🎮 ฝึกหมวดนี้</li>
       <li><b>📅 กราฟ 7 วันข้างหน้า</b> — บอกว่าจะมีการ์ดทบทวนวันละเท่าไร ถ้าขึ้นเตือนว่าเยอะเกิน ให้ลดคำใหม่ต่อวันลง</li>
@@ -3437,6 +3438,8 @@ function renderSettings() {
         <label class="switch"><input type="checkbox" id="auto" ${st.autoSpeak ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>เสียงเอฟเฟกต์ในเกม</span>
         <label class="switch"><input type="checkbox" id="sfx" ${st.sfx ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>🎯 แสดงการ์ดภารกิจต่อ แม้ทำครบแล้ว</span>
+        <label class="switch"><input type="checkbox" id="questShow" ${st.questShowDone ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🔴 ตัวเลขการ์ดค้างบนไอคอนแอป</span>
         <label class="switch"><input type="checkbox" id="badge" ${st.badge !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>สำเนียง</span>
@@ -3486,6 +3489,7 @@ function renderSettings() {
   $('#start').onchange = (e) => { st.start = e.target.value; save(); };
   $('#front').onchange = (e) => { st.front = e.target.value; save(); };
   $('#auto').onchange = (e) => { st.autoSpeak = e.target.checked; save(); };
+  $('#questShow').onchange = (e) => { st.questShowDone = e.target.checked; save(); };
   $('#badge').onchange = async (e) => {
     st.badge = e.target.checked; save();
     if (st.badge && 'Notification' in window && Notification.permission === 'default') {

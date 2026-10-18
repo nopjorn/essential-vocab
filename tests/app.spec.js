@@ -120,6 +120,17 @@ test('feed: special cards, boss, timer, fever, summary and double-tap like', asy
   expect(errors).toEqual([]);
 });
 
+test('quest card hides once done, unless the setting keeps it', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.evaluate(() => { todayQuest(); S.quest.done = true; go('home'); });
+  await expect(page.locator('.card-box.quest')).toHaveCount(0);
+  await page.evaluate(() => { S.settings.questShowDone = true; go('home'); });
+  await expect(page.locator('.card-box.quest')).toContainText('สำเร็จแล้ว');
+  await page.evaluate(() => { S.quest.done = false; go('home'); });
+  await expect(page.locator('#questGo')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('word of the day: 🎲 button and filters (level + status + topic)', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   const before = await page.locator('#wotd .wotd-word').innerText();
