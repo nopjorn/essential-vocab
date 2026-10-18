@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.21.0';
+const APP_VERSION = '1.22.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -50,7 +50,7 @@ const MASTERED = 4;
 const KEY = 'oxford3000.v1';
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', newPerDay: 20, autoSpeak: true, rate: 0.9, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, start: 'home', rFont: 1, voice: '', theme: 'auto' },
+  settings: { levels: ['A1'], topic: '', newPerDay: 20, autoSpeak: true, rate: 0.9, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, start: 'home', rFont: 1, voice: '', theme: 'auto', wotd: { lv: [], st: [], tp: [] } },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -77,6 +77,7 @@ const defaults = () => ({
   xpWeek: {},          // Monday key -> XP earned that week (friends leaderboard)
   nick: '',            // name shown on the friends leaderboard
   stk: {},             // topic id -> sticker tier reached (1 bronze … 4 diamond)
+  wotdPick: null,      // {day, key, w}: today's word of the day (kept steady even as progress changes)
   homeCfg: null,       // home layout [{id, on, w: 'full'|'half'}] in display order; null = default (see HOME_BLOCKS)
 });
 let S = load();
@@ -645,10 +646,7 @@ function renderHome() {
   if (wd) wd.onclick = (e) => {
     const w = wotd();
     if (e.target.closest('[data-rand]')) {
-      const p = pool().filter((x) => x !== w); if (!p.length) return;
-      const n = p[Math.floor(Math.random() * p.length)];
-      wotdAlt = { day: today(), w: n };
-      wd.innerHTML = wotdInner(n);
+      const n = wotdRandom(w); if (n) wd.innerHTML = wotdInner(n);
     } else if (e.target.closest('[data-say]')) speak(w.w); else openSheet(w, renderHome);
   };
   const mc = $('#monthCard');
@@ -695,12 +693,41 @@ function homeBlocks() {
   return out;
 }
 // Word of the day: the same word all day (picked from the selected levels by date), tap for the full sheet.
-let wotdAlt = null; // {day, w}: word picked with the 🎲 button, kept until the day changes
+// Word of the day settings (settings.wotd): lv = levels, st = learning status, tp = topics. Empty lv/tp = follow the main setup (settings.levels / settings.topic); empty st = any status; groups combine with AND, choices inside a group with OR.
+const WOTD_ST = [['new', '🆕 ยังไม่เรียน'], ['learning', '📖 กำลังเรียน'], ['leech', '🐢 คำดื้อ'], ['mastered', '✅ จำได้แล้ว']];
+function wordStatus(w) {
+  const p = S.prog[w.w];
+  if (!p) return 'new';
+  if (isLeech(w)) return 'leech';
+  return p.b >= MASTERED ? 'mastered' : 'learning';
+}
+function wotdCfg() {
+  const c = S.settings.wotd || {};
+  return { lv: c.lv || [], st: c.st || [], tp: c.tp || [] };
+}
+function wotdPool() {
+  const c = wotdCfg();
+  const base = c.lv.length ? W.filter((w) => c.lv.includes(w.g)) : pool();
+  return base.filter((w) => (!c.st.length || c.st.includes(wordStatus(w))) && (c.tp.length ? c.tp.includes(w.tp) : inTopic(w)));
+}
+// The pick is stored for the day (and per setting) so it doesn't flip when you learn the word; 🎲 overwrites it.
 function wotd() {
-  const p = pool(); if (!p.length) return null;
-  if (wotdAlt && wotdAlt.day === today() && p.includes(wotdAlt.w)) return wotdAlt.w;
+  const key = JSON.stringify(wotdCfg()) + '|' + S.settings.levels.join();
+  const k = S.wotdPick;
+  if (k && k.day === today() && k.key === key) { const w = W[k.w]; if (w) return w; }
+  const p = wotdPool().length ? wotdPool() : pool();
+  if (!p.length) return null;
   let h = 0; for (const c of today()) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return p[h % p.length];
+  const w = p[h % p.length];
+  S.wotdPick = { day: today(), key, w: w.idx };
+  return w;
+}
+function wotdRandom(cur) {
+  const p = (wotdPool().length ? wotdPool() : pool()).filter((x) => x !== cur); if (!p.length) return null;
+  const n = p[Math.floor(Math.random() * p.length)];
+  S.wotdPick = { day: today(), key: JSON.stringify(wotdCfg()) + '|' + S.settings.levels.join(), w: n.idx };
+  save();
+  return n;
 }
 function wotdCard() {
   const w = wotd(); if (!w) return '';
@@ -3171,7 +3198,7 @@ const GUIDE = [
       <li><b>👾 บอสคำดื้อ</b> — คำที่ลืมบ่อยจะกลายเป็นบอสมีหัวใจ 3 ดวง ตอบถูก 3 ครั้ง (บอสจะวนกลับมาเรื่อยๆ) เพื่อปราบบอส ได้ ${BOSS_XP} XP · ตอบผิดบอสฟื้นพลังเต็ม ผิด 3 ครั้งบอสหนีไปก่อน</li>
       <li><b>🏆 การ์ดสรุป</b> — ทุก 20 ใบ ดูว่าตอบถูกกี่ %, คำใหม่, คอมโบสูงสุด, XP ที่ได้ และเวลาที่ใช้</li>
     </ul>
-    <p><b>✨ คำประจำวัน</b> (หน้าแรก) — ทุกวันมี 1 คำจากระดับที่เลือก แตะเพื่อดูรายละเอียด กด 🔊 ฟังเสียง หรือกด 🎲 เพื่อสุ่มเป็นคำอื่น (กลับเป็นคำเดิมของวันเมื่อวันเปลี่ยน)</p>
+    <p><b>✨ คำประจำวัน</b> (หน้าแรก) — ทุกวันมี 1 คำจากระดับที่เลือก แตะเพื่อดูรายละเอียด กด 🔊 ฟังเสียง หรือกด 🎲 เพื่อสุ่มเป็นคำอื่น (คำที่สุ่มจะค้างไว้ทั้งวัน) · ตั้งเงื่อนไขได้ที่ ตั้งค่า → คำประจำวัน เช่น เฉพาะ A1 ที่กำลังเรียน คำดื้อ หรือหมวดที่อยากเน้น เลือกผสมกันได้</p>
     <p><b>⚡ เล่นด่วน</b> (หน้าแรก) — แตะครั้งเดียว แอปสุ่มเกมให้ 10 ข้อ ใช้คำที่เรียนแล้ว จบในราว 1 นาที</p>
     <p>อยากให้เปิดแอปแล้วเข้าไถศัพท์ทันที: ⚙️ ตั้งค่า → <b>เปิดแอปแล้วไปที่</b> → 📱 ไถศัพท์</p>`],
   ['⭐', 'XP และเลเวล', `
@@ -3355,6 +3382,19 @@ function renderSettings() {
       <p class="small muted" style="margin-bottom:0">เลือกหมวดแล้ว คำใหม่ในแฟลชการ์ดและไถศัพท์จะมาจากหมวดนั้น ส่วนคำที่ถึงวันทบทวนยังมาตามปกติ</p>
     </div>
 
+    <div class="h2">✨ คำประจำวัน</div>
+    <div class="card-box">
+      <p class="small muted" style="margin-top:0">เลือกได้หลายข้อและผสมกันได้ เช่น A1 + กำลังเรียน · ไม่เลือกข้อไหนในกลุ่ม = ใช้ตามตั้งค่าหลักด้านบน (ระดับที่เรียน / หมวดคำใหม่) หรือไม่กรองสถานะ</p>
+      <div class="small muted" style="margin:6px 0 8px"><b>ระดับ</b></div>
+      <div class="chips" id="wLv">${LEVELS.map((l) => `<button class="chip" data-g="lv" data-v="${l}">${LV_LABEL[l]}</button>`).join('')}</div>
+      <div class="small muted" style="margin:14px 0 8px"><b>สถานะคำ</b></div>
+      <div class="chips" id="wSt">${WOTD_ST.map(([v, t]) => `<button class="chip" data-g="st" data-v="${v}">${t}</button>`).join('')}</div>
+      <div class="small muted" style="margin:14px 0 8px"><b>หมวดคำ</b></div>
+      <div class="chips" id="wTp">${TOPICS.map(([id]) => `<button class="chip" data-g="tp" data-v="${id}">${TOPIC_LABEL[id]}</button>`).join('')}</div>
+      <p class="small" id="wCount" style="margin:12px 0 8px"></p>
+      <button class="btn block" id="wReset">↺ ล้างเงื่อนไข</button>
+    </div>
+
     <div class="h2">การเรียน</div>
     <div class="card-box">
       <div class="set-row"><span>คำใหม่ต่อวัน</span>
@@ -3430,6 +3470,19 @@ function renderSettings() {
     else st.levels = LEVELS.filter((l) => l === v || st.levels.includes(l));
     save(); paint();
   };
+  const wPaint = () => {
+    const c = wotdCfg();
+    view.querySelectorAll('#wLv .chip, #wSt .chip, #wTp .chip').forEach((b) => b.classList.toggle('on', c[b.dataset.g].includes(b.dataset.v)));
+    const n = wotdPool().length;
+    $('#wCount').innerHTML = n ? `ตรงเงื่อนไข <b>${n}</b> คำ` : '<span style="color:var(--bad,#d33)">ไม่มีคำตรงเงื่อนไข — จะสุ่มจากระดับที่เรียนอยู่แทน</span>';
+  };
+  wPaint();
+  const wChange = (fn) => { const c = wotdCfg(); fn(c); st.wotd = c; S.wotdPick = null; save(); wPaint(); };
+  view.querySelector('#wLv').parentNode.onclick = (e) => {
+    const b = e.target.closest('.chip[data-g]'); if (!b) return;
+    wChange((c) => { const a = c[b.dataset.g], v = b.dataset.v; c[b.dataset.g] = a.includes(v) ? a.filter((x) => x !== v) : [...a, v]; });
+  };
+  $('#wReset').onclick = () => wChange((c) => { c.lv = []; c.st = []; c.tp = []; });
   $('#guideBtn').onclick = () => go('guide', 'settings');
   $('#npd').onchange = (e) => { st.newPerDay = +e.target.value; save(); };
   $('#ord').onchange = (e) => { st.order = e.target.value; save(); };

@@ -120,6 +120,29 @@ test('feed: special cards, boss, timer, fever, summary and double-tap like', asy
   expect(errors).toEqual([]);
 });
 
+test('word of the day: 🎲 button and filters (level + status + topic)', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const before = await page.locator('#wotd .wotd-word').innerText();
+  await page.locator('#wotd [data-rand]').click();
+  await expect(page.locator('#wotd')).toBeVisible();
+  expect(await page.locator('#wotd .wotd-word').innerText()).not.toBe(before);
+  // Filter: A2 words that are leeches -> the pick must be one of them.
+  const ok = await page.evaluate(() => {
+    const a2 = W.filter((w) => w.g === 'A2').slice(0, 5);
+    a2.forEach((w) => { S.prog[w.w] = { b: 0, i: 1, e: 2.5, d: Date.now(), s: 5, c: 0, x: 5 }; });
+    S.settings.wotd = { lv: ['A2'], st: ['leech'], tp: [] }; S.wotdPick = null; save();
+    const w = wotd(); return a2.includes(w) && wotdPool().length === 5;
+  });
+  expect(ok).toBe(true);
+  await page.evaluate(() => go('settings'));
+  await page.locator('#wSt .chip[data-v="leech"]').click();
+  await page.locator('#wSt .chip[data-v="mastered"]').click();
+  await expect(page.locator('#wCount')).toContainText('ไม่มีคำตรงเงื่อนไข');
+  await page.locator('#wReset').click();
+  await expect(page.locator('#wCount')).toContainText('ตรงเงื่อนไข');
+  expect(errors).toEqual([]);
+});
+
 test('home: word of the day, no guide button; flashcards hub when today is done', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   await expect(page.locator('#guideBtn')).toHaveCount(0);
