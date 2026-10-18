@@ -141,3 +141,36 @@ test('home: word of the day, no guide button; flashcards hub when today is done'
   await expect(page.locator('#view')).not.toBeEmpty();
   expect(errors).toEqual([]);
 });
+
+test('home layout: hide, reorder and resize blocks from settings', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const ids = () => page.locator('#view .hb').evaluateAll((els) => els.map((e) => e.dataset.hb));
+  expect(await ids()).toEqual(expect.arrayContaining(['hero', 'feed', 'play', 'quest', 'wotd', 'prog']));
+  // feed + play are a half-width pair by default
+  const feed = await page.locator('[data-hb="feed"]').boundingBox();
+  const play = await page.locator('[data-hb="play"]').boundingBox();
+  expect(Math.abs(feed.y - play.y)).toBeLessThan(2);
+  await page.evaluate(() => go('settings'));
+  await page.locator('.hc-row[data-id="wotd"] [data-act="tog"]').evaluate((el) => el.click());
+  await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click();
+  await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click();
+  await page.locator('.hc-row[data-id="quest"] [data-act="w"][data-v="half"]').click();
+  await page.locator('.hc-row[data-id="level"] [data-act="tog"]').evaluate((el) => el.click());
+  await page.evaluate(() => go('home'));
+  const after = await ids();
+  expect(after).not.toContain('wotd');
+  expect(after).toContain('level');
+  expect(after.indexOf('prog')).toBeLessThan(after.indexOf('quest'));
+  // quest (half) is followed by the half-width level card, so they share a row
+  const q = await page.locator('[data-hb="quest"]').boundingBox();
+  const l = await page.locator('[data-hb="level"]').boundingBox();
+  expect(Math.abs(q.y - l.y)).toBeLessThan(2);
+  // a lone half block stretches to the full row
+  await page.evaluate(() => { S.homeCfg = HOME_BLOCKS.map((b) => ({ id: b.id, on: b.id === 'hero', w: 'half' })); save(); go('home'); });
+  expect(await page.locator('[data-hb="hero"]').evaluate((e) => e.classList.contains('hw-full'))).toBe(true);
+  // reset restores the defaults
+  await page.evaluate(() => go('settings'));
+  await page.locator('#hcReset').click();
+  expect(await page.evaluate(() => S.homeCfg)).toBeNull();
+  expect(errors).toEqual([]);
+});

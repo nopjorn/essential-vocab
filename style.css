@@ -666,12 +666,6 @@ input.sel { color: var(--text); font: inherit; }
 /* wide content: multi-column grids */
 @media (min-width: 900px) {
   .game-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
-  .view[data-route="home"] { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); column-gap: 18px; align-content: start; grid-auto-flow: row dense; }
-  .view[data-route="home"] > * { grid-column: 2; }
-  .view[data-route="home"] > .hero { grid-column: 1; grid-row: span 3; align-self: start; margin-bottom: 14px; }
-  .view[data-route="home"] > .backup-nag, .view[data-route="home"] > .place-card, .view[data-route="home"] > .install-tip { grid-column: 1 / -1; }
-  .view[data-route="home"] > .quick { margin-bottom: 14px; }
-  .view[data-route="home"] > :last-child:not(.hero) { grid-column: 1 / -1; }
   #rList { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); column-gap: 12px; }
   #rList > .h2, #rList > p { grid-column: 1 / -1; }
   .lib-bars { grid-template-columns: repeat(5, 1fr); }
@@ -727,3 +721,26 @@ input.sel { color: var(--text); font: inherit; }
 .wotd { cursor: pointer; }
 .wotd-word { font-size: 26px; font-weight: 800; margin-top: 6px; }
 .wotd mark { background: var(--accent-soft, rgba(108, 92, 231, .2)); color: inherit; border-radius: 3px; }
+
+/* home layout: blocks are full or half width (settings → จัดหน้าแรก) */
+.home-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+.hb { min-width: 0; }
+.hb.hw-full { grid-column: 1 / -1; }
+.hb > * { margin-bottom: 0; width: 100%; height: 100%; box-sizing: border-box; }
+.hb.hw-half .hero { padding: 16px 12px; }
+.hb.hw-half .hero .big { font-size: 36px; }
+.hb.hw-half .hero .stats { gap: 6px; margin: 12px 0; }
+.hb.hw-half .hero .stat { padding: 8px 2px; }
+.hb.hw-half .hero .stat b { font-size: 20px; }
+.hb.hw-half .hero .stat span { font-size: 11px; }
+.hb.hw-half .card-box { padding: 14px; overflow-wrap: anywhere; }
+.hb.hw-half .lvl-card { flex-direction: column; align-items: flex-start; }
+.hc-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px 10px; padding: 10px 0; }
+.hc-row + .hc-row { border-top: 1px solid var(--border); }
+.hc-row.off .hc-name { opacity: .5; }
+.hc-name { flex: 1 1 0; min-width: 0; font-size: 15px; }
+.hc-row .seg { grid-column: 2 / -1; grid-row: 2; justify-self: start; }
+@media (min-width: 640px) { .hc-row { grid-template-columns: auto minmax(0, 1fr) auto auto; } .hc-row .seg { grid-column: 3; grid-row: 1; } }
+.hc-mv { display: inline-flex; gap: 6px; }
+.hc-mv button { width: 38px; height: 34px; border: 0; border-radius: 10px; background: var(--surface-2); color: var(--text); font: inherit; font-weight: 800; }
+.hc-mv button:disabled { opacity: .3; }

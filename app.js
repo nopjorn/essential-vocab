@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.19.0';
+const APP_VERSION = '1.20.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -77,6 +77,7 @@ const defaults = () => ({
   xpWeek: {},          // Monday key -> XP earned that week (friends leaderboard)
   nick: '',            // name shown on the friends leaderboard
   stk: {},             // topic id -> sticker tier reached (1 bronze … 4 diamond)
+  homeCfg: null,       // home layout [{id, on, w: 'full'|'half'}] in display order; null = default (see HOME_BLOCKS)
 });
 let S = load();
 // Users from before 1.8.0 get XP for the work they already did.
@@ -152,6 +153,7 @@ function mergeBackup(d) {
   if (d.placedAt && !S.placedAt) S.placedAt = d.placedAt;
   for (const [k, v] of Object.entries(d.xpWeek || {})) S.xpWeek[k] = Math.max(S.xpWeek[k] || 0, v);
   if (d.nick && !S.nick) S.nick = d.nick;
+  if (Array.isArray(d.homeCfg) && !S.homeCfg) S.homeCfg = d.homeCfg;
   for (const [k, v] of Object.entries(d.read || {})) if (!S.read[k]) S.read[k] = v;
   for (const [k, v] of Object.entries(d.stk || {})) S.stk[k] = Math.max(S.stk[k] || 0, v);
   for (const [k, v] of Object.entries(d.readScore || {})) if (!S.readScore[k] || v[0] > S.readScore[k][0]) S.readScore[k] = v;
@@ -580,15 +582,9 @@ function renderHome() {
   const standalone = window.navigator.standalone || matchMedia('(display-mode: standalone)').matches;
 
   const lastBackup = S.backupAt ? Math.floor((Date.now() - S.backupAt) / DAY) : null;
-  view.innerHTML = `
-    ${needsBackup() ? `<div class="card-box backup-nag">
-      <div><b>💾 ถึงเวลาสำรองข้อมูลแล้ว</b><div class="small muted">${lastBackup === null ? 'ยังไม่เคยสำรองเลย' : `สำรองล่าสุด ${lastBackup} วันก่อน`} · กันความคืบหน้าหายตอนลบแอปหรือเปลี่ยนเครื่อง</div></div>
-      <div class="row" style="margin-top:10px"><button class="btn primary grow" id="bkNow">📤 สำรองเลย</button><button class="btn" id="bkLater">ไว้ทีหลัง</button></div>
-    </div>` : ''}
-    ${!S.placedAt && Object.keys(S.prog).length < 50 ? `<div class="card-box place-card" id="placeCard">
-      <b>🎯 รู้ศัพท์อยู่แล้วบ้างไหม?</b><div class="small muted" style="margin-top:4px">ทำแบบทดสอบวัดระดับ 3–5 นาที แล้วข้ามคำที่รู้แล้ว ไม่ต้องเรียน cat, house ทีละใบ</div>
-      <div class="row" style="margin-top:10px"><button class="btn primary grow" data-pl="go">วัดระดับ</button><button class="btn" data-pl="no">ไม่ต้อง</button></div></div>` : ''}
-    <div class="hero pop">
+  // Each home block returns its HTML ('' = nothing to show today); order/width/visibility come from homeBlocks().
+  const B = {
+    hero: () => `<div class="hero pop">
       <div class="small" style="opacity:.9">${greeting()}</div>
       <div class="big" style="margin-top:6px">${todo}</div>
       <div>การ์ดที่รอวันนี้ (${lvNames(S.settings.levels)})</div>
@@ -600,22 +596,16 @@ function renderHome() {
       <button class="btn" id="startBtn">${todo ? '▶︎ เริ่มเรียนเลย' : '🎉 วันนี้ครบแล้ว! ทำอะไรต่อดี'}</button>
       <div class="goal-bar"><div style="width:${Math.min(100, S.daily.fresh / goal * 100)}%"></div></div>
       <div class="small" style="margin-top:4px;opacity:.9">เป้าคำใหม่วันนี้ ${S.daily.fresh}/${goal}</div>
-    </div>
-
-    ${standalone ? '' : `<div class="card-box install-tip small">
-      📲 <b>ติดตั้งเป็นแอปบน iPhone/iPad:</b> เปิดหน้านี้ใน Safari → กดปุ่ม <b>แชร์</b> (สี่เหลี่ยมมีลูกศร) → <b>เพิ่มไปยังหน้าจอโฮม</b> จะได้ใช้งานเต็มจอและออฟไลน์ได้</div>`}
-
-    <div class="quick">
-      <button class="quick-btn feed-btn" id="qFeed"><span>📱</span><b>ไถศัพท์</b><small>ปัดขึ้นเรื่อยๆ เหมือนไถฟีด</small></button>
-      <button class="quick-btn" id="qPlay"><span>⚡</span><b>เล่นด่วน</b><small>เกมสุ่ม 10 ข้อ ~1 นาที</small></button>
-    </div>
-
-    ${new Date().getDate() <= 7 && S.monthSeen !== monthKey() && monthStats(1).total ? `<div class="card-box week-card" id="monthCard"><b>📅 สรุปเดือน${monthName(monthKey(1))}</b>${monthBox(1, true)}</div>` : ''}
-    ${S.weekSeen !== mondayKey() && weekStats(1).total ? `<div class="card-box week-card" id="weekCard"><b>📊 สรุปสัปดาห์ที่แล้ว</b>${weekBox(1, true)}</div>` : ''}
-    ${questCard()}
-    ${wotdCard()}
-
-    <button class="card-box prog-card" id="statsBtn">
+    </div>`,
+    feed: () => `<button class="quick-btn feed-btn" id="qFeed"><span>📱</span><b>ไถศัพท์</b><small>ปัดขึ้นเรื่อยๆ เหมือนไถฟีด</small></button>`,
+    play: () => `<button class="quick-btn" id="qPlay"><span>⚡</span><b>เล่นด่วน</b><small>เกมสุ่ม 10 ข้อ ~1 นาที</small></button>`,
+    month: () => new Date().getDate() <= 7 && S.monthSeen !== monthKey() && monthStats(1).total ? `<div class="card-box week-card" id="monthCard"><b>📅 สรุปเดือน${monthName(monthKey(1))}</b>${monthBox(1, true)}</div>` : '',
+    week: () => S.weekSeen !== mondayKey() && weekStats(1).total ? `<div class="card-box week-card" id="weekCard"><b>📊 สรุปสัปดาห์ที่แล้ว</b>${weekBox(1, true)}</div>` : '',
+    quest: questCard,
+    wotd: wotdCard,
+    level: levelCard,
+    forecast: () => `<div class="card-box"><b>🔮 ทบทวน 7 วันข้างหน้า</b><div style="margin-top:8px">${forecastChart()}</div></div>`,
+    prog: () => `<button class="card-box prog-card" id="statsBtn">
       <div class="row" style="justify-content:space-between"><b>📈 ความคืบหน้า</b><span class="small muted">ดูสถิติ ›</span></div>
       ${[['ชุด 3000 คำ', in3000().size, (w) => in3000().has(w.w)], ['ครบ 5000 คำ', W.length, () => true]].map(([name, n, f]) => {
         const l = W.filter((w) => f(w) && S.prog[w.w]).length, m = W.filter((w) => f(w) && status(w) === 'mastered').length;
@@ -623,13 +613,34 @@ function renderHome() {
           <div class="bar" style="margin-top:4px"><div class="l" style="width:${l / n * 100}%"></div><div class="m" style="width:${m / n * 100}%"></div></div>`;
       }).join('')}
       <div class="small muted" style="margin-top:10px">⭐ Lv.${levelOf(S.xp)} · 🏅 ${ACH.filter((x) => S.ach[x.id]).length}/${ACH.length} เหรียญ · 🟣 เรียนแล้ว 🟢 จำได้แล้ว</div>
-    </button>
+    </button>`,
+  };
+  const blocks = homeBlocks().filter((b) => b.on).map((b) => ({ ...b, html: B[b.id]() })).filter((b) => b.html);
+  // A half-width block with no partner in its row would leave a hole, so it stretches to the full row.
+  let open = null;
+  for (const b of blocks) {
+    if (b.w === 'full') { if (open) open.w = 'full'; open = null; } else if (open) open = null; else open = b;
+  }
+  if (open) open.w = 'full';
 
+  view.innerHTML = `
+    ${needsBackup() ? `<div class="card-box backup-nag">
+      <div><b>💾 ถึงเวลาสำรองข้อมูลแล้ว</b><div class="small muted">${lastBackup === null ? 'ยังไม่เคยสำรองเลย' : `สำรองล่าสุด ${lastBackup} วันก่อน`} · กันความคืบหน้าหายตอนลบแอปหรือเปลี่ยนเครื่อง</div></div>
+      <div class="row" style="margin-top:10px"><button class="btn primary grow" id="bkNow">📤 สำรองเลย</button><button class="btn" id="bkLater">ไว้ทีหลัง</button></div>
+    </div>` : ''}
+    ${!S.placedAt && Object.keys(S.prog).length < 50 ? `<div class="card-box place-card" id="placeCard">
+      <b>🎯 รู้ศัพท์อยู่แล้วบ้างไหม?</b><div class="small muted" style="margin-top:4px">ทำแบบทดสอบวัดระดับ 3–5 นาที แล้วข้ามคำที่รู้แล้ว ไม่ต้องเรียน cat, house ทีละใบ</div>
+      <div class="row" style="margin-top:10px"><button class="btn primary grow" data-pl="go">วัดระดับ</button><button class="btn" data-pl="no">ไม่ต้อง</button></div></div>` : ''}
+    ${standalone ? '' : `<div class="card-box install-tip small">
+      📲 <b>ติดตั้งเป็นแอปบน iPhone/iPad:</b> เปิดหน้านี้ใน Safari → กดปุ่ม <b>แชร์</b> (สี่เหลี่ยมมีลูกศร) → <b>เพิ่มไปยังหน้าจอโฮม</b> จะได้ใช้งานเต็มจอและออฟไลน์ได้</div>`}
+    <div class="home-grid">${blocks.map((b) => `<div class="hb hw-${b.w}" data-hb="${b.id}">${b.html}</div>`).join('')}</div>
+    ${blocks.length ? '' : '<div class="card-box center small muted">ซ่อนทุกกล่องอยู่ — เปิดกล่องที่ต้องการได้ที่ ⚙️ ตั้งค่า → จัดหน้าแรก</div>'}
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
-  $('#startBtn').onclick = () => go('cards');
-  $('#qFeed').onclick = () => go('feed');
-  $('#statsBtn').onclick = () => go('stats', 'home');
-  $('#qPlay').onclick = quickPlay;
+  const click = (sel, fn) => { const el = $(sel); if (el) el.onclick = fn; };
+  click('#startBtn', () => go('cards'));
+  click('#qFeed', () => go('feed'));
+  click('#statsBtn', () => go('stats', 'home'));
+  click('#qPlay', quickPlay);
   const wd = $('#wotd');
   if (wd) wd.onclick = (e) => {
     const w = wotd();
@@ -647,13 +658,36 @@ function renderHome() {
     $('#bkNow').onclick = async () => { await exportBackup(); renderHome(); };
     $('#bkLater').onclick = () => { S.backupSnooze = today(); save(); renderHome(); };
   }
-  const qg = $('#questGo');
-  if (qg) qg.onclick = () => { const q = todayQuest(); if (q.game) startGame(q.game); else go('cards'); };
+  click('#questGo', () => { const q = todayQuest(); if (q.game) startGame(q.game); else go('cards'); });
   const pc = $('#placeCard');
   if (pc) pc.onclick = (e) => {
     const b = e.target.closest('[data-pl]'); if (!b) return;
     if (b.dataset.pl === 'go') go('placement'); else { S.placedAt = today(); save(); pc.remove(); }
   };
+}
+// Home layout: the blocks the user can show/hide, reorder and size (settings → จัดหน้าแรก). S.homeCfg stores the choice.
+const HOME_BLOCKS = [
+  { id: 'hero', ic: '🏠', name: 'การ์ดวันนี้ + ปุ่มเริ่มเรียน', w: 'full', on: true },
+  { id: 'feed', ic: '📱', name: 'ปุ่มไถศัพท์', w: 'half', on: true },
+  { id: 'play', ic: '⚡', name: 'ปุ่มเล่นด่วน', w: 'half', on: true },
+  { id: 'month', ic: '📅', name: 'สรุปเดือน (7 วันแรกของเดือน)', w: 'full', on: true },
+  { id: 'week', ic: '📊', name: 'สรุปสัปดาห์ (ทุกวันจันทร์)', w: 'full', on: true },
+  { id: 'quest', ic: '🎯', name: 'ภารกิจวันนี้', w: 'full', on: true },
+  { id: 'wotd', ic: '✨', name: 'คำประจำวัน', w: 'full', on: true },
+  { id: 'prog', ic: '📈', name: 'ความคืบหน้า', w: 'full', on: true },
+  { id: 'level', ic: '⭐', name: 'เลเวลและ XP', w: 'half', on: false },
+  { id: 'forecast', ic: '🔮', name: 'ทบทวน 7 วันข้างหน้า', w: 'full', on: false },
+];
+// Saved layout merged with the defaults: unknown ids dropped, blocks added in later versions appended at the end.
+function homeBlocks() {
+  const saved = Array.isArray(S.homeCfg) ? S.homeCfg : [];
+  const out = [];
+  for (const c of saved) {
+    const d = HOME_BLOCKS.find((b) => b.id === c.id);
+    if (d && !out.some((o) => o.id === d.id)) out.push({ ...d, on: !!c.on, w: c.w === 'half' ? 'half' : 'full' });
+  }
+  for (const d of HOME_BLOCKS) if (!out.some((o) => o.id === d.id)) out.push({ ...d });
+  return out;
 }
 // Word of the day: the same word all day (picked from the selected levels by date), tap for the full sheet.
 function wotd() {
@@ -3076,6 +3110,14 @@ const GUIDE = [
       <li><b>iPhone แนวนอน:</b> แฟลชการ์ดอยู่ซ้าย ปุ่มให้คะแนนอยู่ขวา · เกมและไถศัพท์ คำถามอยู่ซ้าย ตัวเลือกอยู่ขวา ไม่ต้องเลื่อนจอ</li>
       <li>⚠️ ความคืบหน้าเก็บแยกในแต่ละเครื่อง ถ้าใช้ทั้ง iPhone และ iPad ให้เปิด <b>☁️ ซิงก์</b> หรือ <b>สำรองข้อมูล</b> จากเครื่องหนึ่งแล้ว <b>นำเข้า</b> ในอีกเครื่อง</li>
     </ul>`],
+  ['🧩', 'จัดหน้าแรกเอง', `
+    <ul>
+      <li>ไปที่ ⚙️ ตั้งค่า → <b>จัดหน้าแรก</b> จะเห็นรายการกล่องทั้งหมดของหน้าแรก</li>
+      <li><b>สวิตช์ซ้าย</b> เปิด/ปิดกล่อง (มีกล่องที่ปิดไว้ให้เปิดเพิ่มได้ เช่น เลเวลและ XP, ทบทวน 7 วันข้างหน้า)</li>
+      <li><b>↑ ↓</b> เลื่อนลำดับกล่องบน–ล่าง</li>
+      <li><b>เต็ม / ครึ่ง</b> เลือกความกว้าง กล่อง "ครึ่ง" 2 กล่องที่อยู่ติดกันจะอยู่แถวเดียวกัน (กล่องครึ่งที่ไม่มีคู่จะขยายเต็มแถวเอง)</li>
+      <li>กล่องสรุปเดือน/สัปดาห์จะโผล่เฉพาะช่วงที่มีสรุปให้ดู · ปุ่ม <b>↺ คืนค่าเริ่มต้น</b> ย้อนกลับเป็นแบบเดิม · ค่าที่จัดไว้รวมอยู่ในการสำรอง/ซิงก์ข้อมูล</li>
+    </ul>`],
   ['🎯', 'แบบทดสอบวัดระดับ', `
     <ul>
       <li>หน้าแรก (สำหรับคนเพิ่งเริ่ม) หรือ ⚙️ ตั้งค่า → <b>🎯 แบบทดสอบวัดระดับ</b></li>
@@ -3331,6 +3373,13 @@ function renderSettings() {
         <div class="seg" id="theme">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด']].map(([v, t]) => `<button class="${(st.theme || 'auto') === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div></div>
     </div>
 
+    <div class="h2">จัดหน้าแรก</div>
+    <div class="card-box">
+      <p class="small muted" style="margin-top:0">เปิด/ปิดกล่อง เลื่อนลำดับด้วย ↑ ↓ และเลือกความกว้าง "ครึ่ง" 2 กล่องติดกันจะอยู่แถวเดียวกัน (กล่องครึ่งที่ไม่มีคู่จะขยายเต็มแถวให้เอง)</p>
+      <div id="hcfg"></div>
+      <button class="btn block" id="hcReset" style="margin-top:10px">↺ คืนค่าเริ่มต้น</button>
+    </div>
+
     <div class="h2">เสียง</div>
     <div class="card-box">
       <div class="set-row"><span>เสียงอ่าน</span><select class="sel" id="voice" style="max-width:62%"></select></div>
@@ -3396,6 +3445,29 @@ function renderSettings() {
     st.theme = b.dataset.v; save(); applyTheme();
     view.querySelectorAll('#theme button').forEach((x) => x.classList.toggle('on', x === b));
   };
+  const paintHome = () => {
+    const list = homeBlocks();
+    $('#hcfg').innerHTML = list.map((b, i) => `<div class="hc-row${b.on ? '' : ' off'}" data-id="${b.id}">
+      <label class="switch"><input type="checkbox" data-act="tog" aria-label="แสดง ${esc(b.name)}" ${b.on ? 'checked' : ''}><span></span></label>
+      <span class="hc-name">${b.ic} ${esc(b.name)}</span>
+      <div class="seg">${[['full', 'เต็ม'], ['half', 'ครึ่ง']].map(([v, t]) => `<button class="${b.w === v ? 'on' : ''}" data-act="w" data-v="${v}">${t}</button>`).join('')}</div>
+      <span class="hc-mv"><button data-act="up" aria-label="เลื่อนขึ้น" ${i === 0 ? 'disabled' : ''}>↑</button><button data-act="down" aria-label="เลื่อนลง" ${i === list.length - 1 ? 'disabled' : ''}>↓</button></span>
+    </div>`).join('');
+  };
+  const editHome = (e) => {
+    const el = e.target.closest('[data-act]'), row = e.target.closest('.hc-row'); if (!el || !row) return;
+    const list = homeBlocks(), i = list.findIndex((b) => b.id === row.dataset.id), act = el.dataset.act;
+    if (act === 'tog') list[i].on = el.checked;
+    else if (act === 'w') list[i].w = el.dataset.v;
+    else if (act === 'up' && i > 0) [list[i - 1], list[i]] = [list[i], list[i - 1]];
+    else if (act === 'down' && i < list.length - 1) [list[i + 1], list[i]] = [list[i], list[i + 1]];
+    S.homeCfg = list.map(({ id, on, w }) => ({ id, on, w }));
+    save(); paintHome();
+  };
+  paintHome();
+  $('#hcfg').onclick = (e) => { if (e.target.dataset.act !== 'tog') editHome(e); };
+  $('#hcfg').onchange = editHome;
+  $('#hcReset').onclick = () => { S.homeCfg = null; save(); paintHome(); toast('คืนค่าหน้าแรกแล้ว'); };
   $('#remind').onchange = (e) => {
     S.remind = e.target.value; save(); $('#remindAdd').href = `reminders/${S.remind}.ics`;
     if (canPush() && auth) pushSub().then((sub) => sub && savePushSub(sub)).catch(() => {});
