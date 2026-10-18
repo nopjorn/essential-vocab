@@ -119,3 +119,25 @@ test('feed: special cards, boss, timer, fever, summary and double-tap like', asy
   await expect(page.locator('#rProg')).toHaveCount(1);
   expect(errors).toEqual([]);
 });
+
+test('home: word of the day, no guide button; flashcards hub when today is done', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await expect(page.locator('#guideBtn')).toHaveCount(0);
+  await expect(page.locator('#wotd')).toBeVisible();
+  await page.locator('#wotd').click();
+  await expect(page.locator('.sheet')).toBeVisible();
+  await page.mouse.click(5, 5);
+  // Learn a few words, then nothing is due and the daily goal is spent.
+  await page.evaluate(() => {
+    const now = Date.now();
+    W.slice(0, 30).forEach((w) => { S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: now + 86400000, s: 1, c: 1, x: 0 }; });
+    S.daily.fresh = S.settings.newPerDay; save(); go('cards');
+  });
+  await expect(page.locator('#view')).toContainText('วันนี้ทำครบแล้ว');
+  await page.locator('[data-ns="ahead"]').click();
+  await expect(page.locator('#fc')).toBeVisible();
+  await page.evaluate(() => go('cards'));
+  await page.locator('[data-ns="read"]').click();
+  await expect(page.locator('#view')).not.toBeEmpty();
+  expect(errors).toEqual([]);
+});

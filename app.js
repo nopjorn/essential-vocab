@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.18.0';
+const APP_VERSION = '1.19.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -597,7 +597,7 @@ function renderHome() {
         <div class="stat"><b>${Math.min(newLeft, unseen)}</b><span>คำใหม่</span></div>
         <div class="stat"><b>${doneToday}</b><span>ทำแล้ววันนี้</span></div>
       </div>
-      <button class="btn" id="startBtn">${todo ? '▶︎ เริ่มเรียนเลย' : '🎉 วันนี้ครบแล้ว! เรียนเพิ่ม'}</button>
+      <button class="btn" id="startBtn">${todo ? '▶︎ เริ่มเรียนเลย' : '🎉 วันนี้ครบแล้ว! ทำอะไรต่อดี'}</button>
       <div class="goal-bar"><div style="width:${Math.min(100, S.daily.fresh / goal * 100)}%"></div></div>
       <div class="small" style="margin-top:4px;opacity:.9">เป้าคำใหม่วันนี้ ${S.daily.fresh}/${goal}</div>
     </div>
@@ -613,6 +613,7 @@ function renderHome() {
     ${new Date().getDate() <= 7 && S.monthSeen !== monthKey() && monthStats(1).total ? `<div class="card-box week-card" id="monthCard"><b>📅 สรุปเดือน${monthName(monthKey(1))}</b>${monthBox(1, true)}</div>` : ''}
     ${S.weekSeen !== mondayKey() && weekStats(1).total ? `<div class="card-box week-card" id="weekCard"><b>📊 สรุปสัปดาห์ที่แล้ว</b>${weekBox(1, true)}</div>` : ''}
     ${questCard()}
+    ${wotdCard()}
 
     <button class="card-box prog-card" id="statsBtn">
       <div class="row" style="justify-content:space-between"><b>📈 ความคืบหน้า</b><span class="small muted">ดูสถิติ ›</span></div>
@@ -624,13 +625,16 @@ function renderHome() {
       <div class="small muted" style="margin-top:10px">⭐ Lv.${levelOf(S.xp)} · 🏅 ${ACH.filter((x) => S.ach[x.id]).length}/${ACH.length} เหรียญ · 🟣 เรียนแล้ว 🟢 จำได้แล้ว</div>
     </button>
 
-    <button class="card-box guide-link" id="guideBtn"><span>📘</span><div class="grow"><b>คู่มือการใช้งาน & ทริก</b><div class="small muted">ลืมว่าใช้ยังไง หรืออยากจำศัพท์ให้ได้เร็วขึ้น อ่านตรงนี้</div></div><span class="muted">›</span></button>
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
-  $('#startBtn').onclick = () => go('cards', !todo);
-  $('#guideBtn').onclick = () => go('guide', 'home');
+  $('#startBtn').onclick = () => go('cards');
   $('#qFeed').onclick = () => go('feed');
   $('#statsBtn').onclick = () => go('stats', 'home');
   $('#qPlay').onclick = quickPlay;
+  const wd = $('#wotd');
+  if (wd) wd.onclick = (e) => {
+    const w = wotd();
+    if (e.target.closest('[data-say]')) speak(w.w); else openSheet(w, renderHome);
+  };
   const mc = $('#monthCard');
   if (mc) mc.onclick = (e) => { if (e.target.closest('[data-mo]')) { S.monthSeen = monthKey(); save(); mc.remove(); } };
   const wc = $('#weekCard');
@@ -650,6 +654,21 @@ function renderHome() {
     const b = e.target.closest('[data-pl]'); if (!b) return;
     if (b.dataset.pl === 'go') go('placement'); else { S.placedAt = today(); save(); pc.remove(); }
   };
+}
+// Word of the day: the same word all day (picked from the selected levels by date), tap for the full sheet.
+function wotd() {
+  const p = pool(); if (!p.length) return null;
+  let h = 0; for (const c of today()) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return p[h % p.length];
+}
+function wotdCard() {
+  const w = wotd(); if (!w) return '';
+  return `<div class="card-box wotd" id="wotd" role="button" tabindex="0">
+    <div class="row" style="justify-content:space-between"><b>✨ คำประจำวัน</b><span class="small muted">${lvBadge(w.g)}</span></div>
+    <div class="wotd-word">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
+    <div class="muted small">${esc(w.i)} · ${esc(w.p)}</div>
+    <div class="th" style="margin:6px 0 8px">${esc(w.t)}</div>
+    <div class="small">${hlExample(w)}</div><div class="small muted">${esc(w.et)}</div></div>`;
 }
 function levelCard() {
   const L = levelOf(S.xp), a = levelStart(L), b = levelStart(L + 1);
@@ -697,6 +716,7 @@ function buildQueue(extra) {
   const due = dueList(p).slice(0, 200);
   let fresh = p.filter((w) => !S.prog[w.w] && inTopic(w));
   if (S.settings.order === 'shuffle') fresh = shuffle(fresh);
+  if (extra === 'ahead') return p.filter((w) => S.prog[w.w]).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d).slice(0, 20);
   const n = extra ? 10 : Math.max(0, S.settings.newPerDay - S.daily.fresh);
   fresh = fresh.slice(0, n);
   // Mix new cards in among reviews so a session doesn't end with only new words.
@@ -712,18 +732,45 @@ function buildQueue(extra) {
   return q;
 }
 
+// "What next?" buttons shown when the flashcards for today are done (empty queue or end of a round).
+function nextSteps(learned) {
+  const unseen = pool().filter((w) => !S.prog[w.w]).length;
+  const leech = W.filter(isLeech).length, star = W.filter(isStar).length;
+  const b = (id, ic, t, d) => `<button class="quick-btn" data-ns="${id}"><span>${ic}</span><b>${t}</b><small>${d}</small></button>`;
+  return `<div class="quick next-steps">
+    ${unseen ? b('more', '➕', 'คำใหม่อีก 10 คำ', 'เรียนล่วงหน้าเกินเป้าวันนี้') : ''}
+    ${learned >= 4 ? b('ahead', '🔮', 'ทบทวนล่วงหน้า', '20 ใบที่ใกล้ถึงกำหนดที่สุด') : ''}
+    ${b('feed', '📱', 'ไถศัพท์', 'ปัดเล่นเรื่อยๆ มีการ์ดพิเศษ')}
+    ${b('play', '⚡', 'เล่นด่วน', 'เกมสุ่ม 10 ข้อ ~1 นาที')}
+    ${b('read', '📖', 'อ่านเรื่องสั้น', 'ได้เจอคำศัพท์ในบริบทจริง')}
+    ${leech ? b('leech', '🐢', 'ฝึกคำดื้อ', leech + ' คำที่ลืมบ่อย') : ''}
+    ${star ? b('star', '⭐', 'ฝึกคำติดดาว', star + ' คำที่ติดดาวไว้') : ''}
+    ${b('home', '🏠', 'กลับหน้าแรก', 'ดูภารกิจและความคืบหน้า')}</div>`;
+}
+function bindNextSteps() {
+  view.querySelectorAll('[data-ns]').forEach((el) => {
+    el.onclick = () => {
+      const id = el.dataset.ns;
+      if (id === 'more') go('cards', true);
+      else if (id === 'ahead') go('cards', 'ahead');
+      else if (id === 'play') quickPlay();
+      else if (id === 'leech' || id === 'star') { gameSource = id; startGame('en2th'); }
+      else go(id);
+    };
+  });
+}
+
 function renderCards(extra) {
   const queue = buildQueue(extra);
   const total = queue.length;
   let done = 0, stats = { again: 0, ok: 0 };
   if (!total) {
-    view.innerHTML = `<div class="card-box center pop" style="margin-top:30px">
-      <div class="result-emoji">🎉</div><div class="h2">ไม่มีการ์ดค้างแล้ว!</div>
-      <p class="muted">ทบทวนครบทุกใบสำหรับระดับ ${lvNames(S.settings.levels)}</p>
-      <button class="btn primary block" id="more">เรียนคำใหม่เพิ่มอีก 10 คำ</button>
-      <div style="height:10px"></div><button class="btn block" id="toGame">ไปเล่นเกม 🎮</button></div>`;
-    $('#more').onclick = () => go('cards', true);
-    $('#toGame').onclick = () => go('games');
+    const learned = W.filter((w) => S.prog[w.w]).length;
+    view.innerHTML = `<div class="card-box center pop" style="margin-top:20px">
+      <div class="result-emoji">🎉</div><div class="h2">วันนี้ทำครบแล้ว!</div>
+      <p class="muted">ไม่มีการ์ดค้างสำหรับระดับ ${lvNames(S.settings.levels)} · อยากทำอะไรต่อดี?</p></div>
+      ${nextSteps(learned)}`;
+    bindNextSteps();
     return;
   }
 
@@ -890,11 +937,9 @@ function renderCards(extra) {
     view.innerHTML = `<div class="card-box center pop" style="margin-top:30px">
       <div class="result-emoji">🏆</div><div class="h2">จบรอบแล้ว เก่งมาก!</div>
       <p>ทบทวน ${total} ใบ · กด "ลืม" ${stats.again} ครั้ง</p>
-      <p class="muted small">คำที่ลืมจะกลับมาให้ทบทวนอีกเร็วๆ นี้</p>
-      <button class="btn primary block" id="more">เรียนคำใหม่เพิ่มอีก 10 คำ</button>
-      <div style="height:10px"></div><button class="btn block" id="home">กลับหน้าแรก</button></div>`;
-    $('#more').onclick = () => go('cards', true);
-    $('#home').onclick = () => go('home');
+      <p class="muted small">คำที่ลืมจะกลับมาให้ทบทวนอีกเร็วๆ นี้</p></div>
+      ${nextSteps(W.filter((w) => S.prog[w.w]).length)}`;
+    bindNextSteps();
   }
 
   show();
@@ -3048,6 +3093,7 @@ const GUIDE = [
     </ul>
     <p><b>ทางลัด:</b> ปัดการ์ดไปขวา = จำได้, ปัดไปซ้าย = ลืม</p>
     <p><b>ระยะทบทวนปรับตามแต่ละคำ</b> คำที่กด "ง่าย" บ่อยจะเว้นห่างเร็วขึ้น คำที่ลืมบ่อยจะกลับมาถี่ขึ้น (ตัวเลขใต้ปุ่มบอกว่าจะเจอคำนี้อีกเมื่อไร) คำที่ระยะทบทวนถึง 16 วันขึ้นไปจะนับว่า <b>🟢 จำได้แล้ว</b></p>
+    <p><b>ทำครบของวันแล้ว?</b> หน้าแฟลชการ์ดจะมีเมนูให้เลือกต่อ: ➕ คำใหม่อีก 10 คำ, 🔮 ทบทวนล่วงหน้า (20 ใบที่ใกล้ถึงกำหนด), ไถศัพท์, เล่นด่วน, อ่านเรื่องสั้น, ฝึกคำดื้อ และคำติดดาว</p>
     <p>กดผิด? กด <b>↩︎</b> มุมขวาบนเพื่อย้อนการ์ดใบล่าสุด · แตะ ⭐ บนการ์ดเพื่อติดดาวคำที่อยากฝึกเพิ่ม</p>`],
   ['📱', 'ไถศัพท์ และเล่นด่วน', `
     <p><b>📱 ไถศัพท์</b> (แท็บด้านล่าง หรือปุ่มสีชมพูในหน้าแรก) — ปัดขึ้นทีละคำเหมือนไถ TikTok ไม่มีวันจบ เหมาะกับช่วงว่างสั้นๆ</p>
@@ -3074,6 +3120,7 @@ const GUIDE = [
       <li><b>👾 บอสคำดื้อ</b> — คำที่ลืมบ่อยจะกลายเป็นบอสมีหัวใจ 3 ดวง ตอบถูก 3 ครั้ง (บอสจะวนกลับมาเรื่อยๆ) เพื่อปราบบอส ได้ ${BOSS_XP} XP · ตอบผิดบอสฟื้นพลังเต็ม ผิด 3 ครั้งบอสหนีไปก่อน</li>
       <li><b>🏆 การ์ดสรุป</b> — ทุก 20 ใบ ดูว่าตอบถูกกี่ %, คำใหม่, คอมโบสูงสุด, XP ที่ได้ และเวลาที่ใช้</li>
     </ul>
+    <p><b>✨ คำประจำวัน</b> (หน้าแรก) — ทุกวันมี 1 คำจากระดับที่เลือก แตะเพื่อดูรายละเอียด หรือกด 🔊 ฟังเสียง</p>
     <p><b>⚡ เล่นด่วน</b> (หน้าแรก) — แตะครั้งเดียว แอปสุ่มเกมให้ 10 ข้อ ใช้คำที่เรียนแล้ว จบในราว 1 นาที</p>
     <p>อยากให้เปิดแอปแล้วเข้าไถศัพท์ทันที: ⚙️ ตั้งค่า → <b>เปิดแอปแล้วไปที่</b> → 📱 ไถศัพท์</p>`],
   ['⭐', 'XP และเลเวล', `

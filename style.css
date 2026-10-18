@@ -720,3 +720,10 @@ input.sel { color: var(--text); font: inherit; }
 .col-row.on { box-shadow: inset 0 0 0 2px var(--pink); }
 .fam-box { text-align: left; }
 #famList { margin-top: 12px; }
+
+/* done-for-today hub (flashcards) + word of the day (home) */
+.quick.next-steps { display: grid; grid-template-columns: 1fr 1fr; margin-top: 14px; }
+@media (min-width: 900px) { .quick.next-steps { grid-template-columns: repeat(4, 1fr); } }
+.wotd { cursor: pointer; }
+.wotd-word { font-size: 26px; font-weight: 800; margin-top: 6px; }
+.wotd mark { background: var(--accent-soft, rgba(108, 92, 231, .2)); color: inherit; border-radius: 3px; }
