@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.27.0';
+const APP_VERSION = '1.28.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -581,13 +581,23 @@ function go(tab, ...args) {
   view.scrollTop = 0;
   ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog }[tab])(...args);
   updateStreak();
+  view.classList.remove('vin'); void view.offsetWidth; view.classList.add('vin');
 }
-function updateStreak() { $('#streak').textContent = '🔥 ' + streakNow() + (S.freeze ? ' · 🧊' + S.freeze : '') + ' · Lv.' + levelOf(S.xp); }
+function updateStreak() {
+  const el = $('#streak'), L = levelOf(S.xp);
+  el.textContent = '🔥 ' + streakNow() + (S.freeze ? ' · 🧊' + S.freeze : '') + ' · Lv.' + L;
+  el.style.setProperty('--xp', Math.min(100, Math.max(0, ((S.xp || 0) - levelStart(L)) / (50 * L) * 100)) + '%'); // progress to the next level
+}
+$('#streak').addEventListener('click', () => { if (current !== 'stats') go('stats', 'home'); });
+// Sub pages carry their own "‹ กลับ" button (id ending in Back); mirror it in the top bar and hide the in-page one.
+new MutationObserver(() => document.body.classList.toggle('has-back', !!view.querySelector('[id$="Back"]'))).observe(view, { childList: true });
+$('#topBack').addEventListener('click', () => { const b = view.querySelector('[id$="Back"]'); if (b) b.click(); });
 $('#tabbar').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (b) go(b.dataset.tab);
 });
 
 /* ---------- home ---------- */
+const installHidden = () => { try { return !!localStorage.getItem('o3k.installHide'); } catch (e) { return false; } };
 function renderHome() {
   rollDay();
   const p = pool();
@@ -646,11 +656,11 @@ function renderHome() {
       <div><b>💾 ถึงเวลาสำรองข้อมูลแล้ว</b><div class="small muted">${lastBackup === null ? 'ยังไม่เคยสำรองเลย' : `สำรองล่าสุด ${lastBackup} วันก่อน`} · กันความคืบหน้าหายตอนลบแอปหรือเปลี่ยนเครื่อง</div></div>
       <div class="row" style="margin-top:10px"><button class="btn primary grow" id="bkNow">📤 สำรองเลย</button><button class="btn" id="bkLater">ไว้ทีหลัง</button></div>
     </div>` : ''}
-    ${!S.placedAt && Object.keys(S.prog).length < 50 ? `<div class="card-box place-card" id="placeCard">
-      <b>🎯 รู้ศัพท์อยู่แล้วบ้างไหม?</b><div class="small muted" style="margin-top:4px">ทำแบบทดสอบวัดระดับ 3–5 นาที แล้วข้ามคำที่รู้แล้ว ไม่ต้องเรียน cat, house ทีละใบ</div>
-      <div class="row" style="margin-top:10px"><button class="btn primary grow" data-pl="go">วัดระดับ</button><button class="btn" data-pl="no">ไม่ต้อง</button></div></div>` : ''}
-    ${standalone ? '' : `<div class="card-box install-tip small">
-      📲 <b>ติดตั้งเป็นแอปบน iPhone/iPad:</b> เปิดหน้านี้ใน Safari → กดปุ่ม <b>แชร์</b> (สี่เหลี่ยมมีลูกศร) → <b>เพิ่มไปยังหน้าจอโฮม</b> จะได้ใช้งานเต็มจอและออฟไลน์ได้</div>`}
+    ${!S.placedAt && Object.keys(S.prog).length < 50 ? `<div class="card-box place-card slim" id="placeCard">
+      <div><b>🎯 รู้ศัพท์อยู่แล้วบ้างไหม?</b><div class="small muted">วัดระดับ 3–5 นาที แล้วข้ามคำที่รู้แล้ว</div></div>
+      <button class="btn primary" data-pl="go">วัดระดับ</button><button class="x" data-pl="no" aria-label="ไม่ต้อง">✕</button></div>` : ''}
+    ${standalone || installHidden() ? '' : `<div class="card-box install-tip slim small" id="installTip">
+      <div>📲 <b>ติดตั้งแอป:</b> แชร์ → <b>เพิ่มไปยังหน้าจอโฮม</b></div><button class="x" data-inst aria-label="ปิด">✕</button></div>`}
     <div class="home-grid">${blocks.map((b) => `<div class="hb hw-${b.w}" data-hb="${b.id}">${b.html}</div>`).join('')}</div>
     ${blocks.length ? '' : '<div class="card-box center small muted">ซ่อนทุกกล่องอยู่ — เปิดกล่องที่ต้องการได้ที่ ⚙️ ตั้งค่า → จัดหน้าแรก</div>'}
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
@@ -685,6 +695,8 @@ function renderHome() {
     const b = e.target.closest('[data-pl]'); if (!b) return;
     if (b.dataset.pl === 'go') go('placement'); else { S.placedAt = today(); save(); pc.remove(); }
   };
+  const it = $('#installTip');
+  if (it) it.onclick = (e) => { if (!e.target.closest('[data-inst]')) return; try { localStorage.setItem('o3k.installHide', '1'); } catch (err) { /* ignore */ } it.remove(); };
 }
 // Home layout: the blocks the user can show/hide, reorder and size (settings → จัดหน้าแรก). S.homeCfg stores the choice.
 const HOME_BLOCKS = [
@@ -1145,12 +1157,14 @@ function gameTile(id) {
 let gameSource = 'level';
 let gameTopic = 'food';
 let customWords = [];   // words for a one-off round, e.g. from the weekly summary
+let gameSrcOpen = false;
 function renderGames() {
   if (gameSource === 'custom') gameSource = 'level';
+  const srcName = { level: `ระดับที่เลือก (${lvNames(S.settings.levels)})`, learned: 'คำที่เรียนแล้ว', all: 'ทุกระดับ', mastered: '🟢 คำที่จำได้แล้ว', star: '⭐ คำติดดาว', leech: '🐢 คำดื้อ', topic: '📂 ตามหมวด' }[gameSource] || '';
   view.innerHTML = `
     <div class="card-box">
-      <div class="small muted" style="margin-bottom:8px">ใช้คำศัพท์จาก</div>
-      <div class="chips" id="src">
+      <button class="src-btn" id="srcBtn" aria-expanded="${gameSrcOpen}"><span class="small muted">คำจาก:</span><b>${srcName}</b><i>▾</i></button>
+      <div class="chips" id="src" ${gameSrcOpen ? '' : 'hidden'}>
         <button class="chip" data-s="level">ระดับที่เลือก (${lvNames(S.settings.levels)})</button>
         <button class="chip" data-s="learned">คำที่เรียนแล้ว</button>
         <button class="chip" data-s="all">ทุกระดับ</button>
@@ -1172,7 +1186,8 @@ function renderGames() {
   const paint = () => view.querySelectorAll('#src .chip').forEach((c) => c.classList.toggle('on', c.dataset.s === gameSource));
   paint();
   if ($('#gTopic')) $('#gTopic').onchange = (e) => { gameTopic = e.target.value; };
-  $('#src').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { gameSource = c.dataset.s; renderGames(); } };
+  $('#srcBtn').onclick = () => { gameSrcOpen = !gameSrcOpen; renderGames(); };
+  $('#src').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { gameSource = c.dataset.s; gameSrcOpen = false; renderGames(); } };
   view.querySelectorAll('[data-game]').forEach((b) => (b.onclick = () => startGame(b.dataset.game)));
 }
 
@@ -2503,11 +2518,11 @@ function renderLibrary() {
 let listFilter = { q: '', lv: 'all', st: 'all', tp: '' };
 function renderList() {
   view.innerHTML = `
-    <input class="search" id="q" type="search" placeholder="🔍 ค้นหาคำอังกฤษหรือคำแปลไทย" value="${esc(listFilter.q)}" autocapitalize="none" autocorrect="off">
-    <div class="chips" id="lv" style="margin-bottom:8px">
+    <div class="list-head"><input class="search" id="q" type="search" placeholder="🔍 ค้นหาคำอังกฤษหรือคำแปลไทย" value="${esc(listFilter.q)}" autocapitalize="none" autocorrect="off"></div>
+    <div class="chips scroll" id="lv" style="margin-bottom:8px">
       ${['all', ...LEVELS].map((l) => `<button class="chip" data-v="${l}">${l === 'all' ? 'ทุกระดับ' : LV_LABEL[l]}</button>`).join('')}
     </div>
-    <div class="chips" id="st" style="margin-bottom:6px">
+    <div class="chips scroll" id="st" style="margin-bottom:8px">
       ${[['all', 'ทั้งหมด'], ['new', 'ยังไม่เรียน'], ['learning', '🟡 กำลังเรียน'], ['mastered', '🟢 จำได้แล้ว'], ['star', '⭐ ติดดาว'], ['leech', '🐢 คำดื้อ'], ['note', '💡 มีวิธีจำ']].map(([v, t]) => `<button class="chip" data-v="${v}">${t}</button>`).join('')}
     </div>
     <select class="sel block-sel" id="tpSel"><option value="">📂 ทุกหมวด</option>${TOPICS.map(([id]) => `<option value="${id}" ${listFilter.tp === id ? 'selected' : ''}>${TOPIC_LABEL[id]}</option>`).join('')}</select>
@@ -2738,9 +2753,9 @@ function renderPlacement() {
       <p>ตอบคำแปลของคำที่สุ่มมาจากแต่ละระดับ ระดับละ ${PT_N} ข้อ ราว 3–5 นาที</p>
       <p class="small muted">ไม่รู้ให้กด "ไม่รู้" อย่าเดา ผลจะได้แม่น · ทดสอบเฉพาะคำที่ยังไม่เคยเรียน</p>
       <button class="btn primary block" id="ptGo">เริ่มเลย</button>
-      <div style="height:10px"></div><button class="btn block" id="ptBack">ไว้ทีหลัง</button></div>`;
+      <div style="height:10px"></div><button class="btn block" id="ptLater">ไว้ทีหลัง</button></div>`;
     $('#ptGo').onclick = () => level();
-    $('#ptBack').onclick = () => go('home');
+    $('#ptLater').onclick = () => go('home');
   };
   const level = () => {
     if (li >= levels.length) return result();
@@ -3210,6 +3225,7 @@ const GUIDE = [
     <ol>
       <li>เปิดแอปใน <b>Safari</b> → กดปุ่ม <b>แชร์</b> → <b>เพิ่มไปยังหน้าจอโฮม</b> แล้วใช้จากไอคอนนั้นเสมอ (ข้อมูลใน Safari กับในไอคอนแยกกัน)</li>
       <li>ไปที่ <b>⚙️ ตั้งค่า</b> เลือกระดับคำที่จะเรียน (แนะนำเริ่มที่ A1) และจำนวนคำใหม่ต่อวัน</li>
+      <li>หน้าตั้งค่าแบ่งเป็นกลุ่มที่แตะเพื่อพับ/ขยายได้ · แตะชิป 🔥 Lv. ด้านบนขวาเพื่อไปหน้าสถิติ · หน้ารองมีปุ่ม ‹ ย้อนกลับที่มุมซ้ายบน · หน้าเกมแตะ "คำจาก" เพื่อเปลี่ยนแหล่งคำ · แบนเนอร์ติดตั้ง/วัดระดับบนหน้าแรกกด ✕ เพื่อปิดได้</li>
       <li>กลับมาหน้าแรก กด <b>▶︎ เริ่มเรียนเลย</b></li>
       <li>ตั้ง <b>การเตือนในปฏิทิน</b> (ในตั้งค่า) ให้เตือนทุกวันตามเวลาที่สะดวก</li>
       <li>เรียนไปสักพักแล้ว <b>สำรองข้อมูล</b> เก็บไว้ใน iCloud Drive</li>
@@ -3487,28 +3503,28 @@ function whatsNew() {
 /* ---------- settings ---------- */
 // Pre-built calendar files in reminders/ (see README): one per time.
 const REMIND_TIMES = ['0600', '0700', '0800', '0900', '1200', '1700', '1800', '1900', '2000', '2100', '2200'];
+const setOpen = {}; // which settings groups are expanded (kept while the app is open)
+const setIsOpen = (id) => ((id in setOpen ? setOpen[id] : id === 'lv' || id === 'learn') ? 'open' : '');
 function renderSettings() {
   const st = S.settings;
   const lvChip = (l) => `<button class="chip" data-v="${l}">${LV_LABEL[l]} · ${W.filter((w) => w.g === l).length} คำ</button>`;
   view.innerHTML = `
     <button class="card-box guide-link" id="guideBtn" style="margin-top:4px"><span>📘</span><div class="grow"><b>คู่มือการใช้งาน & ทริก</b><div class="small muted">วิธีใช้ทุกส่วนของแอป และวิธีจำศัพท์ให้ได้ผลที่สุด</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="clBtn"><span>🆕</span><div class="grow"><b>ประวัติการอัปเดต</b><div class="small muted">ดูว่าแต่ละเวอร์ชันเพิ่มหรือแก้อะไรบ้าง (ตอนนี้ ${APP_VERSION})</div></div><span class="muted">›</span></button>
-    <div class="h2">ระดับคำศัพท์ที่เรียน</div>
-    <div class="card-box">
+    <details class="set-group" data-g="lv" ${setIsOpen('lv')}><summary>ระดับคำศัพท์ที่เรียน</summary><div class="card-box">
       <div class="small muted" style="margin-bottom:8px"><b>ชุด 3000 คำ</b> · คำหลักที่ต้องรู้</div>
-      <div class="chips" id="lvls">${LEVELS_3000.map(lvChip).join('')}</div>
+      <div class="chips grid" id="lvls">${LEVELS_3000.map(lvChip).join('')}</div>
       <div class="small muted" style="margin:14px 0 8px"><b>ชุด 5000 คำ</b> · คำเพิ่มเติมระดับสูง</div>
-      <div class="chips" id="lvls5">${LEVELS_5000.map(lvChip).join('')}</div>
+      <div class="chips grid" id="lvls5">${LEVELS_5000.map(lvChip).join('')}</div>
       <p class="small muted">A1–A2 = พื้นฐาน, B1–B2 = ระดับกลาง, B2+ และ C1 = ระดับสูง (เลือกได้หลายระดับ)</p>
-      <div class="set-row" style="border-top:1px solid var(--border);padding-top:12px"><span>คำใหม่จากหมวด</span>
+      <div class="set-row stack" style="border-top:1px solid var(--border);padding-top:12px"><span>คำใหม่จากหมวด</span>
         <select class="sel" id="topic"><option value="">📚 ทุกหมวด</option>${TOPICS.map(([id]) => `<option value="${id}" ${st.topic === id ? 'selected' : ''}>${TOPIC_LABEL[id]}</option>`).join('')}</select></div>
       <p class="small muted" style="margin-bottom:0">เลือกหมวดแล้ว คำใหม่ในแฟลชการ์ดและไถศัพท์จะมาจากหมวดนั้น ส่วนคำที่ถึงวันทบทวนยังมาตามปกติ</p>
-    </div>
+    </div></details>
 
     <button class="card-box guide-link" id="wotdSetBtn"><span>✨</span><div class="grow"><b>ตั้งค่าคำประจำวัน</b><div class="small muted">เลือกระดับ สถานะคำ และหมวดที่อยากให้ขึ้นในกล่องหน้าแรก</div></div><span class="muted">›</span></button>
 
-    <div class="h2">การเรียน</div>
-    <div class="card-box">
+    <details class="set-group" data-g="learn" ${setIsOpen('learn')}><summary>การเรียน</summary><div class="card-box">
       <div class="set-row"><span>คำใหม่ต่อวัน</span>
         <select class="sel" id="npd">${[5, 10, 15, 20, 30, 50, 100].map((n) => `<option ${n === st.newPerDay ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
       <div class="set-row"><span>ลำดับคำใหม่</span>
@@ -3518,30 +3534,27 @@ function renderSettings() {
         <select class="sel" id="start"><option value="home" ${st.start === 'home' ? 'selected' : ''}>🏠 หน้าแรก</option><option value="feed" ${st.start === 'feed' ? 'selected' : ''}>📱 ไถศัพท์</option><option value="cards" ${st.start === 'cards' ? 'selected' : ''}>🃏 แฟลชการ์ด</option></select></div>
       <div class="set-row"><span>ด้านหน้าการ์ด</span>
         <select class="sel" id="front"><option value="en" ${st.front === 'en' ? 'selected' : ''}>อังกฤษ → ไทย</option><option value="th" ${st.front === 'th' ? 'selected' : ''}>ไทย → อังกฤษ</option></select></div>
-    </div>
+    </div></details>
 
-    <div class="h2">เตือนให้มาเรียนทุกวัน</div>
-    <div class="card-box">
+    <details class="set-group" data-g="remind" ${setIsOpen('remind')}><summary>เตือนให้มาเรียนทุกวัน</summary><div class="card-box">
       <div class="set-row"><span>เวลาเตือน</span>
         <select class="sel" id="remind">${REMIND_TIMES.map((t) => `<option value="${t}" ${t === S.remind ? 'selected' : ''}>${t.slice(0, 2)}:${t.slice(2)} น.</option>`).join('')}</select></div>
       <a class="btn block" id="remindAdd" href="reminders/${S.remind}.ics" target="_blank" rel="noopener" style="margin-top:8px;text-decoration:none">📅 เพิ่มการเตือนลงปฏิทิน</a>
       <p class="small muted" style="margin-bottom:0">จะเปิดหน้าปฏิทินของ iPhone ให้กด "เพิ่มทั้งหมด" ปฏิทินจะเตือนทุกวันตามเวลานี้ แตะการแจ้งเตือนแล้วกดลิงก์เพื่อเปิดแอป (ถ้าเปลี่ยนเวลา ให้ลบนัดเดิมในปฏิทินก่อน)</p>
       <div class="set-row"><span>🔴 ตัวเลขการ์ดค้างบนไอคอนแอป</span>
         <label class="switch"><input type="checkbox" id="badge" ${st.badge !== false ? 'checked' : ''}><span></span></label></div>
-    </div>
+    </div></details>
 
-    <div class="h2">หน้าตา</div>
-    <div class="card-box">
+    <details class="set-group" data-g="look" ${setIsOpen('look')}><summary>หน้าตา</summary><div class="card-box">
       <div class="set-row"><span>ธีม</span>
         <div class="seg" id="theme">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด']].map(([v, t]) => `<button class="${(st.theme || 'auto') === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div></div>
       <div class="set-row"><span>🎯 แสดงการ์ดภารกิจต่อ แม้ทำครบแล้ว</span>
         <label class="switch"><input type="checkbox" id="questShow" ${st.questShowDone ? 'checked' : ''}><span></span></label></div>
-    </div>
+    </div></details>
 
     <button class="card-box guide-link" id="homeSetBtn"><span>🧩</span><div class="grow"><b>จัดเรียงหน้าแรก</b><div class="small muted">เปิด/ปิด สลับลำดับ และปรับความกว้างของกล่อง</div></div><span class="muted">›</span></button>
 
-    <div class="h2">เสียง</div>
-    <div class="card-box">
+    <details class="set-group" data-g="sound" ${setIsOpen('sound')}><summary>เสียง</summary><div class="card-box">
       <div class="set-row"><span>เสียงอ่าน</span><select class="sel" id="voice" style="max-width:62%"></select></div>
       <div class="small muted" id="voiceN" style="margin:-4px 0 6px"></div>
       <div class="set-row"><span>อ่านออกเสียงอัตโนมัติ</span>
@@ -3553,20 +3566,18 @@ function renderSettings() {
       <div class="set-row"><span>ความเร็วเสียง</span>
         <select class="sel" id="rate">${[[0.7, 'ช้า'], [0.9, 'ปกติ'], [1.05, 'เร็ว']].map(([v, t]) => `<option value="${v}" ${v === st.rate ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <button class="btn block" id="test" style="margin-top:8px">🔊 ทดสอบเสียง</button>
-    </div>
+    </div></details>
 
-    <div class="h2">☁️ ซิงก์ข้อมูลอัตโนมัติ</div>
-    <div class="card-box">${!syncOn()
+    <details class="set-group" data-g="sync" ${setIsOpen('sync')}><summary>☁️ ซิงก์ข้อมูลอัตโนมัติ</summary><div class="card-box">${!syncOn()
       ? '<p class="small muted" style="margin:0">ยังไม่ได้เปิดใช้ ต้องตั้งค่า Supabase ในไฟล์ <code>config.js</code> ก่อน (ดูขั้นตอนใน SYNC-SETUP.md ใน GitHub) จากนั้นความคืบหน้าจะซิงก์ขึ้นคลาวด์เอง ลบแอปหรือเปลี่ยนเครื่องก็ไม่หาย</p>'
       : auth ? `<p class="small" style="margin-top:0">เข้าสู่ระบบเป็น <b>${esc(auth.user.email)}</b><br><span class="muted">ซิงก์ล่าสุด: ${syncState.last ? new Date(syncState.last).toLocaleTimeString('th-TH', { timeStyle: 'short' }) : 'ยังไม่ได้ซิงก์ในรอบนี้'}${syncState.error ? ' · ⚠️ ' + esc(syncState.error) : ''}</span></p>
         ${SYNC.leaderboard ? `<div class="set-row"><span>ชื่อในอันดับเพื่อน</span><input class="sel" id="nick" maxlength="20" style="width:140px" value="${esc(boardName())}"></div>` : ''}
         ${canPush() ? '<div class="set-row"><span>🔔 แจ้งเตือนรายวัน</span><button class="btn" id="pushBtn" style="padding:8px 14px">…</button></div><p class="small muted" id="pushNote" style="margin-top:0">เตือนตามเวลาที่ตั้งไว้ด้านบน เฉพาะวันที่ยังไม่ได้เล่น (iPhone ต้องเปิดจากไอคอนบนหน้าจอโฮม iOS 16.4 ขึ้นไป)</p>' : ''}
         <div class="row"><button class="btn grow" id="syncNow">🔄 ซิงก์ตอนนี้</button><button class="btn grow" id="logout">ออกจากระบบ</button></div>`
       : '<p class="small muted" style="margin-top:0">เข้าสู่ระบบด้วยอีเมลที่ได้รับเชิญ แล้วความคืบหน้าจะซิงก์ขึ้นคลาวด์อัตโนมัติ ใช้ได้หลายเครื่อง</p><button class="btn primary block" id="login">เข้าสู่ระบบ</button>'}
-    </div>
+    </div></details>
 
-    <div class="h2">สำรองข้อมูล</div>
-    <div class="card-box">
+    <details class="set-group" data-g="backup" ${setIsOpen('backup')}><summary>สำรองข้อมูล</summary><div class="card-box">
       <p class="small muted" style="margin-top:0">ความคืบหน้าเก็บไว้ในเครื่องนี้เท่านั้น ถ้าลบไอคอนแอปออกจากหน้าจอโฮม ข้อมูลจะหายด้วย แนะนำให้สำรองเก็บไว้ใน iCloud Drive (แอปจะเตือนทุก ${BACKUP_EVERY} วัน)</p>
       <p class="small" style="margin-top:0"><b>สำรองล่าสุด:</b> ${S.backupAt ? new Date(S.backupAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : 'ยังไม่เคยสำรอง'}<br><span class="muted" id="persist"></span></p>
       <div class="row"><button class="btn grow" id="exp">📤 ส่งออก</button><button class="btn grow" id="imp">📥 นำเข้า</button></div>
@@ -3574,9 +3585,10 @@ function renderSettings() {
       <p class="small muted" style="margin-bottom:0">นำเข้าแบบรวมข้อมูล: คำไหนในเครื่องนี้ก้าวหน้ากว่าไฟล์สำรอง จะเก็บของเครื่องนี้ไว้</p>
       <div style="height:10px"></div>
       <button class="btn danger block" id="reset">ล้างความคืบหน้าทั้งหมด</button>
-    </div>
+    </div></details>
     <p class="center small muted">${W.length} คำ · คำแปลไทยและประโยคตัวอย่างเขียนขึ้นเองสำหรับช่วยจำ<br>รายการคำและระดับ CEFR อ้างอิงจากรายการ Oxford 3000™ และ Oxford 5000™ ซึ่งเป็นเครื่องหมายการค้าของ Oxford University Press<br>แอปนี้ไม่มีส่วนเกี่ยวข้องหรือได้รับการรับรองจาก Oxford University Press<br>เวอร์ชัน ${APP_VERSION}</p>`;
 
+  view.querySelectorAll('details.set-group').forEach((d) => { d.ontoggle = () => { setOpen[d.dataset.g] = d.open; }; });
   const paint = () => view.querySelectorAll('#lvls .chip, #lvls5 .chip').forEach((c) => c.classList.toggle('on', st.levels.includes(c.dataset.v)));
   paint();
   $('#lvls').onclick = $('#lvls5').onclick = (e) => {

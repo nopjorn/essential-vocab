@@ -38,7 +38,7 @@ test("what's new bar after an update opens the changelog; settings links to it",
   await bar.locator('[data-new=go]').click();
   await expect(page.locator('#view')).toContainText('เวอร์ชันนี้');
   await expect(page.locator('#view .cl-row').first()).toBeVisible();
-  await page.locator('#clBack').click();
+  await page.locator('#topBack').click();
   await page.evaluate(() => go('settings'));
   await page.locator('#clBtn').click();
   await expect(page.locator('#view .cl-row').nth(5)).toBeVisible();
@@ -285,5 +285,35 @@ test('app icon badge shows the number of due cards', async ({ page }) => {
   await page.evaluate(() => go('settings'));
   await page.locator('#badge').evaluate((el) => el.click());
   await expect.poll(() => page.evaluate(() => window.__badge.at(-1))).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+test('UI polish: top-bar back + level chip, collapsible settings, game source picker, dismissible banners', async ({ page }) => {
+  const errors = await openApp(page);
+  // home: install tip can be dismissed and stays dismissed
+  await expect(page.locator('#installTip')).toBeVisible();
+  await page.locator('#installTip [data-inst]').click();
+  await expect(page.locator('#installTip')).toHaveCount(0);
+  await page.evaluate(() => go('home'));
+  await expect(page.locator('#installTip')).toHaveCount(0);
+  // level chip opens the stats page; the top-bar back button returns
+  await page.locator('#streak').click();
+  await expect(page.locator('#title')).toHaveText('สถิติ');
+  await expect(page.locator('#topBack')).toBeVisible();
+  await page.locator('#topBack').click();
+  await expect(page.locator('#topBack')).toBeHidden();
+  // settings groups collapse/expand
+  await page.evaluate(() => go('settings'));
+  const sound = page.locator('details[data-g="sound"]');
+  await expect(sound).not.toHaveAttribute('open', '');
+  await sound.locator('summary').click();
+  await expect(sound.locator('#test')).toBeVisible();
+  // games: source picker is collapsed until tapped, picking closes it
+  await page.evaluate(() => go('games'));
+  await expect(page.locator('#src')).toBeHidden();
+  await page.locator('#srcBtn').click();
+  await page.locator('#src .chip[data-s="all"]').click();
+  await expect(page.locator('#src')).toBeHidden();
+  await expect(page.locator('#srcBtn')).toContainText('ทุกระดับ');
   expect(errors).toEqual([]);
 });
