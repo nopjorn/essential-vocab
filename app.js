@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.22.0';
+const APP_VERSION = '1.22.1';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -551,7 +551,7 @@ function markForReview(w) {
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ' };
+const TITLES = { home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ' };
 function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
@@ -562,7 +562,7 @@ function go(tab, ...args) {
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement }[tab])(...args);
   updateStreak();
 }
 function updateStreak() { $('#streak').textContent = '🔥 ' + streakNow() + (S.freeze ? ' · 🧊' + S.freeze : '') + ' · Lv.' + levelOf(S.xp); }
@@ -3198,7 +3198,7 @@ const GUIDE = [
       <li><b>👾 บอสคำดื้อ</b> — คำที่ลืมบ่อยจะกลายเป็นบอสมีหัวใจ 3 ดวง ตอบถูก 3 ครั้ง (บอสจะวนกลับมาเรื่อยๆ) เพื่อปราบบอส ได้ ${BOSS_XP} XP · ตอบผิดบอสฟื้นพลังเต็ม ผิด 3 ครั้งบอสหนีไปก่อน</li>
       <li><b>🏆 การ์ดสรุป</b> — ทุก 20 ใบ ดูว่าตอบถูกกี่ %, คำใหม่, คอมโบสูงสุด, XP ที่ได้ และเวลาที่ใช้</li>
     </ul>
-    <p><b>✨ คำประจำวัน</b> (หน้าแรก) — ทุกวันมี 1 คำจากระดับที่เลือก แตะเพื่อดูรายละเอียด กด 🔊 ฟังเสียง หรือกด 🎲 เพื่อสุ่มเป็นคำอื่น (คำที่สุ่มจะค้างไว้ทั้งวัน) · ตั้งเงื่อนไขได้ที่ ตั้งค่า → คำประจำวัน เช่น เฉพาะ A1 ที่กำลังเรียน คำดื้อ หรือหมวดที่อยากเน้น เลือกผสมกันได้</p>
+    <p><b>✨ คำประจำวัน</b> (หน้าแรก) — ทุกวันมี 1 คำจากระดับที่เลือก แตะเพื่อดูรายละเอียด กด 🔊 ฟังเสียง หรือกด 🎲 เพื่อสุ่มเป็นคำอื่น (คำที่สุ่มจะค้างไว้ทั้งวัน) · ตั้งเงื่อนไขได้ที่ ตั้งค่า → ตั้งค่าคำประจำวัน เช่น เฉพาะ A1 ที่กำลังเรียน คำดื้อ หรือหมวดที่อยากเน้น เลือกผสมกันได้</p>
     <p><b>⚡ เล่นด่วน</b> (หน้าแรก) — แตะครั้งเดียว แอปสุ่มเกมให้ 10 ข้อ ใช้คำที่เรียนแล้ว จบในราว 1 นาที</p>
     <p>อยากให้เปิดแอปแล้วเข้าไถศัพท์ทันที: ⚙️ ตั้งค่า → <b>เปิดแอปแล้วไปที่</b> → 📱 ไถศัพท์</p>`],
   ['⭐', 'XP และเลเวล', `
@@ -3382,18 +3382,7 @@ function renderSettings() {
       <p class="small muted" style="margin-bottom:0">เลือกหมวดแล้ว คำใหม่ในแฟลชการ์ดและไถศัพท์จะมาจากหมวดนั้น ส่วนคำที่ถึงวันทบทวนยังมาตามปกติ</p>
     </div>
 
-    <div class="h2">✨ คำประจำวัน</div>
-    <div class="card-box">
-      <p class="small muted" style="margin-top:0">เลือกได้หลายข้อและผสมกันได้ เช่น A1 + กำลังเรียน · ไม่เลือกข้อไหนในกลุ่ม = ใช้ตามตั้งค่าหลักด้านบน (ระดับที่เรียน / หมวดคำใหม่) หรือไม่กรองสถานะ</p>
-      <div class="small muted" style="margin:6px 0 8px"><b>ระดับ</b></div>
-      <div class="chips" id="wLv">${LEVELS.map((l) => `<button class="chip" data-g="lv" data-v="${l}">${LV_LABEL[l]}</button>`).join('')}</div>
-      <div class="small muted" style="margin:14px 0 8px"><b>สถานะคำ</b></div>
-      <div class="chips" id="wSt">${WOTD_ST.map(([v, t]) => `<button class="chip" data-g="st" data-v="${v}">${t}</button>`).join('')}</div>
-      <div class="small muted" style="margin:14px 0 8px"><b>หมวดคำ</b></div>
-      <div class="chips" id="wTp">${TOPICS.map(([id]) => `<button class="chip" data-g="tp" data-v="${id}">${TOPIC_LABEL[id]}</button>`).join('')}</div>
-      <p class="small" id="wCount" style="margin:12px 0 8px"></p>
-      <button class="btn block" id="wReset">↺ ล้างเงื่อนไข</button>
-    </div>
+    <button class="card-box guide-link" id="wotdSetBtn"><span>✨</span><div class="grow"><b>ตั้งค่าคำประจำวัน</b><div class="small muted">เลือกระดับ สถานะคำ และหมวดที่อยากให้ขึ้นในกล่องหน้าแรก</div></div><span class="muted">›</span></button>
 
     <div class="h2">การเรียน</div>
     <div class="card-box">
@@ -3470,19 +3459,7 @@ function renderSettings() {
     else st.levels = LEVELS.filter((l) => l === v || st.levels.includes(l));
     save(); paint();
   };
-  const wPaint = () => {
-    const c = wotdCfg();
-    view.querySelectorAll('#wLv .chip, #wSt .chip, #wTp .chip').forEach((b) => b.classList.toggle('on', c[b.dataset.g].includes(b.dataset.v)));
-    const n = wotdPool().length;
-    $('#wCount').innerHTML = n ? `ตรงเงื่อนไข <b>${n}</b> คำ` : '<span style="color:var(--bad,#d33)">ไม่มีคำตรงเงื่อนไข — จะสุ่มจากระดับที่เรียนอยู่แทน</span>';
-  };
-  wPaint();
-  const wChange = (fn) => { const c = wotdCfg(); fn(c); st.wotd = c; S.wotdPick = null; save(); wPaint(); };
-  view.querySelector('#wLv').parentNode.onclick = (e) => {
-    const b = e.target.closest('.chip[data-g]'); if (!b) return;
-    wChange((c) => { const a = c[b.dataset.g], v = b.dataset.v; c[b.dataset.g] = a.includes(v) ? a.filter((x) => x !== v) : [...a, v]; });
-  };
-  $('#wReset').onclick = () => wChange((c) => { c.lv = []; c.st = []; c.tp = []; });
+  $('#wotdSetBtn').onclick = () => go('wotdset');
   $('#guideBtn').onclick = () => go('guide', 'settings');
   $('#npd').onchange = (e) => { st.newPerDay = +e.target.value; save(); };
   $('#ord').onchange = (e) => { st.order = e.target.value; save(); };
@@ -3546,6 +3523,40 @@ function renderSettings() {
     const settings = S.settings;
     S = defaults(); S.settings = settings; save(); toast('ล้างข้อมูลแล้ว'); go('home');
   };
+}
+
+/* ---------- word of the day settings page ---------- */
+function renderWotdSet() {
+  const st = S.settings;
+  view.innerHTML = `
+    <div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="wsBack">‹ กลับ</button></div>
+    <div class="card-box">
+      <p class="small muted" style="margin-top:0">เลือกได้หลายข้อและผสมกันได้ เช่น A1 + กำลังเรียน · ไม่เลือกข้อไหนในกลุ่ม = ใช้ตามตั้งค่าหลักด้านบน (ระดับที่เรียน / หมวดคำใหม่) หรือไม่กรองสถานะ</p>
+      <div class="small muted" style="margin:6px 0 8px"><b>ระดับ</b></div>
+      <div class="chips" id="wLv">${LEVELS.map((l) => `<button class="chip" data-g="lv" data-v="${l}">${LV_LABEL[l]}</button>`).join('')}</div>
+      <div class="small muted" style="margin:14px 0 8px"><b>สถานะคำ</b></div>
+      <div class="chips" id="wSt">${WOTD_ST.map(([v, t]) => `<button class="chip" data-g="st" data-v="${v}">${t}</button>`).join('')}</div>
+      <div class="small muted" style="margin:14px 0 8px"><b>หมวดคำ</b></div>
+      <div class="chips" id="wTp">${TOPICS.map(([id]) => `<button class="chip" data-g="tp" data-v="${id}">${TOPIC_LABEL[id]}</button>`).join('')}</div>
+      <p class="small" id="wCount" style="margin:12px 0 8px"></p>
+      <button class="btn block" id="wReset">↺ ล้างเงื่อนไข</button>
+    </div>
+
+    <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
+  $('#wsBack').onclick = () => go('settings');
+  const wPaint = () => {
+    const c = wotdCfg();
+    view.querySelectorAll('#wLv .chip, #wSt .chip, #wTp .chip').forEach((b) => b.classList.toggle('on', c[b.dataset.g].includes(b.dataset.v)));
+    const n = wotdPool().length;
+    $('#wCount').innerHTML = n ? `ตรงเงื่อนไข <b>${n}</b> คำ` : '<span style="color:var(--bad,#d33)">ไม่มีคำตรงเงื่อนไข — จะสุ่มจากระดับที่เรียนอยู่แทน</span>';
+  };
+  wPaint();
+  const wChange = (fn) => { const c = wotdCfg(); fn(c); st.wotd = c; S.wotdPick = null; save(); wPaint(); };
+  view.querySelector('#wLv').parentNode.onclick = (e) => {
+    const b = e.target.closest('.chip[data-g]'); if (!b) return;
+    wChange((c) => { const a = c[b.dataset.g], v = b.dataset.v; c[b.dataset.g] = a.includes(v) ? a.filter((x) => x !== v) : [...a, v]; });
+  };
+  $('#wReset').onclick = () => wChange((c) => { c.lv = []; c.st = []; c.tp = []; });
 }
 
 /* ---------- home layout page ---------- */

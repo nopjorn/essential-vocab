@@ -2,7 +2,7 @@
 const { test, expect } = require('@playwright/test');
 const { openApp, readState } = require('./helpers');
 
-const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'read', 'placement'];
+const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read', 'placement'];
 
 test('every screen renders without errors and shows the version', async ({ page }) => {
   const errors = await openApp(page);
@@ -135,6 +135,7 @@ test('word of the day: 🎲 button and filters (level + status + topic)', async 
   });
   expect(ok).toBe(true);
   await page.evaluate(() => go('settings'));
+  await page.locator('#wotdSetBtn').click();
   await page.locator('#wSt .chip[data-v="leech"]').click();
   await page.locator('#wSt .chip[data-v="mastered"]').click();
   await expect(page.locator('#wCount')).toContainText('ไม่มีคำตรงเงื่อนไข');
