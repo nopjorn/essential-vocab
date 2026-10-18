@@ -744,3 +744,14 @@ input.sel { color: var(--text); font: inherit; }
 .hc-mv { display: inline-flex; gap: 6px; }
 .hc-mv button { width: 38px; height: 34px; border: 0; border-radius: 10px; background: var(--surface-2); color: var(--text); font: inherit; font-weight: 800; }
 .hc-mv button:disabled { opacity: .3; }
+/* collapsible settings section: header row slides the body open */
+.fold { padding: 0; overflow: hidden; }
+.fold-head { display: flex; align-items: center; gap: 12px; width: 100%; padding: 16px 18px; border: 0; background: none; color: var(--text); font: inherit; text-align: left; }
+.fold-ic { font-size: 24px; }
+.fold-arrow { font-size: 24px; color: var(--muted); transition: transform .3s; }
+.fold.open .fold-arrow { transform: rotate(90deg); }
+.fold-body { display: grid; grid-template-rows: 0fr; visibility: hidden; transition: grid-template-rows .3s ease, visibility 0s .3s; }
+.fold.open .fold-body { grid-template-rows: 1fr; visibility: visible; transition: grid-template-rows .3s ease, visibility 0s; }
+.fold-in { overflow: hidden; min-height: 0; }
+.fold-pad { padding: 14px 18px 18px; border-top: 1px solid var(--border); }
+@media (prefers-reduced-motion: reduce) { .fold-body, .fold-arrow { transition: none; } }

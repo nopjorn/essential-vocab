@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.20.0';
+const APP_VERSION = '1.20.1';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -3112,7 +3112,7 @@ const GUIDE = [
     </ul>`],
   ['🧩', 'จัดหน้าแรกเอง', `
     <ul>
-      <li>ไปที่ ⚙️ ตั้งค่า → <b>จัดหน้าแรก</b> จะเห็นรายการกล่องทั้งหมดของหน้าแรก</li>
+      <li>ไปที่ ⚙️ ตั้งค่า → แตะแถว <b>🧩 จัดเรียงหน้าแรก</b> แล้วรายการกล่องทั้งหมดของหน้าแรกจะเลื่อนลงมาให้ (แตะอีกครั้งเพื่อพับเก็บ)</li>
       <li><b>สวิตช์ซ้าย</b> เปิด/ปิดกล่อง (มีกล่องที่ปิดไว้ให้เปิดเพิ่มได้ เช่น เลเวลและ XP, ทบทวน 7 วันข้างหน้า)</li>
       <li><b>↑ ↓</b> เลื่อนลำดับกล่องบน–ล่าง</li>
       <li><b>เต็ม / ครึ่ง</b> เลือกความกว้าง กล่อง "ครึ่ง" 2 กล่องที่อยู่ติดกันจะอยู่แถวเดียวกัน (กล่องครึ่งที่ไม่มีคู่จะขยายเต็มแถวเอง)</li>
@@ -3373,11 +3373,13 @@ function renderSettings() {
         <div class="seg" id="theme">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด']].map(([v, t]) => `<button class="${(st.theme || 'auto') === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div></div>
     </div>
 
-    <div class="h2">จัดหน้าแรก</div>
-    <div class="card-box">
-      <p class="small muted" style="margin-top:0">เปิด/ปิดกล่อง เลื่อนลำดับด้วย ↑ ↓ และเลือกความกว้าง "ครึ่ง" 2 กล่องติดกันจะอยู่แถวเดียวกัน (กล่องครึ่งที่ไม่มีคู่จะขยายเต็มแถวให้เอง)</p>
-      <div id="hcfg"></div>
-      <button class="btn block" id="hcReset" style="margin-top:10px">↺ คืนค่าเริ่มต้น</button>
+    <div class="card-box fold" id="homeFold">
+      <button class="fold-head" id="homeFoldBtn" aria-expanded="false" aria-controls="homeFoldBody"><span class="fold-ic">🧩</span><div class="grow"><b>จัดเรียงหน้าแรก</b><div class="small muted">เปิด/ปิด สลับลำดับ และปรับความกว้างของกล่อง</div></div><span class="fold-arrow">›</span></button>
+      <div class="fold-body" id="homeFoldBody"><div class="fold-in"><div class="fold-pad">
+        <p class="small muted" style="margin-top:0">เปิด/ปิดกล่อง เลื่อนลำดับด้วย ↑ ↓ และเลือกความกว้าง "ครึ่ง" 2 กล่องติดกันจะอยู่แถวเดียวกัน (กล่องครึ่งที่ไม่มีคู่จะขยายเต็มแถวให้เอง)</p>
+        <div id="hcfg"></div>
+        <button class="btn block" id="hcReset" style="margin-top:10px">↺ คืนค่าเริ่มต้น</button>
+      </div></div></div>
     </div>
 
     <div class="h2">เสียง</div>
@@ -3463,6 +3465,10 @@ function renderSettings() {
     else if (act === 'down' && i < list.length - 1) [list[i + 1], list[i]] = [list[i], list[i + 1]];
     S.homeCfg = list.map(({ id, on, w }) => ({ id, on, w }));
     save(); paintHome();
+  };
+  $('#homeFoldBtn').onclick = () => {
+    const open = $('#homeFold').classList.toggle('open');
+    $('#homeFoldBtn').setAttribute('aria-expanded', open);
   };
   paintHome();
   $('#hcfg').onclick = (e) => { if (e.target.dataset.act !== 'tog') editHome(e); };

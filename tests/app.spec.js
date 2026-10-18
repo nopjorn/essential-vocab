@@ -151,6 +151,9 @@ test('home layout: hide, reorder and resize blocks from settings', async ({ page
   const play = await page.locator('[data-hb="play"]').boundingBox();
   expect(Math.abs(feed.y - play.y)).toBeLessThan(2);
   await page.evaluate(() => go('settings'));
+  await expect(page.locator('#homeFoldBody')).toBeHidden();
+  await page.locator('#homeFoldBtn').click();
+  await expect(page.locator('#homeFoldBody')).toBeVisible();
   await page.locator('.hc-row[data-id="wotd"] [data-act="tog"]').evaluate((el) => el.click());
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click();
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click();
@@ -170,6 +173,7 @@ test('home layout: hide, reorder and resize blocks from settings', async ({ page
   expect(await page.locator('[data-hb="hero"]').evaluate((e) => e.classList.contains('hw-full'))).toBe(true);
   // reset restores the defaults
   await page.evaluate(() => go('settings'));
+  await page.locator('#homeFoldBtn').click();
   await page.locator('#hcReset').click();
   expect(await page.evaluate(() => S.homeCfg)).toBeNull();
   expect(errors).toEqual([]);
