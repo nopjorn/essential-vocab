@@ -31,7 +31,7 @@ Deno.serve(async () => {
     const streak = d.streak?.count ?? 0;
     const body = due ? `วันนี้มีการ์ดรอทบทวน ${due} ใบ${streak ? ` · รักษาสตรีค 🔥 ${streak} วันไว้นะ` : ''}` : 'มาเรียนคำใหม่วันละนิดกัน 📚';
     try {
-      await webpush.sendNotification(s.sub, JSON.stringify({ title: 'ศัพท์ต้องรู้ 📚', body, url: APP_URL }));
+      await webpush.sendNotification(s.sub, JSON.stringify({ title: 'ศัพท์ต้องรู้ 📚', body, url: APP_URL, due }));
       sent++;
     } catch (e: any) {
       if (e?.statusCode === 404 || e?.statusCode === 410) await sb.from('push_subs').delete().eq('endpoint', s.endpoint);

@@ -200,3 +200,17 @@ test('home layout: hide, reorder and resize blocks from settings', async ({ page
   expect(await page.evaluate(() => S.homeCfg)).toBeNull();
   expect(errors).toEqual([]);
 });
+
+test('app icon badge shows the number of due cards', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__badge = [];
+    navigator.setAppBadge = (n) => { window.__badge.push(n); return Promise.resolve(); };
+    navigator.clearAppBadge = () => { window.__badge.push(0); return Promise.resolve(); };
+  });
+  const errors = await openApp(page, { prog: { cat: { b: 1, i: 1, e: 2.5, d: 1, s: 1, c: 1, x: 0 }, dog: { b: 1, i: 1, e: 2.5, d: 1, s: 1, c: 1, x: 0 } } });
+  await expect.poll(() => page.evaluate(() => window.__badge.at(-1))).toBe(2);
+  await page.evaluate(() => go('settings'));
+  await page.locator('#badge').evaluate((el) => el.click());
+  await expect.poll(() => page.evaluate(() => window.__badge.at(-1))).toBe(0);
+  expect(errors).toEqual([]);
+});

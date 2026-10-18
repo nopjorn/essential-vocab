@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump VERSION (keep it equal to APP_VERSION in app.js) on every push.
-const VERSION = 'o3k-1.22.2';
+const VERSION = 'o3k-1.23.0';
 const FILES = [
   './',
   'index.html',
@@ -57,6 +57,7 @@ self.addEventListener('fetch', (e) => {
 self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (err) { d = { body: e.data && e.data.text() }; }
+  if (d.due != null && self.navigator.setAppBadge) self.navigator.setAppBadge(d.due).catch(() => {});
   e.waitUntil(self.registration.showNotification(d.title || 'ศัพท์ต้องรู้ 📚', {
     body: d.body || 'ถึงเวลาท่องศัพท์แล้ว',
     icon: 'icons/icon-192.png',
