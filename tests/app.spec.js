@@ -2,7 +2,7 @@
 const { test, expect } = require('@playwright/test');
 const { openApp, readState } = require('./helpers');
 
-const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'read', 'placement'];
+const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'read', 'placement'];
 
 test('every screen renders without errors and shows the version', async ({ page }) => {
   const errors = await openApp(page);
@@ -151,9 +151,8 @@ test('home layout: hide, reorder and resize blocks from settings', async ({ page
   const play = await page.locator('[data-hb="play"]').boundingBox();
   expect(Math.abs(feed.y - play.y)).toBeLessThan(2);
   await page.evaluate(() => go('settings'));
-  await expect(page.locator('#homeFoldBody')).toBeHidden();
-  await page.locator('#homeFoldBtn').click();
-  await expect(page.locator('#homeFoldBody')).toBeVisible();
+  await page.locator('#homeSetBtn').click();
+  await expect(page.locator('#hcfg')).toBeVisible();
   await page.locator('.hc-row[data-id="wotd"] [data-act="tog"]').evaluate((el) => el.click());
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click();
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click();
@@ -172,8 +171,7 @@ test('home layout: hide, reorder and resize blocks from settings', async ({ page
   await page.evaluate(() => { S.homeCfg = HOME_BLOCKS.map((b) => ({ id: b.id, on: b.id === 'hero', w: 'half' })); save(); go('home'); });
   expect(await page.locator('[data-hb="hero"]').evaluate((e) => e.classList.contains('hw-full'))).toBe(true);
   // reset restores the defaults
-  await page.evaluate(() => go('settings'));
-  await page.locator('#homeFoldBtn').click();
+  await page.evaluate(() => go('homeset'));
   await page.locator('#hcReset').click();
   expect(await page.evaluate(() => S.homeCfg)).toBeNull();
   expect(errors).toEqual([]);

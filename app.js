@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.20.1';
+const APP_VERSION = '1.20.2';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -550,7 +550,7 @@ function markForReview(w) {
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ' };
+const TITLES = { home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ' };
 function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
@@ -561,7 +561,7 @@ function go(tab, ...args) {
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement }[tab])(...args);
   updateStreak();
 }
 function updateStreak() { $('#streak').textContent = '🔥 ' + streakNow() + (S.freeze ? ' · 🧊' + S.freeze : '') + ' · Lv.' + levelOf(S.xp); }
@@ -3112,7 +3112,7 @@ const GUIDE = [
     </ul>`],
   ['🧩', 'จัดหน้าแรกเอง', `
     <ul>
-      <li>ไปที่ ⚙️ ตั้งค่า → แตะแถว <b>🧩 จัดเรียงหน้าแรก</b> แล้วรายการกล่องทั้งหมดของหน้าแรกจะเลื่อนลงมาให้ (แตะอีกครั้งเพื่อพับเก็บ)</li>
+      <li>ไปที่ ⚙️ ตั้งค่า → แตะแถว <b>🧩 จัดเรียงหน้าแรก</b> จะเปิดเป็นอีกหน้าที่เห็นรายการกล่องทั้งหมดของหน้าแรก (กด ‹ กลับ เพื่อกลับมาตั้งค่า)</li>
       <li><b>สวิตช์ซ้าย</b> เปิด/ปิดกล่อง (มีกล่องที่ปิดไว้ให้เปิดเพิ่มได้ เช่น เลเวลและ XP, ทบทวน 7 วันข้างหน้า)</li>
       <li><b>↑ ↓</b> เลื่อนลำดับกล่องบน–ล่าง</li>
       <li><b>เต็ม / ครึ่ง</b> เลือกความกว้าง กล่อง "ครึ่ง" 2 กล่องที่อยู่ติดกันจะอยู่แถวเดียวกัน (กล่องครึ่งที่ไม่มีคู่จะขยายเต็มแถวเอง)</li>
@@ -3373,14 +3373,7 @@ function renderSettings() {
         <div class="seg" id="theme">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด']].map(([v, t]) => `<button class="${(st.theme || 'auto') === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div></div>
     </div>
 
-    <div class="card-box fold" id="homeFold">
-      <button class="fold-head" id="homeFoldBtn" aria-expanded="false" aria-controls="homeFoldBody"><span class="fold-ic">🧩</span><div class="grow"><b>จัดเรียงหน้าแรก</b><div class="small muted">เปิด/ปิด สลับลำดับ และปรับความกว้างของกล่อง</div></div><span class="fold-arrow">›</span></button>
-      <div class="fold-body" id="homeFoldBody"><div class="fold-in"><div class="fold-pad">
-        <p class="small muted" style="margin-top:0">เปิด/ปิดกล่อง เลื่อนลำดับด้วย ↑ ↓ และเลือกความกว้าง "ครึ่ง" 2 กล่องติดกันจะอยู่แถวเดียวกัน (กล่องครึ่งที่ไม่มีคู่จะขยายเต็มแถวให้เอง)</p>
-        <div id="hcfg"></div>
-        <button class="btn block" id="hcReset" style="margin-top:10px">↺ คืนค่าเริ่มต้น</button>
-      </div></div></div>
-    </div>
+    <button class="card-box guide-link" id="homeSetBtn"><span>🧩</span><div class="grow"><b>จัดเรียงหน้าแรก</b><div class="small muted">เปิด/ปิด สลับลำดับ และปรับความกว้างของกล่อง</div></div><span class="muted">›</span></button>
 
     <div class="h2">เสียง</div>
     <div class="card-box">
@@ -3447,33 +3440,7 @@ function renderSettings() {
     st.theme = b.dataset.v; save(); applyTheme();
     view.querySelectorAll('#theme button').forEach((x) => x.classList.toggle('on', x === b));
   };
-  const paintHome = () => {
-    const list = homeBlocks();
-    $('#hcfg').innerHTML = list.map((b, i) => `<div class="hc-row${b.on ? '' : ' off'}" data-id="${b.id}">
-      <label class="switch"><input type="checkbox" data-act="tog" aria-label="แสดง ${esc(b.name)}" ${b.on ? 'checked' : ''}><span></span></label>
-      <span class="hc-name">${b.ic} ${esc(b.name)}</span>
-      <div class="seg">${[['full', 'เต็ม'], ['half', 'ครึ่ง']].map(([v, t]) => `<button class="${b.w === v ? 'on' : ''}" data-act="w" data-v="${v}">${t}</button>`).join('')}</div>
-      <span class="hc-mv"><button data-act="up" aria-label="เลื่อนขึ้น" ${i === 0 ? 'disabled' : ''}>↑</button><button data-act="down" aria-label="เลื่อนลง" ${i === list.length - 1 ? 'disabled' : ''}>↓</button></span>
-    </div>`).join('');
-  };
-  const editHome = (e) => {
-    const el = e.target.closest('[data-act]'), row = e.target.closest('.hc-row'); if (!el || !row) return;
-    const list = homeBlocks(), i = list.findIndex((b) => b.id === row.dataset.id), act = el.dataset.act;
-    if (act === 'tog') list[i].on = el.checked;
-    else if (act === 'w') list[i].w = el.dataset.v;
-    else if (act === 'up' && i > 0) [list[i - 1], list[i]] = [list[i], list[i - 1]];
-    else if (act === 'down' && i < list.length - 1) [list[i + 1], list[i]] = [list[i], list[i + 1]];
-    S.homeCfg = list.map(({ id, on, w }) => ({ id, on, w }));
-    save(); paintHome();
-  };
-  $('#homeFoldBtn').onclick = () => {
-    const open = $('#homeFold').classList.toggle('open');
-    $('#homeFoldBtn').setAttribute('aria-expanded', open);
-  };
-  paintHome();
-  $('#hcfg').onclick = (e) => { if (e.target.dataset.act !== 'tog') editHome(e); };
-  $('#hcfg').onchange = editHome;
-  $('#hcReset').onclick = () => { S.homeCfg = null; save(); paintHome(); toast('คืนค่าหน้าแรกแล้ว'); };
+  $('#homeSetBtn').onclick = () => go('homeset');
   $('#remind').onchange = (e) => {
     S.remind = e.target.value; save(); $('#remindAdd').href = `reminders/${S.remind}.ics`;
     if (canPush() && auth) pushSub().then((sub) => sub && savePushSub(sub)).catch(() => {});
@@ -3517,6 +3484,42 @@ function renderSettings() {
     const settings = S.settings;
     S = defaults(); S.settings = settings; save(); toast('ล้างข้อมูลแล้ว'); go('home');
   };
+}
+
+/* ---------- home layout page ---------- */
+function renderHomeSet() {
+  view.innerHTML = `
+    <div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="hsBack">‹ กลับ</button></div>
+    <div class="card-box">
+      <p class="small muted" style="margin-top:0">เปิด/ปิดกล่อง เลื่อนลำดับด้วย ↑ ↓ และเลือกความกว้าง "ครึ่ง" 2 กล่องติดกันจะอยู่แถวเดียวกัน (กล่องครึ่งที่ไม่มีคู่จะขยายเต็มแถวให้เอง)</p>
+      <div id="hcfg"></div>
+      <button class="btn block" id="hcReset" style="margin-top:10px">↺ คืนค่าเริ่มต้น</button>
+    </div>
+    <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
+  $('#hsBack').onclick = () => go('settings');
+  const paintHome = () => {
+    const list = homeBlocks();
+    $('#hcfg').innerHTML = list.map((b, i) => `<div class="hc-row${b.on ? '' : ' off'}" data-id="${b.id}">
+      <label class="switch"><input type="checkbox" data-act="tog" aria-label="แสดง ${esc(b.name)}" ${b.on ? 'checked' : ''}><span></span></label>
+      <span class="hc-name">${b.ic} ${esc(b.name)}</span>
+      <div class="seg">${[['full', 'เต็ม'], ['half', 'ครึ่ง']].map(([v, t]) => `<button class="${b.w === v ? 'on' : ''}" data-act="w" data-v="${v}">${t}</button>`).join('')}</div>
+      <span class="hc-mv"><button data-act="up" aria-label="เลื่อนขึ้น" ${i === 0 ? 'disabled' : ''}>↑</button><button data-act="down" aria-label="เลื่อนลง" ${i === list.length - 1 ? 'disabled' : ''}>↓</button></span>
+    </div>`).join('');
+  };
+  const editHome = (e) => {
+    const el = e.target.closest('[data-act]'), row = e.target.closest('.hc-row'); if (!el || !row) return;
+    const list = homeBlocks(), i = list.findIndex((b) => b.id === row.dataset.id), act = el.dataset.act;
+    if (act === 'tog') list[i].on = el.checked;
+    else if (act === 'w') list[i].w = el.dataset.v;
+    else if (act === 'up' && i > 0) [list[i - 1], list[i]] = [list[i], list[i - 1]];
+    else if (act === 'down' && i < list.length - 1) [list[i + 1], list[i]] = [list[i], list[i + 1]];
+    S.homeCfg = list.map(({ id, on, w }) => ({ id, on, w }));
+    save(); paintHome();
+  };
+  paintHome();
+  $('#hcfg').onclick = (e) => { if (e.target.dataset.act !== 'tog') editHome(e); };
+  $('#hcfg').onchange = editHome;
+  $('#hcReset').onclick = () => { S.homeCfg = null; save(); paintHome(); toast('คืนค่าหน้าแรกแล้ว'); };
 }
 
 /* ---------- boot ---------- */

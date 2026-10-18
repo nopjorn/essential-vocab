@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 const { openApp } = require('./helpers');
 
 const SIZES = [[440, 956], [956, 440], [834, 1210], [1210, 834], [1032, 1376], [1376, 1032]];
-const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'read'];
+const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'read'];
 
 for (const [w, h] of SIZES) {
   test(`no horizontal overflow at ${w}×${h}`, async ({ page }) => {
