@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.26.0';
+const APP_VERSION = '1.26.1';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -758,7 +758,7 @@ function wotdInner(w) {
     <div class="th" style="margin:6px 0 8px">${esc(w.t)}</div>
     <div class="small">${hlExample(w)}</div><div class="small muted">${esc(w.et)}</div>`;
 }
-// Full-screen word of the day: 🎲 keeps drawing random words (from the same pool) for casual browsing; ◀ goes back through the ones just seen.
+// Full-screen word of the day (shows everything the word sheet does): 🎲 keeps drawing random words (from the same pool) for casual browsing; ◀ goes back through the ones just seen.
 function wotdFull(start) {
   const el = document.createElement('div');
   el.className = 'wf';
@@ -773,9 +773,21 @@ function wotdFull(start) {
         <div class="wf-word">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
         <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span>${w.tp ? ` · ${TOPIC_LABEL[w.tp]}` : ''}</div>
         <div class="th wf-th">${esc(w.t)}</div>
-        ${exampleBox(w)}${S.note[w.w] ? `<div class="note-box">💡 <b>วิธีจำของฉัน:</b> ${esc(S.note[w.w])}</div>` : ''}
+        ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div>
+        <div class="row" style="margin-top:14px"><button class="btn grow" data-star>${isStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาว'}</button><button class="btn grow" data-review>🔁 ทบทวนวันนี้</button><button class="btn grow" data-known>✓ รู้แล้ว</button></div>
+        <a class="link" style="display:block;text-align:center;margin:12px 0" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(w.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">ดูใน Oxford Learner's Dictionaries ↗</a>
       </div>
-      <div class="wf-bar"><button class="btn" data-back ${at ? '' : 'disabled'} aria-label="คำก่อนหน้า">◀</button><button class="btn" data-star>${isStar(w) ? '★' : '⭐'}</button><button class="btn" data-more>รายละเอียด</button><button class="btn primary grow" data-next>🎲 สุ่มคำใหม่</button></div>`;
+      <div class="wf-bar"><button class="btn" data-back ${at ? '' : 'disabled'} aria-label="คำก่อนหน้า">◀</button><button class="btn primary grow" data-next>🎲 สุ่มคำใหม่</button></div>`;
+    loadColloc().then((c) => {
+      const box = el.querySelector('#colBox'), list = c[w.w];
+      if (box && list && hist[at] === w) box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🔗 คำที่มักใช้คู่กัน</b> (แตะเพื่อฟัง)</div>
+        ${list.map(([en, th]) => `<button class="col-row" data-col="${esc(en)}"><b>${esc(en)}</b><span>${esc(th)}</span></button>`).join('')}`;
+    });
+    loadFamilies().then(() => {
+      const box = el.querySelector('#famBox'), f = familyOf(w.w);
+      if (box && f && hist[at] === w) box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🧬 ครอบครัวคำ</b> (แตะเพื่อฟัง)</div>${famRows(f, w.w.toLowerCase())}`;
+    });
+    el.querySelector('.wf-body').scrollTop = 0;
   };
   const next = () => {
     if (at < hist.length - 1) { at++; return paint(); }
@@ -792,8 +804,11 @@ function wotdFull(start) {
     else if (e.target.closest('[data-sayex]')) speak(w.e);
     else if (e.target.closest('[data-next]')) next();
     else if (e.target.closest('[data-back]')) { if (at) { at--; paint(); } }
+    else if (e.target.closest('[data-col]')) speak(e.target.closest('[data-col]').dataset.col);
+    else if (e.target.closest('[data-note]')) editNote(w, paint);
     else if (e.target.closest('[data-star]')) { toggleStar(w); paint(); }
-    else if (e.target.closest('[data-more]')) openSheet(w, paint);
+    else if (e.target.closest('[data-review]')) { markForReview(w); toast('เพิ่มเข้ารายการทบทวนแล้ว 🔁'); paint(); }
+    else if (e.target.closest('[data-known]')) { markKnown(w); toast('ทำเครื่องหมายว่ารู้แล้ว 👍'); paint(); }
   };
   paint();
 }
@@ -3255,7 +3270,7 @@ const GUIDE = [
       <li><b>👾 บอสคำดื้อ</b> — คำที่ลืมบ่อยจะกลายเป็นบอสมีหัวใจ 3 ดวง ตอบถูก 3 ครั้ง (บอสจะวนกลับมาเรื่อยๆ) เพื่อปราบบอส ได้ ${BOSS_XP} XP · ตอบผิดบอสฟื้นพลังเต็ม ผิด 3 ครั้งบอสหนีไปก่อน</li>
       <li><b>🏆 การ์ดสรุป</b> — ทุก 20 ใบ ดูว่าตอบถูกกี่ %, คำใหม่, คอมโบสูงสุด, XP ที่ได้ และเวลาที่ใช้</li>
     </ul>
-    <p><b>✨ คำประจำวัน</b> (หน้าแรก) — ทุกวันมี 1 คำจากระดับที่เลือก แตะเพื่อดูรายละเอียด กด 🔊 ฟังเสียง หรือกด 🎲 เพื่อสุ่มเป็นคำอื่น (คำที่สุ่มจะค้างไว้ทั้งวัน) · กด ⛶ เพื่อขยายเต็มหน้าจอ: กด 🎲 สุ่มคำใหม่ได้เรื่อยๆ ให้ผ่านตา มีปุ่ม ◀ ย้อนดูคำที่ผ่านมา ⭐ ติดดาว และ "รายละเอียด" (เปิดคีย์บอร์ด: ← → ใช้ย้อน/สุ่ม) · ตั้งเงื่อนไขได้ที่ ตั้งค่า → ตั้งค่าคำประจำวัน เช่น เฉพาะ A1 ที่กำลังเรียน คำดื้อ หรือหมวดที่อยากเน้น เลือกผสมกันได้</p>
+    <p><b>✨ คำประจำวัน</b> (หน้าแรก) — ทุกวันมี 1 คำจากระดับที่เลือก แตะเพื่อดูรายละเอียด กด 🔊 ฟังเสียง หรือกด 🎲 เพื่อสุ่มเป็นคำอื่น (คำที่สุ่มจะค้างไว้ทั้งวัน) · กด ⛶ เพื่อขยายเต็มหน้าจอ: กด 🎲 สุ่มคำใหม่ได้เรื่อยๆ ให้ผ่านตา แสดงรายละเอียดครบในหน้าเดียว (ระดับ สถานะ ตัวอย่าง คำที่ใช้คู่กัน ครอบครัวคำ วิธีจำ ติดดาว/ทบทวน/รู้แล้ว) และปุ่ม ◀ ย้อนดูคำที่ผ่านมา (คีย์บอร์ด: ← → ใช้ย้อน/สุ่ม) · ตั้งเงื่อนไขได้ที่ ตั้งค่า → ตั้งค่าคำประจำวัน เช่น เฉพาะ A1 ที่กำลังเรียน คำดื้อ หรือหมวดที่อยากเน้น เลือกผสมกันได้</p>
     <p><b>⚡ เล่นด่วน</b> (หน้าแรก) — แตะครั้งเดียว แอปสุ่มเกมให้ 10 ข้อ ใช้คำที่เรียนแล้ว จบในราว 1 นาที</p>
     <p>อยากให้เปิดแอปแล้วเข้าไถศัพท์ทันที: ⚙️ ตั้งค่า → <b>เปิดแอปแล้วไปที่</b> → 📱 ไถศัพท์</p>`],
   ['⭐', 'XP และเลเวล', `

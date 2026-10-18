@@ -174,15 +174,16 @@ test('word of the day: full screen view, random, back, star, details, close', as
   await expect(wf.locator('.example')).toBeVisible();
   await wf.locator('[data-say]').click();
   await wf.locator('[data-star]').click();
-  await expect(wf.locator('[data-star]')).toHaveText('★');
+  await expect(wf.locator('[data-star]')).toHaveText('★ เอาดาวออก');
   await wf.locator('[data-back]').click();
   expect(await wf.locator('.wf-word').innerText()).toBe(first);
-  await wf.locator('[data-more]').click();
+  await expect(wf.locator('[data-review]')).toBeVisible();
+  await wf.locator('[data-review]').click();
+  await wf.locator('[data-known]').click();
+  await expect(wf.locator('a.link')).toBeVisible();
+  await wf.locator('[data-note]').first().click();
   await expect(page.locator('.sheet')).toBeVisible();
-  // the sheet must sit above the full-screen view (really clickable, not covered)
-  await page.locator('.sheet [data-act=star]').click();
-  await page.locator('.sheet [data-act=review]').click();
-  await expect(page.locator('.sheet-wrap')).toHaveCount(0);
+  await page.locator('.sheet [data-act=save]').click();
   await wf.locator('[data-x]').click();
   await expect(page.locator('.wf')).toHaveCount(0);
   await expect(page.locator('#wotd')).toBeVisible();
