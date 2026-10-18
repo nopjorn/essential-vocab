@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.24.1';
+const APP_VERSION = '1.25.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -78,6 +78,7 @@ const defaults = () => ({
   nick: '',            // name shown on the friends leaderboard
   stk: {},             // topic id -> sticker tier reached (1 bronze … 4 diamond)
   wotdPick: null,      // {day, key, w}: today's word of the day (kept steady even as progress changes)
+  seenVer: null,       // app version whose "what's new" prompt was shown (device-local, not merged from backups)
   homeCfg: null,       // home layout [{id, on, w: 'full'|'half'}] in display order; null = default (see HOME_BLOCKS)
 });
 let S = load();
@@ -567,7 +568,7 @@ function markForReview(w) {
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ' };
+const TITLES = { home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต' };
 function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
@@ -578,7 +579,7 @@ function go(tab, ...args) {
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog }[tab])(...args);
   updateStreak();
 }
 function updateStreak() { $('#streak').textContent = '🔥 ' + streakNow() + (S.freeze ? ' · 🧊' + S.freeze : '') + ' · Lv.' + levelOf(S.xp); }
@@ -3333,6 +3334,7 @@ const GUIDE = [
       <li>ถ้ากำลังเปิดแอปค้างไว้แล้วมีเวอร์ชันใหม่ จะมีแถบ "มีเวอร์ชันใหม่พร้อมใช้งาน" เด้งขึ้นมา กด <b>โหลดใหม่</b> ได้เลย (กด ✕ เพื่อปิดไว้ก่อนก็ได้)</li>
       <li>หรือปิดแอป (ปัดขึ้นออกจากหน้าสลับแอป) แล้วเปิดใหม่ตอนต่อเน็ต แอปจะโหลดเวอร์ชันใหม่เอง อาจต้องทำ 2 รอบ</li>
       <li>เช็คเวอร์ชันได้ที่ท้ายหน้าแรกหรือหน้าตั้งค่า (ตอนนี้ ${APP_VERSION})</li>
+      <li>หลังอัปเดตแล้วจะมีแถบ "ดูมีอะไรใหม่" เด้งขึ้นครั้งเดียว กดเพื่อดูว่าเวอร์ชันนี้เพิ่มอะไร หรือดูย้อนหลังทุกเวอร์ชันได้ที่ ⚙️ ตั้งค่า → ประวัติการอัปเดต</li>
       <li><b>ไม่ต้อง</b> ลบไอคอนแล้วเพิ่มใหม่ เพราะจะทำให้ข้อมูลหาย</li>
     </ul>`],
   ['💡', 'ทริกให้จำได้เร็วและได้ผลที่สุด', `
@@ -3380,6 +3382,49 @@ function renderGuide(from) {
   $('#gBack').onclick = () => go(back);
 }
 
+let CHANGELOG = null;
+function loadChangelog() {
+  if (CHANGELOG) return Promise.resolve(CHANGELOG);
+  return new Promise((res) => {
+    const sc = document.createElement('script');
+    sc.src = 'changelog.js?v=' + APP_VERSION;
+    const done = () => { CHANGELOG = window.CHANGELOG || []; res(CHANGELOG); };
+    sc.onload = done; sc.onerror = done;
+    document.head.appendChild(sc);
+  });
+}
+const verNum = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (+x || 0), 0);
+function renderChangelog(from) {
+  const back = from || 'settings';
+  view.innerHTML = `<div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="clBack">‹ กลับ</button></div><div id="clBody" class="center muted" style="padding:24px">กำลังโหลด…</div>`;
+  $('#clBack').onclick = () => go(back);
+  loadChangelog().then((list) => {
+    if (current !== 'changelog') return;
+    $('#clBody').className = '';
+    $('#clBody').removeAttribute('style');
+    $('#clBody').innerHTML = (list.length ? list : [[APP_VERSION, 'โหลดประวัติไม่สำเร็จ ลองใหม่ตอนต่อเน็ตนะ']]).map(([v, t], i) => `
+      <div class="card-box cl-row${i === 0 ? ' cl-new' : ''}"><div class="cl-v">${esc(v)}${v === APP_VERSION ? ' <span class="cl-tag">เวอร์ชันนี้</span>' : ''}</div><div class="cl-t">${esc(t)}</div></div>`).join('')
+      + `<p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
+  });
+}
+// After an update: once per version, offer a look at what changed (silent for brand-new installs).
+function whatsNew() {
+  if (S.seenVer === APP_VERSION) return;
+  const first = S.seenVer == null && !Object.keys(S.prog).length;
+  const older = S.seenVer == null || verNum(S.seenVer) < verNum(APP_VERSION);
+  S.seenVer = APP_VERSION; save();
+  if (first || !older || document.getElementById('updBar')) return;
+  const b = document.createElement('div');
+  b.id = 'newBar'; b.className = 'upd-bar'; b.setAttribute('role', 'status');
+  b.innerHTML = `<span>🎉 อัปเดตเป็น ${APP_VERSION} แล้ว</span><button class="btn primary" data-new="go">ดูมีอะไรใหม่</button><button class="upd-x" data-new="x" aria-label="ปิด">✕</button>`;
+  b.onclick = (e) => {
+    const a = e.target.dataset.new;
+    if (a === 'go') { b.remove(); go('changelog', current === 'changelog' ? 'settings' : current); }
+    else if (a === 'x') b.remove();
+  };
+  document.body.appendChild(b);
+}
+
 /* ---------- settings ---------- */
 // Pre-built calendar files in reminders/ (see README): one per time.
 const REMIND_TIMES = ['0600', '0700', '0800', '0900', '1200', '1700', '1800', '1900', '2000', '2100', '2200'];
@@ -3388,6 +3433,7 @@ function renderSettings() {
   const lvChip = (l) => `<button class="chip" data-v="${l}">${LV_LABEL[l]} · ${W.filter((w) => w.g === l).length} คำ</button>`;
   view.innerHTML = `
     <button class="card-box guide-link" id="guideBtn" style="margin-top:4px"><span>📘</span><div class="grow"><b>คู่มือการใช้งาน & ทริก</b><div class="small muted">วิธีใช้ทุกส่วนของแอป และวิธีจำศัพท์ให้ได้ผลที่สุด</div></div><span class="muted">›</span></button>
+    <button class="card-box guide-link" id="clBtn"><span>🆕</span><div class="grow"><b>ประวัติการอัปเดต</b><div class="small muted">ดูว่าแต่ละเวอร์ชันเพิ่มหรือแก้อะไรบ้าง (ตอนนี้ ${APP_VERSION})</div></div><span class="muted">›</span></button>
     <div class="h2">ระดับคำศัพท์ที่เรียน</div>
     <div class="card-box">
       <div class="small muted" style="margin-bottom:8px"><b>ชุด 3000 คำ</b> · คำหลักที่ต้องรู้</div>
@@ -3483,6 +3529,7 @@ function renderSettings() {
   };
   $('#wotdSetBtn').onclick = () => go('wotdset');
   $('#guideBtn').onclick = () => go('guide', 'settings');
+  $('#clBtn').onclick = () => go('changelog', 'settings');
   $('#npd').onchange = (e) => { st.newPerDay = +e.target.value; save(); };
   $('#ord').onchange = (e) => { st.order = e.target.value; save(); };
   $('#toPlace').onclick = () => go('placement');
@@ -3653,6 +3700,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   }).catch(() => {});
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadSW) showUpdate(); });
 }
+setTimeout(whatsNew, 600);
 if (syncOn() && auth) syncNow().then((ok) => { if (ok && current === 'home') renderHome(); });
 document.addEventListener('visibilitychange', () => {
   if (!syncOn() || !auth) return;

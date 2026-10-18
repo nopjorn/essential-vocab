@@ -2,7 +2,7 @@
 const { test, expect } = require('@playwright/test');
 const { openApp, readState } = require('./helpers');
 
-const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read', 'placement'];
+const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read', 'placement', 'changelog'];
 
 test('every screen renders without errors and shows the version', async ({ page }) => {
   const errors = await openApp(page);
@@ -28,6 +28,21 @@ test('update banner appears, can be dismissed, and reloads', async ({ page }) =>
   await expect(bar).toHaveCount(0);
   await page.evaluate(() => showUpdate());
   await Promise.all([page.waitForEvent('load'), page.locator('#updBar [data-upd=go]').click()]);
+  expect(errors).toEqual([]);
+});
+
+test("what's new bar after an update opens the changelog; settings links to it", async ({ page }) => {
+  const errors = await openApp(page, { seenVer: '1.0.0', prog: { a: { b: 1, i: 1, e: 2.5, d: 0, s: 1, c: 1, x: 0 } } });
+  const bar = page.locator('#newBar');
+  await expect(bar).toContainText('ดูมีอะไรใหม่');
+  await bar.locator('[data-new=go]').click();
+  await expect(page.locator('#view')).toContainText('เวอร์ชันนี้');
+  await expect(page.locator('#view .cl-row').first()).toBeVisible();
+  await page.locator('#clBack').click();
+  await page.evaluate(() => go('settings'));
+  await page.locator('#clBtn').click();
+  await expect(page.locator('#view .cl-row').nth(5)).toBeVisible();
+  expect((await readState(page)).seenVer).toBe(await page.evaluate(() => APP_VERSION));
   expect(errors).toEqual([]);
 });
 

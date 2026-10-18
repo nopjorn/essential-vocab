@@ -5,6 +5,7 @@ const KEY = 'oxford3000.v1';
 
 // Opens the app with sync disabled. `state` (optional) is merged into a fresh localStorage save.
 async function openApp(page, state) {
+  if (state && state.seenVer === undefined) state = { ...state, seenVer: '99.0.0' }; // keep the what's-new bar out of other tests
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.route('**/config.js*', (r) => r.fulfill({ contentType: 'text/javascript', body: "window.SYNC_CONFIG = { url: '', anonKey: '' };" }));
