@@ -773,6 +773,9 @@ input.sel { color: var(--text); font: inherit; }
 .wf-th { font-size: 26px; margin: 10px 0 14px; }
 .wf-bar { display: flex; gap: 10px; }
 .wf-bar .btn[disabled] { opacity: .4; }
+.wf-acts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+.wf-acts .btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px; font-size: 13px; white-space: nowrap; }
+.wf-acts .btn span { font-size: 22px; line-height: 1; }
 .wf mark { background: var(--accent-soft, rgba(108, 92, 231, .2)); color: inherit; border-radius: 3px; }
 @media (min-width: 700px) { .wf { left: var(--rail-w); } }
 @media (max-height: 520px) { .wf-word { font-size: 40px; } .wf-th { margin: 4px 0 8px; } }

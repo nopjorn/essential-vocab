@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.26.1';
+const APP_VERSION = '1.26.2';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -774,7 +774,7 @@ function wotdFull(start) {
         <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span>${w.tp ? ` · ${TOPIC_LABEL[w.tp]}` : ''}</div>
         <div class="th wf-th">${esc(w.t)}</div>
         ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div>
-        <div class="row" style="margin-top:14px"><button class="btn grow" data-star>${isStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาว'}</button><button class="btn grow" data-review>🔁 ทบทวนวันนี้</button><button class="btn grow" data-known>✓ รู้แล้ว</button></div>
+        <div class="wf-acts"><button class="btn" data-star><span>${isStar(w) ? '★' : '⭐'}</span>${isStar(w) ? 'ติดดาวแล้ว' : 'ติดดาว'}</button><button class="btn" data-review><span>🔁</span>ทบทวนวันนี้</button><button class="btn" data-known><span>✓</span>รู้แล้ว</button></div>
         <a class="link" style="display:block;text-align:center;margin:12px 0" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(w.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">ดูใน Oxford Learner's Dictionaries ↗</a>
       </div>
       <div class="wf-bar"><button class="btn" data-back ${at ? '' : 'disabled'} aria-label="คำก่อนหน้า">◀</button><button class="btn primary grow" data-next>🎲 สุ่มคำใหม่</button></div>`;

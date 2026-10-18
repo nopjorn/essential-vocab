@@ -174,7 +174,7 @@ test('word of the day: full screen view, random, back, star, details, close', as
   await expect(wf.locator('.example')).toBeVisible();
   await wf.locator('[data-say]').click();
   await wf.locator('[data-star]').click();
-  await expect(wf.locator('[data-star]')).toHaveText('★ เอาดาวออก');
+  await expect(wf.locator('[data-star]')).toContainText('ติดดาวแล้ว');
   await wf.locator('[data-back]').click();
   expect(await wf.locator('.wf-word').innerText()).toBe(first);
   await expect(wf.locator('[data-review]')).toBeVisible();
