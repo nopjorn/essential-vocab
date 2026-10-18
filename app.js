@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.26.2';
+const APP_VERSION = '1.27.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -859,6 +859,7 @@ function buildQueue(extra) {
   const due = dueList(p).slice(0, 200);
   let fresh = p.filter((w) => !S.prog[w.w] && inTopic(w));
   if (S.settings.order === 'shuffle') fresh = shuffle(fresh);
+  if (extra === 'mastered') return shuffle(masteredWords()).slice(0, 20);
   if (extra === 'ahead') return p.filter((w) => S.prog[w.w]).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d).slice(0, 20);
   const n = extra ? 10 : Math.max(0, S.settings.newPerDay - S.daily.fresh);
   fresh = fresh.slice(0, n);
@@ -878,12 +879,13 @@ function buildQueue(extra) {
 // "What next?" buttons shown when the flashcards for today are done (empty queue or end of a round).
 function nextSteps(learned) {
   const unseen = pool().filter((w) => !S.prog[w.w]).length;
+  const mastered = masteredWords().length;
   const leech = W.filter(isLeech).length, star = W.filter(isStar).length;
   const b = (id, ic, t, d) => `<button class="quick-btn" data-ns="${id}"><span>${ic}</span><b>${t}</b><small>${d}</small></button>`;
   return `<div class="quick next-steps">
     ${unseen ? b('more', '➕', 'คำใหม่อีก 10 คำ', 'เรียนล่วงหน้าเกินเป้าวันนี้') : ''}
     ${learned >= 4 ? b('ahead', '🔮', 'ทบทวนล่วงหน้า', '20 ใบที่ใกล้ถึงกำหนดที่สุด') : ''}
-    ${b('feed', '📱', 'ไถศัพท์', 'ปัดเล่นเรื่อยๆ มีการ์ดพิเศษ')}
+    ${mastered ? b('mastered', '🟢', 'ทบทวนคำที่จำได้แล้ว', 'สุ่ม 20 ใบ จากคำที่จำได้แล้ว ' + mastered + ' คำ') : ''}
     ${b('play', '⚡', 'เล่นด่วน', 'เกมสุ่ม 10 ข้อ ~1 นาที')}
     ${b('read', '📖', 'อ่านเรื่องสั้น', 'ได้เจอคำศัพท์ในบริบทจริง')}
     ${leech ? b('leech', '🐢', 'ฝึกคำดื้อ', leech + ' คำที่ลืมบ่อย') : ''}
@@ -895,6 +897,7 @@ function bindNextSteps() {
       const id = el.dataset.ns;
       if (id === 'more') go('cards', true);
       else if (id === 'ahead') go('cards', 'ahead');
+      else if (id === 'mastered') go('cards', 'mastered');
       else if (id === 'play') quickPlay();
       else if (id === 'leech' || id === 'star') { gameSource = id; startGame('en2th'); }
       else go(id);
@@ -3243,7 +3246,7 @@ const GUIDE = [
     </ul>
     <p><b>ทางลัด:</b> ปัดการ์ดไปขวา = จำได้, ปัดไปซ้าย = ลืม</p>
     <p><b>ระยะทบทวนปรับตามแต่ละคำ</b> คำที่กด "ง่าย" บ่อยจะเว้นห่างเร็วขึ้น คำที่ลืมบ่อยจะกลับมาถี่ขึ้น (ตัวเลขใต้ปุ่มบอกว่าจะเจอคำนี้อีกเมื่อไร) คำที่ระยะทบทวนถึง 16 วันขึ้นไปจะนับว่า <b>🟢 จำได้แล้ว</b></p>
-    <p><b>ทำครบของวันแล้ว?</b> หน้าแฟลชการ์ดจะมีเมนูให้เลือกต่อ: ➕ คำใหม่อีก 10 คำ, 🔮 ทบทวนล่วงหน้า (20 ใบที่ใกล้ถึงกำหนด), ไถศัพท์, เล่นด่วน, อ่านเรื่องสั้น, ฝึกคำดื้อ และคำติดดาว</p>
+    <p><b>ทำครบของวันแล้ว?</b> หน้าแฟลชการ์ดจะมีเมนูให้เลือกต่อ: ➕ คำใหม่อีก 10 คำ, 🔮 ทบทวนล่วงหน้า (20 ใบที่ใกล้ถึงกำหนด), 🟢 ทบทวนคำที่จำได้แล้ว (สุ่ม 20 ใบ เช็คว่ายังจำได้ไหม), เล่นด่วน, อ่านเรื่องสั้น, ฝึกคำดื้อ และคำติดดาว</p>
     <p>กดผิด? กด <b>↩︎</b> มุมขวาบนเพื่อย้อนการ์ดใบล่าสุด · แตะ ⭐ บนการ์ดเพื่อติดดาวคำที่อยากฝึกเพิ่ม</p>`],
   ['📱', 'ไถศัพท์ และเล่นด่วน', `
     <p><b>📱 ไถศัพท์</b> (แท็บด้านล่าง หรือปุ่มสีชมพูในหน้าแรก) — ปัดขึ้นทีละคำเหมือนไถ TikTok ไม่มีวันจบ เหมาะกับช่วงว่างสั้นๆ</p>
