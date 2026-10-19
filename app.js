@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.31.2';
+const APP_VERSION = '1.31.3';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -898,9 +898,9 @@ function nextSteps(learned) {
   return `<div class="quick next-steps">
     ${unseen ? b('more', '➕', 'คำใหม่อีก 10 คำ', 'เรียนล่วงหน้าเกินเป้าวันนี้') : ''}
     ${learned >= 4 ? b('ahead', '🔮', 'ทบทวนล่วงหน้า', '20 ใบที่ใกล้ถึงกำหนดที่สุด') : ''}
-    ${mastered ? b('mastered', '🟢', 'ทบทวนคำที่จำได้แล้ว', 'สุ่ม 20 ใบ จากคำที่จำได้แล้ว ' + mastered + ' คำ') : ''}
-    ${b('play', '⚡', 'เล่นด่วน', 'เกมสุ่ม 10 ข้อ ~1 นาที')}
     ${b('feed', '📱', 'ไถศัพท์', 'ปัดดูทีละคำ ไม่มีวันจบ')}
+    ${b('play', '⚡', 'เล่นด่วน', 'เกมสุ่ม 10 ข้อ ~1 นาที')}
+    ${mastered ? b('mastered', '🟢', 'ทบทวนคำที่จำได้แล้ว', 'สุ่ม 20 ใบ จากคำที่จำได้แล้ว ' + mastered + ' คำ') : ''}
     ${leech ? b('leech', '🐢', 'ฝึกคำดื้อ', leech + ' คำที่ลืมบ่อย') : ''}
     ${star ? b('star', '⭐', 'ฝึกคำติดดาว', star + ' คำที่ติดดาวไว้') : ''}
     ${(S.settings.nextGames || []).filter((g) => GAMES[g]).map((g) => b('g:' + g, GAMES[g].icon, GAMES[g].name, GAMES[g].desc)).join('')}</div>`;
