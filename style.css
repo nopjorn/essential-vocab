@@ -864,6 +864,8 @@ details.set-group[open] > summary::after { transform: rotate(-90deg); }
   .opt.correct, .spell-input.ok, .ord-ans.ok { animation: okpop .32s ease-out; }
   @keyframes okpop { 40% { transform: scale(1.035); } 100% { transform: scale(1); } }
 }
+html.no-anim *, html.no-anim *::before, html.no-anim *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+html.no-anim .f-timer.run i { animation-duration: 6s !important; } /* the feed's answer timer is information, not decoration */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }

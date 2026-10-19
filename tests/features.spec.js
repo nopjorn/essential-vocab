@@ -320,3 +320,19 @@ test.describe('service worker', () => {
     await context.setOffline(false);
   });
 });
+
+test('settings: animation switch turns page animations and confetti off', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => go('settings'));
+  await page.evaluate(() => { document.querySelector('details[data-g="look"]').open = true; });
+  await expect(page.locator('#anim')).toBeChecked();
+  await page.locator('#anim + span').click();
+  expect(await page.evaluate(() => [document.documentElement.classList.contains('no-anim'), S.settings.anim])).toEqual([true, false]);
+  const dur = await page.evaluate(() => { go('games'); return getComputedStyle(view).animationDuration; });
+  expect(parseFloat(dur)).toBeLessThan(0.01);
+  await page.evaluate(() => confetti());
+  await expect(page.locator('.confetti')).toHaveCount(0);
+  await page.reload();
+  expect(await page.evaluate(() => document.documentElement.classList.contains('no-anim'))).toBe(true);
+  expect(errors).toEqual([]);
+});
