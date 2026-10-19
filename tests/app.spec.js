@@ -167,17 +167,27 @@ test('word of the day: full screen view, random, back, star, details, close', as
   await page.locator('#wotd [data-full]').click();
   const wf = page.locator('.wf');
   await expect(wf).toBeVisible();
-  // auto-speak toggle: off by default, on → every new word is read aloud
+  // auto-speak: off → word → word + example → off
   await expect(wf.locator('[data-auto]')).toHaveText('🔇');
   await wf.locator('[data-auto]').click();
-  await expect(wf.locator('[data-auto]')).toHaveText('🔊');
-  expect(await page.evaluate(() => S.settings.wfAuto)).toBe(true);
+  await expect(wf.locator('[data-auto]')).toHaveText('🔊 คำ');
   await page.evaluate(() => { window.__said.length = 0; });
   await wf.locator('[data-next]').click();
-  const spoken = (await wf.locator('.wf-word').innerText()).replace('🔊', '').trim();
-  expect(await page.evaluate(() => window.__said.map((u) => u.text || u))).toContain(spoken);
+  let spoken = (await wf.locator('.wf-word').innerText()).replace('🔊', '').trim();
+  await expect.poll(() => page.evaluate(() => window.__said.slice())).toEqual([spoken]);
+  await wf.locator('[data-auto]').click();
+  await expect(wf.locator('[data-auto]')).toHaveText('🔊 +ประโยค');
+  expect(await page.evaluate(() => S.settings.wfAuto)).toBe(2);
+  await page.evaluate(() => { window.__said.length = 0; });
+  await wf.locator('[data-next]').click();
+  spoken = (await wf.locator('.wf-word').innerText()).replace('🔊', '').trim();
+  await expect.poll(() => page.evaluate(() => window.__said.length)).toBe(2);
+  const said = await page.evaluate(() => window.__said.slice());
+  expect(said[0]).toBe(spoken);
+  expect(await wf.locator('.example').innerText()).toContain(said[1].split(' ')[0]);
   await wf.locator('[data-auto]').click();
   await expect(wf.locator('[data-auto]')).toHaveText('🔇');
+  await wf.locator('[data-back]').click();
   await wf.locator('[data-back]').click();
   const first = await wf.locator('.wf-word').innerText();
   await expect(wf.locator('[data-back]')).toBeDisabled();

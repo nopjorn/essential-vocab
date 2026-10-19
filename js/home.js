@@ -177,6 +177,9 @@ function wotdInner(w) {
     <div class="small">${hlExample(w)}</div><div class="small muted">${esc(w.et)}</div>`;
 }
 // Full-screen word of the day (shows everything the word sheet does): 🎲 keeps drawing random words (from the same pool) for casual browsing; ◀ goes back through the ones just seen.
+// Full-screen auto-speak modes: [button, toast/label]; settings.wfAuto was a boolean in 1.38.0 (true → 1).
+const WF_AUTO = [['🔇', 'ปิดเสียงอ่านอัตโนมัติ'], ['🔊 คำ', 'อ่านคำศัพท์อัตโนมัติ 🔊'], ['🔊 +ประโยค', 'อ่านคำศัพท์ + ประโยคตัวอย่างอัตโนมัติ 🔊💬']];
+const wfAuto = () => +S.settings.wfAuto || 0;
 function wotdFull(start) {
   const el = document.createElement('div');
   el.className = 'wf';
@@ -194,7 +197,7 @@ function wotdFull(start) {
         ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div>
         <div class="wf-acts"><button class="btn" data-star><span>${isStar(w) ? '★' : '⭐'}</span>${isStar(w) ? 'ติดดาวแล้ว' : 'ติดดาว'}</button><button class="btn" data-review><span>🔁</span>ทบทวนวันนี้</button><button class="btn" data-known><span>✓</span>รู้แล้ว</button></div>
       </div>
-      <div class="wf-bar"><button class="btn" data-back ${at ? '' : 'disabled'} aria-label="คำก่อนหน้า">◀</button><button class="btn" data-auto aria-label="${S.settings.wfAuto ? 'ปิดเสียงอ่านอัตโนมัติ' : 'เปิดเสียงอ่านอัตโนมัติ'}" aria-pressed="${!!S.settings.wfAuto}">${S.settings.wfAuto ? '🔊' : '🔇'}</button><button class="btn primary grow" data-next>🎲 สุ่มคำใหม่</button></div>`;
+      <div class="wf-bar"><button class="btn" data-back ${at ? '' : 'disabled'} aria-label="คำก่อนหน้า">◀</button><button class="btn" data-auto aria-label="${WF_AUTO[wfAuto()][1]} (แตะเพื่อเปลี่ยน)">${WF_AUTO[wfAuto()][0]}</button><button class="btn primary grow" data-next>🎲 สุ่มคำใหม่</button></div>`;
     loadColloc().then((c) => {
       const box = el.querySelector('#colBox'), list = c[w.w];
       if (box && list && hist[at] === w) box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🔗 คำที่มักใช้คู่กัน</b> (แตะเพื่อฟัง)</div>
@@ -206,14 +209,22 @@ function wotdFull(start) {
     });
     el.querySelector('.wf-body').scrollTop = 0;
   };
-  // Auto-speak (settings.wfAuto): read each word aloud when it is shown via ◀ / 🎲.
-  const show = () => { paint(); if (S.settings.wfAuto) speak(hist[at].w); };
+  // Auto-speak (settings.wfAuto 0 off / 1 word / 2 word + example): read the word shown via ◀ / 🎲,
+  // then its example; a newer word (token) stops the chain.
+  let tok = 0;
+  const autoSay = () => {
+    const w = hist[at], t = ++tok, mode = wfAuto();
+    if (!mode) return;
+    const u = speak(w.w, { slow: false });
+    if (u && mode === 2 && w.e) u.onend = () => { if (t === tok && document.body.contains(el)) setTimeout(() => { if (t === tok) speak(w.e, { slow: false }); }, 400); };
+  };
+  const show = () => { paint(); autoSay(); };
   const next = () => {
     if (at < hist.length - 1) { at++; return show(); }
     const p = (wotdPool().length ? wotdPool() : pool()).filter((x) => x !== hist[at]); if (!p.length) return;
     hist.push(p[Math.floor(Math.random() * p.length)]); at = hist.length - 1; show();
   };
-  const close = () => { el.remove(); document.removeEventListener('keydown', key); renderHome(); };
+  const close = () => { tok++; el.remove(); document.removeEventListener('keydown', key); renderHome(); };
   const key = (e) => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') next(); else if (e.key === 'ArrowLeft' && at) { at--; show(); } };
   document.addEventListener('keydown', key);
   el.onclick = (e) => {
@@ -224,9 +235,9 @@ function wotdFull(start) {
     else if (e.target.closest('[data-next]')) next();
     else if (e.target.closest('[data-back]')) { if (at) { at--; show(); } }
     else if (e.target.closest('[data-auto]')) {
-      S.settings.wfAuto = !S.settings.wfAuto; save(); paint();
-      toast(S.settings.wfAuto ? 'เปิดเสียงอ่านคำอัตโนมัติ 🔊' : 'ปิดเสียงอ่านคำอัตโนมัติ 🔇');
-      if (S.settings.wfAuto) speak(w.w);
+      S.settings.wfAuto = (wfAuto() + 1) % 3; save(); paint();
+      toast(WF_AUTO[wfAuto()][1]);
+      if (wfAuto()) autoSay(); else { tok++; if (window.speechSynthesis) speechSynthesis.cancel(); }
     }
     else if (e.target.closest('[data-col]')) speak(e.target.closest('[data-col]').dataset.col);
     else if (e.target.closest('[data-note]')) editNote(w, paint);
