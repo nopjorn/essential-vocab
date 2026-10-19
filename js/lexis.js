@@ -71,6 +71,12 @@ function renderPhrasal() {
 /* ---------- word sheet extras ---------- */
 // Fills the phrasal-verb and synonym boxes of the word sheet (el) for word w.
 function lexisBoxes(el, w) {
+  loadAffix().then(() => {
+    const box = el.querySelector('#afBox'), hit = AFFIX_OF.get(w.w.toLowerCase());
+    if (box && hit) box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🧱 ส่วนประกอบคำ</b></div>
+      <div class="tip-box" style="margin-top:0"><b>${affixHTML(hit.a, hit.w)}</b> = <b>${affixLabel(hit.a)}</b> (${esc(hit.a.th)}) + ${esc(affixStem(hit.a, hit.w))}</div>
+      <div class="small muted" style="margin:10px 0 6px">คำอื่นที่มี ${affixLabel(hit.a)} (แตะเพื่อฟัง)</div>${affixRows(hit.a, hit.w)}`;
+  });
   loadSyn().then(() => {
     const box = el.querySelector('#synBox'), gs = synGroups(w.w);
     if (box && gs.length) box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>≈ คำเหมือน–คำตรงข้าม</b> (แตะเพื่อฟัง)</div>${gs.map((g) => synCard(g, w.w.toLowerCase())).join('')}`;
@@ -148,4 +154,51 @@ function renderSyn() {
   $('#synBack').onclick = () => go('games');
   $('#synPlay').onclick = () => startGame('syn');
   $('#synList').onclick = (e) => { const b = e.target.closest('[data-col]'); if (b) speak(b.dataset.col); };
+}
+
+/* ---------- word parts (prefixes / suffixes) ---------- */
+// affixes.js: [{ x, k: 'p'|'s', th, note, ex: [[word, thai], ...] }]
+let AFFIX = null, AFFIX_OF = null;
+const loadAffix = () => loadData('affixes.js', 'AFFIXES').then((rows) => {
+  if (!AFFIX) {
+    AFFIX = rows; AFFIX_OF = new Map();
+    AFFIX.forEach((a) => a.ex.forEach(([w, th]) => AFFIX_OF.set(w, { a, w, th })));
+  }
+  return AFFIX;
+});
+const affixLabel = (a) => (a.k === 'p' ? a.x + '-' : '-' + a.x);
+const affixStem = (a, w) => (a.k === 'p' ? w.slice(a.x.length) : w.slice(0, -a.x.length));
+const affixJoin = (a, stem) => (a.k === 'p' ? a.x + stem : stem + a.x);
+// Word split into base + highlighted affix, e.g. un|happy.
+const affixHTML = (a, w) => (a.k === 'p' ? `<mark>${esc(a.x)}</mark>${esc(affixStem(a, w))}` : `${esc(affixStem(a, w))}<mark>${esc(a.x)}</mark>`);
+// Affixes of the same kind that do not make a real word with this base (so only one answer fits).
+function affixDistractors(a, w) {
+  const stem = affixStem(a, w);
+  const real = (x) => AFFIX_OF.has(x) || WORD_BY[x];
+  return shuffle(AFFIX.filter((b) => b.k === a.k && b.x !== a.x && !real(affixJoin(b, stem)))).slice(0, 3);
+}
+const affixRows = (a, hi) => a.ex.map(([w, th]) => `<button class="col-row${w === hi ? ' on' : ''}" data-col="${esc(w)}"><b>${affixHTML(a, w)}</b><span>${esc(th)}</span></button>`).join('');
+
+let affixQuery = '';
+function renderAffix() {
+  if (!AFFIX) { loadAffix().then(renderAffix); return; }
+  $('#title').textContent = 'อุปสรรค–ปัจจัย';
+  view.scrollTop = 0;
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="afBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="afPlay">🧱 เล่นเกม</button></div>
+    <p class="small muted" style="margin:0 4px 10px">รู้ความหมายของส่วนหน้า (prefix) และส่วนท้ายคำ (suffix) แล้วเดาความหมายคำใหม่ได้เอง เช่น un- (ไม่) + happy = ไม่มีความสุข · แตะคำเพื่อฟัง</p>
+    <input class="search" id="afq" type="search" placeholder="ค้นหา เช่น un หรือ ful หรือ ไม่" value="${esc(affixQuery)}" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="ค้นหาอุปสรรคและปัจจัย">
+    <div id="afList"></div>`;
+  const paint = () => {
+    const q = affixQuery.trim().toLowerCase().replace(/-/g, '');
+    const hit = (a) => !q || a.x.includes(q) || a.th.includes(q) || a.ex.some(([w, th]) => w.includes(q) || th.includes(q));
+    const part = (k, h) => { const list = AFFIX.filter((a) => a.k === k && hit(a)); return list.length ? `<div class="h2">${h}</div><div class="pair-list">${list.map((a) => `<div class="card-box pair-card"><div class="pair-h"><b class="af-x">${affixLabel(a)}</b> <span>= ${esc(a.th)}</span></div>
+      ${a.note ? `<div class="small muted" style="margin:4px 0 6px">${esc(a.note)}</div>` : ''}${affixRows(a)}</div>`).join('')}</div>` : ''; };
+    const html = part('p', '⬅️ อุปสรรค (prefix) — เติมหน้าคำ') + part('s', '➡️ ปัจจัย (suffix) — เติมท้ายคำ');
+    $('#afList').innerHTML = html || '<p class="muted center">ไม่พบ</p>';
+  };
+  paint();
+  $('#afq').oninput = (e) => { affixQuery = e.target.value; paint(); };
+  $('#afBack').onclick = () => go('games');
+  $('#afPlay').onclick = () => startGame('affix');
+  $('#afList').onclick = (e) => { const b = e.target.closest('[data-col]'); if (b) speak(b.dataset.col); };
 }

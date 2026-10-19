@@ -43,6 +43,7 @@ const GAMES = {
   wform: { icon: '🧬', name: 'เปลี่ยนรูปคำ', desc: 'เลือกรูปคำให้เข้ากับประโยค เช่น decide → decision' },
   phrasal: { icon: '🧩', name: 'Phrasal verbs', desc: 'เติมคำเล็กๆ ให้ครบ เช่น give ___ = เลิก' },
   syn: { icon: '≈', name: 'คำเหมือน–ตรงข้าม', desc: 'big ≈ large, big ↔ small เลือกให้ถูก' },
+  affix: { icon: '🧱', name: 'เติมหน้า–ท้ายคำ', desc: 'un-, -ful, -less … เลือกให้ได้ความหมาย' },
   review: { icon: '🔁', name: 'คำที่ผิดบ่อย', desc: 'ฝึกคำที่เคยตอบผิด' },
 };
 // Games whose data is lazy-loaded (stories / collocations) or built from sentences instead of the word pool.
@@ -50,7 +51,7 @@ const STORY_GAMES = ['sCloze', 'sOrder'];
 // Games built from pairs.js (confusable words, minimal pairs): not tied to the word list or its schedule.
 const PAIR_GAMES = ['confuse', 'minpair'];
 // Skill games with their own items (idx -1): practice only, no flashcard scheduling.
-const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn'];
+const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix'];
 function gameTile(id) {
   const g = GAMES[id];
   const best = S.best[id] != null ? `<span>🏅 สถิติ: ${S.best[id]}</span>` : '';
@@ -79,16 +80,21 @@ function renderGames() {
       ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
     </div>
     <button class="card-box guide-link" id="toRead"><span>📖</span><div class="grow"><b>อ่านเรื่องสั้น</b><div class="small muted">${STORY_COUNT} เรื่อง · อ่านแล้ว ${Object.keys(S.read).length} · แตะคำเพื่อดูความหมาย</div></div><span class="muted">›</span></button>
-    <button class="card-box guide-link" id="toPairs"><span>🤔</span><div class="grow"><b>คู่คำที่คนไทยสับสนบ่อย</b><div class="small muted">borrow / lend, bored / boring … อ่านวิธีแยกแล้วไปเล่นเกม</div></div><span class="muted">›</span></button>
-    <button class="card-box guide-link" id="toFams"><span>🧬</span><div class="grow"><b>ครอบครัวคำ</b><div class="small muted">decide → decision → decisive … คำนาม กริยา คุณศัพท์ จากรากเดียวกัน</div></div><span class="muted">›</span></button>
-    <button class="card-box guide-link" id="toSyn"><span>≈</span><div class="grow"><b>คำเหมือน–คำตรงข้าม</b><div class="small muted">big / large / huge ต่างกันยังไง พร้อมคำตรงข้าม</div></div><span class="muted">›</span></button>
-    <button class="card-box guide-link" id="toPV"><span>🧩</span><div class="grow"><b>Phrasal verbs</b><div class="small muted">give up, look after, run out of … กริยาวลีที่ใช้บ่อย พร้อมประโยคตัวอย่าง</div></div><span class="muted">›</span></button>
+    <div class="card-box ref-box"><div class="small muted"><b>📚 คลังความรู้</b> อ่านแล้วกดเล่นเกมของแต่ละหัวข้อได้</div>
+      <div class="ref-grid">
+        <button class="ref-tile" id="toPairs"><span>🤔</span>คู่คำสับสน</button>
+        <button class="ref-tile" id="toFams"><span>🧬</span>ครอบครัวคำ</button>
+        <button class="ref-tile" id="toSyn"><span>≈</span>คำเหมือน–ตรงข้าม</button>
+        <button class="ref-tile" id="toAf"><span>🧱</span>prefix / suffix</button>
+        <button class="ref-tile" id="toPV"><span>🧩</span>Phrasal verbs</button>
+      </div></div>
     <div class="game-grid">${Object.keys(GAMES).map(gameTile).join('')}</div>`;
   $('#toRead').onclick = () => go('read');
   $('#toPairs').onclick = () => renderPairs();
   $('#toFams').onclick = () => renderFamilies();
   $('#toPV').onclick = () => renderPhrasal();
   $('#toSyn').onclick = () => renderSyn();
+  $('#toAf').onclick = () => renderAffix();
   const paint = () => view.querySelectorAll('#src .chip').forEach((c) => c.classList.toggle('on', c.dataset.s === gameSource));
   paint();
   if ($('#gTopic')) $('#gTopic').onchange = (e) => { gameTopic = e.target.value; };
@@ -166,6 +172,7 @@ function gamePool(id) {
   if (id === 'wform') return FAMILIES.flatMap((f) => f.q.map(([sn, a, th]) => ({ idx: -1, w: a, t: '', p: '', g: '', _f: f, _q: [sn, a, '', th] })));
   if (id === 'phrasal') return PHRASAL.map((r) => ({ idx: -1, w: r.pv, t: r.th, p: '', g: '', _pv: r, _q: [r.plain.replace(r.part, '___'), r.part, '', r.th] }));
   if (id === 'syn') return synItems().map((it) => ({ idx: -1, w: it.t, t: it.g.th, p: '', g: '', _syn: it, _q: ['___', it.t, '', it.g.th] }));
+  if (id === 'affix') return AFFIX.flatMap((a) => a.ex.filter(([w]) => affixDistractors(a, w).length === 3).map(([w, th]) => ({ idx: -1, w, t: th, p: '', g: '', _af: a, _q: ['___', w, '', th] })));
   if (id === 'minpair') return MINPAIRS.map((m) => ({ idx: -1, w: `${m[0]} / ${m[2]}`, t: `${m[1]} / ${m[3]}`, p: '', g: '', _m: m }));
   if (id === 'review') {
     return W.filter((w) => S.prog[w.w] && (S.prog[w.w].x || 0) > 0)
@@ -217,6 +224,7 @@ function startGame(id) {
   if (id === 'wform' && !FAMILIES) { loadFamilies().then(() => startGame(id)); return; }
   if (id === 'phrasal' && !PHRASAL) { loadPhrasal().then(() => startGame(id)); return; }
   if (id === 'syn' && !SYN) { loadSyn().then(() => startGame(id)); return; }
+  if (id === 'affix' && !AFFIX) { loadAffix().then(() => startGame(id)); return; }
   if (STORY_GAMES.includes(id) && !Object.keys(S.read).length) { toast('อ่านเรื่องสั้นให้จบอย่างน้อย 1 เรื่องก่อนนะ 📖'); if (current !== 'games') go('games'); return; }
   const src = gamePool(id);
   const min = id === 'match' ? 6 : 4;
@@ -269,6 +277,7 @@ function playQuiz(mode, src, gameId) {
     if (m === 'wform') return qWform(w);
     if (m === 'phrasal') return qPhrasal(w);
     if (m === 'syn') return qSyn(w);
+    if (m === 'affix') return qAffix(w);
     const toTh = m !== 'th2en' && m !== 'cloze';
     const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
     let prompt;
@@ -674,6 +683,35 @@ function playQuiz(mode, src, gameId) {
       view.querySelector('.syn-box').onclick = (ev) => { const c = ev.target.closest('[data-col]'); if (c) speak(c.dataset.col); };
       $('#nextQ').onclick = next;
       speak(answer);
+    };
+  }
+
+  // Word parts: the base word is shown, pick the prefix/suffix that gives the Thai meaning.
+  function qAffix(w) {
+    const a = w._af, stem = affixStem(a, w.w), right = affixLabel(a);
+    const opts = shuffle([a, ...affixDistractors(a, w.w)]).map(affixLabel);
+    const blank = '<span class="blank">___</span>';
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit pop"><div class="small muted">เติม${a.k === 'p' ? 'หน้า' : 'ท้าย'}คำให้ได้ความหมาย</div><div class="th" style="margin:4px 0 2px;font-size:clamp(20px, 6vw, 26px)">“${esc(w.t)}”</div>
+        <div class="word" style="margin-top:8px">${a.k === 'p' ? blank + esc(stem) : esc(stem) + blank}</div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === right;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : `❌ ที่ถูกคือ <b>${esc(w.w)}</b>`}
+        <div class="tip-box"><b class="af-word">${affixHTML(a, w.w)}</b> · <b>${right}</b> = ${esc(a.th)}${a.note ? `<div class="small muted">${esc(a.note)}</div>` : ''}</div>
+        <div class="fam-box"><div class="small muted" style="margin:10px 0 6px"><b>🧱 คำอื่นที่มี ${right}</b> (แตะเพื่อฟัง)</div>${affixRows(a, w.w)}</div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('.fam-box').onclick = (ev) => { const c = ev.target.closest('[data-col]'); if (c) speak(c.dataset.col); };
+      $('#nextQ').onclick = next;
+      speak(w.w);
     };
   }
 

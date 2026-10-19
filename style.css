@@ -915,3 +915,11 @@ details.cal-alt > summary { cursor: pointer; padding: 6px 0; }
 .syn-g .chips { margin-top: 6px; }
 .syn-g .tip-box { margin-top: 10px; }
 .syn-box { margin-top: 10px; text-align: left; }
+.col-row mark, .tip-box mark { background: none; color: var(--pink); font-weight: 800; }
+.af-x { font-size: 22px; color: var(--primary-text, var(--primary)); }
+.ref-box { padding: 12px; }
+.ref-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.ref-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 72px; padding: 8px 4px; border: 2px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); font: inherit; font-size: var(--fs-xs); font-weight: 700; line-height: 1.25; text-align: center; overflow-wrap: anywhere; }
+.ref-tile span { font-size: 22px; line-height: 1; }
+.ref-tile:active { transform: scale(.96); }
+@media (min-width: 700px) { .ref-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }

@@ -126,3 +126,35 @@ test('synonyms: every question has exactly one listed answer; browser, sheet box
   await expect(page.locator('.result-emoji')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('word parts: browser, word sheet box, game with right and wrong answers', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => go('games'));
+  await page.locator('#toAf').click();
+  await expect(page.locator('#afList')).toContainText('un-');
+  await page.locator('#afq').fill('less');
+  await expect(page.locator('#afList')).toContainText('careless');
+  await expect(page.locator('#afList')).not.toContainText('unhappy');
+  await page.evaluate(() => openSheet(W.find((w) => w.w === 'careful')));
+  await expect(page.locator('#afBox')).toContainText('-ful');
+  await page.evaluate(() => document.querySelector('.sheet-wrap').remove());
+  // no question offers a second affix that makes a real word with the same base
+  const amb = await page.evaluate(() => gamePool('affix').filter((it) => affixDistractors(it._af, it.w).some((b) => WORD_BY[affixJoin(b, affixStem(it._af, it.w))])).map((it) => it.w));
+  expect(amb).toEqual([]);
+  await page.evaluate(() => startGame('affix'));
+  for (let k = 0; k < 10; k++) {
+    await expect(page.locator('.options .opt').first()).toBeVisible();
+    const answer = await page.evaluate(() => {
+      const th = document.querySelector('.q-prompt .th').textContent.replace(/[“”]/g, ''), shown = document.querySelector('.q-prompt .word').textContent;
+      for (const a of AFFIX) for (const [w, t] of a.ex) if (t === th && (a.k === 'p' ? '___' + affixStem(a, w) : affixStem(a, w) + '___') === shown) return affixLabel(a);
+    });
+    const texts = await page.locator('.options .opt').allTextContents();
+    const idx = k % 2 ? texts.indexOf(answer) : texts.findIndex((t) => t !== answer);
+    expect(idx).toBeGreaterThanOrEqual(0);
+    await page.locator('.options .opt').nth(idx).click();
+    await expect(page.locator('#reveal')).toContainText(k % 2 ? 'ถูกต้อง' : 'ที่ถูกคือ');
+    await page.locator('#nextQ').click();
+  }
+  await expect(page.locator('.result-emoji')).toBeVisible();
+  expect(errors).toEqual([]);
+});

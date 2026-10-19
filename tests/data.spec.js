@@ -151,3 +151,21 @@ test('synonym groups are valid', () => {
   }
   expect(bad).toEqual([]);
 });
+
+test('word parts (affixes) are valid', () => {
+  const { AFFIXES } = load('affixes.js');
+  expect(AFFIXES.filter((a) => a.k === 'p').length).toBeGreaterThan(12);
+  expect(AFFIXES.filter((a) => a.k === 's').length).toBeGreaterThan(12);
+  const seen = new Set(), bad = [];
+  for (const a of AFFIXES) {
+    if (!['p', 's'].includes(a.k) || !a.th || a.ex.length < 2) bad.push(`${a.x}: kind/meaning/examples`);
+    a.ex.forEach(([w, th]) => {
+      const stem = a.k === 'p' ? w.slice(a.x.length) : w.slice(0, -a.x.length);
+      if (!(a.k === 'p' ? w.startsWith(a.x) : w.endsWith(a.x)) || stem.length < 2) bad.push(`${a.x}: ${w}`);
+      if (!th) bad.push(`${w}: no Thai`);
+      if (seen.has(w)) bad.push(`${w} twice`);
+      seen.add(w);
+    });
+  }
+  expect(bad).toEqual([]);
+});

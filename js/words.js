@@ -101,7 +101,7 @@ function openSheet(w, onChange) {
       <div class="sheet-word">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
       <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span>${w.tp ? ` · ${TOPIC_LABEL[w.tp]}` : ''}</div>
       <div class="th" style="font-size:22px;margin:10px 0">${esc(w.t)}</div>
-      ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div><div class="colloc" id="pvBox"></div><div class="colloc" id="synBox"></div>
+      ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div><div class="colloc" id="pvBox"></div><div class="colloc" id="synBox"></div><div class="colloc" id="afBox"></div>
       </div>
       <div class="sheet-acts">
         <button class="btn" data-act="star">${isStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาว'}</button>
