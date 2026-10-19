@@ -46,7 +46,7 @@ const pvRows = (list, hi) => list.map((r) => `<button class="col-row${r.pv === h
 
 let pvQuery = '';
 function renderPhrasal() {
-  if (!PHRASAL) { loadPhrasal().then(renderPhrasal); return; }
+  if (!PHRASAL) { withLoading(loadPhrasal()).then(renderPhrasal); return; }
   $('#title').textContent = 'Phrasal verbs';
   view.scrollTop = 0;
   view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="pvBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="pvPlay">🧩 เล่นเกม</button></div>
@@ -137,7 +137,7 @@ const synCard = (g, hi) => `<div class="syn-g"><div class="small muted"><b>${esc
 
 let synQuery = '';
 function renderSyn() {
-  if (!SYN) { loadSyn().then(renderSyn); return; }
+  if (!SYN) { withLoading(loadSyn()).then(renderSyn); return; }
   $('#title').textContent = 'คำเหมือน–คำตรงข้าม';
   view.scrollTop = 0;
   view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="synBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="synPlay">≈ เล่นเกม</button></div>
@@ -181,7 +181,7 @@ const affixRows = (a, hi) => a.ex.map(([w, th]) => `<button class="col-row${w ==
 
 let affixQuery = '';
 function renderAffix() {
-  if (!AFFIX) { loadAffix().then(renderAffix); return; }
+  if (!AFFIX) { withLoading(loadAffix()).then(renderAffix); return; }
   $('#title').textContent = 'อุปสรรค–ปัจจัย';
   view.scrollTop = 0;
   view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="afBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="afPlay">🧱 เล่นเกม</button></div>

@@ -273,3 +273,50 @@ test('iPad sidebar (portrait + landscape): extra shortcuts only in the sidebar, 
   await expect(page.locator('#title')).toHaveText('อ่านเรื่องสั้น');
   expect(errors).toEqual([]);
 });
+
+test('page animations: tabs slide by side, sub pages push / pop; slow data shows a skeleton', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  const anim = () => page.evaluate(() => [...view.classList].find((c) => c.startsWith('vin')));
+  await page.evaluate(() => go('games'));
+  expect(await anim()).toBe('vin-l');
+  await page.evaluate(() => go('home'));
+  expect(await anim()).toBe('vin-r');
+  await page.evaluate(() => go('games'));
+  await page.evaluate(() => loadPairs().then(renderPairs));
+  await expect(page.locator('#pBack')).toBeAttached();
+  expect(await anim()).toBe('vin-push');
+  await page.locator('#topBack').click();
+  expect(await anim()).toBe('vin-pop');
+  // phrasal.js answers slowly → skeleton, then the list
+  await page.route('**/phrasal.js*', async (r) => { await new Promise((s) => setTimeout(s, 700)); r.continue(); });
+  await page.evaluate(() => renderPhrasal());
+  await expect(page.locator('.skel')).toBeVisible();
+  await expect(page.locator('#pvList .pair-card').first()).toBeVisible();
+  await expect(page.locator('.skel')).toHaveCount(0);
+  // a fast load never flashes the skeleton, and a page opened meanwhile is not replaced by it
+  await page.evaluate(() => { go('games'); withLoading(new Promise((r) => setTimeout(r, 400))); go('stats'); });
+  await page.waitForTimeout(300);
+  await expect(page.locator('.skel')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test.describe('service worker', () => {
+  test.use({ serviceWorkers: 'allow' });
+  test('caches the app and content, then opens offline', async ({ page, context }) => {
+    await page.goto('index.html');
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    const ready = () => page.evaluate(async () => {
+      const keys = await caches.keys();
+      if (!keys.includes('o3k-data') || !keys.includes('o3k-' + APP_VERSION)) return 0;
+      return (await (await caches.open('o3k-data')).keys()).length;
+    });
+    await expect.poll(ready, { timeout: 20000 }).toBe(18);
+    await page.reload();
+    expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+    await context.setOffline(true);
+    await page.reload();
+    await expect(page.locator('#view')).not.toBeEmpty();
+    expect(await page.evaluate(() => WORDS.length)).toBeGreaterThan(4900);
+    await context.setOffline(false);
+  });
+});

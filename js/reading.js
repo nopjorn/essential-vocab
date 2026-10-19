@@ -126,7 +126,7 @@ const scoreTag = (st) => {
 };
 function renderRead(id) {
   if (!STORIES) {
-    view.innerHTML = '<p class="center muted" style="margin-top:40px">กำลังโหลดเรื่องสั้น…</p>';
+    view.innerHTML = SKELETON;
     loadStories().then(() => { if (current === 'read') renderRead(id); });
     return;
   }

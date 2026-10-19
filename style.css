@@ -65,7 +65,7 @@ button, input, select { font: inherit; color: inherit; }
 button { touch-action: manipulation; cursor: pointer; }
 
 /* --app-h: set by fixAppHeight() in app.js (iOS home-screen apps launch with a too-short viewport) */
-#app { display: flex; flex-direction: column; position: relative; height: var(--app-h, 100dvh); max-width: 640px; margin: 0 auto; }
+#app { display: flex; flex-direction: column; position: relative; overflow-x: clip; /* page slide-in stays inside */ height: var(--app-h, 100dvh); max-width: 640px; margin: 0 auto; }
 
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
@@ -852,11 +852,27 @@ details.set-group[open] > summary::after { transform: rotate(-90deg); }
 @media (prefers-reduced-motion: no-preference) {
   .view.vin { animation: vin .18s ease-out; }
   @keyframes vin { from { opacity: 0; } }
+  .view.vin-l { animation: vin-l .22s cubic-bezier(.2, .8, .3, 1); }
+  .view.vin-r { animation: vin-r .22s cubic-bezier(.2, .8, .3, 1); }
+  .view.vin-push { animation: vin-push .26s cubic-bezier(.2, .8, .3, 1); }
+  .view.vin-pop { animation: vin-pop .22s cubic-bezier(.2, .8, .3, 1); }
+  @keyframes vin-l { from { opacity: 0; transform: translateX(18px); } }
+  @keyframes vin-r { from { opacity: 0; transform: translateX(-18px); } }
+  @keyframes vin-push { from { opacity: 0; transform: translateX(36px); } }
+  @keyframes vin-pop { from { opacity: 0; transform: translateX(-24px); } }
+  /* right answer: a small bounce (wrong ones already shake) */
+  .opt.correct, .spell-input.ok, .ord-ans.ok { animation: okpop .32s ease-out; }
+  @keyframes okpop { 40% { transform: scale(1.035); } 100% { transform: scale(1); } }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 .chips[hidden] { display: none; }
+/* loading skeleton (withLoading in app.js) */
+.skel { display: grid; gap: 12px; padding-top: 8px; }
+.skel i { display: block; height: 64px; border-radius: 16px; background: linear-gradient(90deg, var(--surface-2) 30%, var(--surface) 50%, var(--surface-2) 70%) 0 0 / 300% 100%; animation: skel 1.2s linear infinite; }
+.skel i:first-child { height: 40px; width: 55%; }
+@keyframes skel { from { background-position: 100% 0; } to { background-position: 0 0; } }
 
 /* ---------- UI polish 2 (1.29) ---------- */
 /* contrast: badge/grade colours were white-on-light; text-safe primary for light and dark */

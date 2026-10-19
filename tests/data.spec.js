@@ -169,3 +169,10 @@ test('word parts (affixes) are valid', () => {
   }
   expect(bad).toEqual([]);
 });
+
+test('service worker keeps word lists, stories and other content in the data cache', () => {
+  const sw = read('sw.js'), data = sw.slice(sw.indexOf('const DATA = ['), sw.indexOf('];', sw.indexOf('const DATA = [')));
+  const files = [...data.matchAll(/'([^']+)'/g)].map((m) => m[1]);
+  ['words', 'stories'].forEach((d) => fs.readdirSync(path.join(root, d)).forEach((f) => expect(files, f).toContain(`${d}/${f}`)));
+  ['app.js', 'index.html', 'changelog.js', 'config.js'].forEach((f) => expect(files, f).not.toContain(f)); // change every version
+});

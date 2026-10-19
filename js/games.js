@@ -105,7 +105,7 @@ function renderGames() {
 
 // Browse the confusable pairs with their Thai tips and example sentences.
 function renderPairs() {
-  if (!CONFUSE) { loadPairs().then(renderPairs); return; }
+  if (!CONFUSE) { withLoading(loadPairs()).then(renderPairs); return; }
   $('#title').textContent = 'คำที่มักสับสน';
   view.scrollTop = 0;
   view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="pBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="pPlay">🤔 เล่นเกม</button></div>
@@ -121,7 +121,7 @@ function renderPairs() {
 // Browse word families (one card per root), with a search box.
 let famQuery = '';
 function renderFamilies() {
-  if (!FAMILIES) { loadFamilies().then(renderFamilies); return; }
+  if (!FAMILIES) { withLoading(loadFamilies()).then(renderFamilies); return; }
   $('#title').textContent = 'ครอบครัวคำ';
   view.scrollTop = 0;
   view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="fBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="fPlay">🧬 เล่นเกม</button></div>
@@ -218,13 +218,13 @@ function startGame(id) {
     if (current !== 'games') go('games');
     return;
   }
-  if (STORY_GAMES.includes(id) && !STORIES) { loadStories().then(() => startGame(id)); return; }
-  if (id === 'colloc' && !COLLOC) { loadColloc().then(() => startGame(id)); return; }
-  if (PAIR_GAMES.includes(id) && !CONFUSE) { loadPairs().then(() => startGame(id)); return; }
-  if (id === 'wform' && !FAMILIES) { loadFamilies().then(() => startGame(id)); return; }
-  if (id === 'phrasal' && !PHRASAL) { loadPhrasal().then(() => startGame(id)); return; }
-  if (id === 'syn' && !SYN) { loadSyn().then(() => startGame(id)); return; }
-  if (id === 'affix' && !AFFIX) { loadAffix().then(() => startGame(id)); return; }
+  if (STORY_GAMES.includes(id) && !STORIES) { withLoading(loadStories()).then(() => startGame(id)); return; }
+  if (id === 'colloc' && !COLLOC) { withLoading(loadColloc()).then(() => startGame(id)); return; }
+  if (PAIR_GAMES.includes(id) && !CONFUSE) { withLoading(loadPairs()).then(() => startGame(id)); return; }
+  if (id === 'wform' && !FAMILIES) { withLoading(loadFamilies()).then(() => startGame(id)); return; }
+  if (id === 'phrasal' && !PHRASAL) { withLoading(loadPhrasal()).then(() => startGame(id)); return; }
+  if (id === 'syn' && !SYN) { withLoading(loadSyn()).then(() => startGame(id)); return; }
+  if (id === 'affix' && !AFFIX) { withLoading(loadAffix()).then(() => startGame(id)); return; }
   if (STORY_GAMES.includes(id) && !Object.keys(S.read).length) { toast('อ่านเรื่องสั้นให้จบอย่างน้อย 1 เรื่องก่อนนะ 📖'); if (current !== 'games') go('games'); return; }
   const src = gamePool(id);
   const min = id === 'match' ? 6 : 4;

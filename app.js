@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.38.1';
+const APP_VERSION = '1.39.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -397,6 +397,7 @@ function sfx(kind) {
   } catch (e) { /* audio unavailable */ }
 }
 function confetti() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { sfx('win'); return; }
   const box = document.createElement('div');
   box.className = 'confetti';
   const bits = ['🎉', '⭐', '✨', '💜', '🎊', '🔥'];
@@ -593,6 +594,7 @@ function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
   if (window.speechSynthesis) speechSynthesis.cancel();
+  const prev = current;
   current = tab;
   view.classList.remove('feed-mode');
   view.dataset.route = tab; // CSS uses this for wide (iPad/landscape) layouts
@@ -601,7 +603,22 @@ function go(tab, ...args) {
   view.scrollTop = 0;
   ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest }[tab])(...args);
   updateStreak();
-  view.classList.remove('vin'); void view.offsetWidth; view.classList.add('vin');
+  const a = TAB_ORDER.indexOf(prev), b = TAB_ORDER.indexOf(tab);
+  animView(a < 0 || b < 0 || a === b ? 'vin' : b > a ? 'vin-l' : 'vin-r');
+}
+// Page animation: tabs slide in from the side they sit on, sub pages push in / pop back, the rest fades.
+const TAB_ORDER = ['home', 'games', 'cards', 'list', 'settings'];
+const VIEW_ANIMS = ['vin', 'vin-l', 'vin-r', 'vin-push', 'vin-pop'];
+function animView(cls) {
+  view.classList.remove(...VIEW_ANIMS); void view.offsetWidth; view.classList.add(cls);
+}
+// While a lazy data file loads, show a skeleton instead of a frozen screen (only if it takes > 150 ms
+// and nothing else has replaced the page meanwhile). withLoading(loadPairs()).then(renderPairs)
+const SKELETON = '<div class="skel" aria-busy="true" aria-label="กำลังโหลด"><i></i><i></i><i></i><i></i></div>';
+function withLoading(p) {
+  const was = view.firstElementChild;
+  const t = setTimeout(() => { if (view.firstElementChild === was) { view.innerHTML = SKELETON; animView('vin'); } }, 150);
+  return p.then((v) => { clearTimeout(t); return v; });
 }
 function updateStreak() {
   const el = $('#streak'), L = levelOf(S.xp);
@@ -614,7 +631,12 @@ document.addEventListener('click', (e) => { const b = e.target.closest('[data-sl
 const slowBtn = (text, label = 'ฟังช้า') => `<button class="slow-btn" data-slow="${esc(text)}" aria-label="ฟังช้าๆ">🐢 ${label}</button>`;
 $('#streak').addEventListener('click', () => { if (current !== 'stats') go('stats', 'home'); });
 // Sub pages carry their own "‹ กลับ" button (id ending in Back); mirror it in the top bar and hide the in-page one.
-new MutationObserver(() => document.body.classList.toggle('has-back', !!view.querySelector('[id$="Back"]'))).observe(view, { childList: true });
+// Gaining a back button = a sub page opened (push); losing it = went back (pop).
+new MutationObserver(() => {
+  const had = document.body.classList.contains('has-back'), has = !!view.querySelector('[id$="Back"]');
+  document.body.classList.toggle('has-back', has);
+  if (has !== had) animView(has ? 'vin-push' : 'vin-pop');
+}).observe(view, { childList: true });
 $('#topBack').addEventListener('click', () => { const b = view.querySelector('[id$="Back"]'); if (b) b.click(); });
 // iPad sidebar extras: reference pages live under the games screen, so open games first (their ‹ กลับ returns there).
 const REF_PAGES = { pairs: () => renderPairs(), fams: () => renderFamilies(), syn: () => renderSyn(), affix: () => renderAffix(), phrasal: () => renderPhrasal() };
