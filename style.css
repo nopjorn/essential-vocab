@@ -800,10 +800,16 @@ body.has-back .view [id$="Back"]:not(:only-child) { display: none; }
 /* tab bar: solid enough that content never shows through the labels */
 .tabbar { border-top-color: color-mix(in srgb, var(--primary) 18%, var(--border)); }
 .tabbar button { min-height: 48px; justify-content: center; }
+.tab-more { display: none; } /* extra shortcuts: iPad sidebar only */
 /* iPad sidebar: icons and labels line up on the left (the rule above centred them) */
 @media (min-width: 1100px) and (min-height: 700px) {
   .tabbar button { justify-content: flex-start; }
   .tabbar .ti { flex: none; width: 28px; text-align: center; }
+  .tabbar { overflow-y: auto; scrollbar-width: none; }
+  .tab-more { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; padding-top: 6px; border-top: 1px solid var(--border); }
+  .tab-h { margin: 8px 14px 2px; font-size: var(--fs-xs); font-weight: 700; color: var(--muted); }
+  .tab-more button { min-height: 38px; padding: 6px 14px; font-size: var(--fs-sm); }
+  .tab-more .ti { font-size: 18px; }
 }
 /* compact banners on home */
 .place-card.slim, .install-tip.slim { display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 14px; margin-bottom: 10px; }

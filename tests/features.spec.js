@@ -249,3 +249,23 @@ test('accessibility: every visible control has a name; English text is marked la
   await expect(page.locator('.sheet-word')).toHaveAttribute('lang', 'en');
   expect(errors).toEqual([]);
 });
+
+test('iPad sidebar: extra shortcuts only in the wide sidebar, they open their pages', async ({ page }) => {
+  await page.setViewportSize({ width: 440, height: 956 });
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await expect(page.locator('.tab-more')).toBeHidden();
+  await page.setViewportSize({ width: 1376, height: 1032 });
+  await expect(page.locator('.tab-more')).toBeVisible();
+  await page.locator('.tabbar [data-tab="stats"]').click();
+  await expect(page.locator('.tabbar [data-tab="stats"]')).toHaveClass(/active/);
+  await page.locator('.tabbar [data-ref="phrasal"]').click();
+  await expect(page.locator('#pvList')).toBeVisible();
+  await expect(page.locator('.tabbar [data-ref="phrasal"]')).toHaveClass(/active/);
+  await page.locator('#topBack').click();
+  await expect(page.locator('[data-game]').first()).toBeVisible();
+  await page.locator('.tabbar [data-ref="syn"]').click();
+  await expect(page.locator('#title')).not.toHaveText('ศัพท์ต้องรู้');
+  await page.locator('.tabbar [data-tab="read"]').click();
+  await expect(page.locator('#title')).toHaveText('อ่านเรื่องสั้น');
+  expect(errors).toEqual([]);
+});

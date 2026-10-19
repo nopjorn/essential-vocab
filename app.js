@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.36.3';
+const APP_VERSION = '1.37.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -616,6 +616,11 @@ $('#streak').addEventListener('click', () => { if (current !== 'stats') go('stat
 // Sub pages carry their own "‹ กลับ" button (id ending in Back); mirror it in the top bar and hide the in-page one.
 new MutationObserver(() => document.body.classList.toggle('has-back', !!view.querySelector('[id$="Back"]'))).observe(view, { childList: true });
 $('#topBack').addEventListener('click', () => { const b = view.querySelector('[id$="Back"]'); if (b) b.click(); });
+// iPad sidebar extras: reference pages live under the games screen, so open games first (their ‹ กลับ returns there).
+const REF_PAGES = { pairs: () => renderPairs(), fams: () => renderFamilies(), syn: () => renderSyn(), affix: () => renderAffix(), phrasal: () => renderPhrasal() };
 $('#tabbar').addEventListener('click', (e) => {
-  const b = e.target.closest('button'); if (b) go(b.dataset.tab);
+  const b = e.target.closest('button'); if (!b) return;
+  if (!b.dataset.ref) return go(b.dataset.tab);
+  go('games'); REF_PAGES[b.dataset.ref]();
+  document.querySelectorAll('.tabbar button').forEach((x) => x.classList.toggle('active', x === b));
 });
