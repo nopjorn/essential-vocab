@@ -321,18 +321,33 @@ test.describe('service worker', () => {
   });
 });
 
-test('settings: animation switch turns page animations and confetti off', async ({ page }) => {
+test('settings: page slide, answer bounce and confetti switch off one by one; old single switch migrates', async ({ page }) => {
   const errors = await openApp(page, { settings: { levels: ['A1'] } });
-  await page.evaluate(() => go('settings'));
-  await page.evaluate(() => { document.querySelector('details[data-g="look"]').open = true; });
-  await expect(page.locator('#anim')).toBeChecked();
-  await page.locator('#anim + span').click();
-  expect(await page.evaluate(() => [document.documentElement.classList.contains('no-anim'), S.settings.anim])).toEqual([true, false]);
-  const dur = await page.evaluate(() => { go('games'); return getComputedStyle(view).animationDuration; });
-  expect(parseFloat(dur)).toBeLessThan(0.01);
+  const html = () => page.evaluate(() => [...document.documentElement.classList].filter((c) => c.startsWith('no-')).sort());
+  await page.evaluate(() => { go('settings'); document.querySelector('details[data-g="look"]').open = true; });
+  for (const id of ['animPage', 'animAnswer', 'confetti']) await expect(page.locator('#' + id)).toBeChecked();
+  await page.locator('#animPage + span').click();
+  expect(await html()).toEqual(['no-vt']);
+  expect(await page.evaluate(() => { go('games'); return getComputedStyle(view).animationName; })).toBe('none');
   await page.evaluate(() => confetti());
+  await expect(page.locator('.confetti')).toHaveCount(1); // confetti still on
+  await page.evaluate(() => { go('settings'); document.querySelector('details[data-g="look"]').open = true; });
+  await page.locator('#confetti + span').click();
+  await page.evaluate(() => { document.querySelector('.confetti')?.remove(); confetti(); });
   await expect(page.locator('.confetti')).toHaveCount(0);
+  expect(await html()).toEqual(['no-vt']);
+  await page.locator('#animAnswer + span').click();
+  expect(await html()).toEqual(['no-ans', 'no-vt']);
+  await page.locator('#animPage + span').click();
+  expect(await html()).toEqual(['no-ans']);
   await page.reload();
-  expect(await page.evaluate(() => document.documentElement.classList.contains('no-anim'))).toBe(true);
+  expect(await html()).toEqual(['no-ans']);
+  expect(await page.evaluate(() => [S.settings.animPage, S.settings.animAnswer, S.settings.confetti])).toEqual([true, false, false]);
+  expect(errors).toEqual([]);
+});
+
+test('settings: a 1.39.1 save with animations off turns all three switches off', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'], anim: false } });
+  expect(await page.evaluate(() => [S.settings.animPage, S.settings.animAnswer, S.settings.confetti, 'anim' in S.settings])).toEqual([false, false, false, false]);
   expect(errors).toEqual([]);
 });

@@ -54,8 +54,12 @@ function renderSettings() {
     <details class="set-group" data-g="look" ${setIsOpen('look')}><summary>🎨 หน้าตา</summary><div class="card-box">
       <div class="set-row"><span>ธีม</span>
         <div class="seg" id="theme">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด']].map(([v, t]) => `<button class="${(st.theme || 'auto') === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div></div>
-      <div class="set-row"><span>✨ แอนิเมชัน<br><span class="small muted">หน้าเลื่อนตอนเปลี่ยนแท็บ ปุ่มเด้ง/สั่นตอนตอบ และพลุฉลอง</span></span>
-        <label class="switch"><input type="checkbox" id="anim" aria-label="แอนิเมชัน" ${st.anim !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>✨ หน้าเลื่อนตอนเปลี่ยนแท็บ<br><span class="small muted">และตอนเปิด/ปิดหน้าย่อย</span></span>
+        <label class="switch"><input type="checkbox" id="animPage" aria-label="หน้าเลื่อนตอนเปลี่ยนแท็บ" ${st.animPage !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>👆 ปุ่มเด้ง/สั่นตอนตอบ<br><span class="small muted">เด้งเมื่อตอบถูก สั่นเมื่อตอบผิด</span></span>
+        <label class="switch"><input type="checkbox" id="animAnswer" aria-label="ปุ่มเด้ง/สั่นตอนตอบ" ${st.animAnswer !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>🎉 พลุฉลอง<br><span class="small muted">ตอนเลเวลอัป ทำภารกิจครบ ได้เหรียญ (เสียงฉลองยังมี)</span></span>
+        <label class="switch"><input type="checkbox" id="confetti" aria-label="พลุฉลอง" ${st.confetti !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🎯 แสดงการ์ดภารกิจต่อ แม้ทำครบแล้ว</span>
         <label class="switch"><input type="checkbox" id="questShow" ${st.questShowDone ? 'checked' : ''}><span></span></label></div>
       <button class="set-row set-link" id="homeSetBtn"><span>🧩 จัดเรียงหน้าแรก<br><span class="small muted">เปิด/ปิด สลับลำดับ และปรับความกว้างของกล่อง</span></span><span class="muted">›</span></button>
@@ -154,7 +158,7 @@ function renderSettings() {
     st.theme = b.dataset.v; save(); applyTheme();
     view.querySelectorAll('#theme button').forEach((x) => x.classList.toggle('on', x === b));
   };
-  $('#anim').onchange = (e) => { st.anim = e.target.checked; save(); applyAnim(); };
+  ['animPage', 'animAnswer', 'confetti'].forEach((k) => { $('#' + k).onchange = (e) => { st[k] = e.target.checked; save(); applyAnim(); }; });
   $('#homeSetBtn').onclick = () => go('homeset');
   $('#remind').onchange = (e) => {
     S.remind = e.target.value; save(); $('#remindAdd').href = `reminders/${S.remind}.ics`;

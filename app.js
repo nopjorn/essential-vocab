@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.39.1';
+const APP_VERSION = '1.39.2';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -50,7 +50,7 @@ const MASTERED = 4;
 const KEY = 'oxford3000.v1';
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, anim: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', wotd: { lv: [], st: [], tp: [] }, nextGames: [] },
+  settings: { levels: ['A1'], topic: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', wotd: { lv: [], st: [], tp: [] }, nextGames: [] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -397,7 +397,7 @@ function sfx(kind) {
   } catch (e) { /* audio unavailable */ }
 }
 function confetti() {
-  if (animOff()) { sfx('win'); return; }
+  if (confettiOff()) { sfx('win'); return; }
   const box = document.createElement('div');
   box.className = 'confetti';
   const bits = ['🎉', '⭐', '✨', '💜', '🎊', '🔥'];
@@ -479,10 +479,16 @@ function applyTheme() {
   try { localStorage.setItem('o3k.theme', t); } catch (e) { /* ignore */ }
 }
 applyTheme();
-// settings.anim false → html.no-anim (CSS turns page/answer animations off, like the system "reduce motion"); no confetti either.
-function applyAnim() { document.documentElement.classList.toggle('no-anim', S.settings.anim === false); }
+// Animation switches (settings → หน้าตา), each on its own: animPage → page slides (html.no-vt),
+// animAnswer → bounce/shake on answers (html.no-ans), confetti. 1.39.1 had one `anim` switch for all three.
+if (S.settings.anim === false) { S.settings.animPage = S.settings.animAnswer = S.settings.confetti = false; }
+delete S.settings.anim;
+function applyAnim() {
+  document.documentElement.classList.toggle('no-vt', S.settings.animPage === false);
+  document.documentElement.classList.toggle('no-ans', S.settings.animAnswer === false);
+}
 applyAnim();
-const animOff = () => S.settings.anim === false || matchMedia('(prefers-reduced-motion: reduce)').matches;
+const confettiOff = () => S.settings.confetti === false || matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Slow speech: speak(text, { slow: true }) (🐢 buttons), or tapping 🔊 again for the same text within
 // SLOW_AGAIN ms plays it slower (alternating), unless settings.slowRepeat is false.
 const SLOW_AGAIN = 8000;
