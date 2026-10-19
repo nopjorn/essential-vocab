@@ -116,6 +116,8 @@ function renderStats(from) {
       <div class="tile-s"><b>${Math.round(h.acc * 100)}<small>%</small></b><span>ตอบถูก</span></div>
     </div>
     <div class="card-box"><div class="small muted" style="margin-bottom:6px">กิจกรรมต่อวัน (แตะแท่งเพื่อดูตัวเลข)</div>${activityChart(W_)}</div>
+    <div class="h2">🗓️ ปฏิทินการเล่น 12 เดือน</div>
+    <div class="card-box">${yearHeatmap()}</div>
 
     ${boardSection()}
     <div class="h2">สรุปรายสัปดาห์</div>
@@ -124,6 +126,9 @@ function renderStats(from) {
     <div class="h2">สรุปรายเดือน</div>
     <div class="card-box"><b>เดือนนี้</b>${monthBox(0)}</div>
     ${monthStats(1).total ? `<div class="card-box"><b>เดือนที่แล้ว</b>${monthBox(1)}</div>` : ''}
+
+    <div class="h2">📝 แบบทดสอบประจำเดือน</div>
+    <div class="card-box">${mtestSummary()}<button class="btn primary block" data-go="mtest" style="margin-top:10px">${S.mtest[monthKey()] ? 'ทำอีกครั้ง' : 'ทำแบบทดสอบเดือนนี้'}</button></div>
 
     <div class="h2">แนวโน้มคำศัพท์</div>
     <div class="card-box">${trendChart(W_)}</div>
@@ -143,6 +148,7 @@ function renderStats(from) {
     <div class="card-box ach-grid" id="ach">${ACH.map((a) => `<button class="ach ${S.ach[a.id] ? 'on' : ''}" data-ach="${a.id}"><span>${a.icon}</span><small>${a.name}</small></button>`).join('')}</div>`;
   $('#sBack').onclick = () => go(from || 'home');
   bindStickers();
+  bindHeatmap();
   $('#ach').onclick = (e) => {
     const b = e.target.closest('[data-ach]'); if (!b) return;
     const a = ACH.find((x) => x.id === b.dataset.ach);
@@ -227,4 +233,119 @@ function bindChartTips() {
     svg.addEventListener('pointermove', show);
     svg.addEventListener('pointerleave', () => { tip.hidden = true; if (xh) xh.setAttribute('visibility', 'hidden'); });
   });
+}
+
+/* ---------- year heatmap ---------- */
+// GitHub-style calendar of the last 53 weeks (Monday-first columns); colour = answers that day, 5 steps of one hue.
+const HM_STEPS = [1, 10, 25, 50]; // ≥ these → levels 1..4
+const hmLevel = (v) => (v ? HM_STEPS.filter((x) => v >= x).length : 0);
+function yearHeatmap() {
+  const now = new Date(); now.setHours(12, 0, 0, 0);
+  const start = new Date(now); start.setDate(start.getDate() - ((start.getDay() + 6) % 7) - 52 * 7);
+  const tKey = today(), cells = [], months = [];
+  let active = 0, total = 0, run = 0, best = 0, lastMonth = -1;
+  for (let wk = 0; wk < 53; wk++) {
+    for (let dow = 0; dow < 7; dow++) {
+      const d = new Date(start); d.setDate(start.getDate() + wk * 7 + dow);
+      const key = d.toLocaleDateString('en-CA');
+      if (key > tKey) { cells.push('<i class="hm-c hm-x"></i>'); continue; }
+      if (dow === 0 && d.getMonth() !== lastMonth) {
+        lastMonth = d.getMonth();
+        if (wk < 51) { if (months.length && wk - months[months.length - 1][0] < 3) months.pop(); months.push([wk, d.toLocaleDateString('th-TH', { month: 'short' })]); }
+      }
+      const v = S.hist[key] || 0;
+      if (v) { active++; total += v; run++; best = Math.max(best, run); } else if (key !== tKey) run = 0;
+      cells.push(`<i class="hm-c hm-${hmLevel(v)}" data-hm="${key}" title="${thDate(d)}: ${v} ข้อ"></i>`);
+    }
+  }
+  const legend = [0, 1, 2, 3, 4].map((l) => `<i class="hm-c hm-${l}"></i>`).join('');
+  return `<div class="hm-sum small"><span>📅 เล่น <b>${active}</b> วัน</span><span>🔥 ติดกันนานสุด <b>${best}</b> วัน</span><span>✏️ รวม <b>${total.toLocaleString()}</b> ข้อ</span></div>
+    <div class="hm-wrap" id="hmWrap" role="img" aria-label="ปฏิทินการเล่นย้อนหลัง 12 เดือน: เล่น ${active} วัน รวม ${total} ข้อ ติดกันนานสุด ${best} วัน">
+      <div class="hm-months">${months.map(([wk, m]) => `<span style="grid-column:${wk + 1} / span 3;grid-row:1">${m}</span>`).join('')}</div>
+      <div class="hm" id="hm">${cells.join('')}</div>
+    </div>
+    <div class="hm-legend small muted"><span>แตะช่องเพื่อดูวันที่</span><span class="grow"></span>น้อย ${legend} มาก</div>`;
+}
+function bindHeatmap() {
+  const wrap = $('#hmWrap'); if (!wrap) return;
+  wrap.scrollLeft = wrap.scrollWidth; // newest weeks first in view on phones
+  $('#hm').onclick = (e) => { const c = e.target.closest('[data-hm]'); if (c) toast(`${thDate(new Date(c.dataset.hm + 'T12:00'))}: ${S.hist[c.dataset.hm] || 0} ข้อ`); };
+}
+
+/* ---------- monthly test ---------- */
+// Up to 30 questions from mastered words (or learned ones while few are mastered): checks what is really remembered.
+// Answers go through gameResult(), so a missed word returns to the flashcards. Best score per month in S.mtest.
+const MTEST_N = 30;
+const pct = (r) => (r ? Math.round((r.r / r.n) * 100) : 0);
+function mtestPool() {
+  const m = masteredWords();
+  return m.length >= 20 ? m : W.filter((w) => S.prog[w.w]);
+}
+function mtestSummary() {
+  const keys = Object.keys(S.mtest).sort().slice(-6);
+  if (!keys.length) return '<p class="small muted" style="margin:0">ทดสอบเดือนละครั้งว่าคำที่จำได้แล้วยังจำได้จริงไหม แล้วดูพัฒนาการแต่ละเดือน</p>';
+  return `<div class="mt-hist">${keys.map((k) => { const p = pct(S.mtest[k]); return `<div class="mt-col"><b>${p}%</b><div class="mt-bar"><i style="height:${Math.max(4, p)}%"></i></div><span>${new Date(k + '-15T12:00').toLocaleDateString('th-TH', { month: 'short' })}</span></div>`; }).join('')}</div>`;
+}
+function renderMonthTest() {
+  const pool = mtestPool(), cur = S.mtest[monthKey()], prev = S.mtest[monthKey(1)];
+  if (pool.length < 10) {
+    view.innerHTML = `<div class="card-box center"><div class="result-emoji">📝</div><p>เรียนคำศัพท์ให้ได้อย่างน้อย 10 คำก่อน แล้วค่อยมาทำแบบทดสอบประจำเดือนนะ</p><button class="btn primary block" data-go="cards">ไปเรียนแฟลชการ์ด</button></div>`;
+    return;
+  }
+  const n = Math.min(MTEST_N, pool.length), fromMastered = pool.length && pool.every((w) => status(w) === 'mastered');
+  view.innerHTML = `<div class="card-box center pop"><div class="result-emoji">📝</div>
+    <div class="h2" style="margin:4px 0">แบบทดสอบประจำเดือน${monthName(monthKey())}</div>
+    <p class="small muted">${n} ข้อ สุ่มจาก${fromMastered ? 'คำที่จำได้แล้ว' : 'คำที่เรียนแล้ว'} (${pool.length} คำ) ไม่มีตัวช่วย คำที่ตอบผิดจะกลับไปให้ทบทวนในแฟลชการ์ด</p>
+    <div class="tiles mo-tiles" style="margin:12px 0"><div class="tile-s"><b>${cur ? pct(cur) + '%' : '–'}</b><span>เดือนนี้ (ดีที่สุด)</span></div><div class="tile-s"><b>${prev ? pct(prev) + '%' : '–'}</b><span>เดือนที่แล้ว</span></div><div class="tile-s"><b>${n}</b><span>ข้อ</span></div></div>
+    <button class="btn primary block" id="mtGo">เริ่มทำแบบทดสอบ</button></div>
+    <div class="card-box">${mtestSummary()}</div>`;
+  $('#mtGo').onclick = () => runMonthTest(shuffle(pool).slice(0, n));
+}
+function runMonthTest(items) {
+  let i = 0, right = 0, timer = null;
+  const wrong = [], modes = ['en2th', 'th2en', ...(window.speechSynthesis ? ['listen'] : [])];
+  cleanup = () => clearTimeout(timer);
+  const q = () => {
+    if (i >= items.length) return done();
+    const w = items[i], m = modes[i % modes.length], toTh = m !== 'th2en';
+    const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
+    $('#title').textContent = `แบบทดสอบ · ${i + 1}/${items.length}`;
+    const prompt = m === 'en2th' ? `<div class="word">${esc(w.w)}</div><div class="pos">${esc(w.p)}</div>`
+      : m === 'th2en' ? `<div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>`
+      : `<button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:88px;height:88px;font-size:40px;margin:0">🔊</button>`;
+    view.innerHTML = `<div class="session-top"><button class="icon-btn" id="mtQuit" aria-label="ออก">✕</button><div class="progress"><div style="width:${(i / items.length) * 100}%"></div></div><span class="small"><b>${right}</b> ถูก</span></div>
+      <div class="card-box q-prompt pop">${prompt}</div>
+      <div class="options">${opts.map((o, k) => `<button class="opt" data-k="${k}">${esc(toTh ? o.t : o.w)}</button>`).join('')}</div>`;
+    $('#mtQuit').onclick = () => go('stats');
+    const say = view.querySelector('[data-say]'); if (say) { say.onclick = () => speak(w.w); setTimeout(() => speak(w.w), 150); }
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = opts[+b.dataset.k] === w;
+      view.querySelectorAll('.opt').forEach((o) => { if (opts[+o.dataset.k] === w) o.classList.add('correct'); });
+      if (!ok) { b.classList.add('wrong'); wrong.push(w); } else { right++; addXP(2); }
+      gameResult(w, ok); sfx(ok ? 'ok' : 'bad');
+      timer = setTimeout(() => { i++; q(); }, ok ? 650 : 1500);
+    };
+  };
+  const done = () => {
+    const key = monthKey(), res = { r: right, n: items.length, at: Date.now() }, prev = S.mtest[monthKey(1)];
+    const best = !S.mtest[key] || pct(res) > pct(S.mtest[key]);
+    if (best) S.mtest[key] = res;
+    save();
+    const p = pct(res), diff = prev ? p - pct(prev) : null;
+    if (p >= 90) confetti();
+    $('#title').textContent = 'ผลแบบทดสอบ';
+    view.innerHTML = `<div class="card-box center pop"><div class="result-emoji">${p >= 90 ? '🏆' : p >= 70 ? '🎉' : p >= 50 ? '💪' : '📚'}</div>
+      <div class="h2" style="margin:4px 0">${right}/${items.length} · ${p}%</div>
+      <p class="small muted">${diff == null ? 'เดือนหน้ามาทำอีกครั้งเพื่อดูพัฒนาการนะ' : diff > 0 ? `📈 ดีขึ้นจากเดือนที่แล้ว ${diff}%` : diff < 0 ? `📉 น้อยกว่าเดือนที่แล้ว ${-diff}% ลองทบทวนคำที่ผิดดูนะ` : 'เท่ากับเดือนที่แล้วพอดี'}${best ? '' : ' · คะแนนดีที่สุดของเดือนนี้ยังเป็นครั้งก่อน'}</p>
+      <button class="btn primary block" id="mtAgain">ทำอีกครั้ง</button><button class="btn ghost block" style="margin-top:8px" data-go="stats">ดูสถิติ</button></div>
+      ${wrong.length ? `<div class="card-box wrong-list"><b>คำที่ตอบผิด</b> <span class="small muted">(กลับไปอยู่ในแฟลชการ์ดแล้ว · แตะเพื่อดู)</span>
+        ${wrong.map((w) => `<div class="wl" data-i="${w.idx}"><span><b>${esc(w.w)}</b></span><span class="muted grow" style="text-align:right">${esc(w.t)}</span></div>`).join('')}</div>` : ''}`;
+    $('#mtAgain').onclick = () => renderMonthTest();
+    const wl = view.querySelector('.wrong-list');
+    if (wl) wl.onclick = (e) => { const r = e.target.closest('[data-i]'); if (r) openSheet(W[+r.dataset.i]); };
+  };
+  q();
 }

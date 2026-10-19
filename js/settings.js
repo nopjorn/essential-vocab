@@ -91,6 +91,9 @@ function renderSettings() {
       <div class="row"><button class="btn grow" id="exp">📤 ส่งออก</button><button class="btn grow" id="imp">📥 นำเข้า</button></div>
       <input type="file" id="file" accept=".json,application/json" hidden>
       <p class="small muted" style="margin-bottom:0">นำเข้าแบบรวมข้อมูล: คำไหนในเครื่องนี้ก้าวหน้ากว่าไฟล์สำรอง จะเก็บของเครื่องนี้ไว้</p>
+      <div class="small" style="margin:16px 0 6px"><b>📤 ส่งออกรายการคำศัพท์</b> <span class="muted">ไปใช้ใน Excel / Google Sheets หรือ Anki</span></div>
+      <select class="sel block-sel" id="xpWhich" aria-label="คำที่จะส่งออก">${Object.entries(EXPORT_SETS).map(([k, [name, f]]) => `<option value="${k}">${name} (${W.filter(f).length})</option>`).join('')}</select>
+      <div class="row" style="margin-top:8px"><button class="btn grow" id="xpCsv">📄 CSV</button><button class="btn grow" id="xpAnki">🃏 Anki</button></div>
     </div></details>
 
     <button class="card-box guide-link" id="guideBtn" style="margin-top:24px"><span>📘</span><div class="grow"><b>คู่มือการใช้งาน & ทริก</b><div class="small muted">วิธีใช้ทุกส่วนของแอป และวิธีจำศัพท์ให้ได้ผลที่สุด</div></div><span class="muted">›</span></button>
@@ -175,6 +178,8 @@ function renderSettings() {
     setAuth(null); toast('ออกจากระบบแล้ว'); go(mustLogin() ? 'login' : 'settings');
   };
   $('#exp').onclick = async () => { await exportBackup(); renderSettings(); };
+  $('#xpCsv').onclick = () => exportWords($('#xpWhich').value, 'csv');
+  $('#xpAnki').onclick = () => exportWords($('#xpWhich').value, 'anki');
   if (navigator.storage && navigator.storage.persisted) {
     navigator.storage.persisted().then((ok) => { const el = $('#persist'); if (el) el.textContent = ok ? '🔒 เครื่องเก็บข้อมูลแบบถาวรแล้ว' : ''; }).catch(() => {});
   }
@@ -269,3 +274,42 @@ function renderHomeSet() {
   $('#hcfg').onchange = editHome;
   $('#hcReset').onclick = () => { S.homeCfg = null; save(); paintHome(); toast('คืนค่าหน้าแรกแล้ว'); };
 }
+
+/* ---------- word export (CSV / Anki) ---------- */
+const EXPORT_SETS = {
+  learned: ['คำที่เรียนแล้วทั้งหมด', (w) => !!S.prog[w.w]],
+  learning: ['กำลังเรียน', (w) => status(w) === 'learning'],
+  mastered: ['🟢 จำได้แล้ว', (w) => status(w) === 'mastered'],
+  star: ['⭐ คำติดดาว', isStar],
+  leech: ['🐢 คำดื้อ', isLeech],
+  all: ['ทุกคำในแอป', () => true],
+};
+const STATUS_TH = { new: 'ยังไม่เรียน', learning: 'กำลังเรียน', mastered: 'จำได้แล้ว' };
+// CSV opens in Excel/Sheets (UTF-8 BOM so Thai shows correctly); the Anki file is tab-separated with a
+// front (word, part of speech, IPA) and a back (Thai, example + translation, memory note) plus level/topic tags.
+function exportWords(which, fmt) {
+  const list = W.filter(EXPORT_SETS[which][1]);
+  if (!list.length) return toast('ยังไม่มีคำในกลุ่มนี้');
+  const due = (p) => (p && p.d ? new Date(p.d).toLocaleDateString('en-CA') : '');
+  let text, name, type;
+  if (fmt === 'csv') {
+    const q = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+    const rows = [['word', 'pos', 'level', 'ipa', 'thai', 'example', 'thai_example', 'topic', 'status', 'seen', 'correct', 'wrong', 'next_review', 'note']];
+    list.forEach((w) => { const p = S.prog[w.w]; rows.push([w.w, w.p, LV_LABEL[w.g] || w.g, w.i, w.t, w.e, w.et, w.tp ? TOPIC_LABEL[w.tp] : '', STATUS_TH[status(w)] || status(w), p ? p.s : 0, p ? p.c : 0, p ? p.x || 0 : 0, due(p), S.note[w.w] || '']); });
+    text = '\ufeff' + rows.map((r) => r.map(q).join(',')).join('\r\n');
+    name = `essential-vocab-${which}-${today()}.csv`; type = 'text/csv';
+  } else {
+    const c = (v) => esc(String(v || '')).replace(/[\t\r\n]+/g, ' ');
+    const tag = (v) => String(v || '').replace(/\s+/g, '_');
+    const lines = ['#separator:tab', '#html:true', '#tags column:3'];
+    list.forEach((w) => lines.push([
+      `<b>${c(w.w)}</b><br><small>${c(w.p)} · ${c(w.i)}</small>`,
+      `${c(w.t)}<br><br><i>${c(w.e)}</i><br>${c(w.et)}${S.note[w.w] ? `<br><br>💡 ${c(S.note[w.w])}` : ''}`,
+      `essential-vocab ${tag(LV_LABEL[w.g] || w.g)}${w.tp ? ' ' + tag(w.tp) : ''}`,
+    ].join('\t')));
+    text = lines.join('\n');
+    name = `essential-vocab-${which}-anki-${today()}.txt`; type = 'text/plain';
+  }
+  saveFile(new File([text], name, { type }), 'คำศัพท์จากศัพท์ต้องรู้').then((ok) => { if (ok) toast(`ส่งออก ${list.length} คำแล้ว ✅`); });
+}
+

@@ -2,7 +2,7 @@
 const { test, expect } = require('@playwright/test');
 const { openApp, readState } = require('./helpers');
 
-const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read', 'placement', 'changelog'];
+const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read', 'placement', 'changelog', 'mtest'];
 
 test('every screen renders without errors and shows the version', async ({ page }) => {
   const errors = await openApp(page);

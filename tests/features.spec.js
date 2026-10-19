@@ -158,3 +158,74 @@ test('word parts: browser, word sheet box, game with right and wrong answers', a
   await expect(page.locator('.result-emoji')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+// Seeds `n` learned words (half mastered) so the monthly test and the exports have data.
+function seededProgress(n) {
+  return (words) => {
+    const prog = {};
+    words.slice(0, n).forEach((w, k) => { prog[w] = k % 2 ? { b: 4, i: 20, e: 2.5, d: Date.now() + 9e8, s: 5, c: 5, x: 0 } : { b: 1, i: 1, e: 2.5, d: Date.now(), s: 1, c: 1, x: 0 }; });
+    return prog;
+  };
+}
+
+test('stats: year heatmap levels, tap a day; monthly test with right and wrong answers', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate((mk) => {
+    const prog = (0, eval)(mk)(W.slice(0, 60).map((w) => w.w));
+    const d = (k) => { const x = new Date(); x.setDate(x.getDate() - k); return x.toLocaleDateString('en-CA'); };
+    Object.assign(S, { prog, hist: { [d(0)]: 3, [d(1)]: 12, [d(3)]: 30, [d(40)]: 80 } });
+    save(); go('stats');
+  }, `(${seededProgress})(60)`);
+  await expect(page.locator('.hm-sum')).toContainText('4');
+  for (const lv of [1, 2, 3, 4]) await expect(page.locator(`#hm .hm-${lv}`)).toHaveCount(1);
+  await page.locator('#hm .hm-4').click();
+  await expect(page.locator('#toast')).toContainText('80 ข้อ');
+  // monthly test: 30 questions, wrong on even, right on odd
+  await page.locator('[data-go="mtest"]').first().click();
+  await page.locator('#mtGo').click();
+  for (let k = 0; k < 30; k++) {
+    await expect(page.locator('.options .opt')).toHaveCount(4);
+    const idx = await page.evaluate((wantRight) => {
+      const t = document.querySelector('#title').textContent;
+      // the right option is the one whose text belongs to the asked word: find it from the prompt
+      const p = document.querySelector('.q-prompt'), opts = [...document.querySelectorAll('.options .opt')].map((o) => o.textContent);
+      let w;
+      if (p.querySelector('.word')) w = W.find((x) => x.w === p.querySelector('.word').textContent);
+      else if (p.querySelector('.th')) w = W.find((x) => x.t === p.querySelector('.th').textContent && S.prog[x.w]);
+      else w = W.find((x) => x.w === window.__said[window.__said.length - 1]);
+      const right = opts.findIndex((o) => o === w.t || o === w.w);
+      return wantRight ? right : (right + 1) % 4;
+    }, k % 2 === 1);
+    await page.waitForTimeout(k % 3 === 2 ? 200 : 0); // listen questions speak after a short delay
+    await page.locator('.options .opt').nth(idx).click();
+    await expect(page.locator('.opt.correct')).toHaveCount(1);
+    await expect(page.locator('#title')).toContainText(k === 29 ? 'ผล' : `${k + 2}/30`, { timeout: 4000 });
+  }
+  await expect(page.locator('.result-emoji')).toBeVisible();
+  await expect(page.locator('.wrong-list .wl')).toHaveCount(15);
+  const mt = (await readState(page)).mtest;
+  expect(Object.values(mt)[0]).toMatchObject({ r: 15, n: 30 });
+  await page.locator('[data-go="stats"]').click();
+  await expect(page.locator('.mt-hist')).toContainText('50%');
+  expect(errors).toEqual([]);
+});
+
+test('settings: export words as CSV and Anki', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate((mk) => { S.prog = (0, eval)(mk)(W.slice(0, 10).map((w) => w.w)); S.note[W[0].w] = 'my, "hook"'; save(); navigator.canShare = undefined; go('settings'); }, `(${seededProgress})(10)`);
+  await page.locator('details[data-g="backup"] summary').click();
+  await expect(page.locator('#xpWhich')).toContainText('(10)');
+  const [csv] = await Promise.all([page.waitForEvent('download'), page.locator('#xpCsv').click()]);
+  const text = require('fs').readFileSync(await csv.path(), 'utf8');
+  const lines = text.trim().split('\r\n');
+  expect(lines).toHaveLength(11);
+  expect(text.startsWith('\ufeff"word","pos"')).toBe(true); // BOM so Excel reads Thai as UTF-8
+  expect(text).toContain('"my, ""hook"""');
+  await page.locator('#xpWhich').selectOption('mastered');
+  const [anki] = await Promise.all([page.waitForEvent('download'), page.locator('#xpAnki').click()]);
+  const a = require('fs').readFileSync(await anki.path(), 'utf8').split('\n');
+  expect(a.slice(0, 3)).toEqual(['#separator:tab', '#html:true', '#tags column:3']);
+  expect(a).toHaveLength(3 + 5);
+  a.slice(3).forEach((l) => expect(l.split('\t')).toHaveLength(3));
+  expect(errors).toEqual([]);
+});

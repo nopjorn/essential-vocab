@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.35.0';
+const APP_VERSION = '1.36.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -73,6 +73,7 @@ const defaults = () => ({
   monthSeen: '',       // 'YYYY-MM' of the month whose summary card was dismissed
   read: {},            // story id -> date finished
   readScore: {},       // story id -> [best right answers, questions]
+  mtest: {},           // 'YYYY-MM' -> { r: right, n: questions, at: ms } best monthly-test score
   placedAt: '',        // date the placement test was taken/dismissed
   xpWeek: {},          // Monday key -> XP earned that week (friends leaderboard)
   nick: '',            // name shown on the friends leaderboard
@@ -106,17 +107,20 @@ function save() {
 /* ---------- backup ---------- */
 const BACKUP_EVERY = 7; // days before the home screen nags about a backup
 
-async function exportBackup() {
-  const name = `essential-vocab-backup-${today()}.json`;
-  const done = () => { S.backupAt = Date.now(); save(); toast('สำรองข้อมูลแล้ว ✅'); };
-  const file = new File([JSON.stringify({ ...S, backupAt: Date.now() })], name, { type: 'application/json' });
+// Share sheet when the device can share files (iOS), else a download. Resolves false if the user cancelled.
+async function saveFile(file, title) {
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'ศัพท์ต้องรู้ backup' }); return done(); } catch (e) { if (e.name === 'AbortError') return; }
+    try { await navigator.share({ files: [file], title }); return true; } catch (e) { if (e.name === 'AbortError') return false; }
   }
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(file); a.download = name; a.click();
+  a.href = URL.createObjectURL(file); a.download = file.name; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-  done();
+  return true;
+}
+async function exportBackup() {
+  const name = `essential-vocab-backup-${today()}.json`;
+  const file = new File([JSON.stringify({ ...S, backupAt: Date.now() })], name, { type: 'application/json' });
+  if (await saveFile(file, 'ศัพท์ต้องรู้ backup')) { S.backupAt = Date.now(); save(); toast('สำรองข้อมูลแล้ว ✅'); }
 }
 
 const needsBackup = () => Object.keys(S.prog).length >= 10
@@ -160,6 +164,7 @@ function mergeBackup(d) {
   for (const [k, v] of Object.entries(d.read || {})) if (!S.read[k]) S.read[k] = v;
   for (const [k, v] of Object.entries(d.stk || {})) S.stk[k] = Math.max(S.stk[k] || 0, v);
   for (const [k, v] of Object.entries(d.readScore || {})) if (!S.readScore[k] || v[0] > S.readScore[k][0]) S.readScore[k] = v;
+  for (const [k, v] of Object.entries(d.mtest || {})) if (!S.mtest[k] || v.r / v.n > S.mtest[k].r / S.mtest[k].n) S.mtest[k] = v;
   for (const [k, v] of Object.entries(d.chist || {})) S.chist[k] = Math.max(S.chist[k] || 0, v);
   for (const [k, v] of Object.entries(d.snap || {})) S.snap[k] = (S.snap[k] || [0, 0, 0, 0]).map((x, i) => Math.max(x, v[i] || 0));
   save();
@@ -576,7 +581,7 @@ function markForReview(w) {
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต' };
+const TITLES = { mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต' };
 function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
@@ -587,7 +592,7 @@ function go(tab, ...args) {
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest }[tab])(...args);
   updateStreak();
   view.classList.remove('vin'); void view.offsetWidth; view.classList.add('vin');
 }

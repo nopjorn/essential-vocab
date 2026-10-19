@@ -50,7 +50,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
   `chist` (flashcards per day; games = `hist` − `chist`), `chistFrom`, `snap` (daily
   `[learned3000, mastered3000, learnedAll, masteredAll]`, written by `takeSnap()` in `save()`),
   `note` (memory hooks), `miss` (date → word → wrong count, 21 days), `weekSeen`, `read` (story id → date), `readScore` (story id → [best right, questions]),
-  `settings.topic`, `settings.voice` (voiceURI, '' = auto), `settings.theme` (auto/light/dark → `html[data-theme]`, mirrored to localStorage `o3k.theme` for the early script in index.html), `monthSeen`, `stk` (topic → sticker tier 1–4), `placedAt`, `xpWeek` (Monday key → XP), `nick`. Auth tokens live separately in localStorage `o3k.auth` (never in backups).
+  `settings.topic`, `settings.voice` (voiceURI, '' = auto), `settings.theme` (auto/light/dark → `html[data-theme]`, mirrored to localStorage `o3k.theme` for the early script in index.html), `monthSeen`, `stk` (topic → sticker tier 1–4), `placedAt`, `xpWeek` (Monday key → XP), `nick`, `mtest` (month → best monthly-test `{r, n, at}`). Auth tokens live separately in localStorage `o3k.auth` (never in backups).
 - When adding a field: add it to `defaults()` (load() shallow-merges top-level keys) **and** handle it
   in `mergeBackup()` so importing a backup keeps it.
 - `save()` also runs `checkAch()` (achievements).
@@ -82,6 +82,10 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 - 1.32: slow speech — `speak(text, { slow })`; with no `slow` given, the same text again within `SLOW_AGAIN` (8 s) plays at `slowRate()`
   (alternating; `settings.slowRepeat !== false`). `slowBtn(text)` renders a 🐢 button (`data-slow`, handled by one document listener).
   Reader: `#rSlow` toggle and `shadowStory(st)` (🗣️ shadowing: `storySentences()`, speak → pause ≈ sentence length → next).
+- 1.36: stats page `yearHeatmap()` (53 Monday-first weeks of `hist`, `--hm0..4` one-hue ramp with its own dark steps) + `bindHeatmap()`;
+  monthly test route `mtest` (`renderMonthTest`/`runMonthTest`: 30 MC questions from mastered words, else learned; answers via `gameResult()`;
+  best per month in `S.mtest`, history bars `mtestSummary()`); `saveFile(file, title)` (share sheet or download) used by backups and
+  `exportWords(set, 'csv'|'anki')` in `js/settings.js` (CSV with BOM; Anki tab-separated with `#separator/#html/#tags column` headers).
 - Home is kept short (today, quick play, weekly card, quest, progress card); charts, per-level bars and
   achievements live on the stats page.
 - Leaderboard (`pushBoard`/`loadBoard`, table `leaderboard`) and Web Push (`enablePush`, table `push_subs`,

@@ -33,7 +33,7 @@ function renderHome() {
     </div>`,
     feed: () => `<button class="quick-btn feed-btn" id="qFeed"><span>📱</span><b>ไถศัพท์</b><small>ปัดขึ้นเรื่อยๆ เหมือนไถฟีด</small></button>`,
     play: () => `<button class="quick-btn" id="qPlay"><span>⚡</span><b>เล่นด่วน</b><small>เกมสุ่ม 10 ข้อ ~1 นาที</small></button>`,
-    month: () => new Date().getDate() <= 7 && S.monthSeen !== monthKey() && monthStats(1).total ? `<div class="card-box week-card" id="monthCard"><b>📅 สรุปเดือน${monthName(monthKey(1))}</b>${monthBox(1, true)}</div>` : '',
+    month: () => new Date().getDate() <= 7 && S.monthSeen !== monthKey() && monthStats(1).total ? `<div class="card-box week-card" id="monthCard"><b>📅 สรุปเดือน${monthName(monthKey(1))}</b>${monthBox(1, true)}${S.mtest[monthKey()] ? '' : '<button class="btn primary block" data-go="mtest" style="margin-top:10px">📝 ทำแบบทดสอบประจำเดือน</button>'}</div>` : '',
     week: () => S.weekSeen !== mondayKey() && weekStats(1).total ? `<div class="card-box week-card" id="weekCard"><b>📊 สรุปสัปดาห์ที่แล้ว</b>${weekBox(1, true)}</div>` : '',
     quest: questCard,
     wotd: wotdCard,

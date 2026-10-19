@@ -923,3 +923,25 @@ details.cal-alt > summary { cursor: pointer; padding: 6px 0; }
 .ref-tile span { font-size: 22px; line-height: 1; }
 .ref-tile:active { transform: scale(.96); }
 @media (min-width: 700px) { .ref-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+
+/* year heatmap: one green hue, 5 steps; dark mode has its own steps (low = near the surface, high = bright) */
+:root { --hm0: #ebe8f5; --hm1: #b9e6d8; --hm2: #6ccaa9; --hm3: #13a07d; --hm4: #00664f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --hm0: #2a2742; --hm1: #134b3f; --hm2: #16735c; --hm3: #22a886; --hm4: #63e3c0; } }
+:root[data-theme="dark"] { --hm0: #2a2742; --hm1: #134b3f; --hm2: #16735c; --hm3: #22a886; --hm4: #63e3c0; }
+.hm-sum { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 10px; }
+.hm-wrap { overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+.hm, .hm-months { display: grid; grid-template-columns: repeat(53, 12px); gap: 2px; width: max-content; }
+.hm { grid-template-rows: repeat(7, 12px); grid-auto-flow: column; }
+.hm-months { font-size: 10px; color: var(--muted); height: 14px; margin-bottom: 2px; white-space: nowrap; }
+.hm-c { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: var(--hm0); }
+.hm-c.hm-1 { background: var(--hm1); } .hm-c.hm-2 { background: var(--hm2); } .hm-c.hm-3 { background: var(--hm3); } .hm-c.hm-4 { background: var(--hm4); }
+.hm-c.hm-x { background: none; }
+.hm [data-hm] { cursor: pointer; }
+.hm-legend { display: flex; align-items: center; gap: 3px; margin-top: 8px; }
+.hm-legend .hm-c { width: 11px; height: 11px; }
+@media (min-width: 900px) { .hm, .hm-months { grid-template-columns: repeat(53, minmax(12px, 1fr)); width: auto; } .hm { grid-template-rows: repeat(7, auto); } .hm-c { width: 100%; height: auto; aspect-ratio: 1; } }
+.mt-hist { display: flex; gap: 10px; align-items: flex-end; justify-content: center; }
+.mt-col { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: var(--fs-xs); color: var(--muted); min-width: 36px; }
+.mt-col b { color: var(--text); font-size: var(--fs-sm); }
+.mt-bar { width: 22px; height: 64px; background: var(--surface-2); border-radius: 6px; display: flex; align-items: flex-end; overflow: hidden; }
+.mt-bar i { display: block; width: 100%; background: var(--c-master); border-radius: 4px 4px 0 0; }
