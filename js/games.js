@@ -308,8 +308,7 @@ function playQuiz(mode, src, gameId) {
       $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! <b>${esc(w.w)}</b> = ${esc(w.t)}` : `❌ <b>${esc(w.w)}</b> = ${esc(w.t)}`)
         + (m === 'cloze' || !ok ? exampleBox(w) : '')
         + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
-      const sayEx = view.querySelector('[data-sayex]'); // only present when the example is shown
-      if (sayEx) sayEx.onclick = () => speak(w.e);
+      bindSayEx(view, w.e); // buttons only present when the example is shown
       $('#nextQ').onclick = next;
       if (m === 'cloze') speak(w.e); else if (m === 'th2en') speak(w.w);
       if (ok && m !== 'cloze') setTimeout(() => { if (items[i] === w) next(); }, 1000);
@@ -342,7 +341,7 @@ function playQuiz(mode, src, gameId) {
       inp.blur(); inp.value = w.w; inp.classList.add(ok ? 'ok' : 'no');
       $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! ${esc(w.i)}` : `❌ คำตอบคือ <b>${esc(w.w)}</b> ${esc(w.i)}`)
         + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
-      view.querySelector('[data-sayex]').onclick = () => speak(w.e);
+      bindSayEx(view, w.e);
       $('#nextQ').onclick = next;
       speak(w.w);
       if (ok) setTimeout(() => { if (items[i] === w) next(); }, 1500);
@@ -383,7 +382,7 @@ function playQuiz(mode, src, gameId) {
       $('#skip').remove();
       $('#reveal').innerHTML = (ok ? `✅ ออกเสียงถูกแล้ว! <b>${esc(w.w)}</b>` : `👂 ลองฟังแล้วพูดตามอีกครั้งนะ <b>${esc(w.w)}</b> ${esc(w.i)}`)
         + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
-      view.querySelector('[data-sayex]').onclick = () => speak(w.e);
+      bindSayEx(view, w.e);
       $('#nextQ').onclick = () => { cleanup = null; next(); };
       if (!ok) speak(target);
       else setTimeout(() => { if (items[i] === w) { cleanup = null; next(); } }, 1300);
@@ -445,7 +444,7 @@ function playQuiz(mode, src, gameId) {
       inp.blur(); inp.value = answerWord; inp.classList.add(ok ? 'ok' : 'no');
       $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! <b>${esc(w.w)}</b> = ${esc(w.t)}` : `❌ คำตอบคือ <b>${esc(answerWord)}</b> (${esc(w.t)})`)
         + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
-      const sayEx = view.querySelector('[data-sayex]'); if (sayEx) sayEx.onclick = () => speak(w.e);
+      bindSayEx(view, w.e);
       $('#nextQ').onclick = next;
       if (ok) setTimeout(() => { if (items[i] === w) next(); }, 1500);
     };

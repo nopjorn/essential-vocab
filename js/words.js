@@ -126,7 +126,7 @@ function openSheet(w, onChange) {
     if (e.target === el) return close();
     const col = e.target.closest('[data-col]'); if (col) return speak(col.dataset.col);
     if (e.target.closest('[data-say]')) return speak(w.w);
-    if (e.target.closest('[data-sayex]')) return speak(w.e);
+    if (e.target.closest('[data-sayex]')) return speak(e.target.closest('[data-sayex]').dataset.sayex || w.e);
     if (e.target.closest('[data-note]')) { close(); return editNote(w, onChange); }
     const act = e.target.closest('[data-act]');
     if (!act) return;

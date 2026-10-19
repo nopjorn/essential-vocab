@@ -346,7 +346,7 @@ function renderFeed() {
       if (isStar(w)) toast('⭐ ติดดาวแล้ว ไปเล่นในเกมได้ที่ "คำติดดาว"');
       return;
     }
-    if (e.target.closest('[data-sayex]')) return speak(c.sp ? c.say : w.e);
+    if (e.target.closest('[data-sayex]')) return speak(c.sp ? c.say : e.target.closest('[data-sayex]').dataset.sayex || w.e);
     if (e.target.closest('[data-say]')) return speak(c.sp ? c.say : w.w);
     const col = e.target.closest('[data-col]');
     if (col) return speak(col.dataset.col);

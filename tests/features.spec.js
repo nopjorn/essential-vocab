@@ -351,3 +351,15 @@ test('settings: a 1.39.1 save with animations off turns all three switches off',
   expect(await page.evaluate(() => [S.settings.animPage, S.settings.animAnswer, S.settings.confetti, 'anim' in S.settings])).toEqual([false, false, false, false]);
   expect(errors).toEqual([]);
 });
+
+test('word sheet: maybe shows one example box per sentence, each 🔊 reads its own sentence', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => openSheet(W.find(w => w.w === 'maybe')));
+  const boxes = page.locator('.example');
+  await expect(boxes).toHaveCount(2);
+  await expect(boxes.nth(1).locator('.thx')).toHaveText('บางทีเธออาจแค่เหนื่อย');
+  await boxes.nth(1).locator('[data-sayex]').click();
+  expect(await page.evaluate(() => window.__said.at(-1))).toBe('Maybe she is just tired.');
+  expect(await page.evaluate(() => exParts(W.find(w => w.w === 'hungry')).length)).toBe(1);
+  expect(errors).toEqual([]);
+});

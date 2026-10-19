@@ -1,6 +1,7 @@
 // Changelog shown in the app (settings → ประวัติการอัปเดต). Newest first. Keep in sync with the README table.
 // [version, what changed, release date YYYY-MM-DD (Thailand time)]; loaded lazily by loadChangelog().
 window.CHANGELOG = [
+  ["1.39.6", "ประโยคตัวอย่างที่มีหลายความหมาย (เช่น maybe) แยกเป็นกล่องละประโยค พร้อมปุ่ม 🔊 ฟังทีละประโยค", "2026-10-19"],
   ["1.39.5", "คำว่า maybe: ประโยคตัวอย่างครบทั้ง 2 ความหมาย — \"อาจจะ\" (Maybe it will rain later.) และ \"บางที\" (Maybe she is just tired.)", "2026-10-19"],
   ["1.39.4", "คำว่า maybe (A1) แปลเป็น \"อาจจะ, บางที\"", "2026-10-19"],
   ["1.39.3", "แถบด้านล่าง (และเมนูด้านซ้ายบน iPad): ย้ายปุ่ม 🗂️ แฟลชการ์ด มาอยู่ก่อน 🎮 เกม — เรียงเป็น หน้าแรก · แฟลชการ์ด · เกม · คำศัพท์ · ตั้งค่า", "2026-10-19"],

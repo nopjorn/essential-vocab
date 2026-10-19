@@ -231,7 +231,7 @@ function wotdFull(start) {
     const w = hist[at];
     if (e.target.closest('[data-x]')) close();
     else if (e.target.closest('[data-say]')) speak(w.w);
-    else if (e.target.closest('[data-sayex]')) speak(w.e);
+    else if (e.target.closest('[data-sayex]')) speak(e.target.closest('[data-sayex]').dataset.sayex || w.e);
     else if (e.target.closest('[data-next]')) next();
     else if (e.target.closest('[data-back]')) { if (at) { at--; show(); } }
     else if (e.target.closest('[data-auto]')) {

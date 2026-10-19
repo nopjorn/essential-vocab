@@ -183,7 +183,7 @@ function renderCards(extra) {
     const tl = $('.swipe-tag.l', fc), tr = $('.swipe-tag.r', fc);
     fc.addEventListener('click', (e) => {
       if (e.target.closest('[data-say]')) { e.stopPropagation(); speak(card.w); return; }
-      if (e.target.closest('[data-sayex]')) { e.stopPropagation(); speak(card.e); return; }
+      if (e.target.closest('[data-sayex]')) { e.stopPropagation(); speak(e.target.closest('[data-sayex]').dataset.sayex || card.e); return; }
       if (e.target.closest('[data-star]')) {
         e.stopPropagation(); toggleStar(card);
         fc.querySelectorAll('[data-star]').forEach((b) => (b.textContent = starIcon(card)));

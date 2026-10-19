@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.39.5';
+const APP_VERSION = '1.39.6';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -374,7 +374,16 @@ function hlExample(w) {
 // Words whose example sentence contains the exact word, usable for fill-in-the-blank.
 const clozeRe = (w) => new RegExp('(^|[^A-Za-z])' + reEsc(w.w) + '(?![A-Za-z])', 'i');
 const hasCloze = (w) => clozeRe(w).test(w.e);
-const exampleBox = (w) => `<div class="example"><div class="en" lang="en">${hlExample(w)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(w.et)}</div></div>`;
+// Sentences of an example. Split into one box each only when every sentence uses the word
+// (e.g. maybe = อาจจะ / บางที) and the Thai has a matching number of space-separated parts.
+function exParts(w) {
+  const en = w.e.split(/(?<=[.?!])\s+(?=[A-Z])/), th = w.et.split(' ');
+  if (en.length < 2 || en.length !== th.length || !en.every(s => clozeRe(w).test(s))) return [[w.e, w.et]];
+  return en.map((s, i) => [s, th[i]]);
+}
+const exampleBox = (w) => exParts(w).map(([e, et]) => `<div class="example"><div class="en" lang="en">${hlExample({ ...w, e })} <button class="say-ex" data-sayex="${esc(e)}" aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(et)}</div></div>`).join('');
+// Each 🔊 in the example boxes reads its own sentence.
+const bindSayEx = (root, text) => root.querySelectorAll('[data-sayex]').forEach(b => { b.onclick = () => speak(b.dataset.sayex || text); });
 
 // Tiny sound effects with Web Audio (no files needed).
 let actx;
