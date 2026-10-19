@@ -167,6 +167,18 @@ test('word of the day: full screen view, random, back, star, details, close', as
   await page.locator('#wotd [data-full]').click();
   const wf = page.locator('.wf');
   await expect(wf).toBeVisible();
+  // auto-speak toggle: off by default, on → every new word is read aloud
+  await expect(wf.locator('[data-auto]')).toHaveText('🔇');
+  await wf.locator('[data-auto]').click();
+  await expect(wf.locator('[data-auto]')).toHaveText('🔊');
+  expect(await page.evaluate(() => S.settings.wfAuto)).toBe(true);
+  await page.evaluate(() => { window.__said.length = 0; });
+  await wf.locator('[data-next]').click();
+  const spoken = (await wf.locator('.wf-word').innerText()).replace('🔊', '').trim();
+  expect(await page.evaluate(() => window.__said.map((u) => u.text || u))).toContain(spoken);
+  await wf.locator('[data-auto]').click();
+  await expect(wf.locator('[data-auto]')).toHaveText('🔇');
+  await wf.locator('[data-back]').click();
   const first = await wf.locator('.wf-word').innerText();
   await expect(wf.locator('[data-back]')).toBeDisabled();
   await wf.locator('[data-next]').click();

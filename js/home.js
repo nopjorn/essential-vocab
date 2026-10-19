@@ -194,7 +194,7 @@ function wotdFull(start) {
         ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div>
         <div class="wf-acts"><button class="btn" data-star><span>${isStar(w) ? '★' : '⭐'}</span>${isStar(w) ? 'ติดดาวแล้ว' : 'ติดดาว'}</button><button class="btn" data-review><span>🔁</span>ทบทวนวันนี้</button><button class="btn" data-known><span>✓</span>รู้แล้ว</button></div>
       </div>
-      <div class="wf-bar"><button class="btn" data-back ${at ? '' : 'disabled'} aria-label="คำก่อนหน้า">◀</button><button class="btn primary grow" data-next>🎲 สุ่มคำใหม่</button></div>`;
+      <div class="wf-bar"><button class="btn" data-back ${at ? '' : 'disabled'} aria-label="คำก่อนหน้า">◀</button><button class="btn" data-auto aria-label="${S.settings.wfAuto ? 'ปิดเสียงอ่านอัตโนมัติ' : 'เปิดเสียงอ่านอัตโนมัติ'}" aria-pressed="${!!S.settings.wfAuto}">${S.settings.wfAuto ? '🔊' : '🔇'}</button><button class="btn primary grow" data-next>🎲 สุ่มคำใหม่</button></div>`;
     loadColloc().then((c) => {
       const box = el.querySelector('#colBox'), list = c[w.w];
       if (box && list && hist[at] === w) box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🔗 คำที่มักใช้คู่กัน</b> (แตะเพื่อฟัง)</div>
@@ -206,13 +206,15 @@ function wotdFull(start) {
     });
     el.querySelector('.wf-body').scrollTop = 0;
   };
+  // Auto-speak (settings.wfAuto): read each word aloud when it is shown via ◀ / 🎲.
+  const show = () => { paint(); if (S.settings.wfAuto) speak(hist[at].w); };
   const next = () => {
-    if (at < hist.length - 1) { at++; return paint(); }
+    if (at < hist.length - 1) { at++; return show(); }
     const p = (wotdPool().length ? wotdPool() : pool()).filter((x) => x !== hist[at]); if (!p.length) return;
-    hist.push(p[Math.floor(Math.random() * p.length)]); at = hist.length - 1; paint();
+    hist.push(p[Math.floor(Math.random() * p.length)]); at = hist.length - 1; show();
   };
   const close = () => { el.remove(); document.removeEventListener('keydown', key); renderHome(); };
-  const key = (e) => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') next(); else if (e.key === 'ArrowLeft' && at) { at--; paint(); } };
+  const key = (e) => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') next(); else if (e.key === 'ArrowLeft' && at) { at--; show(); } };
   document.addEventListener('keydown', key);
   el.onclick = (e) => {
     const w = hist[at];
@@ -220,7 +222,12 @@ function wotdFull(start) {
     else if (e.target.closest('[data-say]')) speak(w.w);
     else if (e.target.closest('[data-sayex]')) speak(w.e);
     else if (e.target.closest('[data-next]')) next();
-    else if (e.target.closest('[data-back]')) { if (at) { at--; paint(); } }
+    else if (e.target.closest('[data-back]')) { if (at) { at--; show(); } }
+    else if (e.target.closest('[data-auto]')) {
+      S.settings.wfAuto = !S.settings.wfAuto; save(); paint();
+      toast(S.settings.wfAuto ? 'เปิดเสียงอ่านคำอัตโนมัติ 🔊' : 'ปิดเสียงอ่านคำอัตโนมัติ 🔇');
+      if (S.settings.wfAuto) speak(w.w);
+    }
     else if (e.target.closest('[data-col]')) speak(e.target.closest('[data-col]').dataset.col);
     else if (e.target.closest('[data-note]')) editNote(w, paint);
     else if (e.target.closest('[data-star]')) { toggleStar(w); paint(); }
