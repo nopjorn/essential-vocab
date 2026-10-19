@@ -13,9 +13,10 @@ async function openApp(page, state) {
     if (st && !sessionStorage.getItem('seeded')) { localStorage.setItem(key, JSON.stringify(st)); sessionStorage.setItem('seeded', '1'); }
     // Speech synthesis: record what was said, finish each utterance right away.
     window.__said = [];
+    window.__rates = []; // u.rate of each utterance (slow speech)
     const synth = {
       speaking: false, pending: false, paused: false, onvoiceschanged: null,
-      speak(u) { window.__said.push(u.text); setTimeout(() => { if (u.onend) u.onend({}); }, 10); },
+      speak(u) { window.__said.push(u.text); window.__rates.push(Math.round(u.rate * 100) / 100); setTimeout(() => { if (u.onend) u.onend({}); }, 10); },
       cancel() {}, pause() {}, resume() {}, getVoices: () => [],
       addEventListener() {}, removeEventListener() {},
     };

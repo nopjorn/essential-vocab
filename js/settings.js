@@ -70,6 +70,8 @@ function renderSettings() {
         <select class="sel" id="acc"><option value="en-US" ${st.accent === 'en-US' ? 'selected' : ''}>🇺🇸 อเมริกัน</option><option value="en-GB" ${st.accent === 'en-GB' ? 'selected' : ''}>🇬🇧 อังกฤษ</option></select></div>
       <div class="set-row"><span>ความเร็วเสียง</span>
         <select class="sel" id="rate">${[[0.7, 'ช้า'], [0.9, 'ปกติ'], [1.05, 'เร็ว']].map(([v, t]) => `<option value="${v}" ${v === st.rate ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="set-row"><span>แตะ 🔊 ซ้ำ = ฟังช้าลง<br><span class="small muted">แตะปุ่มฟังคำ/ประโยคเดิมอีกครั้งภายใน 8 วินาที จะพูดช้าลงให้ฟังชัดๆ</span></span>
+        <label class="switch"><input type="checkbox" id="slowRep" ${st.slowRepeat !== false ? 'checked' : ''}><span></span></label></div>
       <button class="btn block" id="test" style="margin-top:8px">🔊 ทดสอบเสียง</button>
     </div></details>
 
@@ -138,6 +140,7 @@ function renderSettings() {
   $('#sfx').onchange = (e) => { st.sfx = e.target.checked; save(); sfx('ok'); };
   $('#acc').onchange = (e) => { st.accent = e.target.value; save(); speak('Hello! Nice to meet you.'); };
   $('#rate').onchange = (e) => { st.rate = +e.target.value; save(); speak('vocabulary'); };
+  $('#slowRep').onchange = (e) => { st.slowRepeat = e.target.checked; save(); };
   $('#test').onclick = () => speak('Hello! Let\'s learn English together.');
   fillVoices();
   $('#voice').onchange = (e) => { st.voice = e.target.value; save(); speak('Hello! This is how I sound when I read your words.'); };

@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.31.4';
+const APP_VERSION = '1.32.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -50,7 +50,7 @@ const MASTERED = 4;
 const KEY = 'oxford3000.v1';
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', newPerDay: 20, autoSpeak: true, rate: 0.9, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', wotd: { lv: [], st: [], tp: [] }, nextGames: [] },
+  settings: { levels: ['A1'], topic: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', wotd: { lv: [], st: [], tp: [] }, nextGames: [] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -466,12 +466,20 @@ function applyTheme() {
   try { localStorage.setItem('o3k.theme', t); } catch (e) { /* ignore */ }
 }
 applyTheme();
-function speak(text) {
+// Slow speech: speak(text, { slow: true }) (🐢 buttons), or tapping 🔊 again for the same text within
+// SLOW_AGAIN ms plays it slower (alternating), unless settings.slowRepeat is false.
+const SLOW_AGAIN = 8000;
+let lastSaid = { text: '', at: 0, slow: false };
+const slowRate = () => Math.max(0.45, Math.round(S.settings.rate * 0.62 * 100) / 100);
+function speak(text, opt) {
   if (!window.speechSynthesis) return;
   speechSynthesis.cancel();
+  let slow = opt && opt.slow;
+  if (slow == null) slow = S.settings.slowRepeat !== false && lastSaid.text === text && Date.now() - lastSaid.at < SLOW_AGAIN && !lastSaid.slow;
+  lastSaid = { text, at: Date.now(), slow: !!slow };
   const u = new SpeechSynthesisUtterance(text);
   const lang = S.settings.accent;
-  u.lang = lang; u.rate = S.settings.rate;
+  u.lang = lang; u.rate = slow ? slowRate() : S.settings.rate;
   const chosen = S.settings.voice && voices.find((x) => x.voiceURI === S.settings.voice);
   if (chosen) { try { u.voice = chosen; u.lang = chosen.lang; } catch (e) { /* voice went away */ } speechSynthesis.speak(u); return u; }
   const v = voices.find((v) => v.lang === lang && /Samantha|Daniel|Karen|Ava|Siri/i.test(v.name)) || voices.find((v) => v.lang === lang) || voices.find((v) => v.lang && v.lang.startsWith('en'));
@@ -589,6 +597,9 @@ function updateStreak() {
   el.style.setProperty('--xp', Math.min(100, Math.max(0, ((S.xp || 0) - levelStart(L)) / (50 * L) * 100)) + '%'); // progress to the next level
 }
 view.addEventListener('click', (e) => { const g = e.target.closest('[data-go]'); if (g) go(g.dataset.go); });
+// 🐢 buttons (data-slow = the text) replay slowly on any screen.
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-slow]'); if (b) speak(b.dataset.slow, { slow: true }); });
+const slowBtn = (text, label = 'ฟังช้า') => `<button class="slow-btn" data-slow="${esc(text)}" aria-label="ฟังช้าๆ">🐢 ${label}</button>`;
 $('#streak').addEventListener('click', () => { if (current !== 'stats') go('stats', 'home'); });
 // Sub pages carry their own "‹ กลับ" button (id ending in Back); mirror it in the top bar and hide the in-page one.
 new MutationObserver(() => document.body.classList.toggle('has-back', !!view.querySelector('[id$="Back"]'))).observe(view, { childList: true });

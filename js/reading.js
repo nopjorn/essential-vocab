@@ -136,7 +136,7 @@ function renderRead(id) {
   if (!st) return go('read');
   $('#title').textContent = 'อ่านเรื่องสั้น';
   const inf = storyInfo(st);
-  let showTh = false, playing = -1, token = 0;
+  let showTh = false, playing = -1, token = 0, slow = false;
   const answers = [];
   const font = () => FONT_SIZES[S.settings.rFont != null ? S.settings.rFont : 1];
   view.innerHTML = `<div class="read-bar"><div class="read-prog" id="rProg"></div></div>
@@ -151,6 +151,8 @@ function renderRead(id) {
       <button class="tool" id="rTh"><span>🇹🇭</span>คำแปล</button>
       <button class="tool" id="rEar"><span>🎧</span>ฟังอย่างเดียว</button>
       <button class="tool" id="rFont"><span>Aa</span>ขนาดตัวอักษร</button>
+      <button class="tool" id="rSlow" aria-pressed="false"><span>🐢</span>อ่านช้า</button>
+      <button class="tool" id="rShadow"><span>🗣️</span>พูดตาม</button>
     </div>
     <article class="card-box story" id="rText" style="--st-font:${font()}px">
       ${st.en.map((para, k) => `<div class="st-para" data-k="${k}"><p class="st-p">${storyHTML(para)}</p>
@@ -174,7 +176,7 @@ function renderRead(id) {
     playing = k;
     $('#rAll').innerHTML = chain ? '<span>⏸</span>หยุดฟัง' : '<span>▶️</span>ฟังทั้งเรื่อง';
     if (chain) paras[k].scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const u = speak(st.en[k]);
+    const u = speak(st.en[k], { slow });
     const next = () => { if (my !== token || current !== 'read') return; if (chain && k + 1 < paras.length) play(k + 1, true); else stop(); };
     if (u) { u.onend = next; u.onerror = () => { if (my === token) stop(); }; } else stop();
   };
@@ -193,6 +195,8 @@ function renderRead(id) {
   };
   $('#rEar').onclick = () => ear(!$('#rText').classList.contains('ear'));
   $('#rFont').onclick = () => { S.settings.rFont = ((S.settings.rFont != null ? S.settings.rFont : 1) + 1) % FONT_SIZES.length; save(); $('#rText').style.setProperty('--st-font', font() + 'px'); };
+  $('#rSlow').onclick = () => { slow = !slow; $('#rSlow').classList.toggle('on', slow); $('#rSlow').setAttribute('aria-pressed', slow); toast(slow ? 'อ่านออกเสียงช้าลง 🐢' : 'กลับมาอ่านความเร็วปกติ'); };
+  $('#rShadow').onclick = () => { cleanup(); cleanup = null; shadowStory(st, slow); };
   $('#rAll').onclick = () => (playing >= 0 && $('#rAll').textContent.includes('หยุด') ? stop() : play(0, true));
   const onScroll = () => { const max = view.scrollHeight - view.clientHeight; const bar = $('#rProg'); if (bar) bar.style.width = (max > 0 ? Math.min(100, (100 * view.scrollTop) / max) : 100) + '%'; };
   view.addEventListener('scroll', onScroll, { passive: true });
@@ -276,4 +280,84 @@ function renderLibrary() {
     const b = e.target.closest('[data-id]'); if (b) { view.onclick = null; go('read', +b.dataset.id); }
   };
   cleanup = () => { view.onclick = null; };
+}
+
+/* ---------- shadowing (listen to one sentence, repeat it aloud in the pause, go on) ---------- */
+function storySentences(st) {
+  const out = [];
+  st.en.forEach((para, k) => (para.match(/[^.!?]+[.!?]+["'”’)]*|[^.!?]+$/g) || [para]).forEach((x) => { x = x.trim(); if (x) out.push({ en: x, k }); }));
+  return out;
+}
+function shadowStory(st, slowStart) {
+  const list = storySentences(st);
+  let i = 0, tok = 0, auto = false, slow = !!slowStart, hide = false, showTh = false, timer = null;
+  $('#title').textContent = 'ฝึกพูดตาม';
+  view.innerHTML = `<div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="shBack">‹ กลับไปที่เรื่อง</button></div>
+    <div class="card-box sh-box">
+      <div class="sh-top"><span class="small muted">${st.emoji || '📖'} ${esc(st.title)}</span><b class="small" id="shN"></b></div>
+      <div class="sh-prog"><i id="shProg"></i></div>
+      <p class="sh-en" id="shEn" aria-live="polite"></p>
+      <p class="sh-th" id="shTh" hidden></p>
+      <div class="sh-state" id="shState" aria-live="polite">แตะ ▶️ เริ่ม แล้วพูดตามในช่วงที่แถบสีวิ่ง</div>
+      <div class="sh-timer"><i id="shBar"></i></div>
+    </div>
+    <div class="st-tools sh-ctl">
+      <button class="tool" id="shPrev" aria-label="ประโยคก่อนหน้า"><span>⏮</span>ก่อนหน้า</button>
+      <button class="tool" id="shPlay"><span>▶️</span>เริ่ม</button>
+      <button class="tool" id="shNext" aria-label="ประโยคถัดไป"><span>⏭</span>ถัดไป</button>
+      <button class="tool" id="shRep"><span>🔁</span>ฟังซ้ำ</button>
+      <button class="tool ${slow ? 'on' : ''}" id="shSlow" aria-pressed="${slow}"><span>🐢</span>ช้า</button>
+      <button class="tool" id="shHide" aria-pressed="false"><span>🙈</span>ซ่อนข้อความ</button>
+    </div>
+    <button class="hint-btn" id="shThBtn">🇹🇭 ดูคำแปลย่อหน้านี้</button>
+    <p class="small muted" style="margin:14px 2px">💡 Shadowing: ฟังประโยค แล้วพูดตามทันทีให้จังหวะ น้ำเสียง และการเน้นคำเหมือนต้นฉบับมากที่สุด ไม่ต้องเข้าใจทุกคำก็ได้ ลองซ่อนข้อความเมื่อคล่องแล้ว</p>`;
+  const bar = $('#shBar');
+  const setBar = (ms) => { bar.style.transition = 'none'; bar.style.width = '0'; if (ms) { void bar.offsetWidth; bar.style.transition = `width ${ms}ms linear`; bar.style.width = '100%'; } };
+  const halt = () => { tok++; clearTimeout(timer); setBar(0); if (window.speechSynthesis) speechSynthesis.cancel(); };
+  const setAuto = (on) => { auto = on; $('#shPlay').innerHTML = on ? '<span>⏸</span>หยุด' : '<span>▶️</span>เริ่ม'; };
+  const show = () => {
+    const c = list[i];
+    $('#shN').textContent = `ประโยค ${i + 1}/${list.length}`;
+    $('#shProg').style.width = ((i + 1) / list.length) * 100 + '%';
+    $('#shEn').textContent = c.en; $('#shEn').classList.toggle('hid', hide);
+    $('#shTh').textContent = st.th[c.k] || ''; $('#shTh').hidden = !showTh;
+  };
+  const finish = () => {
+    setAuto(false);
+    $('#shState').innerHTML = '🎉 พูดตามครบทั้งเรื่องแล้ว เก่งมาก!';
+    markActive(); addXP(Math.min(20, list.length)); save(); sfx('ok');
+  };
+  // Say sentence i; then leave a pause about as long as the sentence (+ a little) for the learner to repeat it.
+  const run = () => {
+    const my = ++tok; clearTimeout(timer); show(); setBar(0);
+    $('#shState').textContent = '🔊 ฟัง…';
+    const t0 = Date.now(), c = list[i];
+    const pause = () => {
+      if (my !== tok || current !== 'read') return;
+      const said = Date.now() - t0, est = c.en.split(/\s+/).length * 380 / (slow ? 0.62 : 1);
+      const gap = Math.min(14000, Math.max(1500, Math.max(said, est) * 1.15 + 600));
+      $('#shState').textContent = '🗣️ ตาคุณ พูดตามเลย!';
+      setBar(gap);
+      timer = setTimeout(() => {
+        if (my !== tok) return;
+        setBar(0);
+        if (!auto) { $('#shState').textContent = 'แตะ 🔁 ฟังซ้ำ หรือ ⏭ ไปประโยคถัดไป'; return; }
+        if (i + 1 < list.length) { i++; run(); } else finish();
+      }, gap);
+    };
+    const u = speak(c.en, { slow });
+    if (u) { u.onend = pause; u.onerror = () => { if (my === tok) pause(); }; } else pause();
+  };
+  const move = (d) => { halt(); i = Math.max(0, Math.min(list.length - 1, i + d)); run(); };
+  $('#shBack').onclick = () => go('read', st.id);
+  $('#shPlay').onclick = () => { if (auto) { setAuto(false); halt(); $('#shState').textContent = 'หยุดไว้ แตะ ▶️ เพื่อเล่นต่อ'; } else { setAuto(true); run(); } };
+  $('#shPrev').onclick = () => move(-1);
+  $('#shNext').onclick = () => move(1);
+  $('#shRep').onclick = () => { halt(); run(); };
+  $('#shSlow').onclick = () => { slow = !slow; $('#shSlow').classList.toggle('on', slow); $('#shSlow').setAttribute('aria-pressed', slow); };
+  $('#shHide').onclick = () => { hide = !hide; $('#shHide').classList.toggle('on', hide); $('#shHide').setAttribute('aria-pressed', hide); $('#shEn').classList.toggle('hid', hide); };
+  $('#shEn').onclick = () => { if (hide) $('#shEn').classList.toggle('hid'); };
+  $('#shThBtn').onclick = () => { showTh = !showTh; $('#shTh').hidden = !showTh; $('#shThBtn').textContent = showTh ? '🇹🇭 ซ่อนคำแปล' : '🇹🇭 ดูคำแปลย่อหน้านี้'; };
+  show();
+  cleanup = () => { halt(); };
 }

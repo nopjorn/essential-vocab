@@ -295,6 +295,8 @@ select.sel { background: var(--surface-2); border: 0; border-radius: 10px; paddi
 .cloze { font-size: 21px; font-weight: 600; line-height: 1.5; }
 .cloze .blank { color: var(--primary); font-weight: 900; letter-spacing: 2px; }
 .hint-btn { margin-top: 12px; border: 0; background: var(--surface-2); border-radius: 999px; padding: 6px 14px; font-weight: 600; font-size: var(--fs-sm); }
+.slow-btn { margin-top: 10px; border: 0; background: var(--surface-2); color: var(--text); border-radius: 999px; padding: 6px 14px; font-weight: 600; font-size: var(--fs-sm); }
+.slow-btn:active { transform: scale(.95); }
 .reveal .example { margin-top: 10px; }
 
 /* weekly chart */
@@ -711,7 +713,8 @@ input.sel { color: var(--text); font: inherit; }
 .tile-s em.up { color: var(--good); } .tile-s em.down { color: var(--bad); }
 
 /* reader: listening mode */
-.st-tools { grid-template-columns: repeat(4, 1fr); }
+.st-tools { grid-template-columns: repeat(3, 1fr); }
+@media (min-width: 700px) { .st-tools { grid-template-columns: repeat(6, 1fr); } }
 .tool { font-size: var(--fs-xs); }
 .story.ear .st-para:not(.shown) .st-p { filter: blur(7px); user-select: none; -webkit-user-select: none; cursor: pointer; }
 .story.ear .st-para:not(.shown) .st-p::after { content: ""; }
@@ -891,3 +894,16 @@ details.cal-alt { margin-top: 8px; }
 details.cal-alt > summary { cursor: pointer; padding: 6px 0; }
 .danger-zone { margin-top: 24px; border: 1px solid var(--bad); }
 .danger-zone p { margin: 6px 0 10px; }
+
+/* reader: shadowing */
+.sh-box { text-align: center; }
+.sh-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; text-align: left; }
+.sh-prog, .sh-timer { height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; margin: 8px 0; }
+.sh-prog i, .sh-timer i { display: block; height: 100%; width: 0; background: var(--primary); border-radius: 99px; }
+.sh-timer { height: 10px; margin-top: 14px; }
+.sh-timer i { background: var(--good); }
+.sh-en { font-size: 22px; font-weight: 700; line-height: 1.5; margin: 18px 4px 8px; min-height: 3em; overflow-wrap: anywhere; }
+.sh-en.hid { filter: blur(8px); user-select: none; -webkit-user-select: none; cursor: pointer; }
+.sh-th { color: var(--muted); margin: 0 4px 8px; }
+.sh-state { font-weight: 700; margin-top: 6px; }
+.sh-ctl { margin-top: 12px; }

@@ -267,7 +267,7 @@ function playQuiz(mode, src, gameId) {
       prompt = `<div class="cloze">${esc(blank).replace('\u0000', '<span class="blank">_____</span>')}</div>
         <button class="hint-btn" id="clozeHint">💡 ดูคำแปลประโยค</button><div class="thx" id="clozeTh" hidden>${esc(w.et)}</div>`;
     }
-    else prompt = `<button class="speak" data-say style="width:96px;height:96px;font-size:44px;margin:0">🔊</button><div class="muted small" style="margin-top:10px">แตะเพื่อฟังอีกครั้ง</div>`;
+    else prompt = `<button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:96px;height:96px;font-size:44px;margin:0">🔊</button><div class="muted small" style="margin-top:10px">แตะเพื่อฟังอีกครั้ง</div>${slowBtn(w.w)}`;
     view.innerHTML = `${header()}
       <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>${prompt}</div>
       <div class="options">${opts.map((o) => `<button class="opt" data-i="${o.idx}">${esc(toTh ? o.t : o.w)}</button>`).join('')}</div>
@@ -399,7 +399,8 @@ function playQuiz(mode, src, gameId) {
     const blank = w.e.replace(clozeRe(w), (all, pre) => pre + '\u0000');
     view.innerHTML = `${header()}
       <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
-        <button class="speak" data-say style="width:76px;height:76px;font-size:34px;margin:0">🔊</button>
+        <button class="speak" data-say aria-label="ฟังประโยค" style="width:76px;height:76px;font-size:34px;margin:0">🔊</button>
+        <div>${slowBtn(w.e)}</div>
         <div class="cloze" style="margin-top:12px">${esc(blank).replace('\u0000', '<span class="blank" id="hint">_____</span>')}</div>
         <button class="hint-btn" id="dHint">💡 ดูคำแปลประโยค</button><div class="thx" id="dTh" hidden>${esc(w.et)}</div></div>
       <form id="sf" autocomplete="off">
@@ -608,8 +609,8 @@ function playQuiz(mode, src, gameId) {
     const ipa = (x) => { const e = WORD_BY[x]; return e && e.i ? ` <span class="muted">${esc(e.i)}</span>` : ''; };
     view.innerHTML = `${header()}
       <div class="card-box q-prompt pop">
-        <button class="speak" data-say style="width:96px;height:96px;font-size:44px;margin:0">🔊</button>
-        <div class="muted small" style="margin-top:10px">ได้ยินคำไหน? แตะเพื่อฟังอีกครั้ง</div></div>
+        <button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:96px;height:96px;font-size:44px;margin:0">🔊</button>
+        <div class="muted small" style="margin-top:10px">ได้ยินคำไหน? แตะเพื่อฟังอีกครั้ง</div>${slowBtn(target)}</div>
       <div class="options two">${[[a, aTh], [b, bTh]].map(([x, t]) => `<button class="opt mp" data-o="${esc(x)}"><b>${esc(x)}</b><small>${esc(t)}</small></button>`).join('')}</div>
       <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');

@@ -76,6 +76,9 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 - 1.15: `PAIR_GAMES` `confuse` (`qConfuse`) and `minpair` (`qMinpair`) use items with `idx: -1` → `mark()` only calls `markActive()` (no SRS); pair list page `renderPairs()`.
   1.17: `wform` (`qWform`, items from `FAMILIES`, `idx: -1`); `SKILL_GAMES` = `PAIR_GAMES` + `wform`.
   Sticker book: `STK_TIERS`, `topicStat()`, `checkStickers()` (run from `checkAch()`), `stickerBook()` on the stats page.
+- 1.32: slow speech — `speak(text, { slow })`; with no `slow` given, the same text again within `SLOW_AGAIN` (8 s) plays at `slowRate()`
+  (alternating; `settings.slowRepeat !== false`). `slowBtn(text)` renders a 🐢 button (`data-slow`, handled by one document listener).
+  Reader: `#rSlow` toggle and `shadowStory(st)` (🗣️ shadowing: `storySentences()`, speak → pause ≈ sentence length → next).
 - Home is kept short (today, quick play, weekly card, quest, progress card); charts, per-level bars and
   achievements live on the stats page.
 - Leaderboard (`pushBoard`/`loadBoard`, table `leaderboard`) and Web Push (`enablePush`, table `push_subs`,
@@ -100,7 +103,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
   push to `master`; it must stay green.
 - `tests/data.spec.js` (no browser): version in app.js/sw.js/README, sw.js file list, word rows, families, pairs,
   collocations, stories. `app.spec.js`: every route, word sheet, family browser, flashcards. `games.spec.js`: every
-  game plays a full round with right **and** wrong answers to the result screen. `responsive.spec.js`: no sideways
+  game plays a full round with right **and** wrong answers to the result screen. `features.spec.js`: features from 1.32 on. `responsive.spec.js`: no sideways
   overflow at the 6 target sizes. Add tests here when adding a game/screen/data file.
 - `tests/helpers.js` `openApp(page, state)`: overrides `config.js` (sync off), fakes speech synthesis
   (`window.__said`) and recognition (hears `window.__heard`), collects `pageerror`s (assert none).
