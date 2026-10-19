@@ -12,6 +12,8 @@ function load(...files) {
   files.forEach((f) => vm.runInNewContext(read(f), { window }));
   return window;
 }
+// All app code: app.js plus the js/*.js scripts it is split into.
+const appCode = () => ['app.js', ...fs.readdirSync(path.join(root, 'js')).map((f) => `js/${f}`)].map(read).join('\n');
 const WORD_FILES = ['a1', 'a2', 'b1', 'b2', 'b2plus', 'c1'].map((l) => `words/${l}.js`);
 
 test('version is the same in app.js, sw.js and the README changelog', () => {
@@ -97,13 +99,22 @@ test('collocations belong to list words', () => {
 });
 
 test('stories: unique ids, count matches STORY_COUNT, questions point at an option', () => {
-  const files = read('app.js').match(/const STORY_FILES = \[([^\]]+)\]/)[1].match(/'([^']+)'/g).map((x) => `stories/${x.slice(1, -1)}.js`);
+  const files = appCode().match(/const STORY_FILES = \[([^\]]+)\]/)[1].match(/'([^']+)'/g).map((x) => `stories/${x.slice(1, -1)}.js`);
   const { STORIES } = load(...files);
-  const count = +read('app.js').match(/const STORY_COUNT = (\d+)/)[1];
+  const count = +appCode().match(/const STORY_COUNT = (\d+)/)[1];
   expect(STORIES.length).toBe(count);
   expect(new Set(STORIES.map((s) => s.id)).size).toBe(count);
   for (const s of STORIES) {
     expect(s.en.length, s.id).toBe(s.th.length);
     s.q.forEach((q) => expect(q.o[q.a], `${s.id}: ${q.q}`).toBeDefined());
   }
+});
+
+test('index.html loads every js/ script, and the service worker caches it', () => {
+  const html = read('index.html'), sw = read('sw.js');
+  fs.readdirSync(path.join(root, 'js')).forEach((f) => {
+    expect(html, f).toContain(`<script src="js/${f}"></script>`);
+    expect(sw, f).toContain(`'js/${f}',`);
+  });
+  expect(html.indexOf('js/boot.js')).toBeGreaterThan(html.indexOf('js/settings.js'));
 });

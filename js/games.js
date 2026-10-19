@@ -1,0 +1,765 @@
+'use strict';
+// Speech-recognition matching, the games menu, every game and quick play.
+// Classic script sharing globals with app.js (load order: index.html).
+
+/* ---------- speech recognition matching ---------- */
+const NUM_WORDS = 'zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty'.split(' ');
+const TENS = { 30: 'thirty', 40: 'forty', 50: 'fifty', 60: 'sixty', 70: 'seventy', 80: 'eighty', 90: 'ninety', 100: 'hundred', 1000: 'thousand', 1000000: 'million' };
+const normSpoken = (s) => s.toLowerCase()
+  .replace(/\d+/g, (n) => NUM_WORDS[+n] || TENS[+n] || n)
+  .replace(/[’']/g, "'").replace(/[^a-z' ]+/g, ' ').replace(/\s+/g, ' ').trim();
+// True if what was heard contains the target word (or one of its variants like "a, an").
+function spokenMatch(heard, word) {
+  const h = ' ' + normSpoken(heard) + ' ';
+  return word.split(/\s*[,/]\s*/).some((v) => {
+    const t = normSpoken(v);
+    return t && (h.includes(' ' + t + ' ') || h.replace(/ /g, '').includes(t.replace(/ /g, '')) || (t === 'ok' && h.includes(' okay ')));
+  });
+}
+// Sentence version: enough of the sentence's words were heard (in any order).
+function sentenceMatch(heard, sentence) {
+  const want = normSpoken(sentence).split(' ').filter(Boolean);
+  const got = new Set(normSpoken(heard).split(' '));
+  return want.length > 0 && want.filter((x) => got.has(x)).length / want.length >= 0.7;
+}
+
+/* ---------- games ---------- */
+const GAMES = {
+  en2th: { icon: '🇬🇧', name: 'ทายความหมาย', desc: 'ดูคำอังกฤษ เลือกคำแปลไทย' },
+  th2en: { icon: '🇹🇭', name: 'ทายคำศัพท์', desc: 'ดูคำไทย เลือกคำอังกฤษ' },
+  listen: { icon: '🎧', name: 'ฟังแล้วตอบ', desc: 'ฟังเสียง เลือกความหมาย' },
+  spell: { icon: '⌨️', name: 'สะกดคำ', desc: 'ดูคำแปล พิมพ์คำอังกฤษ' },
+  cloze: { icon: '📝', name: 'เติมคำในประโยค', desc: 'เลือกคำที่หายไปจากประโยค' },
+  match: { icon: '🧩', name: 'จับคู่ด่วน', desc: 'จับคู่คำกับคำแปลแข่งเวลา' },
+  speak: { icon: '🎤', name: 'พูดตาม', desc: 'ดูคำแล้วพูดออกเสียง' },
+  dict: { icon: '✍️', name: 'ฟังประโยคแล้วเขียน', desc: 'ฟังประโยค พิมพ์คำที่หายไป' },
+  speakS: { icon: '🗣️', name: 'พูดทั้งประโยค', desc: 'อ่านประโยคตัวอย่างออกเสียง' },
+  order: { icon: '🔀', name: 'เรียงประโยค', desc: 'แตะคำเรียงให้เป็นประโยคตัวอย่าง' },
+  colloc: { icon: '🔗', name: 'คำคู่กัน', desc: 'เลือกคำที่ใช้คู่กัน เช่น ___ a decision' },
+  sCloze: { icon: '📖', name: 'เติมคำจากเรื่อง', desc: 'ประโยคจากเรื่องสั้นที่อ่านแล้ว' },
+  sOrder: { icon: '🧱', name: 'เรียงประโยคจากเรื่อง', desc: 'ต่อประโยคจากเรื่องที่อ่านแล้ว' },
+  confuse: { icon: '🤔', name: 'คำที่มักสับสน', desc: 'เลือกให้ถูก เช่น borrow / lend' },
+  minpair: { icon: '👂', name: 'ฝึกหูแยกเสียง', desc: 'ฟังแล้วเลือก ship หรือ sheep' },
+  wform: { icon: '🧬', name: 'เปลี่ยนรูปคำ', desc: 'เลือกรูปคำให้เข้ากับประโยค เช่น decide → decision' },
+  review: { icon: '🔁', name: 'คำที่ผิดบ่อย', desc: 'ฝึกคำที่เคยตอบผิด' },
+};
+// Games whose data is lazy-loaded (stories / collocations) or built from sentences instead of the word pool.
+const STORY_GAMES = ['sCloze', 'sOrder'];
+// Games built from pairs.js (confusable words, minimal pairs): not tied to the word list or its schedule.
+const PAIR_GAMES = ['confuse', 'minpair'];
+// Skill games with their own items (idx -1): practice only, no flashcard scheduling.
+const SKILL_GAMES = [...PAIR_GAMES, 'wform'];
+function gameTile(id) {
+  const g = GAMES[id];
+  const best = S.best[id] != null ? `<span>🏅 สถิติ: ${S.best[id]}</span>` : '';
+  return `<button class="game-tile" data-game="${id}"><div class="gi">${g.icon}</div><b>${g.name}</b><span>${g.desc}</span>${best}</button>`;
+}
+let gameSource = 'level';
+let gameTopic = 'food';
+let customWords = [];   // words for a one-off round, e.g. from the weekly summary
+let gameSrcOpen = false;
+function renderGames() {
+  if (gameSource === 'custom') gameSource = 'level';
+  const srcName = { level: `ระดับที่เลือก (${lvNames(S.settings.levels)})`, learned: 'คำที่เรียนแล้ว', all: 'ทุกระดับ', mastered: '🟢 คำที่จำได้แล้ว', star: '⭐ คำติดดาว', leech: '🐢 คำดื้อ', topic: '📂 ตามหมวด' }[gameSource] || '';
+  view.innerHTML = `
+    <div class="card-box">
+      <button class="src-btn" id="srcBtn" aria-expanded="${gameSrcOpen}"><span class="small muted">คำจาก:</span><b>${srcName}</b><i>▾</i></button>
+      <div class="chips" id="src" ${gameSrcOpen ? '' : 'hidden'}>
+        <button class="chip" data-s="level">ระดับที่เลือก (${lvNames(S.settings.levels)})</button>
+        <button class="chip" data-s="learned">คำที่เรียนแล้ว</button>
+        <button class="chip" data-s="all">ทุกระดับ</button>
+        <button class="chip" data-s="mastered">🟢 คำที่จำได้แล้ว (${masteredWords().length})</button>
+        <button class="chip" data-s="star">⭐ คำติดดาว (${Object.keys(S.star).length})</button>
+        <button class="chip" data-s="leech">🐢 คำดื้อ (${W.filter(isLeech).length})</button>
+        <button class="chip" data-s="topic">📂 ตามหมวด</button>
+      </div>
+      ${gameSource === 'topic' ? `<select class="sel block-sel" id="gTopic" style="margin-top:10px">${TOPICS.map(([id]) => `<option value="${id}" ${gameTopic === id ? 'selected' : ''}>${TOPIC_LABEL[id]} (${W.filter((w) => w.tp === id).length})</option>`).join('')}</select>` : ''}
+      ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
+    </div>
+    <button class="card-box guide-link" id="toRead"><span>📖</span><div class="grow"><b>อ่านเรื่องสั้น</b><div class="small muted">${STORY_COUNT} เรื่อง · อ่านแล้ว ${Object.keys(S.read).length} · แตะคำเพื่อดูความหมาย</div></div><span class="muted">›</span></button>
+    <button class="card-box guide-link" id="toPairs"><span>🤔</span><div class="grow"><b>คู่คำที่คนไทยสับสนบ่อย</b><div class="small muted">borrow / lend, bored / boring … อ่านวิธีแยกแล้วไปเล่นเกม</div></div><span class="muted">›</span></button>
+    <button class="card-box guide-link" id="toFams"><span>🧬</span><div class="grow"><b>ครอบครัวคำ</b><div class="small muted">decide → decision → decisive … คำนาม กริยา คุณศัพท์ จากรากเดียวกัน</div></div><span class="muted">›</span></button>
+    <div class="game-grid">${Object.keys(GAMES).map(gameTile).join('')}</div>`;
+  $('#toRead').onclick = () => go('read');
+  $('#toPairs').onclick = () => renderPairs();
+  $('#toFams').onclick = () => renderFamilies();
+  const paint = () => view.querySelectorAll('#src .chip').forEach((c) => c.classList.toggle('on', c.dataset.s === gameSource));
+  paint();
+  if ($('#gTopic')) $('#gTopic').onchange = (e) => { gameTopic = e.target.value; };
+  $('#srcBtn').onclick = () => { gameSrcOpen = !gameSrcOpen; renderGames(); };
+  $('#src').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { gameSource = c.dataset.s; gameSrcOpen = false; renderGames(); } };
+  view.querySelectorAll('[data-game]').forEach((b) => (b.onclick = () => startGame(b.dataset.game)));
+}
+
+// Browse the confusable pairs with their Thai tips and example sentences.
+function renderPairs() {
+  if (!CONFUSE) { loadPairs().then(renderPairs); return; }
+  $('#title').textContent = 'คำที่มักสับสน';
+  view.scrollTop = 0;
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="pBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="pPlay">🤔 เล่นเกม</button></div>
+    <p class="small muted" style="margin:0 4px 12px">${CONFUSE.length} คู่ที่คนไทยใช้สลับกันบ่อย แตะประโยคเพื่อฟังเสียง</p>
+    <div class="pair-list">${CONFUSE.map((c) => `<div class="card-box pair-card"><div class="pair-h"><b>${esc(c.a)}</b> <span class="muted">vs</span> <b>${esc(c.b)}</b></div>
+      <div class="tip-box">💡 ${esc(c.tip)}</div>
+      ${c.q.map(([sn, r, , th]) => { const f = sn.replace('___', r); return `<button class="pair-ex" data-say="${esc(f)}"><span>${esc(sn).replace('___', `<mark>${esc(r)}</mark>`)}</span><small class="muted">${esc(th)}</small></button>`; }).join('')}</div>`).join('')}</div>`;
+  $('#pBack').onclick = () => go('games');
+  $('#pPlay').onclick = () => startGame('confuse');
+  view.querySelector('.pair-list').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
+}
+
+// Browse word families (one card per root), with a search box.
+let famQuery = '';
+function renderFamilies() {
+  if (!FAMILIES) { loadFamilies().then(renderFamilies); return; }
+  $('#title').textContent = 'ครอบครัวคำ';
+  view.scrollTop = 0;
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="fBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="fPlay">🧬 เล่นเกม</button></div>
+    <p class="small muted" style="margin:0 4px 10px">${FAMILIES.length} ครอบครัว · คำจากรากเดียวกันที่เปลี่ยนหน้าที่ในประโยค (n = นาม, v = กริยา, adj = คุณศัพท์, adv = กริยาวิเศษณ์) แตะคำหรือประโยคเพื่อฟังเสียง</p>
+    <input class="search" id="fq" type="search" placeholder="ค้นหาคำ เช่น decide" value="${esc(famQuery)}" autocapitalize="none" autocorrect="off" spellcheck="false">
+    <div class="pair-list" id="famList"></div>`;
+  const paint = () => {
+    const q = famQuery.trim().toLowerCase();
+    const list = q ? FAMILIES.filter((f) => f.f.some(([w, , th]) => w.includes(q) || th.includes(q))) : FAMILIES;
+    $('#famList').innerHTML = list.length ? list.map((f) => `<div class="card-box pair-card">${famRows(f)}
+      ${f.q.map(([sn, a, th]) => `<button class="pair-ex" data-say="${esc(sn.replace('___', a))}"><span>${esc(sn).replace('___', `<mark>${esc(a)}</mark>`)}</span><small class="muted">${esc(th)}</small></button>`).join('')}</div>`).join('')
+      : '<p class="muted center">ไม่พบคำนี้ในครอบครัวคำ</p>';
+  };
+  paint();
+  $('#fq').oninput = (e) => { famQuery = e.target.value; paint(); };
+  $('#fBack').onclick = () => go('games');
+  $('#fPlay').onclick = () => startGame('wform');
+  $('#famList').onclick = (e) => { const b = e.target.closest('[data-say],[data-col]'); if (b) speak(b.dataset.say || b.dataset.col); };
+}
+// One tappable row per family member: word + part of speech, Thai on the right. `hi` = word to highlight.
+const famRows = (f, hi) => f.f.map(([w, p, th]) => `<button class="col-row${w === hi ? ' on' : ''}" data-col="${esc(w)}"><b>${esc(w)} <span class="pos">${esc(p)}</span></b><span>${esc(th)}</span></button>`).join('');
+
+const masteredWords = () => W.filter((w) => S.prog[w.w] && S.prog[w.w].b >= MASTERED);
+
+// Sentences from the stories the user has finished: one item per sentence, carried by a list word in it.
+function storyItems(id) {
+  if (!STORIES) return [];
+  const out = [];
+  STORIES.filter((st) => S.read[st.id]).forEach((st) => {
+    const toks = st.en.join(' ').match(/[A-Za-z][A-Za-z’']*/g) || [];
+    const pool = [...new Set(toks.filter((t) => t.length >= 3 && lookupWord(t)))];
+    st.en.forEach((para) => (para.match(/[^.!?]+[.!?]+["')]?/g) || []).forEach((raw) => {
+      const sent = raw.trim(), words = sent.split(/\s+/);
+      if (words.length < 5 || words.length > (id === 'sOrder' ? 12 : 22) || /["“”]/.test(sent) && id === 'sOrder') return;
+      const cands = (sent.match(/[A-Za-z][A-Za-z’']*/g) || []).filter((t) => t.length >= 4).map((t) => ({ t, w: lookupWord(t) })).filter((x) => x.w);
+      if (!cands.length) return;
+      const best = cands.sort((a, b) => LEVELS.indexOf(b.w.g) - LEVELS.indexOf(a.w.g) || b.t.length - a.t.length)[0];
+      const others = shuffle(pool.filter((t) => { const w = lookupWord(t); return w && w !== best.w && t.toLowerCase() !== best.t.toLowerCase(); })).slice(0, 3);
+      if (id === 'sCloze' && others.length < 3) return;
+      out.push({ ...best.w, _s: sent, _tok: best.t, _opts: others, _st: st.title });
+    }));
+  });
+  return out;
+}
+function gamePool(id) {
+  if (STORY_GAMES.includes(id)) return storyItems(id);
+  if (id === 'confuse') return CONFUSE.flatMap((c) => c.q.map((q) => ({ idx: -1, w: `${c.a} / ${c.b}`, t: '', p: '', g: '', _c: c, _q: q })));
+  if (id === 'wform') return FAMILIES.flatMap((f) => f.q.map(([sn, a, th]) => ({ idx: -1, w: a, t: '', p: '', g: '', _f: f, _q: [sn, a, '', th] })));
+  if (id === 'minpair') return MINPAIRS.map((m) => ({ idx: -1, w: `${m[0]} / ${m[2]}`, t: `${m[1]} / ${m[3]}`, p: '', g: '', _m: m }));
+  if (id === 'review') {
+    return W.filter((w) => S.prog[w.w] && (S.prog[w.w].x || 0) > 0)
+      .sort((a, b) => (S.prog[b.w].x - S.prog[a.w].x) || (S.prog[a.w].b - S.prog[b.w].b)).slice(0, 40);
+  }
+  let list = gameSource === 'learned' ? W.filter((w) => S.prog[w.w])
+    : gameSource === 'mastered' ? masteredWords()
+    : gameSource === 'star' ? W.filter(isStar)
+    : gameSource === 'leech' ? W.filter(isLeech)
+    : gameSource === 'custom' ? customWords
+    : gameSource === 'topic' ? W.filter((w) => w.tp === gameTopic)
+    : gameSource === 'all' ? W : pool();
+  if (id === 'cloze' || id === 'dict') list = list.filter(hasCloze);
+  if (id === 'order') list = list.filter((w) => { const n = w.e.split(/\s+/).length; return n >= 4 && n <= 12; });
+  if (id === 'colloc') list = list.filter((w) => COLLOC && COLLOC[w.w]);
+  return list;
+}
+
+function distractors(w, n, field) {
+  const key = (x) => (field === 't' ? thFirst(x.t) : x.w.toLowerCase());
+  const used = new Set([key(w)]);
+  const out = [];
+  const pos = w.p.split('/')[0];
+  const tiers = [
+    shuffle(W.filter((x) => x.g === w.g && x.p.split('/')[0] === pos)),
+    shuffle(W.filter((x) => x.p.split('/')[0] === pos)),
+    shuffle(W),
+  ];
+  for (const tier of tiers) {
+    for (const x of tier) {
+      if (out.length >= n) return out;
+      const k = key(x);
+      if (used.has(k) || x.t === w.t) continue;
+      used.add(k); out.push(x);
+    }
+  }
+  return out;
+}
+
+function startGame(id) {
+  if ((id === 'speak' || id === 'speakS') && !canListen) {
+    toast('เบราว์เซอร์นี้ยังไม่รองรับการฟังเสียงพูด ลองเปิดใน Safari ดูนะ');
+    if (current !== 'games') go('games');
+    return;
+  }
+  if (STORY_GAMES.includes(id) && !STORIES) { loadStories().then(() => startGame(id)); return; }
+  if (id === 'colloc' && !COLLOC) { loadColloc().then(() => startGame(id)); return; }
+  if (PAIR_GAMES.includes(id) && !CONFUSE) { loadPairs().then(() => startGame(id)); return; }
+  if (id === 'wform' && !FAMILIES) { loadFamilies().then(() => startGame(id)); return; }
+  if (STORY_GAMES.includes(id) && !Object.keys(S.read).length) { toast('อ่านเรื่องสั้นให้จบอย่างน้อย 1 เรื่องก่อนนะ 📖'); if (current !== 'games') go('games'); return; }
+  const src = gamePool(id);
+  const min = id === 'match' ? 6 : 4;
+  if (src.length < min) {
+    toast(id === 'review' ? 'ยังไม่มีคำที่ตอบผิด เก่งมาก! 👍'
+      : gameSource === 'mastered' ? `ต้องมีคำที่จำได้แล้วอย่างน้อย ${min} คำก่อนนะ`
+      : gameSource === 'star' ? `ติดดาวคำอย่างน้อย ${min} คำก่อนนะ (กด ☆ บนการ์ดหรือในหน้าคำศัพท์)`
+      : gameSource === 'leech' ? `ยังมีคำดื้อไม่ถึง ${min} คำ เก่งมาก! 🐢`
+      : 'คำศัพท์ยังน้อยไป ลองเลือก "ระดับที่เลือก" ก่อนนะ');
+    if (current !== 'games') go('games');
+    return;
+  }
+  if (cleanup) { cleanup(); cleanup = null; }
+  // Games can start from home/stats too: switch the route so the layout (and active tab) match.
+  current = 'games'; view.classList.remove('feed-mode'); view.dataset.route = 'games'; view.scrollTop = 0;
+  document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === 'games'));
+  if (id === 'match') return playMatch(src);
+  playQuiz(id === 'review' ? pick(['en2th', 'th2en', 'listen']) : id, src, id);
+}
+
+function playQuiz(mode, src, gameId) {
+  const ROUND = 10;
+  const items = shuffle(src).slice(0, ROUND);
+  let i = 0, score = 0, combo = 0, bestCombo = 0;
+  const wrong = [];
+  $('#title').textContent = GAMES[gameId].name;
+
+  function header() {
+    if (i < items.length) $('#title').textContent = `${GAMES[gameId].name} · ${i + 1}/${items.length}`;
+    return `<div class="session-top">
+      <button class="icon-btn" id="quit" aria-label="ออก">✕</button>
+      <div class="progress"><div style="width:${i / items.length * 100}%"></div></div>
+      <span class="small"><b>${score}</b> แต้ม</span></div>`;
+  }
+
+  function q() {
+    if (i >= items.length) return result();
+    const w = items[i];
+    const m = gameId === 'review' ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'spell', 'cloze'] : ['en2th', 'th2en', 'listen', 'spell']) : mode;
+    if (m === 'spell') return qSpell(w);
+    if (m === 'speak') return qSpeak(w);
+    if (m === 'speakS') return qSpeak(w, true);
+    if (m === 'dict') return qDict(w);
+    if (m === 'order') return qOrder(w, w.e, w.et);
+    if (m === 'sOrder') return qOrder(w, w._s, '', w._st);
+    if (m === 'sCloze') return qSCloze(w);
+    if (m === 'colloc') return qColloc(w);
+    if (m === 'confuse') return qConfuse(w);
+    if (m === 'minpair') return qMinpair(w);
+    if (m === 'wform') return qWform(w);
+    const toTh = m !== 'th2en' && m !== 'cloze';
+    const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
+    let prompt;
+    if (m === 'en2th') prompt = `<div class="word">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>`;
+    else if (m === 'th2en') prompt = `<div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>`;
+    else if (m === 'cloze') {
+      const blank = w.e.replace(clozeRe(w), (all, pre) => pre + '\u0000');
+      prompt = `<div class="cloze">${esc(blank).replace('\u0000', '<span class="blank">_____</span>')}</div>
+        <button class="hint-btn" id="clozeHint">💡 ดูคำแปลประโยค</button><div class="thx" id="clozeTh" hidden>${esc(w.et)}</div>`;
+    }
+    else prompt = `<button class="speak" data-say style="width:96px;height:96px;font-size:44px;margin:0">🔊</button><div class="muted small" style="margin-top:10px">แตะเพื่อฟังอีกครั้ง</div>`;
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>${prompt}</div>
+      <div class="options">${opts.map((o) => `<button class="opt" data-i="${o.idx}">${esc(toTh ? o.t : o.w)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    if (m === 'en2th' || m === 'listen') speak(w.w);
+    const say = view.querySelector('[data-say]'); if (say) say.onclick = () => speak(w.w);
+    const hb = $('#clozeHint'); if (hb) hb.onclick = () => { $('#clozeTh').hidden = false; hb.remove(); };
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = +b.dataset.i === w.idx;
+      view.querySelectorAll('.opt').forEach((o) => { if (+o.dataset.i === w.idx) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! <b>${esc(w.w)}</b> = ${esc(w.t)}` : `❌ <b>${esc(w.w)}</b> = ${esc(w.t)}`)
+        + (m === 'cloze' || !ok ? exampleBox(w) : '')
+        + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      const sayEx = view.querySelector('[data-sayex]'); // only present when the example is shown
+      if (sayEx) sayEx.onclick = () => speak(w.e);
+      $('#nextQ').onclick = next;
+      if (m === 'cloze') speak(w.e); else if (m === 'th2en') speak(w.w);
+      if (ok && m !== 'cloze') setTimeout(() => { if (items[i] === w) next(); }, 1000);
+    };
+  }
+
+  function qSpell(w) {
+    const hint = w.w[0] + w.w.slice(1).replace(/[a-zA-Z]/g, '_');
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+        <div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>
+        <div style="margin-top:12px;font-size:22px;letter-spacing:4px;font-weight:700" id="hint">${esc(hint)}</div>
+      </div>
+      <form id="sf" autocomplete="off">
+        <input class="spell-input" id="si" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="พิมพ์คำภาษาอังกฤษ">
+        <div class="row" style="margin-top:10px">
+          <button type="button" class="btn grow" id="skip">ไม่รู้ / เฉลย</button>
+          <button type="submit" class="btn primary grow">ตรวจคำตอบ</button>
+        </div>
+      </form>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    const inp = $('#si');
+    inp.focus();
+    let tries = 0, answered = false;
+    const norm = (s) => s.trim().toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, ' ');
+    const done = (ok) => {
+      answered = true;
+      mark(w, ok);
+      inp.blur(); inp.value = w.w; inp.classList.add(ok ? 'ok' : 'no');
+      $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! ${esc(w.i)}` : `❌ คำตอบคือ <b>${esc(w.w)}</b> ${esc(w.i)}`)
+        + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('[data-sayex]').onclick = () => speak(w.e);
+      $('#nextQ').onclick = next;
+      speak(w.w);
+      if (ok) setTimeout(() => { if (items[i] === w) next(); }, 1500);
+    };
+    $('#sf').onsubmit = (e) => {
+      e.preventDefault(); if (answered) return;
+      if (norm(inp.value) === norm(w.w)) return done(tries === 0);
+      tries++;
+      inp.classList.remove('no'); void inp.offsetWidth; inp.classList.add('no');
+      if (tries >= 2) return done(false);
+      $('#reveal').textContent = 'ยังไม่ถูก ลองอีกครั้ง 💪';
+      $('#hint').textContent = w.w.slice(0, 2) + w.w.slice(2).replace(/[a-zA-Z]/g, '_');
+    };
+    $('#skip').onclick = () => { if (!answered) done(false); };
+  }
+
+  function qSpeak(w, sentence) {
+    const target = sentence ? w.e : w.w;
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+        ${sentence ? `<div class="cloze">${hlExample(w)}</div><div class="thx" style="margin-top:6px">${esc(w.et)}</div>`
+          : `<div class="word">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
+        <div class="muted" style="margin-top:6px">${esc(w.t)}</div>`}
+        <button class="hint-btn" data-say>🔊 ฟังตัวอย่าง</button></div>
+      <div class="center"><button class="mic" id="mic" aria-label="กดแล้วพูด">🎤</button></div>
+      <div class="center small muted" id="heard">แตะไมค์แล้วพูด${sentence ? 'ทั้งประโยค' : 'คำนี้'}</div>
+      <button class="btn block" id="skip" style="margin-top:12px">ข้าม / เฉลย</button>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    view.querySelector('[data-say]').onclick = () => speak(target);
+    const mic = $('#mic'), heard = $('#heard');
+    let tries = 0, answered = false, rec = null;
+    cleanup = () => { if (rec) try { rec.abort(); } catch (e) { /* ignore */ } };
+    const done = (ok) => {
+      answered = true; cleanup();
+      mark(w, ok);
+      mic.disabled = true;
+      $('#skip').remove();
+      $('#reveal').innerHTML = (ok ? `✅ ออกเสียงถูกแล้ว! <b>${esc(w.w)}</b>` : `👂 ลองฟังแล้วพูดตามอีกครั้งนะ <b>${esc(w.w)}</b> ${esc(w.i)}`)
+        + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('[data-sayex]').onclick = () => speak(w.e);
+      $('#nextQ').onclick = () => { cleanup = null; next(); };
+      if (!ok) speak(target);
+      else setTimeout(() => { if (items[i] === w) { cleanup = null; next(); } }, 1300);
+    };
+    mic.onclick = () => {
+      if (answered) return;
+      if (rec) { rec.stop(); return; }
+      if (window.speechSynthesis) speechSynthesis.cancel();
+      rec = new SR();
+      rec.lang = S.settings.accent; rec.interimResults = false; rec.maxAlternatives = 5; rec.continuous = false;
+      mic.classList.add('on'); heard.textContent = 'กำลังฟัง... พูดได้เลย';
+      rec.onresult = (e) => {
+        const alts = Array.from(e.results[0]).map((a) => a.transcript);
+        if (alts.some((a) => (sentence ? sentenceMatch(a, w.e) : spokenMatch(a, w.w)))) return done(true);
+        tries++;
+        heard.innerHTML = `ได้ยินว่า "<b>${esc(alts[0] || '')}</b>" ลองอีกครั้งนะ 💪 (${tries}/3)`;
+        mic.classList.remove('no'); void mic.offsetWidth; mic.classList.add('no');
+        if (tries >= 3) done(false);
+      };
+      rec.onerror = (e) => {
+        heard.textContent = e.error === 'not-allowed' || e.error === 'service-not-allowed'
+          ? 'ยังไม่ได้อนุญาตให้ใช้ไมค์/การรู้จำเสียง ลองเปิดในตั้งค่า iPhone ดูนะ'
+          : 'ไม่ได้ยินเสียง แตะไมค์แล้วลองอีกครั้งนะ';
+      };
+      rec.onend = () => { rec = null; mic.classList.remove('on'); };
+      try { rec.start(); } catch (err) { rec = null; mic.classList.remove('on'); heard.textContent = 'เปิดไมค์ไม่ได้ ลองอีกครั้งนะ'; }
+    };
+    $('#skip').onclick = () => { if (!answered) done(false); };
+    speak(target);
+  }
+
+  // Dictation: hear the example sentence, type the missing word.
+  function qDict(w) {
+    const blank = w.e.replace(clozeRe(w), (all, pre) => pre + '\u0000');
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+        <button class="speak" data-say style="width:76px;height:76px;font-size:34px;margin:0">🔊</button>
+        <div class="cloze" style="margin-top:12px">${esc(blank).replace('\u0000', '<span class="blank" id="hint">_____</span>')}</div>
+        <button class="hint-btn" id="dHint">💡 ดูคำแปลประโยค</button><div class="thx" id="dTh" hidden>${esc(w.et)}</div></div>
+      <form id="sf" autocomplete="off">
+        <input class="spell-input" id="si" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="พิมพ์คำที่ได้ยิน">
+        <div class="row" style="margin-top:10px">
+          <button type="button" class="btn grow" id="skip">ไม่รู้ / เฉลย</button>
+          <button type="submit" class="btn primary grow">ตรวจคำตอบ</button>
+        </div>
+      </form>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    view.querySelector('[data-say]').onclick = () => speak(w.e);
+    $('#dHint').onclick = () => { $('#dTh').hidden = false; $('#dHint').remove(); };
+    const inp = $('#si');
+    let tries = 0, answered = false;
+    const norm = (x) => x.trim().toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, ' ');
+    const answerWord = (w.e.match(clozeRe(w)) || ['', '', w.w])[0].replace(/^[^A-Za-z]/, '');
+    const done = (ok) => {
+      answered = true;
+      mark(w, ok);
+      inp.blur(); inp.value = answerWord; inp.classList.add(ok ? 'ok' : 'no');
+      $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! <b>${esc(w.w)}</b> = ${esc(w.t)}` : `❌ คำตอบคือ <b>${esc(answerWord)}</b> (${esc(w.t)})`)
+        + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      const sayEx = view.querySelector('[data-sayex]'); if (sayEx) sayEx.onclick = () => speak(w.e);
+      $('#nextQ').onclick = next;
+      if (ok) setTimeout(() => { if (items[i] === w) next(); }, 1500);
+    };
+    $('#sf').onsubmit = (e) => {
+      e.preventDefault(); if (answered) return;
+      if (norm(inp.value) === norm(answerWord) || norm(inp.value) === norm(w.w)) return done(tries === 0);
+      tries++;
+      inp.classList.remove('no'); void inp.offsetWidth; inp.classList.add('no');
+      if (tries >= 2) return done(false);
+      $('#reveal').textContent = 'ยังไม่ถูก ฟังอีกครั้งนะ 💪';
+      $('#hint').textContent = answerWord[0] + answerWord.slice(1).replace(/[a-zA-Z]/g, '_');
+      speak(w.e);
+    };
+    $('#skip').onclick = () => { if (!answered) done(false); };
+    setTimeout(() => speak(w.e), 200);
+  }
+
+  // Tap the shuffled words in order to rebuild the sentence (word examples or story sentences).
+  function qOrder(w, sent, th, from) {
+    const toks = sent.trim().split(/\s+/);
+    let order = shuffle(toks.map((t, k) => k));
+    for (let n = 0; n < 5 && order.every((x, k) => x === k); n++) order = shuffle(order);
+    const picked = [];
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+        ${th ? `<div class="ord-th">${esc(th)}</div>` : `<div class="small muted">จากเรื่อง <b>${esc(from)}</b></div>`}
+        <button class="hint-btn" id="oSay">🔊 ฟังประโยค (ตัวช่วย)</button></div>
+      <div class="ord-ans" id="oAns"><span class="muted small">แตะคำด้านล่างเรียงตามลำดับ</span></div>
+      <div class="ord-pool" id="oPool">${order.map((k) => `<button class="ord-chip" data-k="${k}">${esc(toks[k])}</button>`).join('')}</div>
+      <div class="row" style="margin-top:10px"><button class="btn grow" id="oClear">↺ เริ่มใหม่</button><button class="btn grow" id="oGive">ไม่รู้ / เฉลย</button></div>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    let answered = false, heard = false;
+    $('#oSay').onclick = () => { heard = true; speak(sent); };
+    const paint = () => {
+      $('#oAns').innerHTML = picked.length ? picked.map((k, j) => `<button class="ord-chip on" data-j="${j}">${esc(toks[k])}</button>`).join('') : '<span class="muted small">แตะคำด้านล่างเรียงตามลำดับ</span>';
+      view.querySelectorAll('#oPool .ord-chip').forEach((b) => (b.disabled = picked.includes(+b.dataset.k)));
+    };
+    const done = (ok) => {
+      answered = true;
+      mark(w, ok);
+      $('#oAns').classList.add(ok ? 'ok' : 'no');
+      $('#oAns').innerHTML = `<span class="ord-full">${esc(sent)}</span>`;
+      $('#oPool').innerHTML = '';
+      $('#reveal').innerHTML = (ok ? '✅ ถูกต้อง!' : '❌ ประโยคที่ถูกคือด้านบน') + (th ? '' : ` <span class="small muted">· ${esc(w.w)} = ${esc(w.t)}</span>`)
+        + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      $('#nextQ').onclick = next;
+      speak(sent);
+      if (ok) setTimeout(() => { if (items[i] === w) next(); }, 2200);
+    };
+    $('#oPool').onclick = (e) => {
+      const b = e.target.closest('.ord-chip'); if (!b || answered || b.disabled) return;
+      picked.push(+b.dataset.k); paint();
+      if (picked.length === toks.length) done(picked.map((k) => toks[k]).join(' ') === toks.join(' ') && !heard);
+    };
+    $('#oAns').onclick = (e) => { const b = e.target.closest('[data-j]'); if (!b || answered) return; picked.splice(+b.dataset.j, 1); paint(); };
+    $('#oClear').onclick = () => { if (!answered) { picked.length = 0; paint(); } };
+    $('#oGive').onclick = () => { if (!answered) done(false); };
+  }
+
+  // Story cloze: the hardest list word of a story sentence is blanked; options are other words from that story.
+  function qSCloze(w) {
+    const re = new RegExp(`\\b${w._tok.replace(/[’']/g, "[’']")}\\b`);
+    const blank = w._s.replace(re, '\u0000');
+    const opts = shuffle([w._tok, ...w._opts]);
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop"><div class="small muted">จากเรื่อง <b>${esc(w._st)}</b></div>
+        <div class="cloze" style="margin-top:8px">${esc(blank).replace('\u0000', '<span class="blank">_____</span>')}</div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === w._tok;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === w._tok) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌'} <b>${esc(w._tok)}</b> (${esc(w.w)} = ${esc(w.t)})
+        <div class="example"><div class="en">${esc(w._s)}</div></div><button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      $('#nextQ').onclick = next;
+      speak(w._s);
+      if (ok) setTimeout(() => { if (items[i] === w) next(); }, 2200);
+    };
+  }
+
+  // Collocations: "___ a decision" + Thai meaning → pick the headword.
+  function qColloc(w) {
+    const { phrase, th, shown, opts } = collocQ(w);
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+        <div class="cloze">${esc(shown).replace('\u0000', '<span class="blank">_____</span>')}</div>
+        <div class="muted" style="margin-top:6px">${esc(th)}</div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === w.w;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === w.w) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌'} <b>${esc(phrase)}</b> = ${esc(th)}
+        <div class="small muted" style="margin-top:6px">คำคู่กันอื่นของ ${esc(w.w)}: ${COLLOC[w.w].filter((x) => x[0] !== phrase).map((x) => esc(x[0])).join(' · ') || '–'}</div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      $('#nextQ').onclick = next;
+      speak(phrase);
+      if (ok) setTimeout(() => { if (items[i] === w) next(); }, 1600);
+    };
+  }
+
+  // Confusable words: pick the right one of a pair in a sentence, then see the Thai tip.
+  function qConfuse(w) {
+    const c = w._c, [sent, right, bad, th] = w._q;
+    const opts = shuffle([right, bad]);
+    const full = sent.replace('___', right);
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop"><div class="small muted">${esc(c.a)} หรือ ${esc(c.b)}?</div>
+        <div class="cloze" style="margin-top:8px">${esc(sent).replace('___', '<span class="blank">_____</span>')}</div>
+        <button class="hint-btn" id="cHint">💡 ดูคำแปลประโยค</button><div class="thx" id="cTh" hidden>${esc(th)}</div></div>
+      <div class="options two">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    $('#cHint').onclick = () => { $('#cTh').hidden = false; $('#cHint').remove(); };
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === right;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : `❌ คำที่ถูกคือ <b>${esc(right)}</b>`}
+        <div class="example"><div class="en">${esc(full)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(th)}</div></div>
+        <div class="tip-box">💡 ${esc(c.tip)}</div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('[data-sayex]').onclick = () => speak(full);
+      $('#nextQ').onclick = next;
+      speak(full);
+    };
+  }
+
+  // Word forms: pick the family member that fits the sentence, then see the whole family.
+  function qWform(w) {
+    const f = w._f, [sent, right, , th] = w._q;
+    const opts = shuffle([right, ...shuffle(f.f.map((x) => x[0]).filter((x) => x !== right)).slice(0, 3)]);
+    const full = sent.replace('___', right);
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop"><div class="small muted">เลือกรูปคำที่เข้ากับประโยค</div>
+        <div class="cloze" style="margin-top:8px">${esc(sent).replace('___', '<span class="blank">_____</span>')}</div>
+        <button class="hint-btn" id="fHint">💡 ดูคำแปลประโยค</button><div class="thx" id="fTh" hidden>${esc(th)}</div></div>
+      <div class="options${opts.length === 2 ? ' two' : ''}">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    $('#fHint').onclick = () => { $('#fTh').hidden = false; $('#fHint').remove(); };
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === right;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : `❌ คำที่ถูกคือ <b>${esc(right)}</b>`}
+        <div class="example"><div class="en">${esc(full)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(th)}</div></div>
+        <div class="fam-box"><div class="small muted" style="margin:10px 0 6px"><b>🧬 ครอบครัวคำ</b> (แตะเพื่อฟัง)</div>${famRows(f, right)}</div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('[data-sayex]').onclick = () => speak(full);
+      view.querySelector('.fam-box').onclick = (ev) => { const c = ev.target.closest('[data-col]'); if (c) speak(c.dataset.col); };
+      $('#nextQ').onclick = next;
+      speak(full);
+    };
+  }
+
+  // Minimal pairs: hear one word of a pair (ship / sheep) and pick which one it was.
+  function qMinpair(w) {
+    const [a, aTh, b, bTh, cat] = w._m;
+    const target = Math.random() < 0.5 ? a : b;
+    const ipa = (x) => { const e = WORD_BY[x]; return e && e.i ? ` <span class="muted">${esc(e.i)}</span>` : ''; };
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop">
+        <button class="speak" data-say style="width:96px;height:96px;font-size:44px;margin:0">🔊</button>
+        <div class="muted small" style="margin-top:10px">ได้ยินคำไหน? แตะเพื่อฟังอีกครั้ง</div></div>
+      <div class="options two">${[[a, aTh], [b, bTh]].map(([x, t]) => `<button class="opt mp" data-o="${esc(x)}"><b>${esc(x)}</b><small>${esc(t)}</small></button>`).join('')}</div>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    view.querySelector('[data-say]').onclick = () => speak(target);
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const bt = e.target.closest('.opt'); if (!bt || answered) return;
+      answered = true;
+      const ok = bt.dataset.o === target;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === target) o.classList.add('correct'); });
+      if (!ok) bt.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌'} ที่ได้ยินคือ <b>${esc(target)}</b>
+        <div class="example"><div class="en"><b>${esc(a)}</b>${ipa(a)} · <b>${esc(b)}</b>${ipa(b)}</div><div class="thx">${esc(MINPAIRS_TIP[cat] || '')}</div></div>
+        <button class="btn block" id="mpCmp" style="margin-top:10px">🔁 ฟังเทียบ ${esc(a)} → ${esc(b)}</button>
+        <button class="btn primary block" id="nextQ" style="margin-top:10px">ถัดไป →</button>`;
+      $('#mpCmp').onclick = () => { const u = speak(a); if (u) u.onend = () => setTimeout(() => { if (items[i] === w) speak(b); }, 250); };
+      $('#nextQ').onclick = next;
+      if (ok) setTimeout(() => { if (items[i] === w) next(); }, 1600);
+    };
+    setTimeout(() => speak(target), 200);
+  }
+
+  function mark(w, ok) {
+    // A missed pronunciation or word order doesn't mean the meaning was forgotten, so it doesn't reset the card.
+    const spk = gameId === 'speak' || gameId === 'speakS';
+    const soft = spk || gameId === 'order' || gameId === 'sOrder';
+    if (w.idx < 0 || (soft && !ok)) markActive(); else gameResult(w, ok);
+    if (spk && ok) S.counts.speak = (S.counts.speak || 0) + 1;
+    questEvent('answer', { game: gameId, ok });
+    sfx(ok ? 'ok' : 'bad');
+    if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); score += 10 + Math.min(combo - 1, 5) * 2; addXP(comboXP(combo)); }
+    else { combo = 0; wrong.push(w); }
+  }
+  function next() { i++; q(); }
+
+  function result() {
+    const prev = S.best[gameId];
+    const isBest = prev == null || score > prev;
+    if (isBest) { S.best[gameId] = score; save(); }
+    const correct = items.length - wrong.length;
+    if (correct === items.length && items.length >= 10) S.counts.perfect = (S.counts.perfect || 0) + 1;
+    questEvent('round', { game: gameId, correct, bestCombo });
+    if (correct >= 8) confetti();
+    const emoji = correct === items.length ? '🏆' : correct >= 7 ? '🎉' : correct >= 4 ? '💪' : '📚';
+    view.innerHTML = `<div class="card-box center pop">
+        <div class="result-emoji">${emoji}</div>
+        <div class="h2">${score} แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
+        <p>ถูก ${correct}/${items.length} · คอมโบสูงสุด ${bestCombo}</p>
+      </div>
+      ${wrong.length ? `<div class="card-box wrong-list"><b>${gameId.startsWith('speak') ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b> <span class="small muted">${gameId.startsWith('speak') ? '(แตะคำเพื่อฟังเสียง)' : SKILL_GAMES.includes(gameId) ? '(แตะเพื่อฟังเสียง)' : '(ใส่ในแฟลชการ์ดให้แล้ว) · กด ☆ เพื่อติดดาว'}</span>
+        ${wrong.map((w) => w.idx < 0 ? `<div class="wl" data-i="-1" data-say="${esc(w._q ? w._q[0].replace('___', w._q[1]) : w._m[0] + ', ' + w._m[2])}"><span><b>${esc(w.w)}</b></span><span class="muted grow" style="text-align:right">${esc(w._q ? w._q[3] : w.t)}</span></div>`
+          : `<div class="wl" data-i="${w.idx}"><span><b>${esc(w.w)}</b> <span class="pos">${esc(w.p)}</span></span><span class="muted grow" style="text-align:right">${esc(w.t)}</span><button class="star-btn" data-star>${starIcon(w)}</button></div>`).join('')}</div>` : ''}
+      <button class="btn primary block" id="again">เล่นอีกรอบ</button>
+      <div style="height:10px"></div><button class="btn block" id="back">เลือกเกมอื่น</button>`;
+    $('#again').onclick = () => startGame(gameId);
+    $('#back').onclick = () => go('games');
+    const wl = view.querySelector('.wrong-list');
+    if (wl) wl.onclick = (e) => {
+      const row = e.target.closest('.wl'); if (!row) return;
+      const w = W[+row.dataset.i];
+      if (!w) return speak(row.dataset.say || '');
+      const sb = e.target.closest('[data-star]');
+      if (sb) { toggleStar(w); sb.textContent = starIcon(w); } else speak(w.w);
+    };
+    updateStreak();
+  }
+
+  q();
+}
+
+function playMatch(src) {
+  const PAIRS = 6, ROUNDS = 3;
+  let round = 0, mistakes = 0, start = Date.now(), timer;
+  $('#title').textContent = GAMES.match.name;
+  const used = new Set();
+
+  function deal() {
+    if (round >= ROUNDS) return result();
+    const words = [];
+    const seenTh = new Set();
+    for (const w of shuffle(src)) {
+      if (used.has(w.w) || seenTh.has(thFirst(w.t))) continue;
+      words.push(w); seenTh.add(thFirst(w.t)); used.add(w.w);
+      if (words.length === PAIRS) break;
+    }
+    const en = shuffle(words), th = shuffle(words);
+    let left = PAIRS, sel = null;
+    view.innerHTML = `<div class="session-top">
+        <button class="icon-btn" id="quit" aria-label="ออก">✕</button>
+        <div class="progress"><div style="width:${round / ROUNDS * 100}%"></div></div>
+        <span class="small" id="clock">0.0s</span></div>
+      <p class="center muted small">รอบ ${round + 1}/${ROUNDS} · แตะคำอังกฤษแล้วแตะคำแปลที่ตรงกัน</p>
+      <div class="match-grid">
+        ${en.map((w, k) => `<button class="tile" data-k="en" data-i="${w.idx}" style="grid-column:1;grid-row:${k + 1}">${esc(w.w)}</button>`).join('')}
+        ${th.map((w, k) => `<button class="tile th" data-k="th" data-i="${w.idx}" style="grid-column:2;grid-row:${k + 1}">${esc(thFirst(w.t))}</button>`).join('')}
+      </div>`;
+    $('#quit').onclick = () => go('games');
+    view.querySelector('.match-grid').onclick = (e) => {
+      const t = e.target.closest('.tile'); if (!t || t.classList.contains('done')) return;
+      if (t.dataset.k === 'en') speak(W[+t.dataset.i].w);
+      if (!sel || sel.dataset.k === t.dataset.k) {
+        if (sel) sel.classList.remove('sel');
+        sel = t; t.classList.add('sel'); return;
+      }
+      const a = sel, b = t; sel = null; a.classList.remove('sel');
+      if (a.dataset.i === b.dataset.i) {
+        a.classList.add('done'); b.classList.add('done');
+        gameResult(W[+a.dataset.i], true); sfx('ok');
+        if (--left === 0) { round++; setTimeout(deal, 350); }
+      } else {
+        mistakes++; sfx('bad');
+        [a, b].forEach((x) => { x.classList.remove('no'); void x.offsetWidth; x.classList.add('no'); });
+        const enTile = a.dataset.k === 'en' ? a : b;
+        gameResult(W[+enTile.dataset.i], false);
+      }
+    };
+  }
+  timer = setInterval(() => { const c = $('#clock'); if (c) c.textContent = ((Date.now() - start) / 1000).toFixed(1) + 's'; }, 100);
+  cleanup = () => clearInterval(timer);
+
+  function result() {
+    clearInterval(timer);
+    const secs = (Date.now() - start) / 1000 + mistakes * 3;
+    const score = Math.max(0, Math.round(1000 - secs * 10));
+    const prev = S.best.match;
+    const isBest = prev == null || score > prev;
+    if (isBest) { S.best.match = score; save(); }
+    addXP(mistakes <= 2 ? 12 : 6);
+    questEvent('match', { mistakes });
+    if (isBest || mistakes === 0) confetti();
+    view.innerHTML = `<div class="card-box center pop">
+        <div class="result-emoji">⚡</div>
+        <div class="h2">${score} แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
+        <p>เวลา ${((Date.now() - start) / 1000).toFixed(1)} วินาที · ผิด ${mistakes} ครั้ง (+3 วิ/ครั้ง)</p>
+      </div>
+      <button class="btn primary block" id="again">เล่นอีกรอบ</button>
+      <div style="height:10px"></div><button class="btn block" id="back">เลือกเกมอื่น</button>`;
+    $('#again').onclick = () => startGame('match');
+    $('#back').onclick = () => go('games');
+    updateStreak();
+  }
+  deal();
+}
+
+/* ---------- quick play ---------- */
+// One tap from home: a random multiple-choice game on words the user has started (or their levels).
+function quickPlay() {
+  gameSource = W.filter((w) => S.prog[w.w] && S.settings.levels.includes(w.g)).length >= 10 ? 'learned' : 'level';
+  let id = pick(['en2th', 'th2en', 'listen', 'cloze']);
+  if (gamePool(id).length < 4) id = 'en2th';
+  startGame(id);
+}

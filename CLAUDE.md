@@ -10,7 +10,7 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
   Tell the user the new version number.
 - Patch (x.y.Z) for small fixes, minor (x.Y.0) for new features.
 - Push directly to `master` (no PRs unless asked).
-- The in-app manual (`GUIDE` / `renderGuide()` in `app.js`, route `guide`) describes every feature
+- The in-app manual (`GUIDE` / `renderGuide()` in `js/guide.js`, route `guide`) describes every feature
   in Thai: update it whenever a feature is added or changed.
 - The version is shown at the bottom of the home and settings screens so the user can
   check whether the iPhone has picked up the update.
@@ -19,7 +19,8 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
 | File | Role |
 |---|---|
 | `index.html` | Shell: top bar, `#view`, tab bar |
-| `app.js` | All logic (single file, sections marked `/* ---------- name ---------- */`) |
+| `app.js` | Core: `APP_VERSION`, data, storage/backup, quests, XP, achievements, helpers, speech, SRS, router (`go()`) |
+| `js/*.js` | The rest of the logic, one classic script per area (`home cards games feed reading words placement stats sync guide settings boot`), sections marked `/* ---------- name ---------- */`. They share globals (no modules, no build); `index.html` loads them after `app.js` and `boot.js` must stay last. A new file goes in `index.html` **and** `sw.js` (a test checks) |
 | `style.css` | Mobile-first styles; colour tokens on `:root` with dark mode |
 | `words/<level>.js` | `a1 a2 b1 b2 b2plus c1` (Oxford 5000-only rows in `b2plus`/`c1`), one row per line, each pushes onto `window.WORDS`: `[word, pos, level, ipa, thai, example, thaiExample, topicId, 5?]` (4,957 rows total; app.js sorts them A–Z, topic id → `w.tp`) |
 | `sw.js` | Network-first service worker with versioned cache |
