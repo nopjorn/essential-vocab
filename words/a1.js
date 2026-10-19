@@ -463,7 +463,7 @@
   ["married","adj","A1","/ˈmærid/","แต่งงานแล้ว","Are you married?","คุณแต่งงานแล้วหรือยัง","people"],
   ["match","n/v","A1","/mætʃ/","การแข่งขัน, ไม้ขีดไฟ; เข้ากัน","We watched the football match.","เราดูการแข่งขันฟุตบอล","media"],
   ["May","n","A1","/meɪ/","เดือนพฤษภาคม","The rainy season starts in May.","ฤดูฝนเริ่มเดือนพฤษภาคม","time"],
-  ["maybe","adv","A1","/ˈmeɪbi/","บางที","Maybe tomorrow.","บางทีพรุ่งนี้","grammar"],
+  ["maybe","adv","A1","/ˈmeɪbi/","อาจจะ, บางที","Maybe tomorrow.","อาจจะพรุ่งนี้นะ","grammar"],
   ["me","pron","A1","/mi/","ฉัน (กรรม)","Can you help me?","ช่วยฉันหน่อยได้ไหม","grammar"],
   ["meal","n","A1","/miːl/","มื้ออาหาร","Enjoy your meal!","ทานให้อร่อยนะ","food"],
   ["mean","v","A1","/miːn/","หมายถึง","What does this word mean?","คำนี้แปลว่าอะไร","media"],
