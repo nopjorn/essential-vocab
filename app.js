@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.29.4';
+const APP_VERSION = '1.29.5';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -3404,7 +3404,7 @@ const GUIDE = [
       <li>ถ้าเปิดโหมดล็อก (requireLogin) คนที่ไม่ได้รับเชิญจะเข้าใช้แอปไม่ได้</li>
       <li>ยังกด 📤 ส่งออกไฟล์สำรองได้เหมือนเดิม เผื่อไว้อีกชั้น</li>
       <li><b>🏆 อันดับเพื่อน</b> — เห็น XP สัปดาห์นี้ สตรีค และคำที่จำได้ของคนที่ได้รับเชิญ ในหน้าสถิติ ตั้งชื่อที่แสดงได้ในหน้าตั้งค่า</li>
-      <li><b>🔔 แจ้งเตือนรายวัน</b> — ⚙️ ตั้งค่า → ☁️ ซิงก์ → แจ้งเตือนรายวัน → เปิด เตือนตามเวลาที่ตั้งไว้ เฉพาะวันที่ยังไม่ได้เล่น (ต้องตั้งค่าเพิ่มตาม SYNC-SETUP.md ข้อ 7 และใช้ได้กับแอปบนหน้าจอโฮม iOS 16.4 ขึ้นไป)</li>
+      <li><b>🔔 แจ้งเตือนรายวัน</b> — ⚙️ ตั้งค่า → เตือนให้มาเรียนทุกวัน → เปิดสวิตช์ 🔔 แจ้งเตือนในแอป (ต้องเข้าสู่ระบบซิงก์ก่อน) เตือนตามเวลาที่ตั้งไว้ เฉพาะวันที่ยังไม่ได้เล่น (ต้องตั้งค่าเพิ่มตาม SYNC-SETUP.md ข้อ 7 และใช้ได้กับแอปบนหน้าจอโฮม iOS 16.4 ขึ้นไป)</li>
     </ul>`],
   ['🔄', 'อัปเดตแอป', `
     <ul>
@@ -3542,6 +3542,9 @@ function renderSettings() {
     <details class="set-group" data-g="remind" ${setIsOpen('remind')}><summary>เตือนให้มาเรียนทุกวัน</summary><div class="card-box">
       <div class="set-row"><span>เวลาเตือน</span>
         <select class="sel" id="remind">${REMIND_TIMES.map((t) => `<option value="${t}" ${t === S.remind ? 'selected' : ''}>${t.slice(0, 2)}:${t.slice(2)} น.</option>`).join('')}</select></div>
+      ${canPush() && auth ? `<div class="set-row"><span>🔔 แจ้งเตือนในแอป</span>
+        <label class="switch"><input type="checkbox" id="pushBtn"><span></span></label></div>
+      <p class="small muted" style="margin-top:0">เตือนตามเวลานี้ เฉพาะวันที่ยังไม่ได้เล่น บอกจำนวนการ์ดที่รอทบทวน แตะแล้วเปิดแอปได้เลย (ถ้าเปิดอันนี้แล้วไม่ต้องเพิ่มลงปฏิทิน จะได้ไม่เตือนซ้ำ)</p>` : ''}
       <a class="btn block" id="remindAdd" href="reminders/${S.remind}.ics" target="_blank" rel="noopener" style="margin-top:8px;text-decoration:none">📅 เพิ่มการเตือนลงปฏิทิน</a>
       <p class="small muted" style="margin-bottom:0">จะเปิดหน้าปฏิทินของ iPhone ให้กด "เพิ่มทั้งหมด" ปฏิทินจะเตือนทุกวันตามเวลานี้ แตะการแจ้งเตือนแล้วกดลิงก์เพื่อเปิดแอป (ถ้าเปลี่ยนเวลา ให้ลบนัดเดิมในปฏิทินก่อน)</p>
       <div class="set-row"><span>🔴 ตัวเลขการ์ดค้างบนไอคอนแอป</span>
@@ -3575,7 +3578,6 @@ function renderSettings() {
       ? '<p class="small muted" style="margin:0">ยังไม่ได้เปิดใช้ ต้องตั้งค่า Supabase ในไฟล์ <code>config.js</code> ก่อน (ดูขั้นตอนใน SYNC-SETUP.md ใน GitHub) จากนั้นความคืบหน้าจะซิงก์ขึ้นคลาวด์เอง ลบแอปหรือเปลี่ยนเครื่องก็ไม่หาย</p>'
       : auth ? `<p class="small" style="margin-top:0">เข้าสู่ระบบเป็น <b>${esc(auth.user.email)}</b><br><span class="muted">ซิงก์ล่าสุด: ${syncState.last ? new Date(syncState.last).toLocaleTimeString('th-TH', { timeStyle: 'short' }) : 'ยังไม่ได้ซิงก์ในรอบนี้'}${syncState.error ? ' · ⚠️ ' + esc(syncState.error) : ''}</span></p>
         ${SYNC.leaderboard ? `<div class="set-row"><span>ชื่อในอันดับเพื่อน</span><input class="sel" id="nick" maxlength="20" style="width:140px" value="${esc(boardName())}"></div>` : ''}
-        ${canPush() ? '<div class="set-row"><span>🔔 แจ้งเตือนรายวัน</span><button class="btn" id="pushBtn" style="padding:8px 14px">…</button></div><p class="small muted" id="pushNote" style="margin-top:0">เตือนตามเวลาที่ตั้งไว้ด้านบน เฉพาะวันที่ยังไม่ได้เล่น (iPhone ต้องเปิดจากไอคอนบนหน้าจอโฮม iOS 16.4 ขึ้นไป)</p>' : ''}
         <div class="row"><button class="btn grow" id="syncNow">🔄 ซิงก์ตอนนี้</button><button class="btn grow" id="logout">ออกจากระบบ</button></div>`
       : '<p class="small muted" style="margin-top:0">เข้าสู่ระบบด้วยอีเมลที่ได้รับเชิญ แล้วความคืบหน้าจะซิงก์ขึ้นคลาวด์อัตโนมัติ ใช้ได้หลายเครื่อง</p><button class="btn primary block" id="login">เข้าสู่ระบบ</button>'}
     </div></details>
@@ -3640,12 +3642,12 @@ function renderSettings() {
   if ($('#nick')) $('#nick').onchange = (e) => { S.nick = e.target.value.trim().slice(0, 20); save(); };
   const pb = $('#pushBtn');
   if (pb) {
-    const paintPush = async () => { pb.textContent = (await pushSub()) && Notification.permission === 'granted' ? 'ปิด' : 'เปิด'; };
+    const paintPush = async () => { pb.checked = !!(await pushSub()) && Notification.permission === 'granted'; };
     paintPush();
-    pb.onclick = async () => {
+    pb.onchange = async () => {
       pb.disabled = true;
       try {
-        if (pb.textContent === 'ปิด') { await disablePush(); toast('ปิดการแจ้งเตือนแล้ว'); } else { await enablePush(); toast('🔔 เปิดการแจ้งเตือนแล้ว'); }
+        if (!pb.checked) { await disablePush(); toast('ปิดการแจ้งเตือนแล้ว'); } else { await enablePush(); toast('🔔 เปิดการแจ้งเตือนแล้ว'); }
       } catch (err) { toast('⚠️ ' + (err.message || err)); }
       pb.disabled = false; paintPush();
     };
