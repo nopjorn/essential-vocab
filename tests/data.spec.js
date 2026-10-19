@@ -118,3 +118,23 @@ test('index.html loads every js/ script, and the service worker caches it', () =
   });
   expect(html.indexOf('js/boot.js')).toBeGreaterThan(html.indexOf('js/settings.js'));
 });
+
+test('phrasal verbs are valid practice data', () => {
+  const { PHRASAL } = load('phrasal.js');
+  expect(PHRASAL.length).toBeGreaterThan(120);
+  const seen = new Set(), bad = [];
+  for (const r of PHRASAL) {
+    const [pv, lv, th, ex, exTh] = r;
+    if (r.length !== 5) bad.push(`${pv}: ${r.length} fields`);
+    if (seen.has(pv)) bad.push(`duplicate ${pv}`);
+    seen.add(pv);
+    if (!['A1', 'A2', 'B1', 'B2', 'C1'].includes(lv)) bad.push(`${pv}: level ${lv}`);
+    if (!th || !exTh) bad.push(`${pv}: missing Thai`);
+    const groups = [...ex.matchAll(/\[([^\]]+)\]/g)].map((m) => m[1]);
+    if (groups.length !== 2 || groups[1] !== pv.split(' ').slice(1).join(' ')) bad.push(`${pv}: brackets ${groups}`);
+  }
+  expect(bad).toEqual([]);
+  // every particle count has enough other particles for 3 distractors
+  const parts = [...new Set(PHRASAL.map((r) => r[0].split(' ').slice(1).join(' ')))];
+  [1, 2].forEach((n) => expect(parts.filter((p) => p.split(' ').length === n).length).toBeGreaterThan(6));
+});

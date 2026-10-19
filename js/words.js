@@ -101,7 +101,7 @@ function openSheet(w, onChange) {
       <div class="sheet-word">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
       <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span>${w.tp ? ` · ${TOPIC_LABEL[w.tp]}` : ''}</div>
       <div class="th" style="font-size:22px;margin:10px 0">${esc(w.t)}</div>
-      ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div>
+      ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div><div class="colloc" id="pvBox"></div>
       </div>
       <div class="sheet-acts">
         <button class="btn" data-act="star">${isStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาว'}</button>
@@ -120,6 +120,7 @@ function openSheet(w, onChange) {
     const box = el.querySelector('#famBox'), f = familyOf(w.w);
     if (box && f) box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🧬 ครอบครัวคำ</b> (แตะเพื่อฟัง)</div>${famRows(f, w.w.toLowerCase())}`;
   });
+  lexisBoxes(el, w);
   const close = () => { el.classList.remove('open'); setTimeout(() => el.remove(), 250); };
   el.onclick = (e) => {
     if (e.target === el) return close();

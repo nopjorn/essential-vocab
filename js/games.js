@@ -41,6 +41,7 @@ const GAMES = {
   confuse: { icon: '🤔', name: 'คำที่มักสับสน', desc: 'เลือกให้ถูก เช่น borrow / lend' },
   minpair: { icon: '👂', name: 'ฝึกหูแยกเสียง', desc: 'ฟังแล้วเลือก ship หรือ sheep' },
   wform: { icon: '🧬', name: 'เปลี่ยนรูปคำ', desc: 'เลือกรูปคำให้เข้ากับประโยค เช่น decide → decision' },
+  phrasal: { icon: '🧩', name: 'Phrasal verbs', desc: 'เติมคำเล็กๆ ให้ครบ เช่น give ___ = เลิก' },
   review: { icon: '🔁', name: 'คำที่ผิดบ่อย', desc: 'ฝึกคำที่เคยตอบผิด' },
 };
 // Games whose data is lazy-loaded (stories / collocations) or built from sentences instead of the word pool.
@@ -48,7 +49,7 @@ const STORY_GAMES = ['sCloze', 'sOrder'];
 // Games built from pairs.js (confusable words, minimal pairs): not tied to the word list or its schedule.
 const PAIR_GAMES = ['confuse', 'minpair'];
 // Skill games with their own items (idx -1): practice only, no flashcard scheduling.
-const SKILL_GAMES = [...PAIR_GAMES, 'wform'];
+const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal'];
 function gameTile(id) {
   const g = GAMES[id];
   const best = S.best[id] != null ? `<span>🏅 สถิติ: ${S.best[id]}</span>` : '';
@@ -79,10 +80,12 @@ function renderGames() {
     <button class="card-box guide-link" id="toRead"><span>📖</span><div class="grow"><b>อ่านเรื่องสั้น</b><div class="small muted">${STORY_COUNT} เรื่อง · อ่านแล้ว ${Object.keys(S.read).length} · แตะคำเพื่อดูความหมาย</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="toPairs"><span>🤔</span><div class="grow"><b>คู่คำที่คนไทยสับสนบ่อย</b><div class="small muted">borrow / lend, bored / boring … อ่านวิธีแยกแล้วไปเล่นเกม</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="toFams"><span>🧬</span><div class="grow"><b>ครอบครัวคำ</b><div class="small muted">decide → decision → decisive … คำนาม กริยา คุณศัพท์ จากรากเดียวกัน</div></div><span class="muted">›</span></button>
+    <button class="card-box guide-link" id="toPV"><span>🧩</span><div class="grow"><b>Phrasal verbs</b><div class="small muted">give up, look after, run out of … กริยาวลีที่ใช้บ่อย พร้อมประโยคตัวอย่าง</div></div><span class="muted">›</span></button>
     <div class="game-grid">${Object.keys(GAMES).map(gameTile).join('')}</div>`;
   $('#toRead').onclick = () => go('read');
   $('#toPairs').onclick = () => renderPairs();
   $('#toFams').onclick = () => renderFamilies();
+  $('#toPV').onclick = () => renderPhrasal();
   const paint = () => view.querySelectorAll('#src .chip').forEach((c) => c.classList.toggle('on', c.dataset.s === gameSource));
   paint();
   if ($('#gTopic')) $('#gTopic').onchange = (e) => { gameTopic = e.target.value; };
@@ -158,6 +161,7 @@ function gamePool(id) {
   if (STORY_GAMES.includes(id)) return storyItems(id);
   if (id === 'confuse') return CONFUSE.flatMap((c) => c.q.map((q) => ({ idx: -1, w: `${c.a} / ${c.b}`, t: '', p: '', g: '', _c: c, _q: q })));
   if (id === 'wform') return FAMILIES.flatMap((f) => f.q.map(([sn, a, th]) => ({ idx: -1, w: a, t: '', p: '', g: '', _f: f, _q: [sn, a, '', th] })));
+  if (id === 'phrasal') return PHRASAL.map((r) => ({ idx: -1, w: r.pv, t: r.th, p: '', g: '', _pv: r, _q: [r.plain.replace(r.part, '___'), r.part, '', r.th] }));
   if (id === 'minpair') return MINPAIRS.map((m) => ({ idx: -1, w: `${m[0]} / ${m[2]}`, t: `${m[1]} / ${m[3]}`, p: '', g: '', _m: m }));
   if (id === 'review') {
     return W.filter((w) => S.prog[w.w] && (S.prog[w.w].x || 0) > 0)
@@ -207,6 +211,7 @@ function startGame(id) {
   if (id === 'colloc' && !COLLOC) { loadColloc().then(() => startGame(id)); return; }
   if (PAIR_GAMES.includes(id) && !CONFUSE) { loadPairs().then(() => startGame(id)); return; }
   if (id === 'wform' && !FAMILIES) { loadFamilies().then(() => startGame(id)); return; }
+  if (id === 'phrasal' && !PHRASAL) { loadPhrasal().then(() => startGame(id)); return; }
   if (STORY_GAMES.includes(id) && !Object.keys(S.read).length) { toast('อ่านเรื่องสั้นให้จบอย่างน้อย 1 เรื่องก่อนนะ 📖'); if (current !== 'games') go('games'); return; }
   const src = gamePool(id);
   const min = id === 'match' ? 6 : 4;
@@ -257,6 +262,7 @@ function playQuiz(mode, src, gameId) {
     if (m === 'confuse') return qConfuse(w);
     if (m === 'minpair') return qMinpair(w);
     if (m === 'wform') return qWform(w);
+    if (m === 'phrasal') return qPhrasal(w);
     const toTh = m !== 'th2en' && m !== 'cloze';
     const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
     let prompt;
@@ -599,6 +605,40 @@ function playQuiz(mode, src, gameId) {
       view.querySelector('.fam-box').onclick = (ev) => { const c = ev.target.closest('[data-col]'); if (c) speak(c.dataset.col); };
       $('#nextQ').onclick = next;
       speak(full);
+    };
+  }
+
+  // Phrasal verbs: the verb stays, pick the particle(s) that give the Thai meaning shown.
+  function qPhrasal(w) {
+    const r = w._pv, right = r.part;
+    const opts = shuffle([right, ...pvDistractors(r)]);
+    let k = 0;
+    const shown = esc(r.ex).replace(/\[([^\]]+)\]/g, (all, x) => (k++ ? '<span class="blank">_____</span>' : `<b>${x}</b>`));
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit pop"><div class="small muted">เติมให้ได้ความหมาย</div><div class="th" style="margin:4px 0 2px;font-size:clamp(20px, 6vw, 26px)">“${esc(r.th)}”</div>
+        <div class="cloze" style="margin-top:8px">${shown}</div>
+        <button class="hint-btn" id="pvHint">💡 ดูคำแปลประโยค</button><div class="thx" id="pvTh" hidden>${esc(r.exTh)}</div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    $('#pvHint').onclick = () => { $('#pvTh').hidden = false; $('#pvHint').remove(); };
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === right;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      const same = phrasalOf(r.verb);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : `❌ ที่ถูกคือ <b>${esc(r.pv)}</b>`}
+        <div class="example"><div class="en">${pvHTML(r)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(r.exTh)}</div></div>
+        ${same.length > 1 ? `<div class="fam-box"><div class="small muted" style="margin:10px 0 6px"><b>🧩 ${esc(r.verb)} + …</b> (แตะเพื่อฟัง)</div>${pvRows(same, r.pv)}</div>` : ''}
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('[data-sayex]').onclick = () => speak(r.plain);
+      const fb = view.querySelector('.fam-box'); if (fb) fb.onclick = (ev) => { const c = ev.target.closest('[data-col]'); if (c) speak(c.dataset.col); };
+      $('#nextQ').onclick = next;
+      speak(r.plain);
     };
   }
 

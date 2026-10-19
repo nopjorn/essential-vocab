@@ -907,3 +907,7 @@ details.cal-alt > summary { cursor: pointer; padding: 6px 0; }
 .sh-th { color: var(--muted); margin: 0 4px 8px; }
 .sh-state { font-weight: 700; margin-top: 6px; }
 .sh-ctl { margin-top: 12px; }
+.lvl-mini { display: inline-block; font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 99px; background: var(--surface-2); color: var(--muted); vertical-align: 2px; }
+.example mark { background: none; color: var(--pink); font-weight: 800; }
+/* prompts with more lines (phrasal, synonyms, word parts) never shrink below their content */
+.view:has(> .q-prompt) > .q-prompt.fit { min-height: fit-content; }

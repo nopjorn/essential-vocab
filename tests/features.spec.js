@@ -53,3 +53,33 @@ test('story reader: slow toggle and shadowing mode (play, next, prev, hide, back
   await expect(page.locator('#shState')).toContainText('ครบทั้งเรื่อง', { timeout: 8000 });
   expect(errors).toEqual([]);
 });
+
+test('phrasal verbs: browser, word sheet box, game with right and wrong answers', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => go('games'));
+  await page.locator('#toPV').click();
+  await expect(page.locator('#pvList .pair-card').first()).toBeVisible();
+  await page.locator('#pvq').fill('เลิก');
+  await expect(page.locator('#pvList')).toContainText('give up');
+  await page.locator('#pvList [data-say]').first().click();
+  // word sheet of "look" lists its phrasal verbs
+  await page.evaluate(() => openSheet(W.find((w) => w.w === 'look')));
+  await expect(page.locator('#pvBox')).toContainText('look after');
+  await page.evaluate(() => document.querySelector('.sheet-wrap').remove());
+  // game: alternate wrong and right answers to the result screen
+  await page.evaluate(() => startGame('phrasal'));
+  for (let k = 0; k < 10; k++) {
+    await expect(page.locator('.options .opt').first()).toBeVisible();
+    const opts = page.locator('.options .opt');
+    const answer = await page.evaluate(() => { const shown = document.querySelector('.cloze').textContent; return PHRASAL.find((r) => { let k = 0; return r.ex.replace(/\[([^\]]+)\]/g, (a, x) => (k++ ? '_____' : x)) === shown; }).part; });
+    const texts = await opts.allTextContents();
+    const pickIdx = k % 2 ? texts.indexOf(answer) : texts.findIndex((t) => t !== answer);
+    expect(pickIdx).toBeGreaterThanOrEqual(0);
+    await opts.nth(pickIdx).click();
+    await expect(page.locator('#reveal')).toContainText(k % 2 ? 'ถูกต้อง' : 'ที่ถูกคือ');
+    await page.locator('#nextQ').click();
+  }
+  await expect(page.locator('.result-emoji')).toBeVisible();
+  await expect(page.locator('.wrong-list')).toBeVisible();
+  expect(errors).toEqual([]);
+});

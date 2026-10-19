@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump VERSION (keep it equal to APP_VERSION in app.js) on every push.
-const VERSION = 'o3k-1.32.0';
+const VERSION = 'o3k-1.33.0';
 const FILES = [
   './',
   'index.html',
@@ -11,6 +11,7 @@ const FILES = [
   'js/feed.js',
   'js/reading.js',
   'js/words.js',
+  'js/lexis.js',
   'js/placement.js',
   'js/stats.js',
   'js/sync.js',
@@ -33,6 +34,7 @@ const FILES = [
   'collocations.js',
   'pairs.js',
   'families.js',
+  'phrasal.js',
   'changelog.js',
   'manifest.webmanifest',
   'icons/apple-touch-icon.png',
