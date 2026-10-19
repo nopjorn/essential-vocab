@@ -42,6 +42,7 @@ const GAMES = {
   minpair: { icon: '👂', name: 'ฝึกหูแยกเสียง', desc: 'ฟังแล้วเลือก ship หรือ sheep' },
   wform: { icon: '🧬', name: 'เปลี่ยนรูปคำ', desc: 'เลือกรูปคำให้เข้ากับประโยค เช่น decide → decision' },
   phrasal: { icon: '🧩', name: 'Phrasal verbs', desc: 'เติมคำเล็กๆ ให้ครบ เช่น give ___ = เลิก' },
+  syn: { icon: '≈', name: 'คำเหมือน–ตรงข้าม', desc: 'big ≈ large, big ↔ small เลือกให้ถูก' },
   review: { icon: '🔁', name: 'คำที่ผิดบ่อย', desc: 'ฝึกคำที่เคยตอบผิด' },
 };
 // Games whose data is lazy-loaded (stories / collocations) or built from sentences instead of the word pool.
@@ -49,7 +50,7 @@ const STORY_GAMES = ['sCloze', 'sOrder'];
 // Games built from pairs.js (confusable words, minimal pairs): not tied to the word list or its schedule.
 const PAIR_GAMES = ['confuse', 'minpair'];
 // Skill games with their own items (idx -1): practice only, no flashcard scheduling.
-const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal'];
+const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn'];
 function gameTile(id) {
   const g = GAMES[id];
   const best = S.best[id] != null ? `<span>🏅 สถิติ: ${S.best[id]}</span>` : '';
@@ -80,12 +81,14 @@ function renderGames() {
     <button class="card-box guide-link" id="toRead"><span>📖</span><div class="grow"><b>อ่านเรื่องสั้น</b><div class="small muted">${STORY_COUNT} เรื่อง · อ่านแล้ว ${Object.keys(S.read).length} · แตะคำเพื่อดูความหมาย</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="toPairs"><span>🤔</span><div class="grow"><b>คู่คำที่คนไทยสับสนบ่อย</b><div class="small muted">borrow / lend, bored / boring … อ่านวิธีแยกแล้วไปเล่นเกม</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="toFams"><span>🧬</span><div class="grow"><b>ครอบครัวคำ</b><div class="small muted">decide → decision → decisive … คำนาม กริยา คุณศัพท์ จากรากเดียวกัน</div></div><span class="muted">›</span></button>
+    <button class="card-box guide-link" id="toSyn"><span>≈</span><div class="grow"><b>คำเหมือน–คำตรงข้าม</b><div class="small muted">big / large / huge ต่างกันยังไง พร้อมคำตรงข้าม</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="toPV"><span>🧩</span><div class="grow"><b>Phrasal verbs</b><div class="small muted">give up, look after, run out of … กริยาวลีที่ใช้บ่อย พร้อมประโยคตัวอย่าง</div></div><span class="muted">›</span></button>
     <div class="game-grid">${Object.keys(GAMES).map(gameTile).join('')}</div>`;
   $('#toRead').onclick = () => go('read');
   $('#toPairs').onclick = () => renderPairs();
   $('#toFams').onclick = () => renderFamilies();
   $('#toPV').onclick = () => renderPhrasal();
+  $('#toSyn').onclick = () => renderSyn();
   const paint = () => view.querySelectorAll('#src .chip').forEach((c) => c.classList.toggle('on', c.dataset.s === gameSource));
   paint();
   if ($('#gTopic')) $('#gTopic').onchange = (e) => { gameTopic = e.target.value; };
@@ -162,6 +165,7 @@ function gamePool(id) {
   if (id === 'confuse') return CONFUSE.flatMap((c) => c.q.map((q) => ({ idx: -1, w: `${c.a} / ${c.b}`, t: '', p: '', g: '', _c: c, _q: q })));
   if (id === 'wform') return FAMILIES.flatMap((f) => f.q.map(([sn, a, th]) => ({ idx: -1, w: a, t: '', p: '', g: '', _f: f, _q: [sn, a, '', th] })));
   if (id === 'phrasal') return PHRASAL.map((r) => ({ idx: -1, w: r.pv, t: r.th, p: '', g: '', _pv: r, _q: [r.plain.replace(r.part, '___'), r.part, '', r.th] }));
+  if (id === 'syn') return synItems().map((it) => ({ idx: -1, w: it.t, t: it.g.th, p: '', g: '', _syn: it, _q: ['___', it.t, '', it.g.th] }));
   if (id === 'minpair') return MINPAIRS.map((m) => ({ idx: -1, w: `${m[0]} / ${m[2]}`, t: `${m[1]} / ${m[3]}`, p: '', g: '', _m: m }));
   if (id === 'review') {
     return W.filter((w) => S.prog[w.w] && (S.prog[w.w].x || 0) > 0)
@@ -212,6 +216,7 @@ function startGame(id) {
   if (PAIR_GAMES.includes(id) && !CONFUSE) { loadPairs().then(() => startGame(id)); return; }
   if (id === 'wform' && !FAMILIES) { loadFamilies().then(() => startGame(id)); return; }
   if (id === 'phrasal' && !PHRASAL) { loadPhrasal().then(() => startGame(id)); return; }
+  if (id === 'syn' && !SYN) { loadSyn().then(() => startGame(id)); return; }
   if (STORY_GAMES.includes(id) && !Object.keys(S.read).length) { toast('อ่านเรื่องสั้นให้จบอย่างน้อย 1 เรื่องก่อนนะ 📖'); if (current !== 'games') go('games'); return; }
   const src = gamePool(id);
   const min = id === 'match' ? 6 : 4;
@@ -263,6 +268,7 @@ function playQuiz(mode, src, gameId) {
     if (m === 'minpair') return qMinpair(w);
     if (m === 'wform') return qWform(w);
     if (m === 'phrasal') return qPhrasal(w);
+    if (m === 'syn') return qSyn(w);
     const toTh = m !== 'th2en' && m !== 'cloze';
     const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
     let prompt;
@@ -639,6 +645,35 @@ function playQuiz(mode, src, gameId) {
       const fb = view.querySelector('.fam-box'); if (fb) fb.onclick = (ev) => { const c = ev.target.closest('[data-col]'); if (c) speak(c.dataset.col); };
       $('#nextQ').onclick = next;
       speak(r.plain);
+    };
+  }
+
+  // Synonyms / antonyms: pick the word closest in meaning (≈) or the opposite (↔).
+  function qSyn(w) {
+    const it = w._syn, { answer, opts } = synQuestion(it);
+    const ask = it.kind === 's' ? 'คำไหนความหมาย<b>ใกล้เคียง</b>ที่สุด' : 'คำไหนมีความหมาย<b>ตรงข้าม</b>';
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit pop"><div class="small muted">${ask}</div>
+        <div class="word" style="margin-top:6px">${it.kind === 's' ? '≈' : '↔'} ${esc(it.t)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
+        <div class="muted">${esc(it.g.th)}</div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    view.querySelector('[data-say]').onclick = () => speak(it.t);
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === answer;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === answer) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : `❌ คำตอบคือ <b>${esc(answer)}</b>`}
+        <div class="card-box syn-box">${synCard(it.g, it.t)}</div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('.syn-box').onclick = (ev) => { const c = ev.target.closest('[data-col]'); if (c) speak(c.dataset.col); };
+      $('#nextQ').onclick = next;
+      speak(answer);
     };
   }
 

@@ -911,3 +911,7 @@ details.cal-alt > summary { cursor: pointer; padding: 6px 0; }
 .example mark { background: none; color: var(--pink); font-weight: 800; }
 /* prompts with more lines (phrasal, synonyms, word parts) never shrink below their content */
 .view:has(> .q-prompt) > .q-prompt.fit { min-height: fit-content; }
+.syn-g + .syn-g { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+.syn-g .chips { margin-top: 6px; }
+.syn-g .tip-box { margin-top: 10px; }
+.syn-box { margin-top: 10px; text-align: left; }

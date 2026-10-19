@@ -138,3 +138,16 @@ test('phrasal verbs are valid practice data', () => {
   const parts = [...new Set(PHRASAL.map((r) => r[0].split(' ').slice(1).join(' ')))];
   [1, 2].forEach((n) => expect(parts.filter((p) => p.split(' ').length === n).length).toBeGreaterThan(6));
 });
+
+test('synonym groups are valid', () => {
+  const { SYNONYMS } = load('synonyms.js');
+  expect(SYNONYMS.length).toBeGreaterThan(80);
+  const bad = [];
+  for (const g of SYNONYMS) {
+    if (!g.th || !g.tip) bad.push(`${g.s[0]}: missing th/tip`);
+    if (g.s.length < 2) bad.push(`${g.s[0]}: fewer than 2 synonyms`);
+    if (new Set(g.s).size !== g.s.length) bad.push(`${g.s[0]}: duplicate`);
+    g.a.forEach((x) => { if (g.s.includes(x)) bad.push(`${g.s[0]}: ${x} is synonym and antonym`); });
+  }
+  expect(bad).toEqual([]);
+});

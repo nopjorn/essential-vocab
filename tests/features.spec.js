@@ -83,3 +83,46 @@ test('phrasal verbs: browser, word sheet box, game with right and wrong answers'
   await expect(page.locator('.wrong-list')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('synonyms: every question has exactly one listed answer; browser, sheet box, game', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  const problems = await page.evaluate(() => loadSyn().then(() => {
+    const out = [];
+    synItems().forEach((it) => {
+      for (let k = 0; k < 3; k++) {
+        const { answer, opts } = synQuestion(it), { syn, ant } = synRel(it.t), rel = it.kind === 's' ? syn : ant;
+        const hits = opts.filter((o) => rel.has(o));
+        if (opts.length !== 4 || new Set(opts).size !== 4 || hits.length !== 1 || hits[0] !== answer || opts.includes(it.t)) out.push(`${it.kind} ${it.t}: ${opts}`);
+      }
+    });
+    return out;
+  }));
+  expect(problems).toEqual([]);
+  await page.evaluate(() => go('games'));
+  await page.locator('#toSyn').click();
+  await page.locator('#synq').fill('ใหญ่');
+  await expect(page.locator('#synList')).toContainText('enormous');
+  await page.evaluate(() => openSheet(W.find((w) => w.w === 'big')));
+  await expect(page.locator('#synBox')).toContainText('huge');
+  await page.evaluate(() => document.querySelector('.sheet-wrap').remove());
+  await page.evaluate(() => startGame('syn'));
+  for (let k = 0; k < 10; k++) {
+    await expect(page.locator('.options .opt').first()).toBeVisible();
+    const opts = page.locator('.options .opt');
+    if (k % 2) await opts.first().click();
+    else {
+      // pick the right one: the only option related to the shown word in the asked way
+      const idx = await page.evaluate(() => {
+        const t = document.querySelector('.q-prompt .word').firstChild.textContent.replace(/^[≈↔] /, '').trim();
+        const kind = document.querySelector('.q-prompt .word').textContent.startsWith('≈') ? 's' : 'a';
+        const { syn, ant } = synRel(t), rel = kind === 's' ? syn : ant;
+        return [...document.querySelectorAll('.options .opt')].findIndex((o) => rel.has(o.dataset.o));
+      });
+      await opts.nth(idx).click();
+      await expect(page.locator('#reveal')).toContainText('ถูกต้อง');
+    }
+    await page.locator('#nextQ').click();
+  }
+  await expect(page.locator('.result-emoji')).toBeVisible();
+  expect(errors).toEqual([]);
+});

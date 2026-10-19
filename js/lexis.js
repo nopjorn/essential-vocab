@@ -69,12 +69,83 @@ function renderPhrasal() {
 }
 
 /* ---------- word sheet extras ---------- */
-// Fills the phrasal-verb box of the word sheet (el) for word w.
+// Fills the phrasal-verb and synonym boxes of the word sheet (el) for word w.
 function lexisBoxes(el, w) {
+  loadSyn().then(() => {
+    const box = el.querySelector('#synBox'), gs = synGroups(w.w);
+    if (box && gs.length) box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>≈ คำเหมือน–คำตรงข้าม</b> (แตะเพื่อฟัง)</div>${gs.map((g) => synCard(g, w.w.toLowerCase())).join('')}`;
+  });
   if (isVerb(w)) {
     loadPhrasal().then(() => {
       const box = el.querySelector('#pvBox'), list = phrasalOf(w.w);
       if (box && list.length) box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🧩 Phrasal verbs</b> (แตะเพื่อฟัง)</div>${pvRows(list)}`;
     });
   }
+}
+
+/* ---------- synonyms & antonyms ---------- */
+// synonyms.js: [{ th, s: [near-synonyms], a: [antonyms], tip }]; a word may be in several groups.
+let SYN = null, SYN_OF = null;
+const loadSyn = () => loadData('synonyms.js', 'SYNONYMS').then((rows) => {
+  if (!SYN) {
+    SYN = rows; SYN_OF = new Map();
+    SYN.forEach((g) => g.s.forEach((x) => { if (!SYN_OF.has(x)) SYN_OF.set(x, []); SYN_OF.get(x).push(g); }));
+  }
+  return SYN;
+});
+const synGroups = (word) => (SYN_OF && SYN_OF.get(word.toLowerCase())) || [];
+// Every listed synonym / antonym of a word over all its groups, plus words that list it as their antonym.
+function synRel(word) {
+  const gs = synGroups(word), syn = new Set(), ant = new Set();
+  gs.forEach((g) => { g.s.forEach((x) => syn.add(x)); g.a.forEach((x) => ant.add(x)); });
+  SYN.forEach((g) => { if (g.a.includes(word)) g.s.forEach((x) => ant.add(x)); });
+  syn.delete(word);
+  return { syn, ant };
+}
+// One question per (group, word): kind 's' = pick the near-synonym, 'a' = pick the opposite.
+function synItems() {
+  const out = [];
+  SYN.forEach((g) => g.s.forEach((t) => {
+    if (g.s.length >= 2) out.push({ g, t, kind: 's' });
+    if (g.a.length) out.push({ g, t, kind: 'a' });
+  }));
+  return out;
+}
+// Options for a synonym/antonym question: the answer, one "trap" from the other relation, the rest unrelated.
+function synQuestion(it) {
+  const { syn, ant } = synRel(it.t);
+  const answer = pick(it.kind === 's' ? it.g.s.filter((x) => x !== it.t) : it.g.a);
+  const trapPool = [...(it.kind === 's' ? ant : syn)];
+  const opts = [answer];
+  if (trapPool.length) opts.push(pick(trapPool));
+  const bad = new Set([it.t, ...(it.kind === 's' ? syn : ant)]);
+  const all = shuffle([...new Set(SYN.flatMap((g) => g.s))]);
+  for (const x of all) { if (opts.length >= 4) break; if (!bad.has(x) && !opts.includes(x)) opts.push(x); }
+  return { answer, opts: shuffle(opts) };
+}
+const synChips = (list) => list.map((x) => `<button class="chip" data-col="${esc(x)}">${esc(x)}</button>`).join('');
+const synCard = (g, hi) => `<div class="syn-g"><div class="small muted"><b>${esc(g.th)}</b></div>
+  <div class="chips">${g.s.map((x) => `<button class="chip${x === hi ? ' on' : ''}" data-col="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+  ${g.a.length ? `<div class="small muted" style="margin-top:6px">↔ ตรงข้าม</div><div class="chips">${synChips(g.a)}</div>` : ''}
+  <div class="tip-box">💡 ${esc(g.tip)}</div></div>`;
+
+let synQuery = '';
+function renderSyn() {
+  if (!SYN) { loadSyn().then(renderSyn); return; }
+  $('#title').textContent = 'คำเหมือน–คำตรงข้าม';
+  view.scrollTop = 0;
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="synBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="synPlay">≈ เล่นเกม</button></div>
+    <p class="small muted" style="margin:0 4px 10px">${SYN.length} กลุ่มคำความหมายใกล้เคียง พร้อมคำตรงข้ามและวิธีเลือกใช้ · แตะคำเพื่อฟัง</p>
+    <input class="search" id="synq" type="search" placeholder="ค้นหา เช่น big หรือ ใหญ่" value="${esc(synQuery)}" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="ค้นหาคำเหมือน">
+    <div class="pair-list" id="synList"></div>`;
+  const paint = () => {
+    const q = synQuery.trim().toLowerCase();
+    const list = q ? SYN.filter((g) => g.th.includes(q) || g.s.some((x) => x.includes(q)) || g.a.some((x) => x.includes(q))) : SYN;
+    $('#synList').innerHTML = list.length ? list.map((g) => `<div class="card-box pair-card">${synCard(g)}</div>`).join('') : '<p class="muted center">ไม่พบคำนี้</p>';
+  };
+  paint();
+  $('#synq').oninput = (e) => { synQuery = e.target.value; paint(); };
+  $('#synBack').onclick = () => go('games');
+  $('#synPlay').onclick = () => startGame('syn');
+  $('#synList').onclick = (e) => { const b = e.target.closest('[data-col]'); if (b) speak(b.dataset.col); };
 }

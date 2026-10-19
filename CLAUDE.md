@@ -29,6 +29,7 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
 | `collocations.js` | `window.COLLOC = {headword: [[phrase, thai], ...]}` original collocation data, lazy-loaded by `loadColloc()` (word sheet + `colloc` game) |
 | `changelog.js` | `window.CHANGELOG = [[version, thai text, 'YYYY-MM-DD'], …]` newest first (same rows as README, plus the release date); lazy-loaded by `loadChangelog()`; page `renderChangelog()` (route `changelog`, linked from settings); `whatsNew()` shows a one-time bar after an update (`S.seenVer`, device-local) |
 | `phrasal.js` | `window.PHRASAL = [[phrasal, level, thai, example with [verb] [particles], thaiExample]]` original (exactly 2 bracket groups; test checks), lazy-loaded by `loadPhrasal()` in `js/lexis.js` → objects `{pv, verb, part, plain, …}`; `phrasalOf(verb)`; browser `renderPhrasal()`, word-sheet box via `lexisBoxes()`, game `phrasal` (`qPhrasal`, particle distractors never form another listed phrasal with that verb) |
+| `synonyms.js` | `window.SYNONYMS = [{th, s: [near-synonyms], a: [antonyms], tip}]` original; a word may be in several groups (homonyms). `loadSyn()`, `synGroups(word)`, `synRel(word)` (all listed syn/ant incl. reverse antonyms), `synQuestion(item)` never offers a second related option (a test checks every item); browser `renderSyn()`, game `syn` (`qSyn`) |
 | `pairs.js` | `window.CONFUSE` (confusable pairs `{a,b,tip,q:[[sentence ___, right, wrong, thai]]}`), `window.MINPAIRS` (`[a, aTh, b, bTh, group]`) + `MINPAIRS_TIP`; original, lazy-loaded by `loadPairs()` |
 | `stories/<level>.js` | One file per level (`a1`…`c2`, `STORY_FILES` in app.js), each pushes onto `window.STORIES`: 105 original A1–C2 stories (ids unique across files) `{id, level, emoji, title, titleTh, en[], th[], q[{q,o,a}]}` |
 | `supabase/functions/daily-reminder/index.ts` | Hourly Edge Function sending Web Push reminders (VAPID secrets in Supabase) |
@@ -75,7 +76,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
   (`STORY_GAMES`, items from `storyItems()` = copies of list words carrying `_s/_tok/_opts/_st`). Order games and failed
   pronunciation use the soft path in `mark()` (no card reset). Monthly summary: `monthStats()/monthBox()` (stats page; home card days 1–7).
 - 1.15: `PAIR_GAMES` `confuse` (`qConfuse`) and `minpair` (`qMinpair`) use items with `idx: -1` → `mark()` only calls `markActive()` (no SRS); pair list page `renderPairs()`.
-  1.17: `wform` (`qWform`, items from `FAMILIES`, `idx: -1`); `SKILL_GAMES` = `PAIR_GAMES` + `wform` + `phrasal` (1.33; more in later versions). Skill-game items carry `_q = [sentence ___, answer, "", thai]` so the result screen can list wrong ones.
+  1.17: `wform` (`qWform`, items from `FAMILIES`, `idx: -1`); `SKILL_GAMES` = `PAIR_GAMES` + `wform` + `phrasal` (1.33) + `syn` (1.34). Skill-game items carry `_q = [sentence ___, answer, "", thai]` so the result screen can list wrong ones.
   Sticker book: `STK_TIERS`, `topicStat()`, `checkStickers()` (run from `checkAch()`), `stickerBook()` on the stats page.
 - 1.32: slow speech — `speak(text, { slow })`; with no `slow` given, the same text again within `SLOW_AGAIN` (8 s) plays at `slowRate()`
   (alternating; `settings.slowRepeat !== false`). `slowBtn(text)` renders a 🐢 button (`data-slow`, handled by one document listener).
