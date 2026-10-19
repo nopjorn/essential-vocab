@@ -248,6 +248,7 @@ test('home layout: hide, reorder and resize blocks from settings', async ({ page
   const play = await page.locator('[data-hb="play"]').boundingBox();
   expect(Math.abs(feed.y - play.y)).toBeLessThan(2);
   await page.evaluate(() => go('settings'));
+  await page.locator('details[data-g="look"] > summary').click();
   await page.locator('#homeSetBtn').click();
   await expect(page.locator('#hcfg')).toBeVisible();
   await page.locator('.hc-row[data-id="wotd"] [data-act="tog"]').evaluate((el) => el.click());

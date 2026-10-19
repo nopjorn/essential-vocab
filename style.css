@@ -883,3 +883,11 @@ details.set-group[open] > summary::after { transform: rotate(-90deg); }
 }
 
 .face .oxl { margin-top: 14px; min-height: 40px; }
+
+/* settings: link rows inside a group, collapsed calendar alternative, danger zone */
+.set-link { width: 100%; border: 0; border-top: 1px solid var(--border); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.set-link:active { opacity: .6; }
+details.cal-alt { margin-top: 8px; }
+details.cal-alt > summary { cursor: pointer; padding: 6px 0; }
+.danger-zone { margin-top: 24px; border: 1px solid var(--bad); }
+.danger-zone p { margin: 6px 0 10px; }

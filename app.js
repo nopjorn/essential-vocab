@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.29.5';
+const APP_VERSION = '1.30.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -3102,7 +3102,7 @@ function schedulePush() {
   if (!syncOn() || !auth || pulling) return;
   clearTimeout(pushTimer); pushTimer = setTimeout(() => syncNow(), 4000);
 }
-async function syncNow(manual) {
+async function syncNow(manual, overwrite) {
   if (!syncOn() || !auth || syncState.busy) return false;
   syncState.busy = true; syncState.error = '';
   try {
@@ -3110,7 +3110,7 @@ async function syncNow(manual) {
     const r = await sbFetch(`/rest/v1/progress?select=data&user_id=eq.${encodeURIComponent(uid)}`);
     if (!r.ok) throw new Error('โหลดข้อมูลไม่สำเร็จ (' + r.status + ')');
     const rows = await r.json();
-    if (rows[0] && rows[0].data) { pulling = true; try { mergeBackup(rows[0].data); } finally { pulling = false; } }
+    if (!overwrite && rows[0] && rows[0].data) { pulling = true; try { mergeBackup(rows[0].data); } finally { pulling = false; } }
     const w = await sbFetch('/rest/v1/progress', {
       method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
       body: JSON.stringify({ user_id: uid, data: S, updated_at: new Date().toISOString() }),
@@ -3230,7 +3230,7 @@ const GUIDE = [
       <li>ไปที่ <b>⚙️ ตั้งค่า</b> เลือกระดับคำที่จะเรียน (แนะนำเริ่มที่ A1) และจำนวนคำใหม่ต่อวัน</li>
       <li>หน้าตั้งค่าแบ่งเป็นกลุ่มที่แตะเพื่อพับ/ขยายได้ · แตะชิป 🔥 Lv. ด้านบนขวาเพื่อไปหน้าสถิติ · หน้ารองมีปุ่ม ‹ ย้อนกลับที่มุมซ้ายบน · หน้าเกมแตะ "คำจาก" เพื่อเปลี่ยนแหล่งคำ · ระหว่างเล่นเกม หัวข้อด้านบนบอกว่าถึงข้อไหนแล้ว · ในหน้ารายละเอียดคำ ปุ่มติดดาว/ทบทวน/รู้แล้วจะติดอยู่ด้านล่างเสมอ · แบนเนอร์ติดตั้ง/วัดระดับบนหน้าแรกกด ✕ เพื่อปิดได้</li>
       <li>กลับมาหน้าแรก กด <b>▶︎ เริ่มเรียนเลย</b></li>
-      <li>ตั้ง <b>การเตือนในปฏิทิน</b> (ในตั้งค่า) ให้เตือนทุกวันตามเวลาที่สะดวก</li>
+      <li>ตั้ง <b>การเตือนรายวัน</b> (ตั้งค่า → ⏰ เตือนให้มาเรียนทุกวัน) เป็นแจ้งเตือนในแอปถ้าเข้าสู่ระบบซิงก์อยู่ หรือเพิ่มลงปฏิทิน</li>
       <li>เรียนไปสักพักแล้ว <b>สำรองข้อมูล</b> เก็บไว้ใน iCloud Drive</li>
     </ol>`],
   ['📱', 'ใช้บน iPhone / iPad และแนวนอน', `
@@ -3242,7 +3242,7 @@ const GUIDE = [
     </ul>`],
   ['🧩', 'จัดหน้าแรกเอง', `
     <ul>
-      <li>ไปที่ ⚙️ ตั้งค่า → แตะแถว <b>🧩 จัดเรียงหน้าแรก</b> จะเปิดเป็นอีกหน้าที่เห็นรายการกล่องทั้งหมดของหน้าแรก (กด ‹ กลับ เพื่อกลับมาตั้งค่า)</li>
+      <li>ไปที่ ⚙️ ตั้งค่า → 🎨 หน้าตา → แตะแถว <b>🧩 จัดเรียงหน้าแรก</b> จะเปิดเป็นอีกหน้าที่เห็นรายการกล่องทั้งหมดของหน้าแรก (กด ‹ กลับ เพื่อกลับมาตั้งค่า)</li>
       <li><b>สวิตช์ซ้าย</b> เปิด/ปิดกล่อง (มีกล่องที่ปิดไว้ให้เปิดเพิ่มได้ เช่น เลเวลและ XP, ทบทวน 7 วันข้างหน้า)</li>
       <li><b>↑ ↓</b> เลื่อนลำดับกล่องบน–ล่าง</li>
       <li><b>เต็ม / ครึ่ง</b> เลือกความกว้าง กล่อง "ครึ่ง" 2 กล่องที่อยู่ติดกันจะอยู่แถวเดียวกัน (กล่องครึ่งที่ไม่มีคู่จะขยายเต็มแถวเอง)</li>
@@ -3292,7 +3292,7 @@ const GUIDE = [
       <li><b>👾 บอสคำดื้อ</b> — คำที่ลืมบ่อยจะกลายเป็นบอสมีหัวใจ 3 ดวง ตอบถูก 3 ครั้ง (บอสจะวนกลับมาเรื่อยๆ) เพื่อปราบบอส ได้ ${BOSS_XP} XP · ตอบผิดบอสฟื้นพลังเต็ม ผิด 3 ครั้งบอสหนีไปก่อน</li>
       <li><b>🏆 การ์ดสรุป</b> — ทุก 20 ใบ ดูว่าตอบถูกกี่ %, คำใหม่, คอมโบสูงสุด, XP ที่ได้ และเวลาที่ใช้</li>
     </ul>
-    <p><b>✨ คำประจำวัน</b> (หน้าแรก) — ทุกวันมี 1 คำจากระดับที่เลือก แตะเพื่อดูรายละเอียด กด 🔊 ฟังเสียง หรือกด 🎲 เพื่อสุ่มเป็นคำอื่น (คำที่สุ่มจะค้างไว้ทั้งวัน) · กด ⛶ เพื่อขยายเต็มหน้าจอ: กด 🎲 สุ่มคำใหม่ได้เรื่อยๆ ให้ผ่านตา แสดงรายละเอียดครบในหน้าเดียว (ระดับ สถานะ ตัวอย่าง คำที่ใช้คู่กัน ครอบครัวคำ วิธีจำ ติดดาว/ทบทวน/รู้แล้ว) และปุ่ม ◀ ย้อนดูคำที่ผ่านมา (คีย์บอร์ด: ← → ใช้ย้อน/สุ่ม) · ตั้งเงื่อนไขได้ที่ ตั้งค่า → ตั้งค่าคำประจำวัน เช่น เฉพาะ A1 ที่กำลังเรียน คำดื้อ หรือหมวดที่อยากเน้น เลือกผสมกันได้</p>
+    <p><b>✨ คำประจำวัน</b> (หน้าแรก) — ทุกวันมี 1 คำจากระดับที่เลือก แตะเพื่อดูรายละเอียด กด 🔊 ฟังเสียง หรือกด 🎲 เพื่อสุ่มเป็นคำอื่น (คำที่สุ่มจะค้างไว้ทั้งวัน) · กด ⛶ เพื่อขยายเต็มหน้าจอ: กด 🎲 สุ่มคำใหม่ได้เรื่อยๆ ให้ผ่านตา แสดงรายละเอียดครบในหน้าเดียว (ระดับ สถานะ ตัวอย่าง คำที่ใช้คู่กัน ครอบครัวคำ วิธีจำ ติดดาว/ทบทวน/รู้แล้ว) และปุ่ม ◀ ย้อนดูคำที่ผ่านมา (คีย์บอร์ด: ← → ใช้ย้อน/สุ่ม) · ตั้งเงื่อนไขได้ที่ ตั้งค่า → 🧠 การเรียน → ตั้งค่าคำประจำวัน เช่น เฉพาะ A1 ที่กำลังเรียน คำดื้อ หรือหมวดที่อยากเน้น เลือกผสมกันได้</p>
     <p><b>⚡ เล่นด่วน</b> (หน้าแรก) — แตะครั้งเดียว แอปสุ่มเกมให้ 10 ข้อ ใช้คำที่เรียนแล้ว จบในราว 1 นาที</p>
     <p>อยากให้เปิดแอปแล้วเข้าไถศัพท์ทันที: ⚙️ ตั้งค่า → <b>เปิดแอปแล้วไปที่</b> → 📱 ไถศัพท์</p>`],
   ['⭐', 'XP และเลเวล', `
@@ -3514,7 +3514,7 @@ function renderSettings() {
   view.innerHTML = `
     <button class="card-box guide-link" id="guideBtn" style="margin-top:4px"><span>📘</span><div class="grow"><b>คู่มือการใช้งาน & ทริก</b><div class="small muted">วิธีใช้ทุกส่วนของแอป และวิธีจำศัพท์ให้ได้ผลที่สุด</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="clBtn"><span>🆕</span><div class="grow"><b>ประวัติการอัปเดต</b><div class="small muted">ดูว่าแต่ละเวอร์ชันเพิ่มหรือแก้อะไรบ้าง (ตอนนี้ ${APP_VERSION})</div></div><span class="muted">›</span></button>
-    <details class="set-group" data-g="lv" ${setIsOpen('lv')}><summary>ระดับคำศัพท์ที่เรียน</summary><div class="card-box">
+    <details class="set-group" data-g="lv" ${setIsOpen('lv')}><summary>📚 ระดับคำศัพท์ที่เรียน</summary><div class="card-box">
       <div class="small muted" style="margin-bottom:8px"><b>ชุด 3000 คำ</b> · คำหลักที่ต้องรู้</div>
       <div class="chips grid" id="lvls">${LEVELS_3000.map(lvChip).join('')}</div>
       <div class="small muted" style="margin:14px 0 8px"><b>ชุด 5000 คำ</b> · คำเพิ่มเติมระดับสูง</div>
@@ -3525,9 +3525,7 @@ function renderSettings() {
       <p class="small muted" style="margin-bottom:0">เลือกหมวดแล้ว คำใหม่ในแฟลชการ์ดและไถศัพท์จะมาจากหมวดนั้น ส่วนคำที่ถึงวันทบทวนยังมาตามปกติ</p>
     </div></details>
 
-    <button class="card-box guide-link" id="wotdSetBtn"><span>✨</span><div class="grow"><b>ตั้งค่าคำประจำวัน</b><div class="small muted">เลือกระดับ สถานะคำ และหมวดที่อยากให้ขึ้นในกล่องหน้าแรก</div></div><span class="muted">›</span></button>
-
-    <details class="set-group" data-g="learn" ${setIsOpen('learn')}><summary>การเรียน</summary><div class="card-box">
+    <details class="set-group" data-g="learn" ${setIsOpen('learn')}><summary>🧠 การเรียน</summary><div class="card-box">
       <div class="set-row"><span>คำใหม่ต่อวัน</span>
         <select class="sel" id="npd">${[5, 10, 15, 20, 30, 50, 100].map((n) => `<option ${n === st.newPerDay ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
       <div class="set-row"><span>ลำดับคำใหม่</span>
@@ -3537,30 +3535,32 @@ function renderSettings() {
         <select class="sel" id="start"><option value="home" ${st.start === 'home' ? 'selected' : ''}>🏠 หน้าแรก</option><option value="feed" ${st.start === 'feed' ? 'selected' : ''}>📱 ไถศัพท์</option><option value="cards" ${st.start === 'cards' ? 'selected' : ''}>🃏 แฟลชการ์ด</option></select></div>
       <div class="set-row"><span>ด้านหน้าการ์ด</span>
         <select class="sel" id="front"><option value="en" ${st.front === 'en' ? 'selected' : ''}>อังกฤษ → ไทย</option><option value="th" ${st.front === 'th' ? 'selected' : ''}>ไทย → อังกฤษ</option></select></div>
+      <button class="set-row set-link" id="wotdSetBtn"><span>✨ ตั้งค่าคำประจำวัน<br><span class="small muted">เลือกระดับ สถานะคำ และหมวดที่อยากให้ขึ้นในกล่องหน้าแรก</span></span><span class="muted">›</span></button>
     </div></details>
 
-    <details class="set-group" data-g="remind" ${setIsOpen('remind')}><summary>เตือนให้มาเรียนทุกวัน</summary><div class="card-box">
+    <details class="set-group" data-g="remind" ${setIsOpen('remind')}><summary>⏰ เตือนให้มาเรียนทุกวัน</summary><div class="card-box">
       <div class="set-row"><span>เวลาเตือน</span>
         <select class="sel" id="remind">${REMIND_TIMES.map((t) => `<option value="${t}" ${t === S.remind ? 'selected' : ''}>${t.slice(0, 2)}:${t.slice(2)} น.</option>`).join('')}</select></div>
       ${canPush() && auth ? `<div class="set-row"><span>🔔 แจ้งเตือนในแอป</span>
         <label class="switch"><input type="checkbox" id="pushBtn"><span></span></label></div>
-      <p class="small muted" style="margin-top:0">เตือนตามเวลานี้ เฉพาะวันที่ยังไม่ได้เล่น บอกจำนวนการ์ดที่รอทบทวน แตะแล้วเปิดแอปได้เลย (ถ้าเปิดอันนี้แล้วไม่ต้องเพิ่มลงปฏิทิน จะได้ไม่เตือนซ้ำ)</p>` : ''}
+      <p class="small muted" style="margin-top:0">เตือนตามเวลานี้ เฉพาะวันที่ยังไม่ได้เล่น บอกจำนวนการ์ดที่รอทบทวน แตะแล้วเปิดแอปได้เลย (เปิดอันนี้แล้วไม่ต้องใช้ปฏิทิน จะได้ไม่เตือนซ้ำ)</p>` : ''}
+      ${canPush() && auth ? '<details class="cal-alt"><summary class="small muted">📅 หรือใช้การเตือนในปฏิทินแทน</summary>' : ''}
       <a class="btn block" id="remindAdd" href="reminders/${S.remind}.ics" target="_blank" rel="noopener" style="margin-top:8px;text-decoration:none">📅 เพิ่มการเตือนลงปฏิทิน</a>
       <p class="small muted" style="margin-bottom:0">จะเปิดหน้าปฏิทินของ iPhone ให้กด "เพิ่มทั้งหมด" ปฏิทินจะเตือนทุกวันตามเวลานี้ แตะการแจ้งเตือนแล้วกดลิงก์เพื่อเปิดแอป (ถ้าเปลี่ยนเวลา ให้ลบนัดเดิมในปฏิทินก่อน)</p>
+      ${canPush() && auth ? '</details>' : ''}
       <div class="set-row"><span>🔴 ตัวเลขการ์ดค้างบนไอคอนแอป</span>
         <label class="switch"><input type="checkbox" id="badge" ${st.badge !== false ? 'checked' : ''}><span></span></label></div>
     </div></details>
 
-    <details class="set-group" data-g="look" ${setIsOpen('look')}><summary>หน้าตา</summary><div class="card-box">
+    <details class="set-group" data-g="look" ${setIsOpen('look')}><summary>🎨 หน้าตา</summary><div class="card-box">
       <div class="set-row"><span>ธีม</span>
         <div class="seg" id="theme">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด']].map(([v, t]) => `<button class="${(st.theme || 'auto') === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div></div>
       <div class="set-row"><span>🎯 แสดงการ์ดภารกิจต่อ แม้ทำครบแล้ว</span>
         <label class="switch"><input type="checkbox" id="questShow" ${st.questShowDone ? 'checked' : ''}><span></span></label></div>
+      <button class="set-row set-link" id="homeSetBtn"><span>🧩 จัดเรียงหน้าแรก<br><span class="small muted">เปิด/ปิด สลับลำดับ และปรับความกว้างของกล่อง</span></span><span class="muted">›</span></button>
     </div></details>
 
-    <button class="card-box guide-link" id="homeSetBtn"><span>🧩</span><div class="grow"><b>จัดเรียงหน้าแรก</b><div class="small muted">เปิด/ปิด สลับลำดับ และปรับความกว้างของกล่อง</div></div><span class="muted">›</span></button>
-
-    <details class="set-group" data-g="sound" ${setIsOpen('sound')}><summary>เสียง</summary><div class="card-box">
+    <details class="set-group" data-g="sound" ${setIsOpen('sound')}><summary>🔊 เสียง</summary><div class="card-box">
       <div class="set-row"><span>เสียงอ่าน</span><select class="sel" id="voice" style="max-width:62%"></select></div>
       <div class="small muted" id="voiceN" style="margin:-4px 0 6px"></div>
       <div class="set-row"><span>อ่านออกเสียงอัตโนมัติ</span>
@@ -3582,15 +3582,20 @@ function renderSettings() {
       : '<p class="small muted" style="margin-top:0">เข้าสู่ระบบด้วยอีเมลที่ได้รับเชิญ แล้วความคืบหน้าจะซิงก์ขึ้นคลาวด์อัตโนมัติ ใช้ได้หลายเครื่อง</p><button class="btn primary block" id="login">เข้าสู่ระบบ</button>'}
     </div></details>
 
-    <details class="set-group" data-g="backup" ${setIsOpen('backup')}><summary>สำรองข้อมูล</summary><div class="card-box">
-      <p class="small muted" style="margin-top:0">ความคืบหน้าเก็บไว้ในเครื่องนี้เท่านั้น ถ้าลบไอคอนแอปออกจากหน้าจอโฮม ข้อมูลจะหายด้วย แนะนำให้สำรองเก็บไว้ใน iCloud Drive (แอปจะเตือนทุก ${BACKUP_EVERY} วัน)</p>
+    <details class="set-group" data-g="backup" ${setIsOpen('backup')}><summary>💾 สำรองข้อมูล</summary><div class="card-box">
+      <p class="small muted" style="margin-top:0">${syncOn() && auth
+        ? '☁️ ความคืบหน้าซิงก์ขึ้นคลาวด์อัตโนมัติแล้ว ลบแอปหรือเปลี่ยนเครื่องก็ไม่หาย จะส่งออกเป็นไฟล์เก็บไว้อีกชั้นก็ได้'
+        : `ความคืบหน้าเก็บไว้ในเครื่องนี้เท่านั้น ถ้าลบไอคอนแอปออกจากหน้าจอโฮม ข้อมูลจะหายด้วย แนะนำให้สำรองเก็บไว้ใน iCloud Drive (แอปจะเตือนทุก ${BACKUP_EVERY} วัน)`}</p>
       <p class="small" style="margin-top:0"><b>สำรองล่าสุด:</b> ${S.backupAt ? new Date(S.backupAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : 'ยังไม่เคยสำรอง'}<br><span class="muted" id="persist"></span></p>
       <div class="row"><button class="btn grow" id="exp">📤 ส่งออก</button><button class="btn grow" id="imp">📥 นำเข้า</button></div>
       <input type="file" id="file" accept=".json,application/json" hidden>
       <p class="small muted" style="margin-bottom:0">นำเข้าแบบรวมข้อมูล: คำไหนในเครื่องนี้ก้าวหน้ากว่าไฟล์สำรอง จะเก็บของเครื่องนี้ไว้</p>
-      <div style="height:10px"></div>
-      <button class="btn danger block" id="reset">ล้างความคืบหน้าทั้งหมด</button>
     </div></details>
+
+    <div class="card-box danger-zone"><b>⚠️ โซนอันตราย</b>
+      <p class="small muted">ลบคำที่เรียน สถิติ สตรีค และ XP ทั้งหมด (การตั้งค่ายังอยู่) ย้อนกลับไม่ได้${syncOn() && auth ? ' · ข้อมูลบนคลาวด์จะถูกล้างด้วย' : ''}</p>
+      <button class="btn danger block" id="reset">ล้างความคืบหน้าทั้งหมด</button>
+    </div>
     <p class="center small muted">${W.length} คำ · คำแปลไทยและประโยคตัวอย่างเขียนขึ้นเองสำหรับช่วยจำ<br>รายการคำและระดับ CEFR อ้างอิงจากรายการ Oxford 3000™ และ Oxford 5000™ ซึ่งเป็นเครื่องหมายการค้าของ Oxford University Press<br>แอปนี้ไม่มีส่วนเกี่ยวข้องหรือได้รับการรับรองจาก Oxford University Press<br>เวอร์ชัน ${APP_VERSION}</p>`;
 
   view.querySelectorAll('details.set-group').forEach((d) => { d.ontoggle = () => { setOpen[d.dataset.g] = d.open; }; });
@@ -3671,10 +3676,15 @@ function renderSettings() {
       toast(`นำเข้าแล้ว ✅ เพิ่ม ${added} คำ · อัปเดต ${updated} คำ`); go('home');
     } catch (err) { toast('ไฟล์ไม่ถูกต้อง'); }
   };
-  $('#reset').onclick = () => {
-    if (!confirm('ล้างความคืบหน้าทั้งหมดใช่ไหม? (ย้อนกลับไม่ได้)')) return;
+  $('#reset').onclick = async () => {
+    const cloud = syncOn() && auth;
+    if (!confirm('ล้างความคืบหน้าทั้งหมดใช่ไหม? (ย้อนกลับไม่ได้)' + (cloud ? '\nข้อมูลบนคลาวด์จะถูกล้างด้วย ถ้ามีเครื่องอื่นที่ซิงก์อยู่ ให้ล้างที่เครื่องนั้นด้วย ไม่อย่างนั้นข้อมูลจะซิงก์กลับมา' : ''))) return;
     const settings = S.settings;
-    S = defaults(); S.settings = settings; save(); toast('ล้างข้อมูลแล้ว'); go('home');
+    S = defaults(); S.settings = settings; save();
+    // overwrite the cloud row, otherwise the next sync would merge the old progress back in
+    if (cloud && !(await syncNow(false, true))) toast('⚠️ ล้างในเครื่องแล้ว แต่ล้างบนคลาวด์ไม่สำเร็จ ลองใหม่อีกครั้ง');
+    else toast('ล้างข้อมูลแล้ว');
+    go('home');
   };
 }
 
