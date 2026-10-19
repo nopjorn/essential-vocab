@@ -250,10 +250,14 @@ test('accessibility: every visible control has a name; English text is marked la
   expect(errors).toEqual([]);
 });
 
-test('iPad sidebar: extra shortcuts only in the wide sidebar, they open their pages', async ({ page }) => {
+test('iPad sidebar (portrait + landscape): extra shortcuts only in the sidebar, they open their pages', async ({ page }) => {
   await page.setViewportSize({ width: 440, height: 956 });
   const errors = await openApp(page, { settings: { levels: ['A1'] } });
   await expect(page.locator('.tab-more')).toBeHidden();
+  await page.setViewportSize({ width: 956, height: 440 });
+  await expect(page.locator('.tab-more')).toBeHidden();
+  await page.setViewportSize({ width: 834, height: 1210 });
+  await expect(page.locator('.tab-more')).toBeVisible();
   await page.setViewportSize({ width: 1376, height: 1032 });
   await expect(page.locator('.tab-more')).toBeVisible();
   await page.locator('.tabbar [data-tab="stats"]').click();

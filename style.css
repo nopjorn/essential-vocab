@@ -592,7 +592,7 @@ input.sel { color: var(--text); font: inherit; }
 /* ===================== responsive: iPad + landscape =====================
    Phone portrait (default above) = bottom tab bar, one column.
    ≥700px wide (iPad, iPhone landscape) = tab rail on the left; content centred with a max width.
-   ≥1100px wide and ≥700px tall (iPad landscape) = sidebar with labels beside the icons.
+   ≥1100px wide and ≥700px tall (iPad landscape), or ≥700 wide and ≥1000 tall (iPad portrait) = sidebar with labels beside the icons.
    ≤520px tall (iPhone landscape) = compact top bar; sessions/quizzes split into two columns.
    ≥900px wide = multi-column grids on home, games, word list, stats and the story library. */
 .view { --maxw: 100%; }
@@ -630,7 +630,7 @@ input.sel { color: var(--text); font: inherit; }
   .q-prompt .word { font-size: clamp(36px, 5vw, 56px); }
 }
 /* iPad landscape / large screens: sidebar with labels beside the icons */
-@media (min-width: 1100px) and (min-height: 700px) {
+@media (min-width: 1100px) and (min-height: 700px), (min-width: 700px) and (min-height: 1000px) {
   :root { --rail-w: 210px; }
   .tabbar { justify-content: flex-start; padding-top: calc(env(safe-area-inset-top) + 76px); padding-left: 14px; padding-right: 14px; gap: 4px; }
   .tabbar::before { content: "📚 ศัพท์ต้องรู้"; position: absolute; top: calc(env(safe-area-inset-top) + 22px); left: 22px; font-size: 20px; font-weight: 800; color: var(--text); }
@@ -802,7 +802,7 @@ body.has-back .view [id$="Back"]:not(:only-child) { display: none; }
 .tabbar button { min-height: 48px; justify-content: center; }
 .tab-more { display: none; } /* extra shortcuts: iPad sidebar only */
 /* iPad sidebar: icons and labels line up on the left (the rule above centred them) */
-@media (min-width: 1100px) and (min-height: 700px) {
+@media (min-width: 1100px) and (min-height: 700px), (min-width: 700px) and (min-height: 1000px) {
   .tabbar button { justify-content: flex-start; }
   .tabbar .ti { flex: none; width: 28px; text-align: center; }
   .tabbar { overflow-y: auto; scrollbar-width: none; }
