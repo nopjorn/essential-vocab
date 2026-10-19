@@ -188,7 +188,7 @@ function wotdFull(start) {
     el.innerHTML = `<div class="wf-top"><button class="btn ghost" data-x aria-label="ปิด">✕ ปิด</button><span class="small muted">${hist.length > 1 ? `ดูมาแล้ว ${hist.length} คำ` : '✨ คำประจำวัน'}</span></div>
       <div class="wf-body">
         <div class="row" style="justify-content:space-between">${lvBadge(w.g)}<a class="oxl" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(w.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener" aria-label="ดูใน Oxford Learner's Dictionaries">📖 Oxford ↗</a><span class="st-pill ${status(w)}">${stLabel}</span></div>
-        <div class="wf-word">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
+        <div class="wf-word" lang="en">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
         <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span>${w.tp ? ` · ${TOPIC_LABEL[w.tp]}` : ''}</div>
         <div class="th wf-th">${esc(w.t)}</div>
         ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div>

@@ -113,7 +113,7 @@ function renderFeed() {
 
   const optBtns = (list, two) => `<div class="options${two ? ' two' : ''}">${list.map(([v, label]) => `<button class="opt" data-o="${esc(v)}">${esc(label)}</button>`).join('')}</div>`;
   const same = (list) => list.map((o) => [o, o]);
-  const sayEx = (text, th) => `<div class="example"><div class="en">${esc(text)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div>${th ? `<div class="thx">${esc(th)}</div>` : ''}</div>`;
+  const sayEx = (text, th) => `<div class="example"><div class="en" lang="en">${esc(text)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div>${th ? `<div class="thx">${esc(th)}</div>` : ''}</div>`;
   const hint = (th) => `<button class="hint-btn" data-hint>💡 ดูคำแปลประโยค</button><div class="thx" hidden>${esc(th)}</div>`;
 
   // Special cards: no SRS, just practice + XP. Returns null when the data is not loaded yet.
@@ -123,7 +123,7 @@ function renderFeed() {
       const full = sent.replace('___', right);
       const opts = shuffle([right, ...shuffle(f.f.map((x) => x[0]).filter((x) => x !== right)).slice(0, 3)]);
       return { right, say: full, badge: '',
-        body: `<div class="f-tag">🧬 เลือกรูปคำให้ถูก</div><div class="cloze">${esc(sent).replace('___', BLANK)}</div>${hint(th)}${optBtns(same(opts), opts.length === 2)}`,
+        body: `<div class="f-tag">🧬 เลือกรูปคำให้ถูก</div><div class="cloze" lang="en">${esc(sent).replace('___', BLANK)}</div>${hint(th)}${optBtns(same(opts), opts.length === 2)}`,
         reveal: (ok) => `${ok ? '✅ ถูกต้อง!' : `❌ คำที่ถูกคือ <b>${esc(right)}</b>`}${sayEx(full, th)}
           <div class="fam-box"><div class="small muted" style="margin:10px 0 6px"><b>🧬 ครอบครัวคำ</b> (แตะเพื่อฟัง)</div>${famRows(f, right)}</div>` };
     }
@@ -132,7 +132,7 @@ function renderFeed() {
       const w = pick(known.length >= 5 ? known : cands.length ? cands : W.filter((x) => COLLOC[x.w]));
       const { phrase, th, shown, opts } = collocQ(w);
       return { right: w.w, say: phrase, badge: lvBadge(w.g),
-        body: `<div class="f-tag">🤝 คำไหนใช้คู่กัน?</div><div class="cloze">${esc(shown).replace('\u0000', BLANK)}</div><div class="muted" style="margin-top:6px">${esc(th)}</div>${optBtns(same(opts))}`,
+        body: `<div class="f-tag">🤝 คำไหนใช้คู่กัน?</div><div class="cloze" lang="en">${esc(shown).replace('\u0000', BLANK)}</div><div class="muted" style="margin-top:6px">${esc(th)}</div>${optBtns(same(opts))}`,
         reveal: (ok) => `${ok ? '✅ ถูกต้อง!' : '❌'} <b>${esc(phrase)}</b> = ${esc(th)}
           <div class="small muted" style="margin-top:6px">คำคู่กันอื่นของ ${esc(w.w)}: ${COLLOC[w.w].filter((x) => x[0] !== phrase).map((x) => esc(x[0])).join(' · ') || '–'}</div>` };
     }
@@ -140,13 +140,13 @@ function renderFeed() {
       const c = pick(CONFUSE), [sent, right, bad, th] = pick(c.q);
       const full = sent.replace('___', right);
       return { right, say: full, badge: '',
-        body: `<div class="f-tag">⚖️ ${esc(c.a)} หรือ ${esc(c.b)}?</div><div class="cloze">${esc(sent).replace('___', BLANK)}</div>${hint(th)}${optBtns(same(shuffle([right, bad])), true)}`,
+        body: `<div class="f-tag">⚖️ ${esc(c.a)} หรือ ${esc(c.b)}?</div><div class="cloze" lang="en">${esc(sent).replace('___', BLANK)}</div>${hint(th)}${optBtns(same(shuffle([right, bad])), true)}`,
         reveal: (ok) => `${ok ? '✅ ถูกต้อง!' : `❌ คำที่ถูกคือ <b>${esc(right)}</b>`}${sayEx(full, th)}<div class="tip-box">💡 ${esc(c.tip)}</div>` };
     }
     const q = feedStoryQ();
     if (!q) return null;
     return { right: q.right, say: q.sent, badge: lvBadge(q.st.level),
-      body: `<div class="f-tag">📖 จากเรื่อง ${esc(q.st.emoji || '')} ${esc(q.st.title)}</div><div class="cloze">${esc(q.shown).replace('\u0000', BLANK)}</div>${optBtns(same(q.opts))}`,
+      body: `<div class="f-tag">📖 จากเรื่อง ${esc(q.st.emoji || '')} ${esc(q.st.title)}</div><div class="cloze" lang="en">${esc(q.shown).replace('\u0000', BLANK)}</div>${optBtns(same(q.opts))}`,
       reveal: (ok) => `${ok ? '✅ ถูกต้อง!' : `❌ คำที่ถูกคือ <b>${esc(q.right)}</b>`}${sayEx(q.sent)}
         <div class="small muted" style="margin-top:8px;text-align:left">คำแปลย่อหน้านี้: ${esc(q.st.th[q.pi] || '')}</div>
         <button class="btn ghost block" data-read="${q.st.id}" style="margin-top:10px">📖 อ่านเรื่องเต็ม${S.read[q.st.id] ? ' (อ่านแล้ว)' : ''}</button>` };
@@ -161,18 +161,18 @@ function renderFeed() {
       const real = Math.random() < 0.5;
       const shown = real ? w : distractors(w, 1, 't')[0];
       right = real ? '1' : '0';
-      prompt = `<div class="f-tag">✅ ใช่หรือไม่?</div><div class="f-word">${esc(w.w)}</div><div class="muted">แปลว่า</div><div class="f-th">${esc(thFirst(shown.t))}</div>`;
+      prompt = `<div class="f-tag">✅ ใช่หรือไม่?</div><div class="f-word" lang="en">${esc(w.w)}</div><div class="muted">แปลว่า</div><div class="f-th">${esc(thFirst(shown.t))}</div>`;
       opts = `<div class="options tf"><button class="opt" data-o="1">⭕ ใช่</button><button class="opt" data-o="0">❌ ไม่ใช่</button></div>`;
     } else {
       const toTh = type !== 'th2en' && type !== 'cloze';
       const list = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
       right = String(w.idx);
-      if (type === 'en2th') prompt = `<div class="f-tag">🇬🇧 แปลว่าอะไร?</div><div class="f-word">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>`;
+      if (type === 'en2th') prompt = `<div class="f-tag">🇬🇧 แปลว่าอะไร?</div><div class="f-word" lang="en">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>`;
       else if (type === 'th2en') prompt = `<div class="f-tag">🇹🇭 ภาษาอังกฤษคือ?</div><div class="f-th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>`;
       else if (type === 'listen') prompt = `<div class="f-tag">🎧 ฟังแล้วตอบ</div><button class="speak f-listen" data-say>🔊</button><div class="small muted">แตะเพื่อฟังอีกครั้ง</div>`;
       else {
         const blank = w.e.replace(clozeRe(w), (all, pre) => pre + '\u0000');
-        prompt = `<div class="f-tag">📝 เติมคำในประโยค</div><div class="cloze">${esc(blank).replace('\u0000', BLANK)}</div><div class="thx">${esc(w.et)}</div>`;
+        prompt = `<div class="f-tag">📝 เติมคำในประโยค</div><div class="cloze" lang="en">${esc(blank).replace('\u0000', BLANK)}</div><div class="thx">${esc(w.et)}</div>`;
       }
       opts = optBtns(list.map((o) => [o.idx, toTh ? o.t : o.w]));
     }
@@ -206,7 +206,7 @@ function renderFeed() {
         newDealt++;
         later.push({ at: k + 3, w });
         c = { w, type: 'learn', done: true, body: `<div class="f-tag">✨ คำใหม่</div>
-          <div class="f-word">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
+          <div class="f-word" lang="en">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
           <div class="f-th">${esc(w.t)}</div>${S.note[w.w] ? noteBox(w) : ''}${exampleBox(w)}
           <div class="small muted" style="margin-top:14px">จำไว้นะ อีกเดี๋ยวจะมีคำถามคำนี้ 😉</div>` };
       } else c = { w, ...wordQuiz(w, k, false) };
@@ -296,7 +296,7 @@ function renderFeed() {
     const acc = sess.n ? Math.round((sess.ok * 100) / sess.n) : 0;
     const mins = Math.max(1, Math.round((Date.now() - sess.t0) / 60000));
     const msg = !sess.n ? 'ไถต่ออีกนิด แล้วมาดูสรุปกันนะ 😊' : acc >= 90 ? 'สุดยอดไปเลย! 🤩' : acc >= 70 ? 'เก่งมาก ไปต่อกัน! 💪' : 'ค่อยๆ ไป คำที่ผิดจะกลับมาให้ทบทวนนะ 🌱';
-    box.innerHTML = `<div class="f-tag">🏆 สรุปช่วงนี้</div><div class="f-word">${acc}%</div><div class="muted">ตอบถูก ${sess.ok}/${sess.n} ข้อ</div>
+    box.innerHTML = `<div class="f-tag">🏆 สรุปช่วงนี้</div><div class="f-word" lang="en">${acc}%</div><div class="muted">ตอบถูก ${sess.ok}/${sess.n} ข้อ</div>
       <div class="f-stats"><div><b>${newDone}</b><small>คำใหม่</small></div><div><b>${sess.best}</b><small>คอมโบสูงสุด</small></div><div><b>+${sess.xp}</b><small>XP</small></div><div><b>${mins}</b><small>นาที</small></div></div>
       ${sess.bosses ? `<div class="f-note">👾 ปราบบอสได้ ${sess.bosses} ตัว</div>` : ''}<div class="f-msg">${msg}</div><div class="small muted">ปัดขึ้นเพื่อไถต่อ ↑</div>`;
     if (!c.shown && sess.n >= 10 && acc >= 80) confetti();

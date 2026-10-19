@@ -136,6 +136,11 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
   ≤520px tall → compact, flashcards/quizzes/feed split into two columns via `:has()`; ≥900px → multi-column grids.
 - Check every change at 440×956, 956×440, 834×1210, 1210×834, 1032×1376, 1376×1032 (scratchpad `pw/resp.js`).
 
+## Accessibility (1.36.1+)
+- Every control needs a readable name: icon-only buttons get `aria-label`; settings rows get it from `labelRows(view)` (row text).
+  English text containers carry `lang="en"` (`.word`, `.en`, `.cloze`, `.sheet-word`, `.f-word`, story `.st-p`, …) so VoiceOver uses an
+  English voice; `#reveal` and `#toast` are `aria-live="polite"`. `features.spec.js` checks names on the main screens.
+
 ## iOS gotchas
 - Home-screen app storage is separate from Safari; deleting the icon deletes progress.
 - Users update by closing/reopening the app online (network-first SW), not by re-adding the icon.

@@ -310,7 +310,7 @@ function runMonthTest(items) {
     const w = items[i], m = modes[i % modes.length], toTh = m !== 'th2en';
     const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
     $('#title').textContent = `แบบทดสอบ · ${i + 1}/${items.length}`;
-    const prompt = m === 'en2th' ? `<div class="word">${esc(w.w)}</div><div class="pos">${esc(w.p)}</div>`
+    const prompt = m === 'en2th' ? `<div class="word" lang="en">${esc(w.w)}</div><div class="pos">${esc(w.p)}</div>`
       : m === 'th2en' ? `<div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>`
       : `<button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:88px;height:88px;font-size:40px;margin:0">🔊</button>`;
     view.innerHTML = `<div class="session-top"><button class="icon-btn" id="mtQuit" aria-label="ออก">✕</button><div class="progress"><div style="width:${(i / items.length) * 100}%"></div></div><span class="small"><b>${right}</b> ถูก</span></div>

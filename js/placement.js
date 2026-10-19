@@ -38,7 +38,7 @@ function renderPlacement() {
     view.innerHTML = `<div class="session-top"><button class="icon-btn" id="quit" aria-label="ออก">✕</button>
         <div class="progress"><div style="width:${(li * PT_N + qi) / (levels.length * PT_N) * 100}%"></div></div>
         <span class="small">${lvBadge(lv)}</span></div>
-      <div class="card-box q-prompt pop"><div class="word">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div></div>
+      <div class="card-box q-prompt pop"><div class="word" lang="en">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div></div>
       <div class="options">${opts.map((o) => `<button class="opt" data-i="${o.idx}">${esc(o.t)}</button>`).join('')}
         <button class="opt idk" data-i="-1">🤷 ไม่รู้</button></div>`;
     $('#quit').onclick = () => go('home');

@@ -155,7 +155,7 @@ function renderRead(id) {
       <button class="tool" id="rShadow"><span>🗣️</span>พูดตาม</button>
     </div>
     <article class="card-box story" id="rText" style="--st-font:${font()}px">
-      ${st.en.map((para, k) => `<div class="st-para" data-k="${k}"><p class="st-p">${storyHTML(para)}</p>
+      ${st.en.map((para, k) => `<div class="st-para" data-k="${k}"><p class="st-p" lang="en">${storyHTML(para)}</p>
         <div class="st-row"><button class="st-say" data-para="${k}" aria-label="ฟังย่อหน้านี้">🔊</button><button class="st-thbtn" data-th="${k}">แปลย่อหน้านี้</button></div>
         <p class="st-th" hidden>${esc(st.th[k] || '')}</p></div>`).join('')}
       <div class="st-legend small muted">แตะคำที่ขีดเส้นใต้เพื่อดูความหมาย · <span class="rw learning">กำลังเรียน</span> <span class="rw mastered">จำได้แล้ว</span></div>
@@ -296,7 +296,7 @@ function shadowStory(st, slowStart) {
     <div class="card-box sh-box">
       <div class="sh-top"><span class="small muted">${st.emoji || '📖'} ${esc(st.title)}</span><b class="small" id="shN"></b></div>
       <div class="sh-prog"><i id="shProg"></i></div>
-      <p class="sh-en" id="shEn" aria-live="polite"></p>
+      <p class="sh-en" lang="en" id="shEn" aria-live="polite"></p>
       <p class="sh-th" id="shTh" hidden></p>
       <div class="sh-state" id="shState" aria-live="polite">แตะ ▶️ เริ่ม แล้วพูดตามในช่วงที่แถบสีวิ่ง</div>
       <div class="sh-timer"><i id="shBar"></i></div>

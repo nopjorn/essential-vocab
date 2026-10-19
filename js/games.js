@@ -281,18 +281,18 @@ function playQuiz(mode, src, gameId) {
     const toTh = m !== 'th2en' && m !== 'cloze';
     const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
     let prompt;
-    if (m === 'en2th') prompt = `<div class="word">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>`;
+    if (m === 'en2th') prompt = `<div class="word" lang="en">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>`;
     else if (m === 'th2en') prompt = `<div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>`;
     else if (m === 'cloze') {
       const blank = w.e.replace(clozeRe(w), (all, pre) => pre + '\u0000');
-      prompt = `<div class="cloze">${esc(blank).replace('\u0000', '<span class="blank">_____</span>')}</div>
+      prompt = `<div class="cloze" lang="en">${esc(blank).replace('\u0000', '<span class="blank">_____</span>')}</div>
         <button class="hint-btn" id="clozeHint">💡 ดูคำแปลประโยค</button><div class="thx" id="clozeTh" hidden>${esc(w.et)}</div>`;
     }
     else prompt = `<button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:96px;height:96px;font-size:44px;margin:0">🔊</button><div class="muted small" style="margin-top:10px">แตะเพื่อฟังอีกครั้ง</div>${slowBtn(w.w)}`;
     view.innerHTML = `${header()}
       <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>${prompt}</div>
       <div class="options">${opts.map((o) => `<button class="opt" data-i="${o.idx}">${esc(toTh ? o.t : o.w)}</button>`).join('')}</div>
-      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
     if (m === 'en2th' || m === 'listen') speak(w.w);
     const say = view.querySelector('[data-say]'); if (say) say.onclick = () => speak(w.w);
@@ -330,7 +330,7 @@ function playQuiz(mode, src, gameId) {
           <button type="submit" class="btn primary grow">ตรวจคำตอบ</button>
         </div>
       </form>
-      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
     const inp = $('#si');
     inp.focus();
@@ -363,14 +363,14 @@ function playQuiz(mode, src, gameId) {
     const target = sentence ? w.e : w.w;
     view.innerHTML = `${header()}
       <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
-        ${sentence ? `<div class="cloze">${hlExample(w)}</div><div class="thx" style="margin-top:6px">${esc(w.et)}</div>`
-          : `<div class="word">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
+        ${sentence ? `<div class="cloze" lang="en">${hlExample(w)}</div><div class="thx" style="margin-top:6px">${esc(w.et)}</div>`
+          : `<div class="word" lang="en">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
         <div class="muted" style="margin-top:6px">${esc(w.t)}</div>`}
         <button class="hint-btn" data-say>🔊 ฟังตัวอย่าง</button></div>
       <div class="center"><button class="mic" id="mic" aria-label="กดแล้วพูด">🎤</button></div>
       <div class="center small muted" id="heard">แตะไมค์แล้วพูด${sentence ? 'ทั้งประโยค' : 'คำนี้'}</div>
       <button class="btn block" id="skip" style="margin-top:12px">ข้าม / เฉลย</button>
-      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
     view.querySelector('[data-say]').onclick = () => speak(target);
     const mic = $('#mic'), heard = $('#heard');
@@ -422,7 +422,7 @@ function playQuiz(mode, src, gameId) {
       <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
         <button class="speak" data-say aria-label="ฟังประโยค" style="width:76px;height:76px;font-size:34px;margin:0">🔊</button>
         <div>${slowBtn(w.e)}</div>
-        <div class="cloze" style="margin-top:12px">${esc(blank).replace('\u0000', '<span class="blank" id="hint">_____</span>')}</div>
+        <div class="cloze" lang="en" style="margin-top:12px">${esc(blank).replace('\u0000', '<span class="blank" id="hint">_____</span>')}</div>
         <button class="hint-btn" id="dHint">💡 ดูคำแปลประโยค</button><div class="thx" id="dTh" hidden>${esc(w.et)}</div></div>
       <form id="sf" autocomplete="off">
         <input class="spell-input" id="si" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="พิมพ์คำที่ได้ยิน">
@@ -431,7 +431,7 @@ function playQuiz(mode, src, gameId) {
           <button type="submit" class="btn primary grow">ตรวจคำตอบ</button>
         </div>
       </form>
-      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
     view.querySelector('[data-say]').onclick = () => speak(w.e);
     $('#dHint').onclick = () => { $('#dTh').hidden = false; $('#dHint').remove(); };
@@ -476,7 +476,7 @@ function playQuiz(mode, src, gameId) {
       <div class="ord-ans" id="oAns"><span class="muted small">แตะคำด้านล่างเรียงตามลำดับ</span></div>
       <div class="ord-pool" id="oPool">${order.map((k) => `<button class="ord-chip" data-k="${k}">${esc(toks[k])}</button>`).join('')}</div>
       <div class="row" style="margin-top:10px"><button class="btn grow" id="oClear">↺ เริ่มใหม่</button><button class="btn grow" id="oGive">ไม่รู้ / เฉลย</button></div>
-      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
     let answered = false, heard = false;
     $('#oSay').onclick = () => { heard = true; speak(sent); };
@@ -513,9 +513,9 @@ function playQuiz(mode, src, gameId) {
     const opts = shuffle([w._tok, ...w._opts]);
     view.innerHTML = `${header()}
       <div class="card-box q-prompt pop"><div class="small muted">จากเรื่อง <b>${esc(w._st)}</b></div>
-        <div class="cloze" style="margin-top:8px">${esc(blank).replace('\u0000', '<span class="blank">_____</span>')}</div></div>
+        <div class="cloze" lang="en" style="margin-top:8px">${esc(blank).replace('\u0000', '<span class="blank">_____</span>')}</div></div>
       <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
-      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
     let answered = false;
     view.querySelector('.options').onclick = (e) => {
@@ -526,7 +526,7 @@ function playQuiz(mode, src, gameId) {
       if (!ok) b.classList.add('wrong');
       mark(w, ok);
       $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌'} <b>${esc(w._tok)}</b> (${esc(w.w)} = ${esc(w.t)})
-        <div class="example"><div class="en">${esc(w._s)}</div></div><button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+        <div class="example"><div class="en" lang="en">${esc(w._s)}</div></div><button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
       $('#nextQ').onclick = next;
       speak(w._s);
       if (ok) setTimeout(() => { if (items[i] === w) next(); }, 2200);
@@ -538,10 +538,10 @@ function playQuiz(mode, src, gameId) {
     const { phrase, th, shown, opts } = collocQ(w);
     view.innerHTML = `${header()}
       <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
-        <div class="cloze">${esc(shown).replace('\u0000', '<span class="blank">_____</span>')}</div>
+        <div class="cloze" lang="en">${esc(shown).replace('\u0000', '<span class="blank">_____</span>')}</div>
         <div class="muted" style="margin-top:6px">${esc(th)}</div></div>
       <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
-      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
     let answered = false;
     view.querySelector('.options').onclick = (e) => {
@@ -567,10 +567,10 @@ function playQuiz(mode, src, gameId) {
     const full = sent.replace('___', right);
     view.innerHTML = `${header()}
       <div class="card-box q-prompt pop"><div class="small muted">${esc(c.a)} หรือ ${esc(c.b)}?</div>
-        <div class="cloze" style="margin-top:8px">${esc(sent).replace('___', '<span class="blank">_____</span>')}</div>
+        <div class="cloze" lang="en" style="margin-top:8px">${esc(sent).replace('___', '<span class="blank">_____</span>')}</div>
         <button class="hint-btn" id="cHint">💡 ดูคำแปลประโยค</button><div class="thx" id="cTh" hidden>${esc(th)}</div></div>
       <div class="options two">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
-      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
     $('#cHint').onclick = () => { $('#cTh').hidden = false; $('#cHint').remove(); };
     let answered = false;
@@ -582,7 +582,7 @@ function playQuiz(mode, src, gameId) {
       if (!ok) b.classList.add('wrong');
       mark(w, ok);
       $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : `❌ คำที่ถูกคือ <b>${esc(right)}</b>`}
-        <div class="example"><div class="en">${esc(full)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(th)}</div></div>
+        <div class="example"><div class="en" lang="en">${esc(full)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(th)}</div></div>
         <div class="tip-box">💡 ${esc(c.tip)}</div>
         <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
       view.querySelector('[data-sayex]').onclick = () => speak(full);
@@ -598,10 +598,10 @@ function playQuiz(mode, src, gameId) {
     const full = sent.replace('___', right);
     view.innerHTML = `${header()}
       <div class="card-box q-prompt pop"><div class="small muted">เลือกรูปคำที่เข้ากับประโยค</div>
-        <div class="cloze" style="margin-top:8px">${esc(sent).replace('___', '<span class="blank">_____</span>')}</div>
+        <div class="cloze" lang="en" style="margin-top:8px">${esc(sent).replace('___', '<span class="blank">_____</span>')}</div>
         <button class="hint-btn" id="fHint">💡 ดูคำแปลประโยค</button><div class="thx" id="fTh" hidden>${esc(th)}</div></div>
       <div class="options${opts.length === 2 ? ' two' : ''}">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
-      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
     $('#fHint').onclick = () => { $('#fTh').hidden = false; $('#fHint').remove(); };
     let answered = false;
@@ -613,7 +613,7 @@ function playQuiz(mode, src, gameId) {
       if (!ok) b.classList.add('wrong');
       mark(w, ok);
       $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : `❌ คำที่ถูกคือ <b>${esc(right)}</b>`}
-        <div class="example"><div class="en">${esc(full)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(th)}</div></div>
+        <div class="example"><div class="en" lang="en">${esc(full)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(th)}</div></div>
         <div class="fam-box"><div class="small muted" style="margin:10px 0 6px"><b>🧬 ครอบครัวคำ</b> (แตะเพื่อฟัง)</div>${famRows(f, right)}</div>
         <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
       view.querySelector('[data-sayex]').onclick = () => speak(full);
@@ -631,10 +631,10 @@ function playQuiz(mode, src, gameId) {
     const shown = esc(r.ex).replace(/\[([^\]]+)\]/g, (all, x) => (k++ ? '<span class="blank">_____</span>' : `<b>${x}</b>`));
     view.innerHTML = `${header()}
       <div class="card-box q-prompt fit pop"><div class="small muted">เติมให้ได้ความหมาย</div><div class="th" style="margin:4px 0 2px;font-size:clamp(20px, 6vw, 26px)">“${esc(r.th)}”</div>
-        <div class="cloze" style="margin-top:8px">${shown}</div>
+        <div class="cloze" lang="en" style="margin-top:8px">${shown}</div>
         <button class="hint-btn" id="pvHint">💡 ดูคำแปลประโยค</button><div class="thx" id="pvTh" hidden>${esc(r.exTh)}</div></div>
       <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
-      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
     $('#pvHint').onclick = () => { $('#pvTh').hidden = false; $('#pvHint').remove(); };
     let answered = false;
@@ -647,7 +647,7 @@ function playQuiz(mode, src, gameId) {
       mark(w, ok);
       const same = phrasalOf(r.verb);
       $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : `❌ ที่ถูกคือ <b>${esc(r.pv)}</b>`}
-        <div class="example"><div class="en">${pvHTML(r)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(r.exTh)}</div></div>
+        <div class="example"><div class="en" lang="en">${pvHTML(r)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(r.exTh)}</div></div>
         ${same.length > 1 ? `<div class="fam-box"><div class="small muted" style="margin:10px 0 6px"><b>🧩 ${esc(r.verb)} + …</b> (แตะเพื่อฟัง)</div>${pvRows(same, r.pv)}</div>` : ''}
         <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
       view.querySelector('[data-sayex]').onclick = () => speak(r.plain);
@@ -663,10 +663,10 @@ function playQuiz(mode, src, gameId) {
     const ask = it.kind === 's' ? 'คำไหนความหมาย<b>ใกล้เคียง</b>ที่สุด' : 'คำไหนมีความหมาย<b>ตรงข้าม</b>';
     view.innerHTML = `${header()}
       <div class="card-box q-prompt fit pop"><div class="small muted">${ask}</div>
-        <div class="word" style="margin-top:6px">${it.kind === 's' ? '≈' : '↔'} ${esc(it.t)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
+        <div class="word" lang="en" style="margin-top:6px">${it.kind === 's' ? '≈' : '↔'} ${esc(it.t)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
         <div class="muted">${esc(it.g.th)}</div></div>
       <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
-      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
     view.querySelector('[data-say]').onclick = () => speak(it.t);
     let answered = false;
@@ -693,9 +693,9 @@ function playQuiz(mode, src, gameId) {
     const blank = '<span class="blank">___</span>';
     view.innerHTML = `${header()}
       <div class="card-box q-prompt fit pop"><div class="small muted">เติม${a.k === 'p' ? 'หน้า' : 'ท้าย'}คำให้ได้ความหมาย</div><div class="th" style="margin:4px 0 2px;font-size:clamp(20px, 6vw, 26px)">“${esc(w.t)}”</div>
-        <div class="word" style="margin-top:8px">${a.k === 'p' ? blank + esc(stem) : esc(stem) + blank}</div></div>
+        <div class="word" lang="en" style="margin-top:8px">${a.k === 'p' ? blank + esc(stem) : esc(stem) + blank}</div></div>
       <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
-      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
     let answered = false;
     view.querySelector('.options').onclick = (e) => {
@@ -725,7 +725,7 @@ function playQuiz(mode, src, gameId) {
         <button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:96px;height:96px;font-size:44px;margin:0">🔊</button>
         <div class="muted small" style="margin-top:10px">ได้ยินคำไหน? แตะเพื่อฟังอีกครั้ง</div>${slowBtn(target)}</div>
       <div class="options two">${[[a, aTh], [b, bTh]].map(([x, t]) => `<button class="opt mp" data-o="${esc(x)}"><b>${esc(x)}</b><small>${esc(t)}</small></button>`).join('')}</div>
-      <div class="reveal" id="reveal">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
     view.querySelector('[data-say]').onclick = () => speak(target);
     let answered = false;
@@ -737,7 +737,7 @@ function playQuiz(mode, src, gameId) {
       if (!ok) bt.classList.add('wrong');
       mark(w, ok);
       $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌'} ที่ได้ยินคือ <b>${esc(target)}</b>
-        <div class="example"><div class="en"><b>${esc(a)}</b>${ipa(a)} · <b>${esc(b)}</b>${ipa(b)}</div><div class="thx">${esc(MINPAIRS_TIP[cat] || '')}</div></div>
+        <div class="example"><div class="en" lang="en"><b>${esc(a)}</b>${ipa(a)} · <b>${esc(b)}</b>${ipa(b)}</div><div class="thx">${esc(MINPAIRS_TIP[cat] || '')}</div></div>
         <button class="btn block" id="mpCmp" style="margin-top:10px">🔁 ฟังเทียบ ${esc(a)} → ${esc(b)}</button>
         <button class="btn primary block" id="nextQ" style="margin-top:10px">ถัดไป →</button>`;
       $('#mpCmp').onclick = () => { const u = speak(a); if (u) u.onend = () => setTimeout(() => { if (items[i] === w) speak(b); }, 250); };

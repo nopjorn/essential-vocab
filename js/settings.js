@@ -71,7 +71,7 @@ function renderSettings() {
       <div class="set-row"><span>ความเร็วเสียง</span>
         <select class="sel" id="rate">${[[0.7, 'ช้า'], [0.9, 'ปกติ'], [1.05, 'เร็ว']].map(([v, t]) => `<option value="${v}" ${v === st.rate ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>แตะ 🔊 ซ้ำ = ฟังช้าลง<br><span class="small muted">แตะปุ่มฟังคำ/ประโยคเดิมอีกครั้งภายใน 8 วินาที จะพูดช้าลงให้ฟังชัดๆ</span></span>
-        <label class="switch"><input type="checkbox" id="slowRep" ${st.slowRepeat !== false ? 'checked' : ''}><span></span></label></div>
+        <label class="switch"><input type="checkbox" id="slowRep" aria-label="แตะ 🔊 ซ้ำ = ฟังช้าลง" ${st.slowRepeat !== false ? 'checked' : ''}><span></span></label></div>
       <button class="btn block" id="test" style="margin-top:8px">🔊 ทดสอบเสียง</button>
     </div></details>
 
@@ -203,6 +203,7 @@ function renderSettings() {
     else toast('ล้างข้อมูลแล้ว');
     go('home');
   };
+  labelRows(view);
 }
 
 /* ---------- word of the day settings page ---------- */

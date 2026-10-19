@@ -229,3 +229,23 @@ test('settings: export words as CSV and Anki', async ({ page }) => {
   a.slice(3).forEach((l) => expect(l.split('\t')).toHaveLength(3));
   expect(errors).toEqual([]);
 });
+
+test('accessibility: every visible control has a name; English text is marked lang="en"; feedback is announced', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  const unnamed = () => [...document.querySelectorAll('button, a, input, select')].filter((e) => e.offsetParent).filter((e) => {
+    const lab = e.getAttribute('aria-label') || e.getAttribute('title') || e.getAttribute('placeholder') || (e.labels && e.labels[0] && e.labels[0].textContent) || '';
+    const txt = (e.textContent || '').replace(/[\p{Extended_Pictographic}\p{S}\p{P}\s‍️\d]/gu, '');
+    return !lab.trim() && !txt;
+  }).map((e) => e.id || e.className);
+  for (const r of ['home', 'cards', 'games', 'list', 'stats', 'settings', 'read', 'mtest']) {
+    await page.evaluate((r) => go(r), r);
+    expect(await page.evaluate(unnamed), r).toEqual([]);
+  }
+  await expect(page.locator('#toast')).toHaveAttribute('aria-live', 'polite');
+  await page.evaluate(() => startGame('en2th'));
+  await expect(page.locator('.q-prompt .word')).toHaveAttribute('lang', 'en');
+  await expect(page.locator('#reveal')).toHaveAttribute('aria-live', 'polite');
+  await page.evaluate(() => openSheet(W[3]));
+  await expect(page.locator('.sheet-word')).toHaveAttribute('lang', 'en');
+  expect(errors).toEqual([]);
+});

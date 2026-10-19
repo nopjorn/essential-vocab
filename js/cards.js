@@ -116,7 +116,7 @@ function renderCards(extra) {
     const enFront = S.settings.front === 'en';
     const star = `<button class="star-btn" data-star aria-label="ติดดาว">${starIcon(card)}</button>`;
     const enFace = `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
-      <div class="word">${esc(card.w)}</div><div class="ipa">${esc(card.i)}</div>
+      <div class="word" lang="en">${esc(card.w)}</div><div class="ipa">${esc(card.i)}</div>
       <button class="speak" data-say aria-label="ฟังเสียง">🔊</button>`;
     const thFace = `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
       <div class="th">${esc(card.t)}</div>`;

@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.36.0';
+const APP_VERSION = '1.36.1';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -374,7 +374,7 @@ function hlExample(w) {
 // Words whose example sentence contains the exact word, usable for fill-in-the-blank.
 const clozeRe = (w) => new RegExp('(^|[^A-Za-z])' + reEsc(w.w) + '(?![A-Za-z])', 'i');
 const hasCloze = (w) => clozeRe(w).test(w.e);
-const exampleBox = (w) => `<div class="example"><div class="en">${hlExample(w)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(w.et)}</div></div>`;
+const exampleBox = (w) => `<div class="example"><div class="en" lang="en">${hlExample(w)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(w.et)}</div></div>`;
 
 // Tiny sound effects with Web Audio (no files needed).
 let actx;
@@ -414,6 +414,13 @@ function confetti() {
 }
 
 let toastTimer;
+// Settings-style rows (<div class="set-row"><span>label</span> … control): give unlabelled controls the row text as their name.
+function labelRows(root) {
+  root.querySelectorAll('.set-row').forEach((r) => {
+    const t = r.firstElementChild, c = r.querySelector('input, select');
+    if (t && c && t !== c && !c.getAttribute('aria-label')) c.setAttribute('aria-label', t.textContent.replace(/\s+/g, ' ').trim());
+  });
+}
 function toast(msg) {
   const t = $('#toast');
   t.textContent = msg; t.classList.add('show');
