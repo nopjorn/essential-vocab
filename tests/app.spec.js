@@ -234,8 +234,9 @@ test('home: word of the day, no guide button; flashcards hub when today is done'
   await page.locator('[data-ns="mastered"]').click();
   await expect(page.locator('#fc')).toBeVisible();
   await page.evaluate(() => go('cards'));
-  await page.locator('[data-ns="read"]').click();
-  await expect(page.locator('#view')).not.toBeEmpty();
+  await expect(page.locator('[data-ns="read"]')).toHaveCount(0);
+  await page.locator('[data-ns="feed"]').click();
+  await expect(page.locator('#view')).toHaveAttribute('data-route', 'feed');
   expect(errors).toEqual([]);
 });
 

@@ -59,7 +59,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
   2 จำได้ (+1), 3 ง่าย (+2). Games use the lighter `gameResult()`; a failed pronunciation in the
   speak game does not reset the card.
 - XP: `addXP()`; level L starts at 25·L·(L−1) XP. Flashcard 2 (ลืม 1), right answer `comboXP(combo)`.
-- Feed (`renderFeed`, route/tab `feed`): due → new (learn card, quiz 3 cards later, counts toward
+- Feed (`renderFeed`, route `feed`, no tab since 1.31.1: reached from home `#qFeed`, the flashcard done screen and `settings.start`): due → new (learn card, quiz 3 cards later, counts toward
   `daily.fresh`) → practice. Uses `gameResult()`. Start screen: `settings.start`.
 - Stats page (`renderStats`, route `stats`): 28-day habits, learn rate from `snap` (≥7 days) else
   newPerDay × active-day ratio; ETA = remaining/rate + 11 days/accuracy/active-ratio. Chart colours are
