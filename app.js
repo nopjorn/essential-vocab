@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.30.1';
+const APP_VERSION = '1.31.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -50,7 +50,7 @@ const MASTERED = 4;
 const KEY = 'oxford3000.v1';
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', newPerDay: 20, autoSpeak: true, rate: 0.9, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', wotd: { lv: [], st: [], tp: [] } },
+  settings: { levels: ['A1'], topic: '', newPerDay: 20, autoSpeak: true, rate: 0.9, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', wotd: { lv: [], st: [], tp: [] }, nextGames: [] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -902,7 +902,8 @@ function nextSteps(learned) {
     ${b('play', '⚡', 'เล่นด่วน', 'เกมสุ่ม 10 ข้อ ~1 นาที')}
     ${b('read', '📖', 'อ่านเรื่องสั้น', 'ได้เจอคำศัพท์ในบริบทจริง')}
     ${leech ? b('leech', '🐢', 'ฝึกคำดื้อ', leech + ' คำที่ลืมบ่อย') : ''}
-    ${star ? b('star', '⭐', 'ฝึกคำติดดาว', star + ' คำที่ติดดาวไว้') : ''}</div>`;
+    ${star ? b('star', '⭐', 'ฝึกคำติดดาว', star + ' คำที่ติดดาวไว้') : ''}
+    ${(S.settings.nextGames || []).filter((g) => GAMES[g]).map((g) => b('g:' + g, GAMES[g].icon, GAMES[g].name, GAMES[g].desc)).join('')}</div>`;
 }
 function bindNextSteps() {
   view.querySelectorAll('[data-ns]').forEach((el) => {
@@ -913,6 +914,10 @@ function bindNextSteps() {
       else if (id === 'mastered') go('cards', 'mastered');
       else if (id === 'play') quickPlay();
       else if (id === 'leech' || id === 'star') { gameSource = id; startGame('en2th'); }
+      else if (id.startsWith('g:')) { // extra games picked in settings (nextGames)
+        gameSource = W.filter((w) => S.prog[w.w] && S.settings.levels.includes(w.g)).length >= 10 ? 'learned' : 'level';
+        startGame(id.slice(2));
+      }
       else go(id);
     };
   });
@@ -3318,6 +3323,7 @@ const GUIDE = [
     <ul>
       <li>ถ้ายังมีการ์ดค้าง เข้ามากี่ครั้งก็จะได้ทำต่อจากที่ค้างไว้</li>
       <li>ทำครบแล้ว กด <b>"เรียนคำใหม่เพิ่มอีก 10 คำ"</b> ได้เรื่อยๆ</li>
+      <li>อยากให้หน้าจบรอบมีเกมที่ชอบให้กดต่อได้ทันที ไปที่ ⚙️ ตั้งค่า → 🧠 การเรียน → <b>เกมเพิ่มเติมหลังทำแฟลชการ์ดครบ</b> แล้วแตะเลือกเกม (เลือกได้หลายเกม)</li>
       <li>แอปจะไม่ให้ทวนคำที่ยังไม่ถึงกำหนดซ้ำ เพราะการเว้นระยะให้ลืมนิดหน่อยก่อนทวนช่วยให้จำได้นานกว่า อยากฝึกเพิ่มให้ไปเล่น <b>🎮 เกม</b> แทน</li>
     </ul>`],
   ['🐢', 'คำดื้อ และวิธีจำของฉัน', `
@@ -3533,6 +3539,8 @@ function renderSettings() {
         <select class="sel" id="start"><option value="home" ${st.start === 'home' ? 'selected' : ''}>🏠 หน้าแรก</option><option value="feed" ${st.start === 'feed' ? 'selected' : ''}>📱 ไถศัพท์</option><option value="cards" ${st.start === 'cards' ? 'selected' : ''}>🃏 แฟลชการ์ด</option></select></div>
       <div class="set-row"><span>ด้านหน้าการ์ด</span>
         <select class="sel" id="front"><option value="en" ${st.front === 'en' ? 'selected' : ''}>อังกฤษ → ไทย</option><option value="th" ${st.front === 'th' ? 'selected' : ''}>ไทย → อังกฤษ</option></select></div>
+      <div class="set-row stack"><span>เกมเพิ่มเติมหลังทำแฟลชการ์ดครบ<br><span class="small muted">แตะเลือกได้หลายเกม จะขึ้นเป็นปุ่มต่อจาก "เล่นด่วน" ในหน้าจบรอบ</span></span>
+        <div class="chips" id="nextGames">${Object.keys(GAMES).map((g) => `<button class="chip ${(st.nextGames || []).includes(g) ? 'on' : ''}" data-v="${g}">${GAMES[g].icon} ${GAMES[g].name}</button>`).join('')}</div></div>
       <button class="set-row set-link" id="wotdSetBtn"><span>✨ ตั้งค่าคำประจำวัน<br><span class="small muted">เลือกระดับ สถานะคำ และหมวดที่อยากให้ขึ้นในกล่องหน้าแรก</span></span><span class="muted">›</span></button>
     </div></details>
 
@@ -3610,6 +3618,13 @@ function renderSettings() {
     save(); paint();
   };
   $('#wotdSetBtn').onclick = () => go('wotdset');
+  $('#nextGames').onclick = (e) => {
+    const c = e.target.closest('.chip'); if (!c) return;
+    const on = new Set(st.nextGames || []);
+    if (on.has(c.dataset.v)) on.delete(c.dataset.v); else on.add(c.dataset.v);
+    st.nextGames = Object.keys(GAMES).filter((g) => on.has(g)); // keep the games-menu order
+    c.classList.toggle('on', on.has(c.dataset.v)); save();
+  };
   $('#guideBtn').onclick = () => go('guide', 'settings');
   $('#clBtn').onclick = () => go('changelog', 'settings');
   $('#npd').onchange = (e) => { st.newPerDay = +e.target.value; save(); };

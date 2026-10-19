@@ -341,3 +341,23 @@ test('UI polish 2: sheet action bar, session title counter, empty forecast', asy
   expect(geo.scrolls).toBe(true);
   expect(errors).toEqual([]);
 });
+
+test('flashcards done screen shows the extra games picked in settings', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => go('settings'));
+  await page.locator('#nextGames .chip[data-v="match"]').click();
+  await page.locator('#nextGames .chip[data-v="spell"]').click();
+  await page.locator('#nextGames .chip[data-v="spell"]').click(); // tap again = off
+  await page.locator('#nextGames .chip[data-v="cloze"]').click();
+  expect(await page.evaluate(() => S.settings.nextGames)).toEqual(['cloze', 'match']);
+  await page.evaluate(() => {
+    const now = Date.now();
+    W.slice(0, 30).forEach((w) => { S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: now + 86400000, s: 1, c: 1, x: 0 }; });
+    S.daily.fresh = S.settings.newPerDay; save(); go('cards');
+  });
+  await expect(page.locator('[data-ns="g:spell"]')).toHaveCount(0);
+  await expect(page.locator('[data-ns="g:cloze"]')).toBeVisible();
+  await page.locator('[data-ns="g:match"]').click();
+  await expect(page.locator('.match-grid')).toBeVisible();
+  expect(errors).toEqual([]);
+});
