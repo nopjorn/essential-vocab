@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.39.2';
+const APP_VERSION = '1.39.3';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -617,7 +617,7 @@ function go(tab, ...args) {
   animView(a < 0 || b < 0 || a === b ? 'vin' : b > a ? 'vin-l' : 'vin-r');
 }
 // Page animation: tabs slide in from the side they sit on, sub pages push in / pop back, the rest fades.
-const TAB_ORDER = ['home', 'games', 'cards', 'list', 'settings'];
+const TAB_ORDER = ['home', 'cards', 'games', 'list', 'settings'];
 const VIEW_ANIMS = ['vin', 'vin-l', 'vin-r', 'vin-push', 'vin-pop'];
 function animView(cls) {
   view.classList.remove(...VIEW_ANIMS); void view.offsetWidth; view.classList.add(cls);
