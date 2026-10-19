@@ -800,6 +800,11 @@ body.has-back .view [id$="Back"]:not(:only-child) { display: none; }
 /* tab bar: solid enough that content never shows through the labels */
 .tabbar { border-top-color: color-mix(in srgb, var(--primary) 18%, var(--border)); }
 .tabbar button { min-height: 48px; justify-content: center; }
+/* iPad sidebar: icons and labels line up on the left (the rule above centred them) */
+@media (min-width: 1100px) and (min-height: 700px) {
+  .tabbar button { justify-content: flex-start; }
+  .tabbar .ti { flex: none; width: 28px; text-align: center; }
+}
 /* compact banners on home */
 .place-card.slim, .install-tip.slim { display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 14px; margin-bottom: 10px; }
 .slim > div, .slim > span { flex: 1; min-width: 0; line-height: 1.3; }

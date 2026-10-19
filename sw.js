@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump VERSION (keep it equal to APP_VERSION in app.js) on every push.
-const VERSION = 'o3k-1.36.2';
+const VERSION = 'o3k-1.36.3';
 const FILES = [
   './',
   'index.html',
