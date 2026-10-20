@@ -365,5 +365,8 @@ test('word sheet: extra examples for other meanings get their own boxes; games k
   await page.evaluate(() => { document.querySelector('.sheet-wrap').remove(); openSheet(W.find(w => w.w === 'light')); });
   await expect(page.locator('.example')).toHaveCount(5);
   await expect(page.locator('.example').nth(2).locator('.thx')).toHaveText('กระเป๋าใบนี้เบามาก');
+  await page.evaluate(() => { document.querySelector('.sheet-wrap').remove(); openSheet(W.find(w => w.w === 'fit')); });
+  await expect(page.locator('.example')).toHaveCount(4);
+  await expect(page.locator('.example').nth(2).locator('.thx')).toHaveText('เด็กชายมีอาการชักแล้วล้มลงกับพื้น');
   expect(errors).toEqual([]);
 });
