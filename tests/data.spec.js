@@ -42,7 +42,9 @@ test('word rows are well formed', () => {
   const seen = new Set(), bad = [];
   for (const r of WORDS) {
     const [w, p, lv, ipa, th, ex, exTh, tp] = r;
-    if (r.length !== 8 && !(r.length === 9 && r[8] === 5)) bad.push(`${w}: ${r.length} fields`);
+    const more = r.slice(8), xe = more.find(Array.isArray);
+    if (more.length > 2 || more.some((x) => x !== 5 && x !== xe) || (more.length === 2 && more[0] !== 5)) bad.push(`${w}: ${r.length} fields`);
+    if (xe) xe.forEach((x) => { if (!Array.isArray(x) || x.length !== 2 || !/^[A-Z0-9].*[.?!]$/.test(x[0]) || !x[1] || x[0] === ex) bad.push(`${w}: extra example ${JSON.stringify(x)}`); });
     if (!['A1', 'A2', 'B1', 'B2', 'C1'].includes(lv)) bad.push(`${w}: level ${lv}`);
     Object.entries({ w, p, ipa, th, ex, exTh, tp }).forEach(([n, x]) => { if (typeof x !== 'string' || !x) bad.push(`${w}: empty ${n}`); });
     const k = `${w}|${p}`;

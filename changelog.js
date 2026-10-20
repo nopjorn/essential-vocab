@@ -1,6 +1,7 @@
 // Changelog shown in the app (settings → ประวัติการอัปเดต). Newest first. Keep in sync with the README table.
 // [version, what changed, release date YYYY-MM-DD (Thailand time)]; loaded lazily by loadChangelog().
 window.CHANGELOG = [
+  ["1.40.0", "คำ A1 ที่มีหลายความหมาย 260 คำ มีประโยคตัวอย่างเพิ่มให้ครบทุกความหมาย (335 ประโยค) แยกกล่องละประโยค กด 🔊 ฟังทีละประโยค เช่น light = แสง / เบา / จุดไฟ, match = การแข่งขัน / ไม้ขีดไฟ", "2026-10-20"],
   ["1.39.6", "ประโยคตัวอย่างที่มีหลายความหมาย (เช่น maybe) แยกเป็นกล่องละประโยค พร้อมปุ่ม 🔊 ฟังทีละประโยค", "2026-10-19"],
   ["1.39.5", "คำว่า maybe: ประโยคตัวอย่างครบทั้ง 2 ความหมาย — \"อาจจะ\" (Maybe it will rain later.) และ \"บางที\" (Maybe she is just tired.)", "2026-10-19"],
   ["1.39.4", "คำว่า maybe (A1) แปลเป็น \"อาจจะ, บางที\"", "2026-10-19"],

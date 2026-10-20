@@ -352,7 +352,7 @@ test('settings: a 1.39.1 save with animations off turns all three switches off',
   expect(errors).toEqual([]);
 });
 
-test('word sheet: maybe shows one example box per sentence, each 🔊 reads its own sentence', async ({ page }) => {
+test('word sheet: extra examples for other meanings get their own boxes; games keep the main sentence', async ({ page }) => {
   const errors = await openApp(page, { settings: { levels: ['A1'] } });
   await page.evaluate(() => openSheet(W.find(w => w.w === 'maybe')));
   const boxes = page.locator('.example');
@@ -361,5 +361,9 @@ test('word sheet: maybe shows one example box per sentence, each 🔊 reads its 
   await boxes.nth(1).locator('[data-sayex]').click();
   expect(await page.evaluate(() => window.__said.at(-1))).toBe('Maybe she is just tired.');
   expect(await page.evaluate(() => exParts(W.find(w => w.w === 'hungry')).length)).toBe(1);
+  expect(await page.evaluate(() => W.find(w => w.w === 'maybe').e)).toBe('Maybe it will rain later.');
+  await page.evaluate(() => { document.querySelector('.sheet-wrap').remove(); openSheet(W.find(w => w.w === 'light')); });
+  await expect(page.locator('.example')).toHaveCount(5);
+  await expect(page.locator('.example').nth(2).locator('.thx')).toHaveText('กระเป๋าใบนี้เบามาก');
   expect(errors).toEqual([]);
 });

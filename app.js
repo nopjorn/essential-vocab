@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.39.6';
+const APP_VERSION = '1.40.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -34,7 +34,7 @@ const TOPICS = [
 ];
 const TOPIC_LABEL = Object.fromEntries(TOPICS.map(([id, ic, th]) => [id, `${ic} ${th}`]));
 const W = window.WORDS.slice().sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
-  .map(([w, p, l, i, t, e, et, tp, s], idx) => ({ idx, w, p, l, i, t, e, et, g: s === 5 ? (l === 'B2' ? 'B2x' : 'C1') : l, tp: tp || '' }));
+  .map(([w, p, l, i, t, e, et, tp, ...more], idx) => ({ idx, w, p, l, i, t, e, et, g: more.includes(5) ? (l === 'B2' ? 'B2x' : 'C1') : l, tp: tp || '', xe: more.find(Array.isArray) || [] }));
 const inTopic = (w) => !S.settings.topic || w.tp === S.settings.topic;
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1'];
 const LEVELS_3000 = ['A1', 'A2', 'B1', 'B2'];
@@ -374,13 +374,9 @@ function hlExample(w) {
 // Words whose example sentence contains the exact word, usable for fill-in-the-blank.
 const clozeRe = (w) => new RegExp('(^|[^A-Za-z])' + reEsc(w.w) + '(?![A-Za-z])', 'i');
 const hasCloze = (w) => clozeRe(w).test(w.e);
-// Sentences of an example. Split into one box each only when every sentence uses the word
-// (e.g. maybe = อาจจะ / บางที) and the Thai has a matching number of space-separated parts.
-function exParts(w) {
-  const en = w.e.split(/(?<=[.?!])\s+(?=[A-Z])/), th = w.et.split(' ');
-  if (en.length < 2 || en.length !== th.length || !en.every(s => clozeRe(w).test(s))) return [[w.e, w.et]];
-  return en.map((s, i) => [s, th[i]]);
-}
+// Example boxes: the main sentence (used by the games) plus extra sentences for the word's
+// other meanings (`w.xe`, optional trailing [[en, th], ...] field of a word row), one box each.
+const exParts = (w) => [[w.e, w.et], ...w.xe];
 const exampleBox = (w) => exParts(w).map(([e, et]) => `<div class="example"><div class="en" lang="en">${hlExample({ ...w, e })} <button class="say-ex" data-sayex="${esc(e)}" aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(et)}</div></div>`).join('');
 // Each 🔊 in the example boxes reads its own sentence.
 const bindSayEx = (root, text) => root.querySelectorAll('[data-sayex]').forEach(b => { b.onclick = () => speak(b.dataset.sayex || text); });
