@@ -371,5 +371,8 @@ test('word sheet: extra examples for other meanings get their own boxes; games k
   await page.evaluate(() => { document.querySelector('.sheet-wrap').remove(); openSheet(W.find(w => w.w === 'charge')); });
   await expect(page.locator('.example')).toHaveCount(4);
   await expect(page.locator('.example').nth(3).locator('.thx')).toHaveText('เขาถูกตั้งข้อหาลักทรัพย์');
+  await page.evaluate(() => { document.querySelector('.sheet-wrap').remove(); openSheet(W.find(w => w.w === 'seal')); });
+  await expect(page.locator('.example')).toHaveCount(3);
+  await expect(page.locator('.example').nth(1).locator('.thx')).toHaveText('เราเห็นแมวน้ำบนโขดหิน');
   expect(errors).toEqual([]);
 });
