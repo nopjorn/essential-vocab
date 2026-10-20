@@ -368,5 +368,8 @@ test('word sheet: extra examples for other meanings get their own boxes; games k
   await page.evaluate(() => { document.querySelector('.sheet-wrap').remove(); openSheet(W.find(w => w.w === 'fit')); });
   await expect(page.locator('.example')).toHaveCount(4);
   await expect(page.locator('.example').nth(2).locator('.thx')).toHaveText('เด็กชายมีอาการชักแล้วล้มลงกับพื้น');
+  await page.evaluate(() => { document.querySelector('.sheet-wrap').remove(); openSheet(W.find(w => w.w === 'charge')); });
+  await expect(page.locator('.example')).toHaveCount(4);
+  await expect(page.locator('.example').nth(3).locator('.thx')).toHaveText('เขาถูกตั้งข้อหาลักทรัพย์');
   expect(errors).toEqual([]);
 });
