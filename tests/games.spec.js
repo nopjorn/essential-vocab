@@ -79,7 +79,7 @@ async function playRound(page, id) {
   return seen;
 }
 
-const CHOICE = ['en2th', 'th2en', 'listen', 'cloze', 'colloc', 'sCloze', 'confuse', 'minpair', 'wform'];
+const CHOICE = ['en2th', 'th2en', 'listen', 'cloze', 'colloc', 'sCloze', 'confuse', 'minpair', 'wform', 'idiom', 'sit'];
 for (const id of CHOICE) {
   test(`choice game ${id}: right and wrong answers both work`, async ({ page }) => {
     const errors = await setup(page);

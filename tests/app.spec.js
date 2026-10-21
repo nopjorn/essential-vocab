@@ -184,7 +184,7 @@ test('word of the day: full screen view, random, back, star, details, close', as
   await expect.poll(() => page.evaluate(() => window.__said.length)).toBe(2);
   const said = await page.evaluate(() => window.__said.slice());
   expect(said[0]).toBe(spoken);
-  expect(await wf.locator('.example').innerText()).toContain(said[1].split(' ')[0]);
+  expect(await wf.locator('.example').first().innerText()).toContain(said[1].split(' ')[0]);
   await wf.locator('[data-auto]').click();
   await expect(wf.locator('[data-auto]')).toHaveText('🔇');
   await wf.locator('[data-back]').click();
@@ -193,7 +193,7 @@ test('word of the day: full screen view, random, back, star, details, close', as
   await expect(wf.locator('[data-back]')).toBeDisabled();
   await wf.locator('[data-next]').click();
   expect(await wf.locator('.wf-word').innerText()).not.toBe(first);
-  await expect(wf.locator('.example')).toBeVisible();
+  await expect(wf.locator('.example').first()).toBeVisible();
   await wf.locator('[data-say]').click();
   await wf.locator('[data-star]').click();
   await expect(wf.locator('[data-star]')).toContainText('ติดดาวแล้ว');

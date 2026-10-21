@@ -1,5 +1,5 @@
 // Offline cache. Bump VERSION (keep it equal to APP_VERSION in app.js) on every push.
-const VERSION = 'o3k-1.43.5';
+const VERSION = 'o3k-1.44.0';
 // App shell: replaced as a whole with every version.
 const FILES = [
   './',
@@ -48,6 +48,9 @@ const DATA = [
   'phrasal.js',
   'synonyms.js',
   'affixes.js',
+  'idioms.js',
+  'situations.js',
+  'tags.js',
 ];
 const NAV_TIMEOUT = 2500; // ms to wait for the network on app start before opening the cached copy
 const isData = (url) => DATA.includes(url.pathname.slice(new URL(self.registration.scope).pathname.length));

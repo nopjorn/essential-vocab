@@ -9,7 +9,8 @@ for (const [w, h] of SIZES) {
   test(`no horizontal overflow at ${w}×${h}`, async ({ page }) => {
     await page.setViewportSize({ width: w, height: h });
     const errors = await openApp(page, { placedAt: '2026-01-01' });
-    const screens = [...ROUTES.map((r) => [r, `go('${r}')`]), ['families', 'renderFamilies()'], ['pairs', 'renderPairs()'], ['wform', "startGame('wform')"]];
+    const screens = [...ROUTES.map((r) => [r, `go('${r}')`]), ['families', 'renderFamilies()'], ['pairs', 'renderPairs()'], ['wform', "startGame('wform')"],
+      ['idioms', 'renderIdioms()'], ['situations', 'renderSit()'], ['situation', "renderSit('restaurant')"], ['sit game', "startGame('sit')"]];
     for (const [name, js] of screens) {
       await page.evaluate(js);
       await page.waitForTimeout(150);

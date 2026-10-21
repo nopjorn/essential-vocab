@@ -3,7 +3,7 @@
 // Classic script sharing globals with app.js (load order: index.html).
 
 /* ---------- word list ---------- */
-let listFilter = { q: '', lv: 'all', st: 'all', tp: '' };
+let listFilter = { q: '', lv: 'all', st: 'all', tp: '', gl: '' };
 function renderList() {
   view.innerHTML = `
     <div class="list-head"><input class="search" id="q" type="search" placeholder="🔍 ค้นหาคำอังกฤษหรือคำแปลไทย" value="${esc(listFilter.q)}" autocapitalize="none" autocorrect="off"></div>
@@ -13,7 +13,10 @@ function renderList() {
     <div class="chips scroll" id="st" style="margin-bottom:8px">
       ${[['all', 'ทั้งหมด'], ['new', 'ยังไม่เรียน'], ['learning', '🟡 กำลังเรียน'], ['mastered', '🟢 จำได้แล้ว'], ['star', '⭐ ติดดาว'], ['leech', '🐢 คำดื้อ'], ['note', '💡 มีวิธีจำ']].map(([v, t]) => `<button class="chip" data-v="${v}">${t}</button>`).join('')}
     </div>
-    <select class="sel block-sel" id="tpSel"><option value="">📂 ทุกหมวด</option>${TOPICS.map(([id]) => `<option value="${id}" ${listFilter.tp === id ? 'selected' : ''}>${TOPIC_LABEL[id]}</option>`).join('')}</select>
+    <div class="sel-pair">
+      <select class="sel block-sel" id="tpSel" aria-label="หมวด"><option value="">📂 ทุกหมวด</option>${TOPICS.map(([id]) => `<option value="${id}" ${listFilter.tp === id ? 'selected' : ''}>${TOPIC_LABEL[id]}</option>`).join('')}</select>
+      <select class="sel block-sel" id="glSel" aria-label="เป้าหมาย"><option value="">🎯 ทุกเป้าหมาย</option>${TAGS.map((t) => `<option value="${t.id}" ${listFilter.gl === t.id ? 'selected' : ''}>${TAG_LABEL[t.id]}</option>`).join('')}</select>
+    </div>
     <div class="small muted" id="cnt" style="margin:6px 4px"></div>
     <div class="card-box" style="padding:4px 14px" id="rows"></div>
     <div id="sentinel" style="height:1px"></div>`;
@@ -33,7 +36,7 @@ function renderList() {
   };
   const apply = () => {
     const q = listFilter.q.trim().toLowerCase();
-    items = W.filter((w) => (listFilter.lv === 'all' || w.g === listFilter.lv) && (!listFilter.tp || w.tp === listFilter.tp)
+    items = W.filter((w) => (listFilter.lv === 'all' || w.g === listFilter.lv) && (!listFilter.tp || w.tp === listFilter.tp) && (!listFilter.gl || hasTag(w, listFilter.gl))
       && (listFilter.st === 'all' || (listFilter.st === 'star' ? isStar(w) : listFilter.st === 'leech' ? isLeech(w) : listFilter.st === 'note' ? !!S.note[w.w] : status(w) === listFilter.st))
       && (!q || w.w.toLowerCase().includes(q) || w.t.includes(q)));
     if (q) items.sort((a, b) => (b.w.toLowerCase().startsWith(q)) - (a.w.toLowerCase().startsWith(q)));
@@ -44,6 +47,7 @@ function renderList() {
   };
   $('#q').oninput = (e) => { listFilter.q = e.target.value; apply(); };
   $('#tpSel').onchange = (e) => { listFilter.tp = e.target.value; apply(); };
+  $('#glSel').onchange = (e) => { listFilter.gl = e.target.value; apply(); };
   $('#lv').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { listFilter.lv = c.dataset.v; apply(); } };
   $('#st').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { listFilter.st = c.dataset.v; apply(); } };
   rows.onclick = (e) => {
@@ -100,8 +104,9 @@ function openSheet(w, onChange) {
       <div class="row" style="justify-content:space-between">${lvBadge(w.g)}<a class="oxl" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(w.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener" aria-label="ดูใน Oxford Learner's Dictionaries">📖 Oxford ↗</a><span class="st-pill ${st}">${stLabel}</span></div>
       <div class="sheet-word" lang="en">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
       <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span>${w.tp ? ` · ${TOPIC_LABEL[w.tp]}` : ''}</div>
+      ${tagsOf(w).length ? `<div class="small muted sheet-tags">${tagsOf(w).map((id) => `<span class="tag-pill">${TAG_LABEL[id]}</span>`).join('')}</div>` : ''}
       <div class="th" style="font-size:22px;margin:10px 0">${esc(w.t)}</div>
-      ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div><div class="colloc" id="pvBox"></div><div class="colloc" id="synBox"></div><div class="colloc" id="afBox"></div>
+      ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div><div class="colloc" id="pvBox"></div><div class="colloc" id="idBox"></div><div class="colloc" id="synBox"></div><div class="colloc" id="afBox"></div>
       </div>
       <div class="sheet-acts">
         <button class="btn" data-act="star">${isStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาว'}</button>

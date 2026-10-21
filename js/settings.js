@@ -19,7 +19,9 @@ function renderSettings() {
       <p class="small muted">A1–A2 = พื้นฐาน, B1–B2 = ระดับกลาง, B2+ และ C1 = ระดับสูง (เลือกได้หลายระดับ)</p>
       <div class="set-row stack" style="border-top:1px solid var(--border);padding-top:12px"><span>คำใหม่จากหมวด</span>
         <select class="sel" id="topic"><option value="">📚 ทุกหมวด</option>${TOPICS.map(([id]) => `<option value="${id}" ${st.topic === id ? 'selected' : ''}>${TOPIC_LABEL[id]}</option>`).join('')}</select></div>
-      <p class="small muted" style="margin-bottom:0">เลือกหมวดแล้ว คำใหม่ในแฟลชการ์ดและไถศัพท์จะมาจากหมวดนั้น ส่วนคำที่ถึงวันทบทวนยังมาตามปกติ</p>
+      <div class="set-row stack"><span>คำใหม่ตามเป้าหมาย</span>
+        <select class="sel" id="goal"><option value="">🎯 ทุกเป้าหมาย</option>${TAGS.map((t) => `<option value="${t.id}" ${st.goal === t.id ? 'selected' : ''}>${TAG_LABEL[t.id]}</option>`).join('')}</select></div>
+      <p class="small muted" style="margin-bottom:0">เลือกหมวดหรือเป้าหมายแล้ว คำใหม่ในแฟลชการ์ดและไถศัพท์จะมาจากหมวด/เป้าหมายนั้น (เลือกทั้งสองอย่าง = ต้องตรงทั้งคู่) ส่วนคำที่ถึงวันทบทวนยังมาตามปกติ <span id="goalCnt"></span></p>
     </div></details>
 
     <details class="set-group" data-g="learn" ${setIsOpen('learn')}><summary>🧠 การเรียน</summary><div class="card-box">
@@ -134,7 +136,11 @@ function renderSettings() {
   $('#npd').onchange = (e) => { st.newPerDay = +e.target.value; save(); };
   $('#ord').onchange = (e) => { st.order = e.target.value; save(); };
   $('#toPlace').onclick = () => go('placement');
-  $('#topic').onchange = (e) => { st.topic = e.target.value; save(); };
+  // How many new words the level + topic + goal choice still leaves (0 = nothing new would come).
+  const newCnt = () => { const el = $('#goalCnt'); if (el) el.textContent = st.topic || st.goal ? `· เหลือคำใหม่ ${pool().filter((w) => !S.prog[w.w] && inTopic(w)).length} คำในระดับที่เลือก` : ''; };
+  newCnt();
+  $('#topic').onchange = (e) => { st.topic = e.target.value; save(); newCnt(); };
+  $('#goal').onchange = (e) => { st.goal = e.target.value; save(); newCnt(); };
   $('#start').onchange = (e) => { st.start = e.target.value; save(); };
   $('#front').onchange = (e) => { st.front = e.target.value; save(); };
   $('#auto').onchange = (e) => { st.autoSpeak = e.target.checked; save(); };

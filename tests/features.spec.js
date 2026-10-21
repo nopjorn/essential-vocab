@@ -1,4 +1,5 @@
-// Features added in 1.32+: slow speech, shadowing, phrasal verbs, synonyms, word parts, year heatmap, monthly test, export, a11y.
+// Features added in 1.32+: slow speech, shadowing, phrasal verbs, synonyms, word parts, year heatmap, monthly test, export, a11y,
+// idioms, situations and goal tags (1.44).
 const { test, expect } = require('@playwright/test');
 const { openApp, readState } = require('./helpers');
 
@@ -310,7 +311,7 @@ test.describe('service worker', () => {
       if (!keys.includes('o3k-data') || !keys.includes('o3k-' + APP_VERSION)) return 0;
       return (await (await caches.open('o3k-data')).keys()).length;
     });
-    await expect.poll(ready, { timeout: 20000 }).toBe(18);
+    await expect.poll(ready, { timeout: 20000 }).toBe(21);
     await page.reload();
     expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
     await context.setOffline(true);
@@ -349,6 +350,112 @@ test('settings: page slide, answer bounce and confetti switch off one by one; ol
 test('settings: a 1.39.1 save with animations off turns all three switches off', async ({ page }) => {
   const errors = await openApp(page, { settings: { levels: ['A1'], anim: false } });
   expect(await page.evaluate(() => [S.settings.animPage, S.settings.animAnswer, S.settings.confetti, 'anim' in S.settings])).toEqual([false, false, false, false]);
+  expect(errors).toEqual([]);
+});
+
+test('idioms: browser search, word sheet box, both question kinds with right and wrong answers', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => go('games'));
+  await page.locator('#toId').click();
+  await expect(page.locator('#idList .pair-card').first()).toBeVisible();
+  await page.locator('#idq').fill('ง่ายมาก');
+  await expect(page.locator('#idList')).toContainText('piece of cake');
+  await page.locator('#idList [data-say]').first().click();
+  expect(await page.evaluate(() => window.__said.at(-1))).toContain('piece of cake');
+  await page.evaluate(() => openSheet(W.find((w) => w.w === 'ice')));
+  await expect(page.locator('#idBox')).toContainText('break the ice');
+  await page.evaluate(() => document.querySelector('.sheet-wrap').remove());
+  // distractors never come from the same meaning group
+  const clash = await page.evaluate(() => IDIOMS.some((r) => r.grp && [0, 1, 2].some(() => idDistractors(r).some((x) => x.grp === r.grp))));
+  expect(clash).toBe(false);
+  // a round mixes both kinds: idiom in a sentence → Thai meaning, or Thai meaning → idiom
+  await page.evaluate(() => startGame('idiom'));
+  for (let k = 0; k < 10; k++) {
+    await expect(page.locator('.options .opt').first()).toBeVisible();
+    const answer = await page.evaluate(() => {
+      const r = IDIOMS.find((x) => x.exTh === document.querySelector('#idTh').textContent);
+      return document.querySelector('.q-prompt mark') ? r.th : r.id;
+    });
+    const texts = await page.locator('.options .opt').allTextContents();
+    expect(texts).toHaveLength(4);
+    const idx = k % 2 ? texts.indexOf(answer) : texts.findIndex((t) => t !== answer);
+    expect(idx).toBeGreaterThanOrEqual(0);
+    await page.locator('.options .opt').nth(idx).click();
+    await expect(page.locator('#reveal')).toContainText(k % 2 ? 'ถูกต้อง' : 'ที่ถูกคือ');
+    await page.locator('#nextQ').click();
+  }
+  await expect(page.locator('.result-emoji')).toBeVisible();
+  await expect(page.locator('.wrong-list')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('situations: list, detail with phrases and full dialogue playback, reply game', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => go('games'));
+  await page.locator('#toSit').click();
+  await expect(page.locator('.sit-tile').first()).toBeVisible(); // situations.js is lazy-loaded
+  await expect(page.locator('.sit-tile')).toHaveCount(await page.evaluate(() => SIT.length));
+  await page.locator('.sit-tile[data-sit="restaurant"]').click();
+  await expect(page.locator('#title')).toContainText('สั่งอาหาร');
+  await page.locator('[data-col]').first().click();
+  expect(await page.evaluate(() => window.__said.at(-1))).toBe('menu');
+  await page.locator('.dlg-line').nth(2).click();
+  await expect(page.locator('.dlg-line').nth(2)).toHaveClass(/on/);
+  await page.evaluate(() => { window.__said = []; });
+  await page.locator('#sitAll').click();
+  const n = await page.evaluate(() => SIT.find((s) => s.id === 'restaurant').d.length);
+  await expect.poll(() => page.evaluate(() => window.__said.length), { timeout: 10000 }).toBe(n);
+  await expect(page.locator('.dlg-line.on')).toHaveCount(0);
+  // back goes to the list, then to the games menu
+  await page.locator('#topBack').click();
+  await expect(page.locator('.sit-tile').first()).toBeVisible();
+  await page.locator('#sitPlay').click();
+  for (let k = 0; k < 10; k++) {
+    await expect(page.locator('.options .opt').first()).toBeVisible();
+    const answer = await page.evaluate(() => {
+      const prev = document.querySelector('.dlg-line.q span').firstChild.textContent.trim();
+      for (const s of SIT) { const i = s.d.findIndex((l) => l[1] === prev); if (i >= 0) return s.d[i + 1][1]; }
+    });
+    const texts = await page.locator('.options .opt').allTextContents();
+    expect(texts).toHaveLength(4);
+    const idx = k % 2 ? texts.indexOf(answer) : texts.findIndex((t) => t !== answer);
+    expect(idx).toBeGreaterThanOrEqual(0);
+    await page.locator('.options .opt').nth(idx).click();
+    await expect(page.locator('#reveal')).toContainText(k % 2 ? 'ถูกต้อง' : 'ประโยคที่เข้ากับบทสนทนาคือ');
+    await page.locator('#nextQ').click();
+  }
+  await expect(page.locator('.result-emoji')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('goal tags: word list filter, sheet pills, game source, new flashcards follow the goal', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1', 'A2', 'B1'] } });
+  const travel = await page.evaluate(() => TAGS.find((t) => t.id === 'travel').w);
+  // word list: goal filter combines with the level chips
+  await page.evaluate(() => go('list'));
+  await page.locator('#glSel').selectOption('travel');
+  const shown = await page.locator('#rows .wrow .w').allTextContents();
+  expect(shown.length).toBeGreaterThan(10);
+  shown.forEach((w) => expect(travel).toContain(w));
+  await page.locator('#rows .wrow').first().click();
+  await expect(page.locator('.sheet-tags')).toContainText('ท่องเที่ยว');
+  await page.evaluate(() => document.querySelector('.sheet-wrap').remove());
+  // games: 🎯 source plays only tagged words
+  await page.evaluate(() => go('games'));
+  await page.locator('#srcBtn').click();
+  await page.locator('#src [data-s="goal"]').click();
+  await page.locator('#gGoal').selectOption('health');
+  expect(await page.evaluate(() => gamePool('en2th').every((w) => hasTag(w, 'health')))).toBe(true);
+  // settings: new words come from the goal; the count of new words left is shown
+  await page.evaluate(() => { go('settings'); document.querySelector('details[data-g="lv"]').open = true; });
+  await page.locator('#goal').selectOption('work');
+  await expect(page.locator('#goalCnt')).toContainText('เหลือคำใหม่');
+  expect(await page.evaluate(() => S.settings.goal)).toBe('work');
+  const fresh = await page.evaluate(() => pool().filter((w) => !S.prog[w.w] && inTopic(w)).map((w) => w.w));
+  expect(fresh.length).toBeGreaterThan(10);
+  expect(await page.evaluate((ws) => ws.every((x) => hasTag(W.find((w) => w.w === x), 'work')), fresh)).toBe(true);
+  await page.evaluate(() => go('cards'));
+  await expect(page.locator('#view')).not.toBeEmpty();
   expect(errors).toEqual([]);
 });
 

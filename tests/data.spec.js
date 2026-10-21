@@ -172,6 +172,63 @@ test('word parts (affixes) are valid', () => {
   expect(bad).toEqual([]);
 });
 
+test('idioms are valid practice data', () => {
+  const { IDIOMS } = load('idioms.js');
+  expect(IDIOMS.length).toBeGreaterThan(120);
+  const seen = new Set(), th = new Set(), groups = {}, bad = [];
+  for (const r of IDIOMS) {
+    const [id, lv, t, ex, exTh, grp] = r;
+    if (r.length < 5 || r.length > 6 || (r.length === 6 && !/^[a-z]+$/.test(grp))) bad.push(`${id}: fields`);
+    if (seen.has(id)) bad.push(`duplicate ${id}`);
+    if (th.has(t)) bad.push(`${id}: Thai meaning used twice`);
+    seen.add(id); th.add(t);
+    if (!['A1', 'A2', 'B1', 'B2', 'C1'].includes(lv)) bad.push(`${id}: level ${lv}`);
+    if (!t || !exTh) bad.push(`${id}: missing Thai`);
+    if ((ex.match(/\[[^\]]+\]/g) || []).length !== 1) bad.push(`${id}: needs exactly one [idiom] in the example`);
+    if (grp) groups[grp] = (groups[grp] || 0) + 1;
+  }
+  expect(bad).toEqual([]);
+  // the biggest meaning group still leaves plenty of distractors
+  expect(Math.max(...Object.values(groups))).toBeLessThan(IDIOMS.length - 10);
+});
+
+test('situations: key phrases, dialogues and unique lines', () => {
+  const { SITUATIONS } = load('situations.js');
+  expect(SITUATIONS.length).toBeGreaterThanOrEqual(15);
+  const ids = new Set(), lines = new Set(), bad = [];
+  for (const s of SITUATIONS) {
+    if (ids.has(s.id)) bad.push(`duplicate ${s.id}`);
+    ids.add(s.id);
+    if (!s.icon || !s.th || !s.en || !s.tip) bad.push(`${s.id}: title/tip`);
+    if (s.w.length < 8) bad.push(`${s.id}: fewer than 8 key phrases`);
+    s.w.forEach((x) => { if (x.length !== 2 || !x[0] || !x[1]) bad.push(`${s.id}: phrase ${x}`); });
+    if (s.d.length < 5) bad.push(`${s.id}: dialogue too short`);
+    s.d.forEach((x) => {
+      if (x.length !== 3 || !x.every(Boolean)) bad.push(`${s.id}: line ${x}`);
+      if (lines.has(x[1])) bad.push(`${s.id}: line used twice: ${x[1]}`);
+      lines.add(x[1]);
+    });
+  }
+  expect(bad).toEqual([]);
+});
+
+test('goal tags only list words from the word list', () => {
+  const { TAGS } = load('tags.js');
+  const { WORDS } = load(...WORD_FILES);
+  const words = new Set(WORDS.map((r) => r[0]));
+  expect(TAGS.length).toBeGreaterThanOrEqual(5);
+  const ids = new Set(), bad = [];
+  for (const t of TAGS) {
+    if (ids.has(t.id) || !t.icon || !t.th || !t.note) bad.push(`${t.id}: id/icon/name`);
+    ids.add(t.id);
+    if (t.w.length < 60) bad.push(`${t.id}: only ${t.w.length} words`);
+    if (new Set(t.w).size !== t.w.length) bad.push(`${t.id}: duplicate word`);
+    t.w.forEach((w) => { if (!words.has(w)) bad.push(`${t.id}: ${w} is not a list word`); });
+  }
+  expect(bad).toEqual([]);
+  expect(read('index.html').indexOf('tags.js')).toBeLessThan(read('index.html').indexOf('app.js'));
+});
+
 test('service worker keeps word lists, stories and other content in the data cache', () => {
   const sw = read('sw.js'), data = sw.slice(sw.indexOf('const DATA = ['), sw.indexOf('];', sw.indexOf('const DATA = [')));
   const files = [...data.matchAll(/'([^']+)'/g)].map((m) => m[1]);

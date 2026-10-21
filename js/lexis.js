@@ -1,5 +1,5 @@
 'use strict';
-// Extra vocabulary knowledge: phrasal verbs, synonyms/antonyms and word parts (prefixes/suffixes).
+// Extra vocabulary knowledge: phrasal verbs, synonyms/antonyms, word parts (prefixes/suffixes), idioms and situations.
 // Classic script sharing globals with app.js (load order: index.html).
 
 /* ---------- lazy data files ---------- */
@@ -87,6 +87,110 @@ function lexisBoxes(el, w) {
       if (box && list.length) box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🧩 Phrasal verbs</b> (แตะเพื่อฟัง)</div>${pvRows(list)}`;
     });
   }
+  loadIdioms().then(() => {
+    const box = el.querySelector('#idBox'), list = idiomsOf(w.w);
+    if (box && list.length) box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🎭 สำนวน</b> (แตะเพื่อฟัง)</div>${idRows(list.slice(0, 8))}`;
+  });
+}
+
+/* ---------- idioms ---------- */
+// idioms.js rows: [idiom, level, thai, example with the idiom as used in [brackets], thai example, meaning group?]
+let IDIOMS = null, ID_OF = null;
+// Words of an idiom that don't link it to the word sheet (too common to be its key word).
+const ID_SKIP = new Set("a an the of in on at to for with by up out off and or as than like from into over under is be it its one you your my his her their our someone something that this all every has no not".split(' '));
+const loadIdioms = () => loadData('idioms.js', 'IDIOMS').then((rows) => {
+  if (!IDIOMS) {
+    IDIOMS = rows.map(([id, lv, th, ex, exTh, grp]) => ({ id, lv, th, ex, exTh, grp: grp || '', plain: ex.replace(/[[\]]/g, '') }));
+    ID_OF = new Map();
+    IDIOMS.forEach((r) => new Set(r.id.toLowerCase().replace(/'s\b/g, '').match(/[a-z]+/g)).forEach((t) => {
+      if (ID_SKIP.has(t) || !WORD_BY[t]) return;
+      if (!ID_OF.has(t)) ID_OF.set(t, []);
+      ID_OF.get(t).push(r);
+    }));
+  }
+  return IDIOMS;
+});
+const idiomsOf = (word) => (ID_OF && ID_OF.get(word.toLowerCase())) || [];
+// Example with the idiom highlighted / blanked out.
+const idHTML = (r) => esc(r.ex).replace(/\[([^\]]+)\]/, '<mark>$1</mark>');
+const idBlank = (r) => esc(r.ex).replace(/\[([^\]]+)\]/, '<span class="blank">_____</span>');
+// Three other idioms, never one from the same meaning group (so only one option fits).
+const idDistractors = (r) => shuffle(IDIOMS.filter((x) => x !== r && (!r.grp || x.grp !== r.grp))).slice(0, 3);
+const idRows = (list, hi) => list.map((r) => `<button class="col-row${r.id === hi ? ' on' : ''}" data-col="${esc(r.id)}"><b>${esc(r.id)}</b><span>${esc(r.th)}</span></button>`).join('');
+
+let idQuery = '';
+function renderIdioms() {
+  if (!IDIOMS) { withLoading(loadIdioms()).then(renderIdioms); return; }
+  $('#title').textContent = 'สำนวน';
+  view.scrollTop = 0;
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="idBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="idPlay">🎭 เล่นเกม</button></div>
+    <p class="small muted" style="margin:0 4px 10px">${IDIOMS.length} สำนวน · กลุ่มคำที่แปลตรงตัวไม่ได้ ต้องจำทั้งก้อน เช่น piece of cake = ง่ายมาก · แตะประโยคเพื่อฟัง</p>
+    <input class="search" id="idq" type="search" placeholder="ค้นหา เช่น ice หรือ ง่าย" value="${esc(idQuery)}" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="ค้นหาสำนวน">
+    <div class="pair-list" id="idList"></div>`;
+  const paint = () => {
+    const q = idQuery.trim().toLowerCase();
+    const list = q ? IDIOMS.filter((r) => r.id.includes(q) || r.th.includes(q)) : IDIOMS;
+    const lvs = ['A1', 'A2', 'B1', 'B2', 'C1'].filter((l) => list.some((r) => r.lv === l));
+    $('#idList').innerHTML = lvs.length ? lvs.map((l) => `<div class="card-box pair-card"><div class="pair-h"><b>${l}</b> <span class="small muted">${list.filter((r) => r.lv === l).length} สำนวน</span></div>
+      ${list.filter((r) => r.lv === l).map((r) => `<button class="pair-ex" data-say="${esc(r.plain)}"><span><b lang="en">${esc(r.id)}</b> = ${esc(r.th)}</span><span lang="en">${idHTML(r)}</span><small class="muted">${esc(r.exTh)}</small></button>`).join('')}</div>`).join('')
+      : '<p class="muted center">ไม่พบสำนวนนี้</p>';
+  };
+  paint();
+  $('#idq').oninput = (e) => { idQuery = e.target.value; paint(); };
+  $('#idBack').onclick = () => go('games');
+  $('#idPlay').onclick = () => startGame('idiom');
+  $('#idList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
+}
+
+/* ---------- situations ---------- */
+// situations.js: [{ id, icon, th, en, tip, w: [[phrase, thai]], d: [[speaker, english, thai]] }]
+let SIT = null;
+const loadSit = () => loadData('situations.js', 'SITUATIONS').then((rows) => (SIT = rows));
+// Item for the reply game: line k of a dialogue (k >= 1), answered after seeing line k − 1.
+const sitItems = () => SIT.flatMap((st) => st.d.slice(1).map((l, k) => ({ st, k: k + 1 })));
+// Three lines from other situations' dialogues as wrong replies.
+const sitDistractors = (st) => shuffle(SIT.filter((x) => x !== st).flatMap((x) => x.d.slice(1).map((l) => l[1]))).slice(0, 3);
+
+let sitPlayTok = 0;
+function renderSit(id) {
+  if (!SIT) { withLoading(loadSit()).then(() => renderSit(id)); return; }
+  sitPlayTok++;
+  const st = id && SIT.find((x) => x.id === id);
+  view.scrollTop = 0;
+  if (!st) {
+    $('#title').textContent = 'ศัพท์ตามสถานการณ์';
+    view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="sitBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="sitPlay">🗨️ เล่นเกม</button></div>
+      <p class="small muted" style="margin:0 4px 10px">${SIT.length} สถานการณ์ที่เจอบ่อย แต่ละเรื่องมีคำ/วลีสำคัญและบทสนทนาสั้นๆ ให้ฟังและพูดตาม</p>
+      <div class="sit-grid" id="sitList">${SIT.map((x) => `<button class="sit-tile" data-sit="${x.id}"><span class="sit-ic">${x.icon}</span><b>${esc(x.th)}</b><small class="muted" lang="en">${esc(x.en)}</small></button>`).join('')}</div>`;
+    $('#sitBack').onclick = () => go('games');
+    $('#sitPlay').onclick = () => startGame('sit');
+    $('#sitList').onclick = (e) => { const b = e.target.closest('[data-sit]'); if (b) renderSit(b.dataset.sit); };
+    return;
+  }
+  $('#title').textContent = `${st.icon} ${st.th}`;
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="sitBack">‹ สถานการณ์</button><div class="grow"></div><button class="btn primary" id="sitAll">▶️ ฟังบทสนทนา</button></div>
+    <div class="card-box"><div class="h2" style="margin:0 0 2px">${st.icon} ${esc(st.th)}</div><div class="small muted" lang="en">${esc(st.en)}</div>
+      <div class="tip-box">💡 ${esc(st.tip)}</div></div>
+    <div class="card-box"><div class="small muted" style="margin-bottom:8px"><b>🔑 คำและวลีสำคัญ</b> (แตะเพื่อฟัง)</div>
+      ${st.w.map(([en, th]) => `<button class="col-row" data-col="${esc(en)}"><b lang="en">${esc(en)}</b><span>${esc(th)}</span></button>`).join('')}</div>
+    <div class="card-box"><div class="small muted" style="margin-bottom:4px"><b>🗨️ บทสนทนา</b> (แตะประโยคเพื่อฟัง)</div>
+      <div id="sitDlg">${st.d.map(([who, en, th], k) => `<button class="dlg-line${k % 2 ? ' alt' : ''}" data-k="${k}"><small class="muted">${esc(who)}</small><span lang="en">${esc(en)}</span><small class="muted">${esc(th)}</small></button>`).join('')}</div></div>`;
+  $('#sitBack').onclick = () => renderSit();
+  view.querySelectorAll('[data-col]').forEach((b) => (b.onclick = () => speak(b.dataset.col)));
+  const lines = [...view.querySelectorAll('.dlg-line')];
+  const on = (k) => lines.forEach((b, j) => b.classList.toggle('on', j === k));
+  $('#sitDlg').onclick = (e) => { const b = e.target.closest('.dlg-line'); if (b) { sitPlayTok++; on(+b.dataset.k); speak(st.d[+b.dataset.k][1]); } };
+  // Whole dialogue: one line after another (a new tap, another page or leaving stops it).
+  $('#sitAll').onclick = () => {
+    const tok = ++sitPlayTok;
+    const step = (k) => {
+      if (tok !== sitPlayTok || !document.body.contains(lines[0]) || k >= st.d.length) { if (tok === sitPlayTok) on(-1); return; }
+      on(k);
+      const u = speak(st.d[k][1]);
+      if (u) u.onend = () => setTimeout(() => step(k + 1), 400); else on(-1);
+    };
+    step(0);
+  };
 }
 
 /* ---------- synonyms & antonyms ---------- */
