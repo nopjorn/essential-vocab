@@ -492,3 +492,12 @@ test('speak: waits a beat after cancelling a running utterance and resumes a pau
   expect(await page.evaluate(() => window.__resumed)).toBe(true);
   expect(errors).toEqual([]);
 });
+
+test('tab bar: สถิติ sits between เกม and คำศัพท์ and opens the stats page', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  expect(await page.evaluate(() => [...document.querySelectorAll('#tabbar > button')].map((b) => b.dataset.tab))).toEqual(['home', 'cards', 'games', 'stats', 'list', 'settings']);
+  await page.locator('#tabbar > [data-tab="stats"]').click();
+  await expect(page.locator('#title')).toHaveText('สถิติ');
+  await expect(page.locator('#tabbar > [data-tab="stats"]')).toHaveClass(/active/);
+  expect(errors).toEqual([]);
+});
