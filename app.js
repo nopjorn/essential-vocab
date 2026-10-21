@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.44.0';
+const APP_VERSION = '1.44.1';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -507,8 +507,19 @@ const confettiOff = () => S.settings.confetti === false || matchMedia('(prefers-
 const SLOW_AGAIN = 8000;
 let lastSaid = { text: '', at: 0, slow: false };
 const slowRate = () => Math.max(0.45, Math.round(S.settings.rate * 0.62 * 100) / 100);
+// iOS Safari quirks: speak() right after cancel() of a running utterance is dropped silently (so wait a beat),
+// a paused engine stays mute until resume(), and an utterance nobody references can be garbage-collected
+// before it ends (no onend → a chained dialogue stops), hence `curUtt`.
+let curUtt = null;
+function say(u, wait) {
+  curUtt = u;
+  const go = () => { if (u !== curUtt) return; if (speechSynthesis.paused) speechSynthesis.resume(); speechSynthesis.speak(u); };
+  if (wait) setTimeout(go, 80); else go();
+  return u;
+}
 function speak(text, opt) {
   if (!window.speechSynthesis) return;
+  const busy = speechSynthesis.speaking || speechSynthesis.pending;
   speechSynthesis.cancel();
   let slow = opt && opt.slow;
   if (slow == null) slow = S.settings.slowRepeat !== false && lastSaid.text === text && Date.now() - lastSaid.at < SLOW_AGAIN && !lastSaid.slow;
@@ -517,11 +528,10 @@ function speak(text, opt) {
   const lang = S.settings.accent;
   u.lang = lang; u.rate = slow ? slowRate() : S.settings.rate;
   const chosen = S.settings.voice && voices.find((x) => x.voiceURI === S.settings.voice);
-  if (chosen) { try { u.voice = chosen; u.lang = chosen.lang; } catch (e) { /* voice went away */ } speechSynthesis.speak(u); return u; }
+  if (chosen) { try { u.voice = chosen; u.lang = chosen.lang; } catch (e) { /* voice went away */ } return say(u, busy); }
   const v = voices.find((v) => v.lang === lang && /Samantha|Daniel|Karen|Ava|Siri/i.test(v.name)) || voices.find((v) => v.lang === lang) || voices.find((v) => v.lang && v.lang.startsWith('en'));
   if (v) u.voice = v;
-  speechSynthesis.speak(u);
-  return u;
+  return say(u, busy);
 }
 
 /* ---------- spaced repetition ---------- */

@@ -483,3 +483,12 @@ test('word sheet: extra examples for other meanings get their own boxes; games k
   await expect(page.locator('.example').nth(1).locator('.thx')).toHaveText('เราเห็นแมวน้ำบนโขดหิน');
   expect(errors).toEqual([]);
 });
+
+test('speak: waits a beat after cancelling a running utterance and resumes a paused engine (iOS)', async ({ page }) => {
+  const errors = await openApp(page, {});
+  await page.evaluate(() => { window.__said = []; speechSynthesis.speaking = true; speechSynthesis.paused = true; speechSynthesis.resume = () => { speechSynthesis.paused = false; window.__resumed = true; }; speak('first'); speak('second'); });
+  expect(await page.evaluate(() => window.__said.length)).toBe(0); // deferred, not spoken in the same tick as cancel()
+  await expect.poll(() => page.evaluate(() => window.__said.slice())).toEqual(['second']); // only the latest survives
+  expect(await page.evaluate(() => window.__resumed)).toBe(true);
+  expect(errors).toEqual([]);
+});

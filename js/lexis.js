@@ -187,7 +187,7 @@ function renderSit(id) {
       if (tok !== sitPlayTok || !document.body.contains(lines[0]) || k >= st.d.length) { if (tok === sitPlayTok) on(-1); return; }
       on(k);
       const u = speak(st.d[k][1]);
-      if (u) u.onend = () => setTimeout(() => step(k + 1), 400); else on(-1);
+      if (u) { u.onend = () => setTimeout(() => step(k + 1), 400); u.onerror = () => { if (tok === sitPlayTok) on(-1); }; } else on(-1);
     };
     step(0);
   };
