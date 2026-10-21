@@ -1,6 +1,7 @@
 // Changelog shown in the app (settings → ประวัติการอัปเดต). Newest first. Keep in sync with the README table.
 // [version, what changed, release date YYYY-MM-DD (Thailand time)]; loaded lazily by loadChangelog().
 window.CHANGELOG = [
+  ["1.43.5", "ย่อโซนอันตรายในหน้าตั้งค่าให้ซ่อนปุ่มไว้ ต้องแตะหัวข้อเพื่อกางก่อน กันกดล้างความคืบหน้าพลาด", "2026-10-21"],
   ["1.43.4", "เพิ่มไอเดียใน TODO.md (ไม่กระทบการทำงานของแอป)", "2026-10-20"],
   ["1.43.3", "จัด TODO.md ใหม่ตามหัวข้อเนื้องาน (ไม่กระทบการทำงานของแอป)", "2026-10-20"],
   ["1.43.2", "เพิ่มไอเดียใน TODO.md อีกชุด (ไม่กระทบการทำงานของแอป)", "2026-10-20"],

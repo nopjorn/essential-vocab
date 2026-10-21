@@ -924,7 +924,9 @@ html.no-ans .f-pop { display: none; }
 .set-link:active { opacity: .6; }
 details.cal-alt { margin-top: 8px; }
 details.cal-alt > summary { cursor: pointer; padding: 6px 0; }
-.danger-zone { margin-top: 24px; border: 1px solid var(--bad); }
+.danger-zone { border: 1px solid var(--bad); }
+details.danger-group { margin-top: 18px; }
+details.danger-group > summary { color: var(--bad); }
 .danger-zone p { margin: 6px 0 10px; }
 
 /* reader: shadowing */
