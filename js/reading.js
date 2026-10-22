@@ -3,7 +3,7 @@
 // Classic script sharing globals with app.js (load order: index.html).
 
 /* ---------- reading (short stories) ---------- */
-// stories/<level>.js: each file pushes { id, level, emoji, title, titleTh, en: [paragraphs], th: [paragraphs], q: [{ q, o: [3], a }] }
+// data/stories/<level>.js: each file pushes { id, level, emoji, title, titleTh, en: [paragraphs], th: [paragraphs], q: [{ q, o: [3], a }] }
 // onto window.STORIES. Loaded on first use so app start stays fast; the service worker still caches them offline.
 const STORY_FILES = ['a1', 'a2', 'b1', 'b2', 'c1', 'c2'];
 let STORIES = null;
@@ -13,19 +13,19 @@ function loadStories() {
   window.STORIES = [];
   const one = (f) => new Promise((res) => {
     const sc = document.createElement('script');
-    sc.src = 'stories/' + f + '.js?v=' + APP_VERSION;
+    sc.src = 'data/stories/' + f + '.js?v=' + APP_VERSION;
     sc.onload = sc.onerror = res;
     document.head.appendChild(sc);
   });
   return Promise.all(STORY_FILES.map(one)).then(() => (STORIES = window.STORIES.sort((a, b) => a.id - b.id)));
 }
-// collocations.js: window.COLLOC = { headword: [[phrase, thai], ...] } — lazy-loaded like stories.
+// data/collocations.js: window.COLLOC = { headword: [[phrase, thai], ...] } — lazy-loaded like stories.
 let COLLOC = window.COLLOC || null;
 function loadColloc() {
   if (COLLOC) return Promise.resolve(COLLOC);
   return new Promise((res) => {
     const sc = document.createElement('script');
-    sc.src = 'collocations.js?v=' + APP_VERSION;
+    sc.src = 'data/collocations.js?v=' + APP_VERSION;
     sc.onload = () => res((COLLOC = window.COLLOC || {}));
     sc.onerror = () => res((COLLOC = {}));
     document.head.appendChild(sc);
@@ -43,25 +43,25 @@ function collocQ(w) {
   while (others.length < 3) { const k = pick(Object.keys(COLLOC)); if (k !== w.w && !others.includes(k)) others.push(k); }
   return { phrase, th, shown, opts: shuffle([w.w, ...others]) };
 }
-// pairs.js: window.CONFUSE (confusable words) + window.MINPAIRS (sound pairs) — lazy-loaded.
+// data/pairs.js: window.CONFUSE (confusable words) + window.MINPAIRS (sound pairs) — lazy-loaded.
 let CONFUSE = window.CONFUSE || null, MINPAIRS = window.MINPAIRS || [], MINPAIRS_TIP = window.MINPAIRS_TIP || {};
 function loadPairs() {
   if (CONFUSE) return Promise.resolve(CONFUSE);
   return new Promise((res) => {
     const sc = document.createElement('script');
-    sc.src = 'pairs.js?v=' + APP_VERSION;
+    sc.src = 'data/pairs.js?v=' + APP_VERSION;
     const done = () => { CONFUSE = window.CONFUSE || []; MINPAIRS = window.MINPAIRS || []; MINPAIRS_TIP = window.MINPAIRS_TIP || {}; res(CONFUSE); };
     sc.onload = done; sc.onerror = done;
     document.head.appendChild(sc);
   });
 }
-// families.js: window.FAMILIES = [{ f: [[word, pos, thai], ...], q: [[sentence ___, answer, thai], ...] }] — lazy-loaded.
+// data/families.js: window.FAMILIES = [{ f: [[word, pos, thai], ...], q: [[sentence ___, answer, thai], ...] }] — lazy-loaded.
 let FAMILIES = window.FAMILIES || null, FAMILY_OF = null;
 function loadFamilies() {
   if (FAMILIES) return Promise.resolve(FAMILIES);
   return new Promise((res) => {
     const sc = document.createElement('script');
-    sc.src = 'families.js?v=' + APP_VERSION;
+    sc.src = 'data/families.js?v=' + APP_VERSION;
     const done = () => { FAMILIES = window.FAMILIES || []; res(FAMILIES); };
     sc.onload = done; sc.onerror = done;
     document.head.appendChild(sc);

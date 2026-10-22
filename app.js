@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.45.0';
+const APP_VERSION = '1.45.1';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -22,7 +22,7 @@ fixAppHeight();
 document.addEventListener('visibilitychange', () => { if (!document.hidden) fixAppHeight(); });
 
 /* ---------- data ---------- */
-// WORDS rows (words/<level>.js): [word, pos, level, ipa, thai, example, thai example, topic id, 5 if Oxford 5000-only]
+// WORDS rows (data/words/<level>.js): [word, pos, level, ipa, thai, example, thai example, topic id, 5 if Oxford 5000-only]
 // g = study group: A1–B2 are Oxford 3000; B2x and C1 are the extra Oxford 5000 words.
 const TOPICS = [
   ['people', '👪', 'คนและครอบครัว'], ['body', '💪', 'ร่างกายและสุขภาพ'], ['food', '🍜', 'อาหารและเครื่องดื่ม'],
@@ -35,7 +35,7 @@ const TOPICS = [
 const TOPIC_LABEL = Object.fromEntries(TOPICS.map(([id, ic, th]) => [id, `${ic} ${th}`]));
 const W = window.WORDS.slice().sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
   .map(([w, p, l, i, t, e, et, tp, ...more], idx) => ({ idx, w, p, l, i, t, e, et, g: more.includes(5) ? (l === 'B2' ? 'B2x' : 'C1') : l, tp: tp || '', xe: more.find(Array.isArray) || [] }));
-// Goal tags (tags.js): hand-picked words for travel, work, exams …; a word may have several.
+// Goal tags (data/tags.js): hand-picked words for travel, work, exams …; a word may have several.
 const TAGS = window.TAGS || [];
 const TAG_LABEL = Object.fromEntries(TAGS.map((t) => [t.id, `${t.icon} ${t.th}`]));
 const TAGS_OF = new Map();

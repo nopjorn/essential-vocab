@@ -6,7 +6,7 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
 
 ## Release rules (every push)
 - Bump the version on **every** push: `APP_VERSION` in `app.js` and `VERSION` in `sw.js`
-  (`o3k-<same version>`), and add a row to the changelog table at the end of `README.md` **and** to the top of `changelog.js` (shown in-app; a test checks both match).
+  (`o3k-<same version>`), and add a row to the changelog table at the end of `README.md` **and** to the top of `data/changelog.js` (shown in-app; a test checks both match).
   Tell the user the new version number.
 - Patch (x.y.Z) for small fixes, minor (x.Y.0) for new features.
 - Push directly to `master` (no PRs unless asked).
@@ -22,17 +22,17 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
 | `app.js` | Core: `APP_VERSION`, data, storage/backup, quests, XP, achievements, helpers, speech, SRS, router (`go()`) |
 | `js/*.js` | The rest of the logic, one classic script per area (`home cards games feed reading words placement stats sync guide settings boot`), sections marked `/* ---------- name ---------- */`. They share globals (no modules, no build); `index.html` loads them after `app.js` and `boot.js` must stay last. A new file goes in `index.html` **and** `sw.js` (a test checks) |
 | `style.css` | Mobile-first styles; colour tokens on `:root` with dark mode |
-| `words/<level>.js` | `a1 a2 b1 b2 b2plus c1` (Oxford 5000-only rows in `b2plus`/`c1`), one row per line, each pushes onto `window.WORDS`: `[word, pos, level, ipa, thai, example, thaiExample, topicId, 5?, [[ex, thaiEx], …]?]` (4,957 rows total; app.js sorts them A–Z, topic id → `w.tp`; the optional trailing array → `w.xe` = extra examples for other meanings, shown as extra `exampleBox()` boxes, never used by games — A1 since 1.40, A2 1.41, B1 1.42, B2/B2+/C1 1.43) |
+| `data/words/<level>.js` | `a1 a2 b1 b2 b2plus c1` (Oxford 5000-only rows in `b2plus`/`c1`), one row per line, each pushes onto `window.WORDS`: `[word, pos, level, ipa, thai, example, thaiExample, topicId, 5?, [[ex, thaiEx], …]?]` (4,957 rows total; app.js sorts them A–Z, topic id → `w.tp`; the optional trailing array → `w.xe` = extra examples for other meanings, shown as extra `exampleBox()` boxes, never used by games — A1 since 1.40, A2 1.41, B1 1.42, B2/B2+/C1 1.43) |
 | `sw.js` | Network-first service worker with versioned cache |
-| `families.js` | `window.FAMILIES = [{f: [[word, pos, thai], ...], q: [[sentence ___, answer, thai], ...]}]` original word families (a word is in one family only), lazy-loaded by `loadFamilies()`; `familyOf(word)` → family (word sheet box, `wform` game, `renderFamilies()` browser) |
+| `data/families.js` | `window.FAMILIES = [{f: [[word, pos, thai], ...], q: [[sentence ___, answer, thai], ...]}]` original word families (a word is in one family only), lazy-loaded by `loadFamilies()`; `familyOf(word)` → family (word sheet box, `wform` game, `renderFamilies()` browser) |
 | `tests/*.spec.js`, `playwright.config.js` | Playwright test suite (`npm test`), run by `.github/workflows/test.yml` on every push to `master` |
-| `collocations.js` | `window.COLLOC = {headword: [[phrase, thai], ...]}` original collocation data, lazy-loaded by `loadColloc()` (word sheet + `colloc` game) |
-| `changelog.js` | `window.CHANGELOG = [[version, thai text, 'YYYY-MM-DD'], …]` newest first (same rows as README, plus the release date); lazy-loaded by `loadChangelog()`; page `renderChangelog()` (route `changelog`, linked from settings); `whatsNew()` shows a one-time bar after an update (`S.seenVer`, device-local) |
-| `phrasal.js` | `window.PHRASAL = [[phrasal, level, thai, example with [verb] [particles], thaiExample]]` original (exactly 2 bracket groups; test checks), lazy-loaded by `loadPhrasal()` in `js/lexis.js` → objects `{pv, verb, part, plain, …}`; `phrasalOf(verb)`; browser `renderPhrasal()`, word-sheet box via `lexisBoxes()`, game `phrasal` (`qPhrasal`, particle distractors never form another listed phrasal with that verb) |
-| `synonyms.js` | `window.SYNONYMS = [{th, s: [near-synonyms], a: [antonyms], tip}]` original; a word may be in several groups (homonyms). `loadSyn()`, `synGroups(word)`, `synRel(word)` (all listed syn/ant incl. reverse antonyms), `synQuestion(item)` never offers a second related option (a test checks every item); browser `renderSyn()`, game `syn` (`qSyn`) |
-| `affixes.js` | `window.AFFIXES = [{x, k: 'p'|'s', th, note, ex: [[word, thai]]}]` original prefixes/suffixes; each example = affix + unchanged base (test). `loadAffix()`, `AFFIX_OF` (example word → affix), `affixDistractors()` skips affixes that make a real word with the base; browser `renderAffix()`, game `affix` (`qAffix`), word-sheet box. The games menu groups the reference pages in the 📚 คลังความรู้ tiles (`.ref-grid`) |
-| `pairs.js` | `window.CONFUSE` (confusable pairs `{a,b,tip,q:[[sentence ___, right, wrong, thai]]}`), `window.MINPAIRS` (`[a, aTh, b, bTh, group]`) + `MINPAIRS_TIP`; original, lazy-loaded by `loadPairs()` |
-| `stories/<level>.js` | One file per level (`a1`…`c2`, `STORY_FILES` in app.js), each pushes onto `window.STORIES`: 105 original A1–C2 stories (ids unique across files) `{id, level, emoji, title, titleTh, en[], th[], q[{q,o,a}]}` |
+| `data/collocations.js` | `window.COLLOC = {headword: [[phrase, thai], ...]}` original collocation data, lazy-loaded by `loadColloc()` (word sheet + `colloc` game) |
+| `data/changelog.js` | `window.CHANGELOG = [[version, thai text, 'YYYY-MM-DD'], …]` newest first (same rows as README, plus the release date); lazy-loaded by `loadChangelog()`; page `renderChangelog()` (route `changelog`, linked from settings); `whatsNew()` shows a one-time bar after an update (`S.seenVer`, device-local) |
+| `data/phrasal.js` | `window.PHRASAL = [[phrasal, level, thai, example with [verb] [particles], thaiExample]]` original (exactly 2 bracket groups; test checks), lazy-loaded by `loadPhrasal()` in `js/lexis.js` → objects `{pv, verb, part, plain, …}`; `phrasalOf(verb)`; browser `renderPhrasal()`, word-sheet box via `lexisBoxes()`, game `phrasal` (`qPhrasal`, particle distractors never form another listed phrasal with that verb) |
+| `data/synonyms.js` | `window.SYNONYMS = [{th, s: [near-synonyms], a: [antonyms], tip}]` original; a word may be in several groups (homonyms). `loadSyn()`, `synGroups(word)`, `synRel(word)` (all listed syn/ant incl. reverse antonyms), `synQuestion(item)` never offers a second related option (a test checks every item); browser `renderSyn()`, game `syn` (`qSyn`) |
+| `data/affixes.js` | `window.AFFIXES = [{x, k: 'p'|'s', th, note, ex: [[word, thai]]}]` original prefixes/suffixes; each example = affix + unchanged base (test). `loadAffix()`, `AFFIX_OF` (example word → affix), `affixDistractors()` skips affixes that make a real word with the base; browser `renderAffix()`, game `affix` (`qAffix`), word-sheet box. The games menu groups the reference pages in the 📚 คลังความรู้ tiles (`.ref-grid`) |
+| `data/pairs.js` | `window.CONFUSE` (confusable pairs `{a,b,tip,q:[[sentence ___, right, wrong, thai]]}`), `window.MINPAIRS` (`[a, aTh, b, bTh, group]`) + `MINPAIRS_TIP`; original, lazy-loaded by `loadPairs()` |
+| `data/stories/<level>.js` | One file per level (`a1`…`c2`, `STORY_FILES` in app.js), each pushes onto `window.STORIES`: 105 original A1–C2 stories (ids unique across files) `{id, level, emoji, title, titleTh, en[], th[], q[{q,o,a}]}` |
 | `supabase/functions/daily-reminder/index.ts` | Hourly Edge Function sending Web Push reminders (VAPID secrets in Supabase) |
 | `config.js` | `window.SYNC_CONFIG = {url, anonKey, requireLogin, leaderboard, vapidPublicKey}` for Supabase sync (empty = off); see `SYNC-SETUP.md` |
 | `reminders/HHMM.ics` | Static daily-reminder calendar files (app URL hardcoded inside) |
@@ -70,7 +70,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
   `--c-card/--c-game/--c-master` (validated with the dataviz palette checker in light and dark).
 - Placement (`renderPlacement`, route `placement`): 8 MC questions per level, stops below 6/8; skipped words
   get b=4/i=16 with first review spread over 7–30 days; moves `settings.levels` on if all were skipped.
-- `stories/*.js` are lazy-loaded by `loadStories()` (not in index.html; sorted by id); `STORY_COUNT` (keep in sync with the files) is shown before load.
+- `data/stories/*.js` are lazy-loaded by `loadStories()` (not in index.html; sorted by id); `STORY_COUNT` (keep in sync with the files) is shown before load.
   Library = `renderLibrary()` (suggested story `nextStory()`, filters `readFilter`); reader chains `speak()` per paragraph
   (speak returns the utterance; `onend` → next) with a token so leaving/stopping cancels; font size `settings.rFont` (0–2).
 - Games added in 1.14: `order` (rebuild example sentence; `qOrder`), `colloc` (`qColloc`), story games `sCloze`/`sOrder`

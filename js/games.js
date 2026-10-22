@@ -50,7 +50,7 @@ const GAMES = {
 };
 // Games whose data is lazy-loaded (stories / collocations) or built from sentences instead of the word pool.
 const STORY_GAMES = ['sCloze', 'sOrder'];
-// Games built from pairs.js (confusable words, minimal pairs): not tied to the word list or its schedule.
+// Games built from data/pairs.js (confusable words, minimal pairs): not tied to the word list or its schedule.
 const PAIR_GAMES = ['confuse', 'minpair'];
 // Skill games with their own items (idx -1): practice only, no flashcard scheduling.
 const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix', 'idiom', 'sit'];

@@ -1,5 +1,5 @@
 // Offline cache. Bump VERSION (keep it equal to APP_VERSION in app.js) on every push.
-const VERSION = 'o3k-1.45.0';
+const VERSION = 'o3k-1.45.1';
 // App shell: replaced as a whole with every version.
 const FILES = [
   './',
@@ -20,7 +20,7 @@ const FILES = [
   'js/settings.js',
   'js/boot.js',
   'config.js',
-  'changelog.js',
+  'data/changelog.js',
   'manifest.webmanifest',
   'icons/apple-touch-icon.png',
   'icons/icon-192.png',
@@ -30,27 +30,27 @@ const FILES = [
 // the server says has changed (conditional request), so a new version doesn't fetch ~2 MB of unchanged data.
 const DATA_CACHE = 'o3k-data';
 const DATA = [
-  'words/a1.js',
-  'words/a2.js',
-  'words/b1.js',
-  'words/b2.js',
-  'words/b2plus.js',
-  'words/c1.js',
-  'stories/a1.js',
-  'stories/a2.js',
-  'stories/b1.js',
-  'stories/b2.js',
-  'stories/c1.js',
-  'stories/c2.js',
-  'collocations.js',
-  'pairs.js',
-  'families.js',
-  'phrasal.js',
-  'synonyms.js',
-  'affixes.js',
-  'idioms.js',
-  'situations.js',
-  'tags.js',
+  'data/words/a1.js',
+  'data/words/a2.js',
+  'data/words/b1.js',
+  'data/words/b2.js',
+  'data/words/b2plus.js',
+  'data/words/c1.js',
+  'data/stories/a1.js',
+  'data/stories/a2.js',
+  'data/stories/b1.js',
+  'data/stories/b2.js',
+  'data/stories/c1.js',
+  'data/stories/c2.js',
+  'data/collocations.js',
+  'data/pairs.js',
+  'data/families.js',
+  'data/phrasal.js',
+  'data/synonyms.js',
+  'data/affixes.js',
+  'data/idioms.js',
+  'data/situations.js',
+  'data/tags.js',
 ];
 const NAV_TIMEOUT = 2500; // ms to wait for the network on app start before opening the cached copy
 const isData = (url) => DATA.includes(url.pathname.slice(new URL(self.registration.scope).pathname.length));

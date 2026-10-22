@@ -14,7 +14,7 @@ function load(...files) {
 }
 // All app code: app.js plus the js/*.js scripts it is split into.
 const appCode = () => ['app.js', ...fs.readdirSync(path.join(root, 'js')).map((f) => `js/${f}`)].map(read).join('\n');
-const WORD_FILES = ['a1', 'a2', 'b1', 'b2', 'b2plus', 'c1'].map((l) => `words/${l}.js`);
+const WORD_FILES = ['a1', 'a2', 'b1', 'b2', 'b2plus', 'c1'].map((l) => `data/words/${l}.js`);
 
 test('version is the same in app.js, sw.js and the README changelog', () => {
   const v = read('app.js').match(/const APP_VERSION = '([\d.]+)'/)[1];
@@ -23,7 +23,7 @@ test('version is the same in app.js, sw.js and the README changelog', () => {
 });
 
 test('changelog.js lists every README version, newest first', () => {
-  const { CHANGELOG } = load('changelog.js');
+  const { CHANGELOG } = load('data/changelog.js');
   const readme = [...read('README.md').matchAll(/^\| (\d+\.\d+\.\d+) \|/gm)].map((m) => m[1]);
   expect(CHANGELOG.map((r) => r[0])).toEqual(readme);
   CHANGELOG.forEach(([v, t, d]) => { expect(typeof t).toBe('string'); expect(t.length, v).toBeGreaterThan(5); expect(d, v).toMatch(/^\d{4}-\d{2}-\d{2}$/); });
@@ -55,7 +55,7 @@ test('word rows are well formed', () => {
 });
 
 test('word families are valid practice data', () => {
-  const { FAMILIES } = load('families.js');
+  const { FAMILIES } = load('data/families.js');
   expect(FAMILIES.length).toBeGreaterThan(200);
   const seen = new Set();
   for (const fam of FAMILIES) {
@@ -78,7 +78,7 @@ test('word families are valid practice data', () => {
 });
 
 test('confusable pairs and minimal pairs are valid', () => {
-  const { CONFUSE, MINPAIRS } = load('pairs.js');
+  const { CONFUSE, MINPAIRS } = load('data/pairs.js');
   for (const c of CONFUSE) {
     expect(c.tip.length).toBeGreaterThan(0);
     c.q.forEach(([s, right, wrong, th]) => {
@@ -91,7 +91,7 @@ test('confusable pairs and minimal pairs are valid', () => {
 });
 
 test('collocations belong to list words', () => {
-  const { COLLOC } = load('collocations.js');
+  const { COLLOC } = load('data/collocations.js');
   const { WORDS } = load(...WORD_FILES);
   const words = new Set(WORDS.map((r) => r[0]));
   for (const [k, list] of Object.entries(COLLOC)) {
@@ -101,7 +101,7 @@ test('collocations belong to list words', () => {
 });
 
 test('stories: unique ids, count matches STORY_COUNT, questions point at an option', () => {
-  const files = appCode().match(/const STORY_FILES = \[([^\]]+)\]/)[1].match(/'([^']+)'/g).map((x) => `stories/${x.slice(1, -1)}.js`);
+  const files = appCode().match(/const STORY_FILES = \[([^\]]+)\]/)[1].match(/'([^']+)'/g).map((x) => `data/stories/${x.slice(1, -1)}.js`);
   const { STORIES } = load(...files);
   const count = +appCode().match(/const STORY_COUNT = (\d+)/)[1];
   expect(STORIES.length).toBe(count);
@@ -122,7 +122,7 @@ test('index.html loads every js/ script, and the service worker caches it', () =
 });
 
 test('phrasal verbs are valid practice data', () => {
-  const { PHRASAL } = load('phrasal.js');
+  const { PHRASAL } = load('data/phrasal.js');
   expect(PHRASAL.length).toBeGreaterThan(120);
   const seen = new Set(), bad = [];
   for (const r of PHRASAL) {
@@ -142,7 +142,7 @@ test('phrasal verbs are valid practice data', () => {
 });
 
 test('synonym groups are valid', () => {
-  const { SYNONYMS } = load('synonyms.js');
+  const { SYNONYMS } = load('data/synonyms.js');
   expect(SYNONYMS.length).toBeGreaterThan(80);
   const bad = [];
   for (const g of SYNONYMS) {
@@ -155,7 +155,7 @@ test('synonym groups are valid', () => {
 });
 
 test('word parts (affixes) are valid', () => {
-  const { AFFIXES } = load('affixes.js');
+  const { AFFIXES } = load('data/affixes.js');
   expect(AFFIXES.filter((a) => a.k === 'p').length).toBeGreaterThan(12);
   expect(AFFIXES.filter((a) => a.k === 's').length).toBeGreaterThan(12);
   const seen = new Set(), bad = [];
@@ -173,7 +173,7 @@ test('word parts (affixes) are valid', () => {
 });
 
 test('idioms are valid practice data', () => {
-  const { IDIOMS } = load('idioms.js');
+  const { IDIOMS } = load('data/idioms.js');
   expect(IDIOMS.length).toBeGreaterThan(120);
   const seen = new Set(), th = new Set(), groups = {}, bad = [];
   for (const r of IDIOMS) {
@@ -193,7 +193,7 @@ test('idioms are valid practice data', () => {
 });
 
 test('situations: key phrases, dialogues and unique lines', () => {
-  const { SITUATIONS } = load('situations.js');
+  const { SITUATIONS } = load('data/situations.js');
   expect(SITUATIONS.length).toBeGreaterThanOrEqual(15);
   const ids = new Set(), lines = new Set(), bad = [];
   for (const s of SITUATIONS) {
@@ -213,7 +213,7 @@ test('situations: key phrases, dialogues and unique lines', () => {
 });
 
 test('goal tags only list words from the word list', () => {
-  const { TAGS } = load('tags.js');
+  const { TAGS } = load('data/tags.js');
   const { WORDS } = load(...WORD_FILES);
   const words = new Set(WORDS.map((r) => r[0]));
   expect(TAGS.length).toBeGreaterThanOrEqual(5);
@@ -226,12 +226,12 @@ test('goal tags only list words from the word list', () => {
     t.w.forEach((w) => { if (!words.has(w)) bad.push(`${t.id}: ${w} is not a list word`); });
   }
   expect(bad).toEqual([]);
-  expect(read('index.html').indexOf('tags.js')).toBeLessThan(read('index.html').indexOf('app.js'));
+  expect(read('index.html').indexOf('data/tags.js')).toBeLessThan(read('index.html').indexOf('app.js'));
 });
 
 test('service worker keeps word lists, stories and other content in the data cache', () => {
   const sw = read('sw.js'), data = sw.slice(sw.indexOf('const DATA = ['), sw.indexOf('];', sw.indexOf('const DATA = [')));
   const files = [...data.matchAll(/'([^']+)'/g)].map((m) => m[1]);
-  ['words', 'stories'].forEach((d) => fs.readdirSync(path.join(root, d)).forEach((f) => expect(files, f).toContain(`${d}/${f}`)));
-  ['app.js', 'index.html', 'changelog.js', 'config.js'].forEach((f) => expect(files, f).not.toContain(f)); // change every version
+  ['words', 'stories'].forEach((d) => fs.readdirSync(path.join(root, 'data', d)).forEach((f) => expect(files, f).toContain(`data/${d}/${f}`)));
+  ['app.js', 'index.html', 'data/changelog.js', 'config.js'].forEach((f) => expect(files, f).not.toContain(f)); // change every version
 });

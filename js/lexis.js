@@ -3,7 +3,7 @@
 // Classic script sharing globals with app.js (load order: index.html).
 
 /* ---------- lazy data files ---------- */
-// loadData('phrasal.js', 'PHRASAL') → Promise of window.PHRASAL ([] if the file fails to load).
+// loadData('data/phrasal.js', 'PHRASAL') → Promise of window.PHRASAL ([] if the file fails to load).
 const DATA_P = {};
 function loadData(file, key) {
   if (!DATA_P[key]) {
@@ -20,9 +20,9 @@ function loadData(file, key) {
 const isVerb = (w) => w.p.split('/').includes('v');
 
 /* ---------- phrasal verbs ---------- */
-// phrasal.js rows: [phrasal, level, thai, example with [verb] and [particles], thai example]
+// data/phrasal.js rows: [phrasal, level, thai, example with [verb] and [particles], thai example]
 let PHRASAL = null, PV_BY_VERB = null;
-const loadPhrasal = () => loadData('phrasal.js', 'PHRASAL').then((rows) => {
+const loadPhrasal = () => loadData('data/phrasal.js', 'PHRASAL').then((rows) => {
   if (!PHRASAL) {
     PHRASAL = rows.map(([pv, lv, th, ex, exTh]) => {
       const sp = pv.split(' ');
@@ -94,11 +94,11 @@ function lexisBoxes(el, w) {
 }
 
 /* ---------- idioms ---------- */
-// idioms.js rows: [idiom, level, thai, example with the idiom as used in [brackets], thai example, meaning group?]
+// data/idioms.js rows: [idiom, level, thai, example with the idiom as used in [brackets], thai example, meaning group?]
 let IDIOMS = null, ID_OF = null;
 // Words of an idiom that don't link it to the word sheet (too common to be its key word).
 const ID_SKIP = new Set("a an the of in on at to for with by up out off and or as than like from into over under is be it its one you your my his her their our someone something that this all every has no not".split(' '));
-const loadIdioms = () => loadData('idioms.js', 'IDIOMS').then((rows) => {
+const loadIdioms = () => loadData('data/idioms.js', 'IDIOMS').then((rows) => {
   if (!IDIOMS) {
     IDIOMS = rows.map(([id, lv, th, ex, exTh, grp]) => ({ id, lv, th, ex, exTh, grp: grp || '', plain: ex.replace(/[[\]]/g, '') }));
     ID_OF = new Map();
@@ -143,9 +143,9 @@ function renderIdioms() {
 }
 
 /* ---------- situations ---------- */
-// situations.js: [{ id, icon, th, en, tip, w: [[phrase, thai]], d: [[speaker, english, thai]] }]
+// data/situations.js: [{ id, icon, th, en, tip, w: [[phrase, thai]], d: [[speaker, english, thai]] }]
 let SIT = null;
-const loadSit = () => loadData('situations.js', 'SITUATIONS').then((rows) => (SIT = rows));
+const loadSit = () => loadData('data/situations.js', 'SITUATIONS').then((rows) => (SIT = rows));
 // Item for the reply game: line k of a dialogue (k >= 1), answered after seeing line k − 1.
 const sitItems = () => SIT.flatMap((st) => st.d.slice(1).map((l, k) => ({ st, k: k + 1 })));
 // Three lines from other situations' dialogues as wrong replies.
@@ -194,9 +194,9 @@ function renderSit(id) {
 }
 
 /* ---------- synonyms & antonyms ---------- */
-// synonyms.js: [{ th, s: [near-synonyms], a: [antonyms], tip }]; a word may be in several groups.
+// data/synonyms.js: [{ th, s: [near-synonyms], a: [antonyms], tip }]; a word may be in several groups.
 let SYN = null, SYN_OF = null;
-const loadSyn = () => loadData('synonyms.js', 'SYNONYMS').then((rows) => {
+const loadSyn = () => loadData('data/synonyms.js', 'SYNONYMS').then((rows) => {
   if (!SYN) {
     SYN = rows; SYN_OF = new Map();
     SYN.forEach((g) => g.s.forEach((x) => { if (!SYN_OF.has(x)) SYN_OF.set(x, []); SYN_OF.get(x).push(g); }));
@@ -261,9 +261,9 @@ function renderSyn() {
 }
 
 /* ---------- word parts (prefixes / suffixes) ---------- */
-// affixes.js: [{ x, k: 'p'|'s', th, note, ex: [[word, thai], ...] }]
+// data/affixes.js: [{ x, k: 'p'|'s', th, note, ex: [[word, thai], ...] }]
 let AFFIX = null, AFFIX_OF = null;
-const loadAffix = () => loadData('affixes.js', 'AFFIXES').then((rows) => {
+const loadAffix = () => loadData('data/affixes.js', 'AFFIXES').then((rows) => {
   if (!AFFIX) {
     AFFIX = rows; AFFIX_OF = new Map();
     AFFIX.forEach((a) => a.ex.forEach(([w, th]) => AFFIX_OF.set(w, { a, w, th })));

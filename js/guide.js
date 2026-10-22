@@ -279,7 +279,7 @@ function loadChangelog() {
   if (CHANGELOG) return Promise.resolve(CHANGELOG);
   return new Promise((res) => {
     const sc = document.createElement('script');
-    sc.src = 'changelog.js?v=' + APP_VERSION;
+    sc.src = 'data/changelog.js?v=' + APP_VERSION;
     const done = () => { CHANGELOG = window.CHANGELOG || []; res(CHANGELOG); };
     sc.onload = done; sc.onerror = done;
     document.head.appendChild(sc);
