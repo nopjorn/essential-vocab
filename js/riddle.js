@@ -84,12 +84,14 @@ function renderRiddle(from) {
         <div class="tiles mo-tiles" style="margin:14px 0 8px"><div class="tile-s"><b>${st.played}</b><span>เล่น</span></div><div class="tile-s"><b>${st.played ? Math.round(st.won / st.played * 100) : 0}%</b><span>ทายถูก</span></div><div class="tile-s"><b>${st.streak}</b><span>ติดต่อกัน</span></div><div class="tile-s"><b>${st.best}</b><span>สูงสุด</span></div></div>
         <div class="rd-dist">${st.dist.map((n, i) => `<div><span>${i + 1}</span><i style="width:${Math.max(6, n / maxd * 100)}%" class="${r.win && r.g.length === i + 1 ? 'me' : ''}">${n}</i></div>`).join('')}</div>
         <p class="small muted" style="margin:10px 0 0">คำใหม่ทุกวัน · ทุกคนได้คำเดียวกัน</p></div>` : '';
-    view.innerHTML = `<div class="row" style="margin-bottom:8px"><button class="btn ghost" id="rdBack">‹ กลับ</button><div class="grow"></div><span class="small muted">ทาย ${r.g.length}/${RIDDLE_TRIES}</span></div>
-      <div class="center" style="margin:0 0 8px"><span class="small muted">ระดับคำ:</span> ${RIDDLE_LVS.map((l) => `<button class="chip${r.lv.includes(l) ? ' on' : ''}" data-lv="${l}"${r.g.length ? ' disabled' : ''}>${l}</button>`).join(' ')}${r.g.length ? '<div class="small muted">เปลี่ยนระดับได้ก่อนเริ่มทายของวัน (หรือพรุ่งนี้)</div>' : ''}</div>
-      ${r.over ? '' : '<p class="small muted center" style="margin:0 4px 8px">ทายคำภาษาอังกฤษ 5 ตัวอักษรใน 6 ครั้ง 🟩 ถูกตำแหน่ง · 🟨 มีแต่ผิดที่ · ⬛ ไม่มี</p>'}
-      ${r.g.length >= 2 && !r.over ? `<div class="tip-box center" style="margin-bottom:10px">💡 คำใบ้: <b>${esc(ans.t)}</b> <span class="muted">(${esc(ans.p)})</span>${r.g.length >= 4 ? ` · ขึ้นต้นด้วย <b lang="en">${ans.w[0].toUpperCase()}</b>` : ''}</div>` : ''}
-      <div class="rd-grid" id="rdGrid">${rows}</div>${result}
-      ${r.over ? '' : `<div class="rd-kb" id="rdKb">${kb}</div>`}`;
+    const tip = r.g.length >= 2 && !r.over ? `<div class="tip-box center rd-tip">💡 คำใบ้: <b>${esc(ans.t)}</b> <span class="muted">(${esc(ans.p)})</span>${r.g.length >= 4 ? ` · ขึ้นต้นด้วย <b lang="en">${ans.w[0].toUpperCase()}</b>` : ''}</div>` : '';
+    view.classList.toggle('rd-fit', !r.over);
+    view.innerHTML = `<div class="rd-page">
+      <div class="rd-top"><div class="row"><button class="btn ghost" id="rdBack">‹ กลับ</button><div class="grow"></div><span class="small muted">ทาย ${r.g.length}/${RIDDLE_TRIES}</span></div>
+        <div class="center rd-lv"><span class="small muted">ระดับ:</span> ${RIDDLE_LVS.map((l) => `<button class="chip${r.lv.includes(l) ? ' on' : ''}" data-lv="${l}"${r.g.length ? ' disabled' : ''}>${l}</button>`).join(' ')}</div>
+        ${tip || (r.over ? '' : '<p class="small muted center rd-help">ทายคำอังกฤษ 5 ตัวอักษรใน 6 ครั้ง · 🟩 ถูกตำแหน่ง · 🟨 มีแต่ผิดที่ · ⬛ ไม่มี</p>')}</div>
+      <div class="rd-gridwrap"><div class="rd-grid" id="rdGrid">${rows}</div></div>${result}
+      ${r.over ? '' : `<div class="rd-kb" id="rdKb">${kb}</div>`}</div>`;
     $('#rdBack').onclick = () => go(back);
     view.querySelectorAll('[data-lv]').forEach((b) => (b.onclick = () => {
       const on = new Set(S.settings.riddleLv || RIDDLE_LV_DEFAULT), l = b.dataset.lv;
@@ -133,7 +135,7 @@ function renderRiddle(from) {
     else if (/^[a-zA-Z]$/.test(e.key)) press(e.key.toLowerCase());
   };
   document.addEventListener('keydown', onKey);
-  cleanup = () => document.removeEventListener('keydown', onKey);
+  cleanup = () => { document.removeEventListener('keydown', onKey); view.classList.remove('rd-fit'); };
   view.scrollTop = 0;
   paint();
 }

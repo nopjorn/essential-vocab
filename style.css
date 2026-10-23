@@ -1000,7 +1000,27 @@ details.danger-group > summary { color: var(--bad); }
 .mt-bar i { display: block; width: 100%; background: var(--c-master); border-radius: 4px 4px 0 0; }
 
 /* daily word riddle */
+.rd-page { width: min(100%, 460px); margin: 0 auto; }
+.rd-top .row { margin-bottom: 6px; }
+.rd-lv { margin: 0 0 6px; }
+.rd-lv .chip { padding: 5px 12px; }
+.rd-help, .rd-tip { margin: 0 0 6px; }
+.rd-tip { padding: 6px 10px; }
 .rd-grid { display: grid; gap: 6px; width: min(100%, 320px); margin: 0 auto 12px; }
+.view.rd-fit { display: flex; flex-direction: column; overflow: hidden; padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 8px); }
+.rd-fit .rd-page { flex: 1; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 8px; width: min(100%, 460px); }
+.rd-fit .rd-gridwrap { min-height: 0; display: flex; justify-content: center; align-items: center; }
+.rd-fit .rd-grid { height: min(100%, 520px); aspect-ratio: 5 / 6; width: auto; max-width: 100%; margin: 0; grid-template-rows: repeat(6, minmax(0, 1fr)); }
+.rd-fit .rd-t { aspect-ratio: auto; font-size: clamp(16px, 4.2vh, 28px); }
+.rd-fit .rd-k { height: clamp(36px, 6vh, 50px); }
+@media (min-width: 700px) { .view.rd-fit { padding-bottom: calc(env(safe-area-inset-bottom) + 16px); } }
+@media (max-height: 520px) and (orientation: landscape) {
+  .rd-fit .rd-page { width: min(100%, 900px); grid-template-columns: 1fr 1fr; grid-template-rows: auto minmax(0, 1fr); column-gap: 16px; }
+  .rd-fit .rd-top { grid-column: 2; grid-row: 1; }
+  .rd-fit .rd-gridwrap { grid-column: 1; grid-row: 1 / span 2; }
+  .rd-fit .rd-kb { grid-column: 2; grid-row: 2; align-self: end; }
+  .rd-fit .rd-k { height: 36px; }
+}
 .rd-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .rd-row.shake { animation: shake .3s; }
 .rd-t { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; border: 2px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); }
@@ -1020,4 +1040,3 @@ details.danger-group > summary { color: var(--bad); }
 .rd-dist span { width: 12px; color: var(--muted); }
 .rd-dist i { font-style: normal; background: var(--c-unk); color: #fff; border-radius: 4px; padding: 1px 6px; text-align: right; box-sizing: border-box; }
 .rd-dist i.me { background: var(--good); }
-@media (max-height: 520px) { .rd-t { font-size: 18px; } .rd-grid { width: min(100%, 220px); } .rd-k { height: 38px; } }
