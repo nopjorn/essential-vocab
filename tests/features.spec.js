@@ -558,3 +558,14 @@ test('daily word riddle: six misses ends the round, streak resets, new day start
   expect((await readState(page)).riddle.d).not.toBe('2000-01-01');
   expect(errors).toEqual([]);
 });
+
+test('home still renders when riddle data is missing or broken (1.46.1)', async ({ page }) => {
+  const errors = await openApp(page, { riddle: null, riddleStat: null });
+  expect(await page.$eval('#view', (v) => v.querySelectorAll('.hb').length)).toBeGreaterThan(2);
+  expect(await page.$('#qRiddle')).not.toBeNull();
+  // a card that throws is skipped, the rest of the home screen stays
+  await page.evaluate(() => { window.riddleToday = () => { throw new Error('boom'); }; renderHome(); });
+  expect(await page.$('#qRiddle')).toBeNull();
+  expect(await page.$('#startBtn')).not.toBeNull();
+  expect(errors.filter((e) => !/boom/.test(e))).toEqual([]);
+});
