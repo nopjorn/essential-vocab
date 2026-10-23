@@ -55,7 +55,9 @@ function renderSettings() {
 
     <details class="set-group" data-g="look" ${setIsOpen('look')}><summary>🎨 หน้าตา</summary><div class="card-box">
       <div class="set-row"><span>ธีม</span>
-        <div class="seg" id="theme">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด']].map(([v, t]) => `<button class="${(st.theme || 'auto') === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div></div>
+        <div class="seg" id="theme">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด'], ['black', '⚫ ดำสนิท']].map(([v, t]) => `<button class="${(st.theme || 'auto') === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div></div>
+      <div class="set-row" style="flex-wrap:wrap"><span>🎨 สีหลัก<br><span class="small muted" id="palName"></span></span>
+        <div class="pal" id="palette" role="group" aria-label="สีหลัก">${PALETTES.map(([id, name, a, b]) => `<button data-p="${id}" aria-label="${name}" aria-pressed="${(st.palette || 'violet') === id}" class="${(st.palette || 'violet') === id ? 'on' : ''}"><i style="--sw1:${a};--sw2:${b}">${(st.palette || 'violet') === id ? '✓' : ''}</i></button>`).join('')}</div></div>
       <div class="set-row"><span>✨ หน้าเลื่อนตอนเปลี่ยนแท็บ<br><span class="small muted">และตอนเปิด/ปิดหน้าย่อย</span></span>
         <label class="switch"><input type="checkbox" id="animPage" aria-label="หน้าเลื่อนตอนเปลี่ยนแท็บ" ${st.animPage !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>👆 ปุ่มเด้ง/สั่นตอนตอบ<br><span class="small muted">เด้งเมื่อตอบถูก สั่นเมื่อตอบผิด</span></span>
@@ -163,6 +165,15 @@ function renderSettings() {
     const b = e.target.closest('[data-v]'); if (!b) return;
     st.theme = b.dataset.v; save(); applyTheme();
     view.querySelectorAll('#theme button').forEach((x) => x.classList.toggle('on', x === b));
+  };
+  const palName = () => { const p = PALETTES.find((x) => x[0] === (st.palette || 'violet')); $('#palName').textContent = p ? p[1] : ''; };
+  palName();
+  $('#palette').onclick = (e) => {
+    const b = e.target.closest('[data-p]'); if (!b) return;
+    st.palette = b.dataset.p; save(); applyTheme(); palName();
+    view.querySelectorAll('#palette button').forEach((x) => {
+      const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); x.firstElementChild.textContent = on ? '✓' : '';
+    });
   };
   ['animPage', 'animAnswer', 'confetti'].forEach((k) => { $('#' + k).onchange = (e) => { st[k] = e.target.checked; save(); applyAnim(); }; });
   $('#homeSetBtn').onclick = () => go('homeset');
