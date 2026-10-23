@@ -3,15 +3,15 @@
 // Classic script sharing globals with app.js (load order: index.html).
 
 /* ---------- riddle ---------- */
-// Everyone gets the same word on the same day (hash of the date over the A1–B1 five-letter words, which are sorted A–Z).
+// Everyone gets the same word on the same day (hash of the date over the A1–A2 five-letter words, which are sorted A–Z).
 // Guesses must be five-letter words from the list. Colours: green = right place, yellow = in the word, grey = not in it.
-// After 3 misses the Thai meaning is shown as a hint. The share text is a colour grid without the word.
+// After 2 misses the Thai meaning is shown as a hint, after 4 also the first letter. The share text is a colour grid without the word.
 const RIDDLE_TRIES = 6;
 const RIDDLE_EPOCH = Date.UTC(2026, 0, 1);
 const RIDDLE_URL = 'https://nopjorn.github.io/essential-vocab/';
 const RIDDLE_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 const RIDDLE_ALL = W.filter((w) => /^[a-z]{5}$/.test(w.w));
-const RIDDLE_ANS = RIDDLE_ALL.filter((w) => ['A1', 'A2', 'B1'].includes(w.l));
+const RIDDLE_ANS = RIDDLE_ALL.filter((w) => ['A1', 'A2'].includes(w.l));
 const RIDDLE_SET = new Set(RIDDLE_ALL.map((w) => w.w));
 const riddleNo = (day) => Math.floor((Date.parse(day + 'T00:00:00Z') - RIDDLE_EPOCH) / 864e5) + 1;
 function riddleAnswer(day) {
@@ -78,7 +78,7 @@ function renderRiddle(from) {
         <p class="small muted" style="margin:10px 0 0">คำใหม่ทุกวัน · ทุกคนได้คำเดียวกัน</p></div>` : '';
     view.innerHTML = `<div class="row" style="margin-bottom:8px"><button class="btn ghost" id="rdBack">‹ กลับ</button><div class="grow"></div><span class="small muted">ทาย ${r.g.length}/${RIDDLE_TRIES}</span></div>
       ${r.over ? '' : '<p class="small muted center" style="margin:0 4px 8px">ทายคำภาษาอังกฤษ 5 ตัวอักษรใน 6 ครั้ง 🟩 ถูกตำแหน่ง · 🟨 มีแต่ผิดที่ · ⬛ ไม่มี</p>'}
-      ${r.g.length >= 3 && !r.over ? `<div class="tip-box center" style="margin-bottom:10px">💡 คำใบ้: <b>${esc(ans.t)}</b> <span class="muted">(${esc(ans.p)})</span></div>` : ''}
+      ${r.g.length >= 2 && !r.over ? `<div class="tip-box center" style="margin-bottom:10px">💡 คำใบ้: <b>${esc(ans.t)}</b> <span class="muted">(${esc(ans.p)})</span>${r.g.length >= 4 ? ` · ขึ้นต้นด้วย <b lang="en">${ans.w[0].toUpperCase()}</b>` : ''}</div>` : ''}
       <div class="rd-grid" id="rdGrid">${rows}</div>${result}
       ${r.over ? '' : `<div class="rd-kb" id="rdKb">${kb}</div>`}`;
     $('#rdBack').onclick = () => go(back);

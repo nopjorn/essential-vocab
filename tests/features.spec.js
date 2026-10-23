@@ -519,11 +519,12 @@ test('daily word riddle: same word per date, scoring, invalid guesses, hint, win
   await page.keyboard.type('zzzzz'); await page.keyboard.press('Enter');
   await expect(page.locator('#toast')).toContainText('ไม่มีคำนี้');
   for (let i = 0; i < 5; i++) await page.keyboard.press('Backspace');
-  // three wrong guesses (on-screen keys for the first) → hint
+  // wrong guesses (on-screen keys for the first) → hint after two, first letter after four
   for (const [k, w] of wrong.entries()) {
     if (k === 0) { for (const c of w) await page.locator(`[data-k="${c}"]`).click(); await page.locator('[data-k="enter"]').click(); } else { await page.keyboard.type(w); await page.keyboard.press('Enter'); }
   }
   await expect(page.locator('.tip-box')).toContainText('คำใบ้');
+  await expect(page.locator('.tip-box')).not.toContainText('ขึ้นต้นด้วย');
   expect((await readState(page)).riddle.g).toEqual(wrong);
   await page.keyboard.type(ans); await page.keyboard.press('Enter');
   await expect(page.locator('#rdRes')).toContainText('ครั้งที่ 4');
