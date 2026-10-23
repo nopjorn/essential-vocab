@@ -4,6 +4,10 @@
 
 /* ---------- home ---------- */
 const installHidden = () => { try { return !!localStorage.getItem('o3k.installHide'); } catch (e) { return false; } };
+// One broken card must not blank the whole home screen: a block that throws is simply left out.
+function homeBlockHtml(B, id) {
+  try { return B[id](); } catch (e) { console.error('home block', id, e); return ''; }
+}
 function renderHome() {
   rollDay();
   const p = pool();
@@ -50,7 +54,7 @@ function renderHome() {
       <div class="small muted" style="margin-top:10px">⭐ Lv.${levelOf(S.xp)} · 🏅 ${ACH.filter((x) => S.ach[x.id]).length}/${ACH.length} เหรียญ · 🟣 เรียนแล้ว 🟢 จำได้แล้ว</div>
     </button>`,
   };
-  const blocks = homeBlocks().filter((b) => b.on).map((b) => ({ ...b, html: B[b.id]() })).filter((b) => b.html);
+  const blocks = homeBlocks().filter((b) => b.on).map((b) => ({ ...b, html: homeBlockHtml(B, b.id) })).filter((b) => b.html);
   // A half-width block with no partner in its row would leave a hole, so it stretches to the full row.
   let open = null;
   for (const b of blocks) {

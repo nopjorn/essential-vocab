@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.46.1';
+const APP_VERSION = '1.46.2';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -101,7 +101,12 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const d = defaults(), s = JSON.parse(raw);
-      return { ...d, ...s, settings: { ...d.settings, ...(s.settings || {}) } };
+      const r = { ...d, ...s, settings: { ...d.settings, ...(s.settings || {}) } };
+      // A missing/odd riddle record (older backup, sync from another device) must never break the home screen.
+      if (!r.riddle || typeof r.riddle !== 'object' || !Array.isArray(r.riddle.g)) r.riddle = d.riddle;
+      if (!r.riddleStat || typeof r.riddleStat !== 'object') r.riddleStat = d.riddleStat;
+      else r.riddleStat = { ...d.riddleStat, ...r.riddleStat, dist: (Array.isArray(r.riddleStat.dist) ? r.riddleStat.dist : []).concat([0, 0, 0, 0, 0, 0]).slice(0, 6) };
+      return r;
     }
   } catch (e) { /* storage unavailable: start fresh */ }
   return defaults();
