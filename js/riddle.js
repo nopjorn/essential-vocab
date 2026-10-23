@@ -3,7 +3,8 @@
 // Classic script sharing globals with app.js (load order: index.html).
 
 /* ---------- riddle ---------- */
-// Everyone gets the same word on the same day (hash of the date over the A1–A2 five-letter words, which are sorted A–Z).
+// Everyone with the same levels gets the same word on the same day (hash of the date over the five-letter words of the chosen levels, sorted A–Z).
+// The levels are the user's own difficulty (settings.riddleLv, default A1+A2); today's round keeps the levels it started with (r.lv), changeable until the first guess.
 // Guesses must be five-letter words from the list. Colours: green = right place, yellow = in the word, grey = not in it.
 // After 2 misses the Thai meaning is shown as a hint, after 4 also the first letter. The share text is a colour grid without the word.
 const RIDDLE_TRIES = 6;
@@ -11,12 +12,15 @@ const RIDDLE_EPOCH = Date.UTC(2026, 0, 1);
 const RIDDLE_URL = 'https://nopjorn.github.io/essential-vocab/';
 const RIDDLE_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 const RIDDLE_ALL = W.filter((w) => /^[a-z]{5}$/.test(w.w));
-const RIDDLE_ANS = RIDDLE_ALL.filter((w) => ['A1', 'A2'].includes(w.l));
+const RIDDLE_LVS = ['A1', 'A2', 'B1', 'B2', 'C1'];
+const RIDDLE_LV_DEFAULT = ['A1', 'A2'];
+const riddlePool = (lv) => RIDDLE_ALL.filter((w) => (lv && lv.length ? lv : RIDDLE_LV_DEFAULT).includes(w.l));
 const RIDDLE_SET = new Set(RIDDLE_ALL.map((w) => w.w));
 const riddleNo = (day) => Math.floor((Date.parse(day + 'T00:00:00Z') - RIDDLE_EPOCH) / 864e5) + 1;
-function riddleAnswer(day) {
+function riddleAnswer(day, lv) {
+  const pool = riddlePool(lv);
   let h = 11; for (const c of 'riddle' + day) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return RIDDLE_ANS[h % RIDDLE_ANS.length];
+  return pool[h % pool.length];
 }
 // 'g' right place, 'y' elsewhere in the word, 'x' absent; repeated letters are matched once each.
 function riddleScore(guess, ans) {
@@ -29,12 +33,15 @@ const RIDDLE_EMOJI = { g: '🟩', y: '🟨', x: '⬛' };
 const RIDDLE_NAME = { g: 'ถูกตำแหน่ง', y: 'มีในคำแต่ผิดตำแหน่ง', x: 'ไม่มีในคำ' };
 function riddleToday() {
   const t = today();
-  if (S.riddle.d !== t) S.riddle = { d: t, g: [], over: false, win: false };
+  const want = (S.settings.riddleLv || RIDDLE_LV_DEFAULT).slice();
+  if (S.riddle.d !== t) S.riddle = { d: t, g: [], over: false, win: false, lv: want };
+  if (!S.riddle.lv) S.riddle.lv = RIDDLE_LV_DEFAULT.slice();
+  if (!S.riddle.g.length) S.riddle.lv = want;
   return S.riddle;
 }
 function riddleShare(r) {
-  const ans = riddleAnswer(r.d).w;
-  return `ปริศนาศัพท์ #${riddleNo(r.d)} ${r.win ? r.g.length : 'X'}/${RIDDLE_TRIES}\n${r.g.map((g) => riddleScore(g, ans).map((c) => RIDDLE_EMOJI[c]).join('')).join('\n')}\n${RIDDLE_URL}`;
+  const ans = riddleAnswer(r.d, r.lv).w;
+  return `ปริศนาศัพท์ #${riddleNo(r.d)} (${r.lv.join('+')}) ${r.win ? r.g.length : 'X'}/${RIDDLE_TRIES}\n${r.g.map((g) => riddleScore(g, ans).map((c) => RIDDLE_EMOJI[c]).join('')).join('\n')}\n${RIDDLE_URL}`;
 }
 function riddleFinish(r) {
   const st = S.riddleStat, yest = new Date(Date.parse(r.d + 'T12:00:00Z') - 864e5).toISOString().slice(0, 10);
@@ -49,7 +56,8 @@ function riddleFinish(r) {
   S.counts.riddle = (S.counts.riddle || 0) + (r.win ? 1 : 0);
 }
 function renderRiddle(from) {
-  const back = from || 'games', r = riddleToday(), ans = riddleAnswer(r.d);
+  const back = from || 'games', r = riddleToday();
+  let ans = riddleAnswer(r.d, r.lv);
   let cur = '', flipRow = -1;
   const keyState = () => {
     const k = {};
@@ -77,11 +85,18 @@ function renderRiddle(from) {
         <div class="rd-dist">${st.dist.map((n, i) => `<div><span>${i + 1}</span><i style="width:${Math.max(6, n / maxd * 100)}%" class="${r.win && r.g.length === i + 1 ? 'me' : ''}">${n}</i></div>`).join('')}</div>
         <p class="small muted" style="margin:10px 0 0">คำใหม่ทุกวัน · ทุกคนได้คำเดียวกัน</p></div>` : '';
     view.innerHTML = `<div class="row" style="margin-bottom:8px"><button class="btn ghost" id="rdBack">‹ กลับ</button><div class="grow"></div><span class="small muted">ทาย ${r.g.length}/${RIDDLE_TRIES}</span></div>
+      <div class="center" style="margin:0 0 8px"><span class="small muted">ระดับคำ:</span> ${RIDDLE_LVS.map((l) => `<button class="chip${r.lv.includes(l) ? ' on' : ''}" data-lv="${l}"${r.g.length ? ' disabled' : ''}>${l}</button>`).join(' ')}${r.g.length ? '<div class="small muted">เปลี่ยนระดับได้ก่อนเริ่มทายของวัน (หรือพรุ่งนี้)</div>' : ''}</div>
       ${r.over ? '' : '<p class="small muted center" style="margin:0 4px 8px">ทายคำภาษาอังกฤษ 5 ตัวอักษรใน 6 ครั้ง 🟩 ถูกตำแหน่ง · 🟨 มีแต่ผิดที่ · ⬛ ไม่มี</p>'}
       ${r.g.length >= 2 && !r.over ? `<div class="tip-box center" style="margin-bottom:10px">💡 คำใบ้: <b>${esc(ans.t)}</b> <span class="muted">(${esc(ans.p)})</span>${r.g.length >= 4 ? ` · ขึ้นต้นด้วย <b lang="en">${ans.w[0].toUpperCase()}</b>` : ''}</div>` : ''}
       <div class="rd-grid" id="rdGrid">${rows}</div>${result}
       ${r.over ? '' : `<div class="rd-kb" id="rdKb">${kb}</div>`}`;
     $('#rdBack').onclick = () => go(back);
+    view.querySelectorAll('[data-lv]').forEach((b) => (b.onclick = () => {
+      const on = new Set(S.settings.riddleLv || RIDDLE_LV_DEFAULT), l = b.dataset.lv;
+      if (on.has(l)) { if (on.size > 1) on.delete(l); } else on.add(l);
+      S.settings.riddleLv = RIDDLE_LVS.filter((x) => on.has(x));
+      riddleToday(); ans = riddleAnswer(r.d, r.lv); cur = ''; save(); paint();
+    }));
     if ($('#rdSay')) $('#rdSay').onclick = () => speak(ans.w);
     if ($('#rdSheet')) $('#rdSheet').onclick = () => openSheet(ans);
     if ($('#rdShare')) $('#rdShare').onclick = async () => {

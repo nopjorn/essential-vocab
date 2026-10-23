@@ -504,7 +504,7 @@ test('tab bar: สถิติ sits between เกม and คำศัพท์ 
 
 test('daily word riddle: same word per date, scoring, invalid guesses, hint, win, share, stats', async ({ page }) => {
   const errors = await openApp(page, { settings: { levels: ['A1'] } });
-  const info = await page.evaluate(() => ({ a: riddleAnswer('2026-10-23').w, b: riddleAnswer('2026-10-23').w, ok: RIDDLE_ANS.every((w) => /^[a-z]{5}$/.test(w.w)), n: RIDDLE_ALL.length }));
+  const info = await page.evaluate(() => ({ a: riddleAnswer('2026-10-23').w, b: riddleAnswer('2026-10-23').w, ok: riddlePool().every((w) => /^[a-z]{5}$/.test(w.w)), n: RIDDLE_ALL.length }));
   expect(info.a).toBe(info.b); expect(info.ok).toBe(true); expect(info.n).toBeGreaterThan(600);
   expect(await page.evaluate(() => riddleScore('geese', 'these').join(''))).toBe('xxggg');
   expect(await page.evaluate(() => riddleScore('speed', 'abide').join(''))).toBe('xxyxy');
@@ -540,6 +540,26 @@ test('daily word riddle: same word per date, scoring, invalid guesses, hint, win
   await page.evaluate(() => go('games')); await page.locator('#toRiddle').click();
   await expect(page.locator('#rdRes')).toBeVisible();
   await expect(page.locator('#rdKb')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('daily word riddle: level chips change the pool until the first guess, then lock', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => go('riddle'));
+  await expect(page.locator('[data-lv="A1"]')).toHaveClass(/on/);
+  await expect(page.locator('[data-lv="B1"]')).not.toHaveClass(/on/);
+  await page.locator('[data-lv="A2"]').click(); // A1 only
+  await page.locator('[data-lv="C1"]').click(); // A1 + C1
+  await page.locator('[data-lv="A1"]').click(); // C1 only
+  await page.locator('[data-lv="C1"]').click(); // last one stays on
+  await expect(page.locator('[data-lv="C1"]')).toHaveClass(/on/);
+  expect(await page.evaluate(() => S.settings.riddleLv)).toEqual(['C1']);
+  expect(await page.evaluate(() => riddleAnswer(today(), S.riddle.lv).l)).toBe('C1');
+  const g = await page.evaluate(() => RIDDLE_ALL.map((w) => w.w).find((w) => w !== riddleAnswer(today(), ['C1']).w));
+  await page.keyboard.type(g); await page.keyboard.press('Enter');
+  await expect(page.locator('[data-lv="A1"]')).toBeDisabled();
+  await page.evaluate(() => { S.settings.riddleLv = ['A1']; riddleToday(); });
+  expect(await page.evaluate(() => S.riddle.lv)).toEqual(['C1']); // locked for today
   expect(errors).toEqual([]);
 });
 
