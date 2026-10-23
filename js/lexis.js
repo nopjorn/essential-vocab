@@ -93,6 +93,11 @@ function lexisBoxes(el, w) {
   });
 }
 
+/* ---------- emoji ---------- */
+// data/emoji.js: window.EMOJI = { headword: emoji } for concrete words (picture-guess game, emoji shown on the word sheet).
+let EMOJI = null;
+const loadEmoji = () => loadData('data/emoji.js', 'EMOJI').then((m) => { EMOJI = Array.isArray(m) ? {} : m; return EMOJI; });
+
 /* ---------- idioms ---------- */
 // data/idioms.js rows: [idiom, level, thai, example with the idiom as used in [brackets], thai example, meaning group?]
 let IDIOMS = null, ID_OF = null;

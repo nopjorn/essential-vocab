@@ -945,6 +945,8 @@ details.danger-group > summary { color: var(--bad); }
 .example mark { background: none; color: var(--pink); font-weight: 800; }
 /* prompts with more lines (phrasal, synonyms, word parts) never shrink below their content */
 .view:has(> .q-prompt) > .q-prompt.fit { min-height: fit-content; }
+.emoji-big { font-size: clamp(72px, 22vw, 110px); line-height: 1.1; margin: 4px 0 2px; }
+@media (max-height: 520px) { .emoji-big { font-size: 64px; } }
 .syn-g + .syn-g { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
 .syn-g .chips { margin-top: 6px; }
 .syn-g .tip-box { margin-top: 10px; }

@@ -311,7 +311,7 @@ test.describe('service worker', () => {
       if (!keys.includes('o3k-data') || !keys.includes('o3k-' + APP_VERSION)) return 0;
       return (await (await caches.open('o3k-data')).keys()).length;
     });
-    await expect.poll(ready, { timeout: 20000 }).toBe(21);
+    await expect.poll(ready, { timeout: 20000 }).toBe(22);
     await page.reload();
     expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
     await context.setOffline(true);
@@ -589,4 +589,18 @@ test('home still renders when riddle data is missing or broken (1.46.1)', async 
   expect(await page.$('#qRiddle')).toBeNull();
   expect(await page.$('#startBtn')).not.toBeNull();
   expect(errors.filter((e) => !/boom/.test(e))).toEqual([]);
+});
+
+test('emoji game: shows one emoji, options are emoji words, answer marks progress', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => startGame('emoji'));
+  const view = page.locator('#view');
+  await expect(view.locator('.emoji-big')).toBeVisible();
+  const info = await page.evaluate(() => ({ emoji: document.querySelector('.emoji-big').textContent, opts: [...document.querySelectorAll('.opt')].map((o) => o.textContent) }));
+  expect(info.opts.length).toBe(4);
+  expect(await page.evaluate((o) => o.every((w) => !!EMOJI[w]) && o.filter((w) => EMOJI[w] === document.querySelector('.emoji-big').textContent).length, info.opts)).toBe(1);
+  await view.locator('.opt.correct').count();
+  await view.locator('.opt', { hasText: await page.evaluate(() => Object.keys(EMOJI).find((w) => EMOJI[w] === document.querySelector('.emoji-big').textContent)) }).first().click();
+  await expect(view.locator('#reveal')).toContainText('✅');
+  expect(errors).toEqual([]);
 });

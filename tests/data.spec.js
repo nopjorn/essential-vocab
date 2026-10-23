@@ -172,6 +172,21 @@ test('word parts (affixes) are valid', () => {
   expect(bad).toEqual([]);
 });
 
+test('emoji picture words: real list words, one word per emoji', () => {
+  const { EMOJI } = load('data/emoji.js');
+  const words = new Set();
+  WORD_FILES.forEach((f) => { const w = { WORDS: [] }; vm.runInNewContext(read(f), { window: w }); w.WORDS.forEach((r) => words.add(r[0])); });
+  const entries = Object.entries(EMOJI), bad = [];
+  expect(entries.length).toBeGreaterThan(200);
+  const byEmoji = {};
+  for (const [w, e] of entries) {
+    if (!words.has(w)) bad.push(`${w}: not in the word list`);
+    if (byEmoji[e]) bad.push(`${e} used for both ${byEmoji[e]} and ${w}`);
+    byEmoji[e] = w;
+  }
+  expect(bad).toEqual([]);
+});
+
 test('idioms are valid practice data', () => {
   const { IDIOMS } = load('data/idioms.js');
   expect(IDIOMS.length).toBeGreaterThan(120);

@@ -46,6 +46,7 @@ const GAMES = {
   affix: { icon: '🧱', name: 'เติมหน้า–ท้ายคำ', desc: 'un-, -ful, -less … เลือกให้ได้ความหมาย' },
   idiom: { icon: '🎭', name: 'สำนวน', desc: 'piece of cake = ? เลือกความหมายหรือสำนวนให้ถูก' },
   sit: { icon: '🗨️', name: 'ตอบให้เข้าสถานการณ์', desc: 'เลือกประโยคถัดไปในบทสนทนา' },
+  emoji: { icon: '🖼️', name: 'ทายจากภาพอีโมจิ', desc: 'ดูอีโมจิ เลือกคำอังกฤษที่ตรงกับภาพ' },
   review: { icon: '🔁', name: 'คำที่ผิดบ่อย', desc: 'ฝึกคำที่เคยตอบผิด' },
 };
 // Games whose data is lazy-loaded (stories / collocations) or built from sentences instead of the word pool.
@@ -203,6 +204,7 @@ function gamePool(id) {
   if (id === 'cloze' || id === 'dict') list = list.filter(hasCloze);
   if (id === 'order') list = list.filter((w) => { const n = w.e.split(/\s+/).length; return n >= 4 && n <= 12; });
   if (id === 'colloc') list = list.filter((w) => COLLOC && COLLOC[w.w]);
+  if (id === 'emoji') list = list.filter((w) => EMOJI && EMOJI[w.w]);
   return list;
 }
 
@@ -234,6 +236,7 @@ function startGame(id) {
     return;
   }
   if (STORY_GAMES.includes(id) && !STORIES) { withLoading(loadStories()).then(() => startGame(id)); return; }
+  if (id === 'emoji' && !EMOJI) { withLoading(loadEmoji()).then(() => startGame(id)); return; }
   if (id === 'colloc' && !COLLOC) { withLoading(loadColloc()).then(() => startGame(id)); return; }
   if (PAIR_GAMES.includes(id) && !CONFUSE) { withLoading(loadPairs()).then(() => startGame(id)); return; }
   if (id === 'wform' && !FAMILIES) { withLoading(loadFamilies()).then(() => startGame(id)); return; }
@@ -246,7 +249,8 @@ function startGame(id) {
   const src = gamePool(id);
   const min = id === 'match' ? 6 : 4;
   if (src.length < min) {
-    toast(id === 'review' ? 'ยังไม่มีคำที่ตอบผิด เก่งมาก! 👍'
+    toast(id === 'emoji' ? 'คำที่มีภาพอีโมจิยังน้อยไป ลองเลือกแหล่งคำเป็น "ทุกระดับ" ดูนะ'
+      : id === 'review' ? 'ยังไม่มีคำที่ตอบผิด เก่งมาก! 👍'
       : gameSource === 'mastered' ? `ต้องมีคำที่จำได้แล้วอย่างน้อย ${min} คำก่อนนะ`
       : gameSource === 'star' ? `ติดดาวคำอย่างน้อย ${min} คำก่อนนะ (กด ☆ บนการ์ดหรือในหน้าคำศัพท์)`
       : gameSource === 'leech' ? `ยังมีคำดื้อไม่ถึง ${min} คำ เก่งมาก! 🐢`
@@ -289,6 +293,7 @@ function playQuiz(mode, src, gameId) {
     if (m === 'sOrder') return qOrder(w, w._s, '', w._st);
     if (m === 'sCloze') return qSCloze(w);
     if (m === 'colloc') return qColloc(w);
+    if (m === 'emoji') return qEmoji(w);
     if (m === 'confuse') return qConfuse(w);
     if (m === 'minpair') return qMinpair(w);
     if (m === 'wform') return qWform(w);
@@ -728,6 +733,34 @@ function playQuiz(mode, src, gameId) {
         <div class="fam-box"><div class="small muted" style="margin:10px 0 6px"><b>🧱 คำอื่นที่มี ${right}</b> (แตะเพื่อฟัง)</div>${affixRows(a, w.w)}</div>
         <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
       view.querySelector('.fam-box').onclick = (ev) => { const c = ev.target.closest('[data-col]'); if (c) speak(c.dataset.col); };
+      $('#nextQ').onclick = next;
+      speak(w.w);
+    };
+  }
+
+  // Picture guess: one emoji, pick the English word it shows (distractors are other emoji words, so every option is a picture word).
+  function qEmoji(w) {
+    const used = new Set([w.w]);
+    const others = shuffle(W.filter((x) => EMOJI[x.w] && !used.has(x.w) && used.add(x.w))).slice(0, 3);
+    const opts = shuffle([w, ...others]);
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit pop">${lvBadge(w.g)}<div class="small muted" style="margin-top:6px">อีโมจินี้คือคำอะไร</div>
+        <div class="emoji-big" role="img" aria-label="ภาพอีโมจิ">${EMOJI[w.w]}</div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" lang="en" data-i="${o.idx}">${esc(o.w)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = +b.dataset.i === w.idx;
+      view.querySelectorAll('.opt').forEach((o) => { if (+o.dataset.i === w.idx) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌'} ${EMOJI[w.w]} <b lang="en">${esc(w.w)}</b> = ${esc(w.t)}`
+        + (ok ? '' : exampleBox(w))
+        + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      bindSayEx(view, w.e);
       $('#nextQ').onclick = next;
       speak(w.w);
     };
