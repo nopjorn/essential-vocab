@@ -66,7 +66,7 @@ function renderRiddle(from) {
         return `<div class="rd-t ${sc ? 'c-' + sc[i] : ch ? 'typed' : ''}" lang="en" style="--d:${i * 0.12}s"${sc ? ` aria-label="${ch.toUpperCase()} ${RIDDLE_NAME[sc[i]]}"` : ''}>${ch.toUpperCase()}</div>`;
       }).join('')}</div>`;
     }).join('');
-    const kb = RIDDLE_ROWS.map((row, ri) => `<div class="rd-kr">${ri === 2 ? '<button class="rd-k wide" data-k="enter" aria-label="ส่งคำตอบ">ส่ง</button>' : ''}${[...row].map((c) => `<button class="rd-k ${ks[c] ? 'c-' + ks[c] : ''}" data-k="${c}" lang="en">${c.toUpperCase()}</button>`).join('')}${ri === 2 ? '<button class="rd-k wide" data-k="back" aria-label="ลบ">⌫</button>' : ''}</div>`).join('');
+    const kb = RIDDLE_ROWS.map((row, ri) => `<div class="rd-kr">${ri === 2 ? '<button class="rd-k wide" data-k="enter" aria-label="ส่งคำตอบ">ส่งคำตอบ ↵</button>' : ''}${[...row].map((c) => `<button class="rd-k ${ks[c] ? 'c-' + ks[c] : ''}" data-k="${c}" lang="en">${c.toUpperCase()}</button>`).join('')}${ri === 2 ? '<button class="rd-k wide" data-k="back" aria-label="ลบ">⌫</button>' : ''}</div>`).join('');
     const st = S.riddleStat, maxd = Math.max(1, ...st.dist);
     const result = r.over ? `<div class="card-box center pop" id="rdRes"><div class="result-emoji">${r.win ? '🎉' : '😅'}</div>
         <div class="h2" style="margin:4px 0">${r.win ? `ทายถูกในครั้งที่ ${r.g.length}!` : 'วันนี้ยังไม่ใช่ ลองใหม่พรุ่งนี้นะ'}</div>
