@@ -501,3 +501,60 @@ test('tab bar: สถิติ sits between เกม and คำศัพท์ 
   await expect(page.locator('#tabbar > [data-tab="stats"]')).toHaveClass(/active/);
   expect(errors).toEqual([]);
 });
+
+test('daily word riddle: same word per date, scoring, invalid guesses, hint, win, share, stats', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  const info = await page.evaluate(() => ({ a: riddleAnswer('2026-10-23').w, b: riddleAnswer('2026-10-23').w, ok: RIDDLE_ANS.every((w) => /^[a-z]{5}$/.test(w.w)), n: RIDDLE_ALL.length }));
+  expect(info.a).toBe(info.b); expect(info.ok).toBe(true); expect(info.n).toBeGreaterThan(600);
+  expect(await page.evaluate(() => riddleScore('geese', 'these').join(''))).toBe('xxggg');
+  expect(await page.evaluate(() => riddleScore('speed', 'abide').join(''))).toBe('xxyxy');
+  const { ans, wrong } = await page.evaluate(() => { const a = riddleAnswer(today()).w; return { ans: a, wrong: RIDDLE_ALL.map((w) => w.w).filter((w) => w !== a).slice(0, 3) }; });
+  await page.evaluate(() => go('home'));
+  await page.locator('#qRiddle').click();
+  await expect(page.locator('.rd-row')).toHaveCount(6);
+  // too short / not in the list: no try used
+  await page.keyboard.type('ab'); await page.keyboard.press('Enter');
+  await expect(page.locator('#toast')).toContainText('ครบ 5');
+  await page.keyboard.press('Backspace'); await page.keyboard.press('Backspace');
+  await page.keyboard.type('zzzzz'); await page.keyboard.press('Enter');
+  await expect(page.locator('#toast')).toContainText('ไม่มีคำนี้');
+  for (let i = 0; i < 5; i++) await page.keyboard.press('Backspace');
+  // three wrong guesses (on-screen keys for the first) → hint
+  for (const [k, w] of wrong.entries()) {
+    if (k === 0) { for (const c of w) await page.locator(`[data-k="${c}"]`).click(); await page.locator('[data-k="enter"]').click(); } else { await page.keyboard.type(w); await page.keyboard.press('Enter'); }
+  }
+  await expect(page.locator('.tip-box')).toContainText('คำใบ้');
+  expect((await readState(page)).riddle.g).toEqual(wrong);
+  await page.keyboard.type(ans); await page.keyboard.press('Enter');
+  await expect(page.locator('#rdRes')).toContainText('ครั้งที่ 4');
+  const st = (await readState(page)).riddleStat;
+  expect([st.played, st.won, st.streak, st.dist[3]]).toEqual([1, 1, 1, 1]);
+  await page.evaluate(() => { window.__shared = ''; navigator.share = async (d) => { window.__shared = d.text; }; });
+  await page.locator('#rdShare').click();
+  const shared = await page.evaluate(() => window.__shared);
+  expect(shared).toContain('4/6'); expect(shared).toContain('🟩🟩🟩🟩🟩'); expect(shared.toLowerCase()).not.toContain(ans);
+  await page.locator('#rdSay').click();
+  expect(await page.evaluate(() => window.__said)).toContain(ans);
+  // finished: reopening shows the result, and the home card says done
+  await page.evaluate(() => go('games')); await page.locator('#toRiddle').click();
+  await expect(page.locator('#rdRes')).toBeVisible();
+  await expect(page.locator('#rdKb')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('daily word riddle: six misses ends the round, streak resets, new day starts fresh', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => {
+    const a = riddleAnswer(today()).w, ws = RIDDLE_ALL.map((w) => w.w).filter((w) => w !== a).slice(0, 6);
+    S.riddleStat.streak = 3; S.riddleStat.last = '2000-01-01';
+    go('riddle'); ws.forEach((w) => { [...w].forEach((c) => document.querySelector(`[data-k="${c}"]`).click()); document.querySelector('[data-k="enter"]').click(); });
+  });
+  await expect(page.locator('#rdRes')).toContainText('วันนี้ยังไม่ใช่');
+  const s = await readState(page);
+  expect([s.riddleStat.played, s.riddleStat.won, s.riddleStat.streak]).toEqual([1, 0, 0]);
+  // yesterday's puzzle is replaced by today's
+  await page.evaluate(() => { S.riddle.d = '2000-01-01'; go('riddle'); });
+  await expect(page.locator('#rdRes')).toHaveCount(0);
+  expect((await readState(page)).riddle.d).not.toBe('2000-01-01');
+  expect(errors).toEqual([]);
+});

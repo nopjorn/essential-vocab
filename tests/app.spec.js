@@ -2,7 +2,7 @@
 const { test, expect } = require('@playwright/test');
 const { openApp, readState } = require('./helpers');
 
-const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read', 'placement', 'changelog', 'mtest'];
+const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read', 'placement', 'changelog', 'mtest', 'riddle'];
 
 test('every screen renders without errors and shows the version', async ({ page }) => {
   const errors = await openApp(page);
@@ -275,8 +275,10 @@ test('home layout: hide, reorder and resize blocks from settings', async ({ page
   await page.locator('#homeSetBtn').click();
   await expect(page.locator('#hcfg')).toBeVisible();
   await page.locator('.hc-row[data-id="wotd"] [data-act="tog"]').evaluate((el) => el.click());
+  await page.locator('.hc-row[data-id="riddle"] [data-act="tog"]').evaluate((el) => el.click());
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click();
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click();
+  await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click(); // hidden blocks still take a slot
   await page.locator('.hc-row[data-id="quest"] [data-act="w"][data-v="half"]').click();
   await page.locator('.hc-row[data-id="level"] [data-act="tog"]').evaluate((el) => el.click());
   await page.evaluate(() => go('home'));

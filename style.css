@@ -998,3 +998,25 @@ details.danger-group > summary { color: var(--bad); }
 .mt-col b { color: var(--text); font-size: var(--fs-sm); }
 .mt-bar { width: 22px; height: 64px; background: var(--surface-2); border-radius: 6px; display: flex; align-items: flex-end; overflow: hidden; }
 .mt-bar i { display: block; width: 100%; background: var(--c-master); border-radius: 4px 4px 0 0; }
+
+/* daily word riddle */
+.rd-grid { display: grid; gap: 6px; width: min(100%, 320px); margin: 0 auto 12px; }
+.rd-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.rd-row.shake { animation: shake .3s; }
+.rd-t { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; border: 2px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); }
+.rd-t.typed { border-color: var(--primary-2); }
+.rd-t.c-g, .rd-k.c-g { background: var(--good); border-color: var(--good); color: #fff; }
+.rd-t.c-y, .rd-k.c-y { background: var(--warn); border-color: var(--warn); color: #3a2f00; }
+.rd-t.c-x, .rd-k.c-x { background: var(--c-unk); border-color: var(--c-unk); color: #fff; }
+.rd-row.flip .rd-t[class*="c-"] { animation: rdflip .45s both; animation-delay: var(--d); }
+@keyframes rdflip { 0% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
+.rd-kb { display: grid; gap: 6px; width: min(100%, 460px); margin: 0 auto; }
+.rd-kr { display: flex; gap: 5px; justify-content: center; }
+.rd-k { flex: 1; max-width: 44px; height: 50px; border: 0; border-radius: 8px; background: var(--surface-2); color: var(--text); font: inherit; font-weight: 700; padding: 0; cursor: pointer; }
+.rd-k.wide { flex: 1.6; max-width: 68px; font-size: var(--fs-sm); }
+.rd-dist { display: grid; gap: 4px; text-align: left; }
+.rd-dist > div { display: flex; align-items: center; gap: 8px; font-size: var(--fs-xs); }
+.rd-dist span { width: 12px; color: var(--muted); }
+.rd-dist i { font-style: normal; background: var(--c-unk); color: #fff; border-radius: 4px; padding: 1px 6px; text-align: right; box-sizing: border-box; }
+.rd-dist i.me { background: var(--good); }
+@media (max-height: 520px) { .rd-t { font-size: 18px; } .rd-grid { width: min(100%, 220px); } .rd-k { height: 38px; } }

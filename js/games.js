@@ -84,6 +84,7 @@ function renderGames() {
       ${gameSource === 'goal' ? `<select class="sel block-sel" id="gGoal" style="margin-top:10px" aria-label="เป้าหมาย">${TAGS.map((t) => `<option value="${t.id}" ${gameGoal === t.id ? 'selected' : ''}>${TAG_LABEL[t.id]} (${t.w.length})</option>`).join('')}</select>` : ''}
       ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
     </div>
+    <button class="card-box guide-link" id="toRiddle"><span>🔤</span><div class="grow"><b>ปริศนาศัพท์ประจำวัน</b><div class="small muted">ทายคำ 5 ตัวอักษรใน 6 ครั้ง · คำใหม่ทุกวัน${riddleToday().over ? ' · ทำแล้ววันนี้ ✅' : ''}</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="toRead"><span>📖</span><div class="grow"><b>อ่านเรื่องสั้น</b><div class="small muted">${STORY_COUNT} เรื่อง · อ่านแล้ว ${Object.keys(S.read).length} · แตะคำเพื่อดูความหมาย</div></div><span class="muted">›</span></button>
     <div class="card-box ref-box"><div class="small muted"><b>📚 คลังความรู้</b> อ่านแล้วกดเล่นเกมของแต่ละหัวข้อได้</div>
       <div class="ref-grid">
@@ -97,6 +98,7 @@ function renderGames() {
       </div></div>
     <div class="game-grid">${Object.keys(GAMES).map(gameTile).join('')}</div>`;
   $('#toRead').onclick = () => go('read');
+  $('#toRiddle').onclick = () => go('riddle');
   $('#toId').onclick = () => renderIdioms();
   $('#toSit').onclick = () => renderSit();
   $('#toPairs').onclick = () => renderPairs();

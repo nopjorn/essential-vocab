@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.45.2';
+const APP_VERSION = '1.46.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -82,6 +82,8 @@ const defaults = () => ({
   read: {},            // story id -> date finished
   readScore: {},       // story id -> [best right answers, questions]
   mtest: {},           // 'YYYY-MM' -> { r: right, n: questions, at: ms } best monthly-test score
+  riddle: { d: '', g: [], over: false, win: false }, // daily word riddle: today's guesses
+  riddleStat: { played: 0, won: 0, streak: 0, best: 0, dist: [0, 0, 0, 0, 0, 0], last: '' }, // riddle totals; dist[i] = solved in i+1 tries
   placedAt: '',        // date the placement test was taken/dismissed
   xpWeek: {},          // Monday key -> XP earned that week (friends leaderboard)
   nick: '',            // name shown on the friends leaderboard
@@ -172,6 +174,8 @@ function mergeBackup(d) {
   for (const [k, v] of Object.entries(d.read || {})) if (!S.read[k]) S.read[k] = v;
   for (const [k, v] of Object.entries(d.stk || {})) S.stk[k] = Math.max(S.stk[k] || 0, v);
   for (const [k, v] of Object.entries(d.readScore || {})) if (!S.readScore[k] || v[0] > S.readScore[k][0]) S.readScore[k] = v;
+  if (d.riddle && (d.riddle.d > S.riddle.d || (d.riddle.d === S.riddle.d && (d.riddle.g || []).length > S.riddle.g.length))) S.riddle = { d: d.riddle.d, g: d.riddle.g || [], over: !!d.riddle.over, win: !!d.riddle.win };
+  if (d.riddleStat && d.riddleStat.played > S.riddleStat.played) S.riddleStat = { ...S.riddleStat, ...d.riddleStat, dist: (d.riddleStat.dist || []).concat([0, 0, 0, 0, 0, 0]).slice(0, 6) };
   for (const [k, v] of Object.entries(d.mtest || {})) if (!S.mtest[k] || v.r / v.n > S.mtest[k].r / S.mtest[k].n) S.mtest[k] = v;
   for (const [k, v] of Object.entries(d.chist || {})) S.chist[k] = Math.max(S.chist[k] || 0, v);
   for (const [k, v] of Object.entries(d.snap || {})) S.snap[k] = (S.snap[k] || [0, 0, 0, 0]).map((x, i) => Math.max(x, v[i] || 0));
@@ -622,7 +626,7 @@ function markForReview(w) {
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต' };
+const TITLES = { mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์' };
 function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
@@ -634,7 +638,7 @@ function go(tab, ...args) {
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, riddle: renderRiddle }[tab])(...args);
   updateStreak();
   const a = TAB_ORDER.indexOf(prev), b = TAB_ORDER.indexOf(tab);
   animView(a < 0 || b < 0 || a === b ? 'vin' : b > a ? 'vin-l' : 'vin-r');
