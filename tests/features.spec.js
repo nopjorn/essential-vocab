@@ -849,3 +849,53 @@ test('gentle comeback (1.60): big backlog pauses new words, caps the round at 50
   expect(await page.evaluate(() => backlogPlan().on)).toBe(false);
   expect(errors).toEqual([]);
 });
+
+test('quests (1.61): 3 daily tiers, set bonus, weekly quest reward + freeze', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  const info = await page.evaluate(() => { const l = questDefs(); return { tiers: l.map((x) => x.def.tier), n: l.length }; });
+  expect(info.tiers).toEqual([0, 1, 2]);
+  await page.evaluate(() => go('home'));
+  await expect(page.locator('.qrow')).toHaveCount(4); // 3 daily + weekly
+  // finish all three by hand through questEvent-compatible progress, check XP + bonus
+  const r = await page.evaluate(() => {
+    S.xp = 0; S.freeze = 0; S.counts.qsets = 2; S.wq = { key: mondayKey(), id: 'sets3', c: { sets: 2 }, done: false };
+    const l = questDefs(); l.slice(0, 2).forEach((x) => { x.st.n = questTarget(x.def); x.st.done = true; });
+    const last = l[2]; last.st.n = questTarget(last.def) - 1;
+    // push the last one over with its own event type
+    const ev = { 'cards15': ['card'], 'cards': ['card'], 'fresh': ['card'], leech3: ['leech'], combo: ['round', { game: 'x', bestCombo: 9, correct: 0 }], perfect: ['round', { game: 'th2en', perfect: true, correct: 10 }], skill: ['round', { game: 'syn', correct: 9 }], speak: ['answer', { game: 'speak', ok: true }] }[last.def.id] || ['card'];
+    if (last.def.id === 'fresh') S.daily.fresh = questTarget(last.def) - 1, last.st.n = S.daily.fresh;
+    const before = S.xp;
+    questEvent(...ev);
+    return { done: questDefs().every((x) => x.st.done), bonus: S.quest.bonus, gain: S.xp - before, freeze: S.freeze, wdone: S.wq.done, id: last.def.id };
+  });
+  expect(r.done).toBe(true); expect(r.bonus).toBe(true);
+  expect(r.wdone).toBe(true); expect(r.freeze).toBe(2); // set bonus (3rd set) + weekly
+  expect(r.gain).toBeGreaterThanOrEqual(40 + 100 + 25);
+  // pre-1.61 saved shape is replaced without errors
+  await page.evaluate(() => { S.quest = { date: today(), n: 3, done: true }; go('home'); });
+  await expect(page.locator('.qrow')).toHaveCount(4);
+  expect(errors).toEqual([]);
+});
+
+test('streak repair (1.61): broken 5-day streak is restored after 2x goal; expires after 48 h; secret medal hidden', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'], newPerDay: 10 } });
+  const r = await page.evaluate(() => {
+    const t = (n) => new Date(Date.now() - n * DAY).toLocaleDateString('en-CA');
+    S.streak = { last: t(4), count: 5 }; S.freeze = 0; S.hist = { [t(4)]: 10 };
+    markActive(); // returns after missing 3 days
+    const first = { count: S.streak.count, repair: !!repairInfo(), need: S.repair.need };
+    for (let i = 0; i < S.repair.need; i++) markActive();
+    return { first, after: { count: S.streak.count, done: S.repair.done, repairs: S.counts.repairs } };
+  });
+  expect(r.first).toEqual({ count: 1, repair: true, need: 20 });
+  expect(r.after).toEqual({ count: 6, done: true, repairs: 1 });
+  // expiry
+  const ex = await page.evaluate(() => { S.repair = { count: 4, at: Date.now() - 49 * 3600e3, base: 0, need: 20, done: false }; return repairInfo(); });
+  expect(ex).toBeNull();
+  // home card + secret medal grid
+  await page.evaluate(() => { S.repair = { count: 4, at: Date.now() - 3600e3, base: 0, need: 20, done: false }; go('home'); });
+  await expect(page.locator('.repair-card')).toContainText('ซ่อมสตรีค 4 วัน');
+  await page.evaluate(() => { S.ach = {}; go('stats'); });
+  await expect(page.locator('#ach')).toContainText('เหรียญลับ');
+  expect(errors).toEqual([]);
+});

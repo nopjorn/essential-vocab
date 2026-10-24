@@ -245,7 +245,7 @@ function renderFeed() {
       sess.ok++;
       const fev = fever(), mult = 1 + (fev ? 1 : 0) + (c.timed && !c.late ? 1 : 0);
       combo++;
-      sess.best = Math.max(sess.best, combo);
+      sess.best = Math.max(sess.best, combo); S.counts.maxCombo = Math.max(S.counts.maxCombo || 0, combo);
       xp = comboXP(combo) * mult;
       if (fev) notes.push('🔥 ไฟลุก XP x2');
       if (c.timed && !c.late) notes.push('⏱️ ทันเวลา XP x2');
@@ -261,7 +261,7 @@ function renderFeed() {
     }
     if (c.isBoss) {
       if (ok && --boss.hp === 0) {
-        xp += BOSS_XP; sess.bosses++;
+        xp += BOSS_XP; sess.bosses++; S.counts.bosses = (S.counts.bosses || 0) + 1;
         confetti(); toast(`👾 ปราบบอส "${w.w}" สำเร็จ! +${BOSS_XP} XP`);
         notes.push(`🏆 ปราบบอสสำเร็จ +${BOSS_XP} XP`);
         boss = null; bossNext = n + 12;

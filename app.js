@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.60.0';
+const APP_VERSION = '1.61.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -164,7 +164,9 @@ const defaults = () => ({
   star: {},            // word -> 1 for starred words
   freeze: 0,           // streak freezes in stock (max MAX_FREEZE)
   ach: {},             // achievement id -> date unlocked
-  quest: { date: '', n: 0, done: false },
+  repair: null,        // streak repair offer {count, at, base, need, done} (1.61)
+  quest: { date: '', q: [], bonus: false }, // today's 3 quests (1.61)
+  wq: { key: '', id: '', c: {}, done: false }, // this week's quest (1.61)
   counts: { quests: 0, speak: 0, perfect: 0 },
   remind: '2000',      // daily reminder time for the calendar file (HHMM)
   xp: null,            // experience points; null = not yet seeded from existing progress
@@ -315,6 +317,14 @@ function mergeBackup(d) {
   S.backupAt = Math.max(S.backupAt || 0, d.backupAt || 0);
   Object.assign(S.star, d.star || {});
   for (const [k, v] of Object.entries(d.ach || {})) if (!S.ach[k]) S.ach[k] = v;
+  if (d.repair && d.repair.at && (!S.repair || d.repair.at > S.repair.at)) S.repair = d.repair;
+  if (d.wq && d.wq.key) {
+    if (d.wq.key > (S.wq.key || '')) S.wq = d.wq;
+    else if (d.wq.key === S.wq.key) {
+      S.wq.done = S.wq.done || !!d.wq.done; S.wq.c = S.wq.c || {};
+      for (const [k, v] of Object.entries(d.wq.c || {})) S.wq.c[k] = Math.max(S.wq.c[k] || 0, v);
+    }
+  }
   for (const [k, v] of Object.entries(d.counts || {})) S.counts[k] = Math.max(S.counts[k] || 0, v);
   S.freeze = Math.max(S.freeze || 0, d.freeze || 0);
   if ((d.weekSeen || '') > (S.weekSeen || '')) S.weekSeen = d.weekSeen;
@@ -348,18 +358,50 @@ function rollDay() {
 // Whole days between two 'YYYY-MM-DD' strings (a - b).
 const dayDiff = (a, b) => Math.round((Date.parse(a + 'T12:00:00') - Date.parse(b + 'T12:00:00')) / DAY);
 const MAX_FREEZE = 2;
+// Streak repair (1.61): a streak of 3+ days that broke can be repaired within 48 h of coming back by doing
+// 2x today's goal in cards/answers (S.hist). S.repair = {count: lost streak, at: ms, base: activity already counted, need, done}.
+const REPAIR_MS = 48 * 3600 * 1000;
+function repairInfo() {
+  const r = S.repair;
+  if (!r || r.done || !r.at || Date.now() - r.at > REPAIR_MS) return null;
+  const from = new Date(r.at).toLocaleDateString('en-CA');
+  let n = 0; for (const k of Object.keys(S.hist)) if (k >= from) n += S.hist[k];
+  return { r, n: Math.max(0, n - (r.base || 0)), left: REPAIR_MS - (Date.now() - r.at) };
+}
+function repairCheck() {
+  const i = repairInfo();
+  if (!i || i.n < i.r.need) return;
+  i.r.done = true;
+  S.streak.count += i.r.count;
+  S.counts.repairs = (S.counts.repairs || 0) + 1;
+  setTimeout(() => { confetti(); toast(`🔥 ซ่อมสตรีคสำเร็จ! กลับมาเป็น ${S.streak.count} วัน`); }, 900);
+  updateStreak();
+}
 function markActive() {
   rollDay();
   const t = today();
   S.hist[t] = (S.hist[t] || 0) + 1;
-  if (S.streak.last === t) return;
+  // secret medals (1.61): time-of-day / date based
+  const now = new Date(), hr = now.getHours();
+  if (hr === 5) S.counts.early = 1;
+  if (hr < 3) S.counts.owl = 1;
+  if (now.getMonth() === 0 && now.getDate() === 1) S.counts.newyear = 1;
+  if (S.streak.last === t) return repairCheck();
   const missed = S.streak.last ? dayDiff(t, S.streak.last) - 1 : Infinity;
   if (missed === 0) S.streak.count++;
   else if (S.streak.count && missed <= S.freeze) {
     // 🧊 Streak freezes cover the missed days.
     S.freeze -= missed; S.streak.count++;
     setTimeout(() => toast(`🧊 ใช้ตัวกันสตรีค ${missed} อัน สตรีคไม่ขาด!`), 400);
-  } else S.streak.count = 1;
+  } else {
+    const lost = S.streak.count;
+    S.streak.count = 1;
+    if (missed >= 30 && missed !== Infinity) S.counts.comeback = 1;
+    if (lost >= 3) {
+      S.repair = { count: lost, at: Date.now(), base: S.hist[t], need: Math.max(20, 2 * S.settings.newPerDay), done: false };
+      setTimeout(() => toast(`💔 สตรีค ${lost} วันขาดไป แต่ซ่อมได้ภายใน 48 ชม.! ดูที่หน้าแรก`), 1500);
+    }
+  }
   S.streak.last = t;
   setTimeout(() => streakFlash(S.streak.count), 500);
   if (S.streak.count % 7 === 0 && S.freeze < MAX_FREEZE) {
@@ -367,6 +409,7 @@ function markActive() {
     setTimeout(() => toast('🧊 ได้ตัวกันสตรีคเพิ่ม 1 อัน (เรียนต่อเนื่องครบ 7 วัน)'), 1500);
   }
   updateStreak();
+  repairCheck();
 }
 function streakNow() {
   if (!S.streak.last) return 0;
@@ -387,39 +430,94 @@ const starIcon = (w) => (isStar(w) ? '⭐' : '☆');
 /* ---------- daily quest ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const canListen = !!SR;
+// 1.61: three daily quests (easy / medium / hard, picked per day) + one weekly quest.
+// ev(n, type, d) returns the new progress for an event; types: card, answer, round, match, story, leech.
+const QTIER = [{ icon: '🟢', name: 'ง่าย', xp: 10 }, { icon: '🟡', name: 'กลาง', xp: 15 }, { icon: '🔴', name: 'ท้าทาย', xp: 25 }];
+const QSET_XP = 40, WQ_XP = 100;
 const QUESTS = [
-  { id: 'cards', text: 'ทำแฟลชการ์ดให้ครบ 30 ใบ', target: 30 },
-  { id: 'fresh', text: 'เรียนคำใหม่ให้ครบเป้าวันนี้', target: () => S.settings.newPerDay },
-  { id: 'cloze', text: 'เติมคำในประโยค ถูก 8 ข้อขึ้นไปในรอบเดียว', target: 1, game: 'cloze' },
-  { id: 'listen', text: 'ฟังแล้วตอบ ถูก 8 ข้อขึ้นไปในรอบเดียว', target: 1, game: 'listen' },
-  { id: 'th2en', text: 'ทายคำศัพท์ ถูก 8 ข้อขึ้นไปในรอบเดียว', target: 1, game: 'th2en' },
-  { id: 'spell', text: 'สะกดคำถูกรวม 10 คำ', target: 10, game: 'spell' },
-  { id: 'match', text: 'จับคู่ด่วนให้จบ โดยผิดไม่เกิน 2 ครั้ง', target: 1, game: 'match' },
-  { id: 'combo', text: 'ทำคอมโบ x6 ในเกมไหนก็ได้', target: 1, game: 'en2th' },
-  { id: 'speak', text: 'พูดตามถูกรวม 10 คำ', target: 10, game: 'speak', needs: () => canListen },
+  { id: 'cards15', tier: 0, text: 'ทำแฟลชการ์ด 15 ใบ', target: 15, ev: (n, t) => (t === 'card' ? n + 1 : n) },
+  { id: 'match', tier: 0, text: 'จับคู่ด่วนให้จบ โดยผิดไม่เกิน 2 ครั้ง', target: 1, game: 'match', ev: (n, t, d) => (t === 'match' && d.mistakes <= 2 ? n + 1 : n) },
+  { id: 'feed', tier: 0, text: 'ไถศัพท์ ตอบถูก 15 ข้อ', target: 15, go: 'feed', ev: (n, t, d) => (t === 'answer' && d.game === 'feed' && d.ok ? n + 1 : n) },
+  { id: 'story', tier: 0, text: 'อ่านเรื่องสั้นให้จบ 1 เรื่อง', target: 1, go: 'read', ev: (n, t) => (t === 'story' ? n + 1 : n) },
+  { id: 'cards', tier: 1, text: 'ทำแฟลชการ์ดให้ครบ 30 ใบ', target: 30, ev: (n, t) => (t === 'card' ? n + 1 : n) },
+  { id: 'fresh', tier: 1, text: 'เรียนคำใหม่ให้ครบเป้าวันนี้', target: () => S.settings.newPerDay, ev: (n, t) => (t === 'card' ? S.daily.fresh : n) },
+  { id: 'cloze', tier: 1, text: 'เติมคำในประโยค ถูก 8 ข้อขึ้นไปในรอบเดียว', target: 1, game: 'cloze', ev: (n, t, d) => (t === 'round' && d.game === 'cloze' && d.correct >= 8 ? n + 1 : n) },
+  { id: 'listen', tier: 1, text: 'ฟังแล้วตอบ ถูก 8 ข้อขึ้นไปในรอบเดียว', target: 1, game: 'listen', ev: (n, t, d) => (t === 'round' && d.game === 'listen' && d.correct >= 8 ? n + 1 : n) },
+  { id: 'th2en', tier: 1, text: 'ทายคำศัพท์ ถูก 8 ข้อขึ้นไปในรอบเดียว', target: 1, game: 'th2en', ev: (n, t, d) => (t === 'round' && d.game === 'th2en' && d.correct >= 8 ? n + 1 : n) },
+  { id: 'spell', tier: 1, text: 'สะกดคำถูกรวม 10 คำ', target: 10, game: 'spell', ev: (n, t, d) => (t === 'answer' && d.game === 'spell' && d.ok ? n + 1 : n) },
+  { id: 'combo', tier: 2, text: 'ทำคอมโบ x6 ในเกมไหนก็ได้', target: 1, game: 'en2th', ev: (n, t, d) => (t === 'round' && d.bestCombo >= 6 ? n + 1 : n) },
+  { id: 'speak', tier: 2, text: 'พูดตามถูกรวม 10 คำ', target: 10, game: 'speak', needs: () => canListen, ev: (n, t, d) => (t === 'answer' && d.game === 'speak' && d.ok ? n + 1 : n) },
+  { id: 'leech3', tier: 2, text: 'ปราบคำดื้อ: ตอบคำดื้อถูก 3 ครั้ง', target: 3, go: 'cards', needs: () => W.filter(isLeech).length >= 3, ev: (n, t) => (t === 'leech' ? n + 1 : n) },
+  { id: 'skill', tier: 2, text: 'เกมฝึกทักษะ (ไวยากรณ์ ศัพท์เชื่อมโยง ฯลฯ) ถูก 8 ข้อขึ้นไปในรอบเดียว', target: 1, game: 'syn', ev: (n, t, d) => (t === 'round' && SKILL_GAMES.includes(d.game) && d.correct >= 8 ? n + 1 : n) },
+  { id: 'perfect', tier: 2, text: 'เล่นเกมไหนก็ได้ ให้ถูกเต็ม 10/10', target: 1, game: 'th2en', ev: (n, t, d) => (t === 'round' && d.perfect ? n + 1 : n) },
 ];
-function todayQuest() {
+const dayHash = (str) => { let h = 7; for (const c of str) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
+function pickQuests(t) {
+  return [0, 1, 2].map((tier) => {
+    const list = QUESTS.filter((q) => q.tier === tier && (!q.needs || q.needs()));
+    return list[dayHash(t + tier) % list.length].id;
+  });
+}
+// Today's three quests as [{def, st}] (st = {id, n, done} stored in S.quest.q); a new day, or the pre-1.61 shape, draws a fresh set.
+function questDefs() {
   const t = today();
-  if (S.quest.date !== t) S.quest = { date: t, n: 0, done: false };
-  const list = QUESTS.filter((q) => !q.needs || q.needs());
-  let h = 7; for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return list[h % list.length];
+  if (S.quest.date !== t || !Array.isArray(S.quest.q) || S.quest.q.length !== 3 || S.quest.q.some((x) => !x || !QUESTS.some((q) => q.id === x.id))) {
+    S.quest = { date: t, q: pickQuests(t).map((id) => ({ id, n: 0, done: false })), bonus: false };
+  }
+  return S.quest.q.map((st) => ({ def: QUESTS.find((q) => q.id === st.id), st }));
 }
 const questTarget = (q) => (typeof q.target === 'function' ? q.target() : q.target);
-function questEvent(type, d = {}) {
-  const q = todayQuest();
-  if (S.quest.done) return save();
-  if (type === 'card' && q.id === 'cards') S.quest.n++;
-  if (type === 'card' && q.id === 'fresh') S.quest.n = S.daily.fresh;
-  if (type === 'answer' && d.ok && d.game === q.id && (q.id === 'spell' || q.id === 'speak')) S.quest.n++;
-  if (type === 'round' && d.game === q.id && d.correct >= 8) S.quest.n++;
-  if (type === 'round' && q.id === 'combo' && d.bestCombo >= 6) S.quest.n++;
-  if (type === 'match' && q.id === 'match' && d.mistakes <= 2) S.quest.n++;
-  if (S.quest.n >= questTarget(q)) {
-    S.quest.done = true;
-    S.counts.quests = (S.counts.quests || 0) + 1;
-    setTimeout(() => { confetti(); toast('🎯 ภารกิจวันนี้สำเร็จ! เก่งมาก'); }, 700);
+
+// Weekly quest: counters in S.wq.c, or `calc` reads the state directly.
+const WQUESTS = [
+  { id: 'days5', text: 'เล่นให้ครบ 5 วันในสัปดาห์นี้', target: 5, go: 'cards', calc: () => Object.keys(S.hist).filter((k) => k >= mondayKey() && S.hist[k] > 0).length },
+  { id: 'read3', text: 'อ่านเรื่องสั้นให้ครบ 3 เรื่องในสัปดาห์นี้', target: 3, go: 'read', calc: () => Object.values(S.read).filter((d) => d >= mondayKey()).length },
+  { id: 'sets3', text: 'ทำภารกิจประจำวันครบทั้ง 3 ข้อ 3 วัน', target: 3, go: 'cards', c: 'sets' },
+  { id: 'leech10', text: 'ปราบคำดื้อ: ตอบคำดื้อถูกรวม 10 ครั้ง', target: 10, go: 'cards', c: 'leech', needs: () => W.filter(isLeech).length >= 3 },
+  { id: 'skill5', text: 'เล่นเกมฝึกทักษะให้ครบ 5 รอบ', target: 5, go: 'games', c: 'skill' },
+  { id: 'xp300', text: 'เก็บ XP ให้ได้ 300 ในสัปดาห์นี้', target: 300, go: 'cards', calc: () => S.xpWeek[mondayKey()] || 0 },
+];
+function weekQuest() {
+  const k = mondayKey();
+  if (!S.wq || typeof S.wq !== 'object' || S.wq.key !== k || !WQUESTS.some((q) => q.id === S.wq.id)) {
+    const list = WQUESTS.filter((q) => !q.needs || q.needs());
+    S.wq = { key: k, id: list[dayHash(k) % list.length].id, c: {}, done: false };
   }
+  const def = WQUESTS.find((q) => q.id === S.wq.id);
+  return { def, st: S.wq, n: Math.min(def.target, def.calc ? def.calc() : (S.wq.c || {})[def.c] || 0) };
+}
+function questEvent(type, d = {}) {
+  const list = questDefs(), fin = [];
+  for (const { def, st } of list) {
+    if (st.done) continue;
+    st.n = def.ev(st.n, type, d);
+    if (st.n >= questTarget(def)) {
+      st.done = true; fin.push(def);
+      S.counts.quests = (S.counts.quests || 0) + 1;
+      addXP(QTIER[def.tier].xp);
+    }
+  }
+  const wq = weekQuest(); S.wq.c = S.wq.c || {};
+  if (type === 'leech') { S.wq.c.leech = (S.wq.c.leech || 0) + 1; S.counts.leechWins = (S.counts.leechWins || 0) + 1; }
+  if (type === 'round' && SKILL_GAMES.includes(d.game)) S.wq.c.skill = (S.wq.c.skill || 0) + 1;
+  let bonus = false;
+  if (!S.quest.bonus && list.every((x) => x.st.done)) {
+    S.quest.bonus = bonus = true;
+    S.counts.qsets = (S.counts.qsets || 0) + 1;
+    S.wq.c.sets = (S.wq.c.sets || 0) + 1;
+    addXP(QSET_XP);
+    if (S.counts.qsets % 3 === 0 && S.freeze < MAX_FREEZE) S.freeze++;
+  }
+  let wdone = false;
+  if (!S.wq.done && weekQuest().n >= wq.def.target) {
+    S.wq.done = wdone = true;
+    S.counts.wquests = (S.counts.wquests || 0) + 1;
+    addXP(WQ_XP);
+    if (S.freeze < MAX_FREEZE) S.freeze++;
+  }
+  if (wdone) setTimeout(() => { confetti(); toast(`🗓️ ภารกิจสัปดาห์สำเร็จ! +${WQ_XP} XP และ 🧊`); }, 1300);
+  else if (bonus) setTimeout(() => { confetti(); toast(`🎁 ครบทั้ง 3 ภารกิจ! โบนัส +${QSET_XP} XP${S.counts.qsets % 3 === 0 ? ' และ 🧊' : ''}`); }, 700);
+  else if (fin.length) setTimeout(() => toast(`🎯 ภารกิจสำเร็จ +${QTIER[fin[0].tier].xp} XP · ${questDefs().filter((x) => x.st.done).length}/3`), 700);
   save();
 }
 
@@ -459,6 +557,23 @@ const ACH = [
   { id: 'lvl5', icon: '⭐', name: 'เลเวล 5', desc: 'สะสม XP จนถึง Lv.5', ok: (s) => s.level >= 5 },
   { id: 'lvl10', icon: '🌠', name: 'เลเวล 10', desc: 'สะสม XP จนถึง Lv.10', ok: (s) => s.level >= 10 },
   { id: 'speak50', icon: '🎤', name: 'นักพูด', desc: 'พูดตามถูก 50 คำ', ok: (s) => s.speak >= 50 },
+  { id: 'read10', icon: '📖', name: 'หนอนหนังสือ', desc: 'อ่านเรื่องสั้นครบ 10 เรื่อง', ok: (s) => s.read >= 10 },
+  { id: 'read50', icon: '📚', name: 'นักอ่านตัวยง', desc: 'อ่านเรื่องสั้นครบ 50 เรื่อง', ok: (s) => s.read >= 50 },
+  { id: 'readall', icon: '🏛️', name: 'ห้องสมุดเดินได้', desc: 'อ่านเรื่องสั้นครบทุกเรื่อง', ok: (s) => typeof STORY_COUNT !== 'undefined' && s.read >= STORY_COUNT },
+  { id: 'boss1', icon: '👾', name: 'นักล่าบอส', desc: 'ปราบบอสคำดื้อในไถศัพท์ 1 ตัว', ok: (s) => s.bosses >= 1 },
+  { id: 'boss10', icon: '🗡️', name: 'ฆาตกรคำดื้อ', desc: 'ปราบบอสคำดื้อ 10 ตัว', ok: (s) => s.bosses >= 10 },
+  { id: 'leech25', icon: '🐢', name: 'ใจเย็นสู้', desc: 'ตอบคำดื้อถูกรวม 25 ครั้ง', ok: (s) => s.leechWins >= 25 },
+  { id: 'allgames', icon: '🎮', name: 'เล่นครบทุกเกม', desc: 'ลองเล่นเกมครบทุกแบบ', ok: (s) => s.allGames },
+  { id: 'mtest', icon: '📝', name: 'เต็มร้อยประจำเดือน', desc: 'แบบทดสอบประจำเดือนได้เต็ม', ok: (s) => s.mtestFull },
+  { id: 'combo30', icon: '🔥', name: 'คอมโบ 30', desc: 'ตอบถูกติดกัน 30 ข้อ', ok: (s) => s.maxCombo >= 30 },
+  { id: 'notes20', icon: '✍️', name: 'นักจดวิธีจำ', desc: 'เขียนวิธีจำ 20 คำ', ok: (s) => s.notes >= 20 },
+  { id: 'qsets10', icon: '🎁', name: 'ครบชุดภารกิจ', desc: 'ทำครบ 3 ภารกิจประจำวัน 10 วัน', ok: (s) => s.qsets >= 10 },
+  { id: 'wq4', icon: '🗓️', name: 'สัปดาห์สำเร็จ', desc: 'ทำภารกิจประจำสัปดาห์สำเร็จ 4 ครั้ง', ok: (s) => s.wquests >= 4 },
+  { id: 'repair', icon: '🩹', name: 'ซ่อมสตรีค', desc: 'ซ่อมสตรีคที่ขาดสำเร็จ', ok: (s) => s.repairs >= 1 },
+  { id: 'early', icon: '🌅', name: 'นกที่ตื่นเช้า', desc: 'เรียนตอนตี 5', secret: true, ok: (s) => s.early },
+  { id: 'owl', icon: '🦉', name: 'นกฮูกยามดึก', desc: 'เรียนหลังเที่ยงคืนถึงตีสาม', secret: true, ok: (s) => s.owl },
+  { id: 'newyear', icon: '🎆', name: 'เริ่มปีด้วยศัพท์', desc: 'เรียนในวันปีใหม่ 1 มกราคม', secret: true, ok: (s) => s.newyear },
+  { id: 'comeback', icon: '🦋', name: 'กลับมาอีกครั้ง', desc: 'กลับมาเรียนหลังหายไปเกิน 30 วัน', secret: true, ok: (s) => s.comeback },
   ...LEVELS.map((l) => ({ id: 'lv' + l, icon: '🎓', name: `จบ ${LV_LABEL[l]}`, desc: `เรียนครบทุกคำในระดับ ${LV_LABEL[l]}`, ok: (s) => s.lv[l] })),
 ];
 const GROUP = Object.fromEntries(LEVELS.map((l) => [l, W.filter((w) => w.g === l)]));
@@ -469,6 +584,11 @@ function checkAch() {
     mastered: progs.filter((p) => p.b >= MASTERED).length,
     streak: S.streak.count, perfect: S.counts.perfect || 0, quests: S.counts.quests || 0, speak: S.counts.speak || 0, level: levelOf(S.xp),
     lv: Object.fromEntries(LEVELS.map((l) => [l, GROUP[l].every((w) => S.prog[w.w])])),
+    read: Object.keys(S.read).length, bosses: S.counts.bosses || 0, leechWins: S.counts.leechWins || 0, maxCombo: S.counts.maxCombo || 0,
+    notes: Object.keys(S.note).length, qsets: S.counts.qsets || 0, wquests: S.counts.wquests || 0, repairs: S.counts.repairs || 0,
+    early: S.counts.early, owl: S.counts.owl, newyear: S.counts.newyear, comeback: S.counts.comeback,
+    allGames: typeof GAMES !== 'undefined' && Object.keys(GAMES).every((g) => gamePlays(g) > 0 || (!canListen && /^speak/.test(g))),
+    mtestFull: Object.values(S.mtest).some((m) => m && m.n && m.r === m.n),
   };
   checkStickers();
   const got = ACH.filter((a) => !S.ach[a.id] && a.ok(s));
@@ -852,6 +972,7 @@ function grade(w, g, map = S.prog) {
   const main = map === S.prog;
   markActive();
   const p = map[w.w];
+  const leechHit = main && p && (p.x || 0) >= LEECH && g >= 2;
   if (!main) { /* a set: only effort counts (XP, streak, history, quests) */ }
   else if (!p) {
     S.daily.fresh++;
@@ -871,12 +992,14 @@ function grade(w, g, map = S.prog) {
   }
   addXP(g === 0 ? 1 : 2);
   S.chist[today()] = (S.chist[today()] || 0) + 1;
+  if (leechHit) questEvent('leech');
   questEvent('card');
 }
 // Lighter update from games: a right answer seeds/advances a little, a wrong one sends it back for review.
 function gameResult(w, ok, map = S.prog) {
   markActive();
   const p = map[w.w];
+  const leechHit = ok && map === S.prog && p && (p.x || 0) >= LEECH;
   if (ok) {
     if (!p) map[w.w] = { b: 1, i: 1, e: EASE0, d: dueAt(1), s: 1, c: 1, x: 0 };
     else { p.c++; p.s++; }
@@ -884,7 +1007,7 @@ function gameResult(w, ok, map = S.prog) {
     map[w.w] = { ...(p || {}), b: 0, i: 0, e: Math.max(EASE_MIN, ((p && p.e) || EASE0) - 0.2), d: Date.now(), s: (p ? p.s : 0) + 1, c: p ? p.c : 0, x: (p ? p.x || 0 : 0) + 1 };
     if (map === S.prog) logMiss(w);
   }
-  save();
+  if (leechHit) questEvent('leech'); else save();
 }
 
 // "I already know this": jump straight to a long interval so it stops appearing as new.

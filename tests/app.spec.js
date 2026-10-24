@@ -151,14 +151,14 @@ test('feed: special cards, boss, timer, fever, summary and double-tap like', asy
   expect(errors).toEqual([]);
 });
 
-test('quest card hides once done, unless the setting keeps it', async ({ page }) => {
+test('quest card hides once everything is done, unless the setting keeps it', async ({ page }) => {
   const errors = await openApp(page);
-  await page.evaluate(() => { todayQuest(); S.quest.done = true; go('home'); });
+  await page.evaluate(() => { questDefs().forEach((x) => { x.st.done = true; }); weekQuest(); S.wq.done = true; go('home'); });
   await expect(page.locator('.card-box.quest')).toHaveCount(0);
   await page.evaluate(() => { S.settings.questShowDone = true; go('home'); });
-  await expect(page.locator('.card-box.quest')).toContainText('สำเร็จแล้ว');
-  await page.evaluate(() => { S.quest.done = false; go('home'); });
-  await expect(page.locator('#questGo')).toBeVisible();
+  await expect(page.locator('.card-box.quest')).toContainText('ครบชุดแล้ว');
+  await page.evaluate(() => { S.quest.q[0].done = false; go('home'); });
+  await expect(page.locator('[data-qgo]').first()).toBeVisible();
   expect(errors).toEqual([]);
 });
 

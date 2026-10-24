@@ -966,7 +966,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
     if (spk && ok) S.counts.speak = (S.counts.speak || 0) + 1;
     questEvent('answer', { game: gameId, ok });
     sfx(ok ? 'ok' : 'bad');
-    if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); score += 10 + Math.min(combo - 1, 5) * 2; addXP(comboXP(combo)); }
+    if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); S.counts.maxCombo = Math.max(S.counts.maxCombo || 0, combo); score += 10 + Math.min(combo - 1, 5) * 2; addXP(comboXP(combo)); }
     else { combo = 0; wrong.push(w); }
   }
   function next() { i++; q(); }
@@ -979,7 +979,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
     const total = ENDLESS ? asked : items.length;
     const correct = total - wrong.length;
     if (!ENDLESS && correct === items.length && items.length >= 10) S.counts.perfect = (S.counts.perfect || 0) + 1;
-    questEvent('round', { game: gameId, correct, bestCombo });
+    questEvent('round', { game: gameId, correct, bestCombo, perfect: !ENDLESS && correct === items.length && items.length >= 10 });
     if (ENDLESS ? bestCombo >= 10 : correct >= 8) confetti();
     const emoji = ENDLESS ? (bestCombo >= 20 ? '🏆' : bestCombo >= 10 ? '🎉' : '💪') : correct === items.length ? '🏆' : correct >= 7 ? '🎉' : correct >= 4 ? '💪' : '📚';
     view.innerHTML = `<div class="card-box center pop">

@@ -357,12 +357,18 @@ select.sel { background: var(--surface-2); border: 0; border-radius: 10px; paddi
 body { touch-action: manipulation; }
 
 .backup-nag { border: 2px solid var(--warn); }
+.repair-card { border: 2px solid var(--warn); }
 .welcome-back { border: 2px solid var(--primary, #7c5cff); }
 
 /* daily quest */
 .quest { border: 2px solid color-mix(in srgb, var(--primary) 35%, transparent); }
-.qbar { height: 10px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
-.qbar > div { height: 100%; background: linear-gradient(90deg, var(--primary), var(--pink)); border-radius: 99px; transition: width .4s; }
+.qbar { display: block; height: 10px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.qbar > div, .qbar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--primary), var(--pink)); border-radius: 99px; transition: width .4s; }
+.qrow { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 0; border-top: 1px solid var(--surface-2); }
+.qrow:first-of-type { border-top: 0; }
+.qrow.done { opacity: .6; }
+.qrow .qtx { display: block; margin-bottom: 6px; }
+.qrow .qn { min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
 
 /* review forecast */
 .fc-bar > div { background: linear-gradient(180deg, var(--warn), var(--primary)); }

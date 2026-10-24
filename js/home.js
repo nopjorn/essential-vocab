@@ -8,6 +8,16 @@ const installHidden = () => { try { return !!localStorage.getItem('o3k.installHi
 function homeBlockHtml(B, id) {
   try { return B[id](); } catch (e) { console.error('home block', id, e); return ''; }
 }
+// Streak repair card (1.61): shown for 48 h after a 3+ day streak broke.
+function repairCard() {
+  const i = repairInfo();
+  if (!i) return '';
+  const h = Math.max(1, Math.ceil(i.left / 3600000)), need = i.r.need, n = Math.min(i.n, need);
+  return `<div class="card-box repair-card"><b>🩹 ซ่อมสตรีค ${i.r.count} วันได้นะ!</b>
+    <div class="small" style="margin-top:4px">ทำการ์ดหรือเกมอีก ${need - n} ข้อ สตรีคเดิมจะกลับมา (เหลือเวลา ~${h} ชม.)</div>
+    <div class="qbar" style="margin-top:8px"><span style="width:${n / need * 100}%"></span></div>
+    <div class="row" style="margin-top:10px;justify-content:space-between"><span class="small muted">${n}/${need}</span><button class="btn primary" data-go="cards">▶︎ ไปซ่อมเลย</button></div></div>`;
+}
 // Gentle comeback card: no blame, just the plan for today (see backlogPlan()).
 function welcomeBack(plan) {
   if (!plan.on) return '';
@@ -100,6 +110,7 @@ function renderHome() {
       <div><b>💾 ถึงเวลาสำรองข้อมูลแล้ว</b><div class="small muted">${lastBackup === null ? 'ยังไม่เคยสำรองเลย' : `สำรองล่าสุด ${lastBackup} วันก่อน`} · กันความคืบหน้าหายตอนลบแอปหรือเปลี่ยนเครื่อง</div></div>
       <div class="row" style="margin-top:10px"><button class="btn primary grow" id="bkNow">📤 สำรองเลย</button><button class="btn" id="bkLater">ไว้ทีหลัง</button></div>
     </div>` : ''}
+    ${repairCard()}
     ${welcomeBack(plan)}
     ${!S.placedAt && Object.keys(S.prog).length < 50 ? `<div class="card-box place-card slim" id="placeCard">
       <div><b>🎯 รู้ศัพท์อยู่แล้วบ้างไหม?</b><div class="small muted">วัดระดับ 3–5 นาที แล้วข้ามคำที่รู้แล้ว</div></div>
@@ -137,7 +148,9 @@ function renderHome() {
     $('#bkNow').onclick = async () => { await exportBackup(); renderHome(); };
     $('#bkLater').onclick = () => { S.backupSnooze = today(); save(); renderHome(); };
   }
-  click('#questGo', () => { const q = todayQuest(); if (q.game) startGame(q.game); else go('cards'); });
+  view.querySelectorAll('[data-qgo]').forEach((b) => {
+    b.onclick = () => { const k = b.dataset.qgo, def = k === 'w' ? weekQuest().def : questDefs()[+k].def; if (def.game) startGame(def.game); else go(def.go || 'cards'); };
+  });
   const pc = $('#placeCard');
   if (pc) pc.onclick = (e) => {
     const b = e.target.closest('[data-pl]'); if (!b) return;
@@ -299,13 +312,19 @@ function levelCard() {
     <div class="small muted" style="margin-top:4px">ตอบถูกติดกันได้ XP เพิ่ม · อีก ${b - S.xp} XP ถึง Lv.${L + 1}</div></div></div>`;
 }
 function questCard() {
-  if (S.quest.done && !S.settings.questShowDone) return '';
-  const q = todayQuest(), target = questTarget(q), n = Math.min(S.quest.n, target);
+  const list = questDefs(), wk = weekQuest();
+  const doneAll = list.every((x) => x.st.done);
+  if (doneAll && wk.st.done && !S.settings.questShowDone) return '';
+  const ndone = list.filter((x) => x.st.done).length;
+  const row = (def, n, target, done, tier, idx) => `<button class="qrow${done ? ' done' : ''}" ${done ? 'disabled' : `data-qgo="${idx}"`}>
+    <span class="qic" aria-hidden="true">${tier}</span>
+    <span class="grow"><span class="qtx">${def.text}</span><span class="qbar"><span style="width:${done ? 100 : Math.min(100, n / target * 100)}%"></span></span></span>
+    <span class="small muted qn">${done ? '✅' : `${Math.min(n, target)}/${target}`}</span></button>`;
   return `<div class="card-box quest">
-    <div class="row" style="justify-content:space-between"><b>🎯 ภารกิจวันนี้</b><span class="small muted">${S.quest.done ? 'สำเร็จแล้ว ✅' : `${n}/${target}`}</span></div>
-    <div style="margin:6px 0 10px">${q.text}</div>
-    <div class="qbar"><div style="width:${S.quest.done ? 100 : n / target * 100}%"></div></div>
-    ${S.quest.done ? '' : '<button class="btn block" id="questGo" style="margin-top:12px">ไปทำภารกิจ →</button>'}
+    <div class="row" style="justify-content:space-between"><b>🎯 ภารกิจวันนี้</b><span class="small muted">${doneAll ? 'ครบชุดแล้ว 🎁' : `${ndone}/3 · ครบชุด +${QSET_XP} XP`}</span></div>
+    ${list.map(({ def, st }, i) => row(def, st.n, questTarget(def), st.done, QTIER[def.tier].icon, i)).join('')}
+    <div class="row" style="justify-content:space-between;margin-top:10px"><b>🗓️ ภารกิจสัปดาห์</b><span class="small muted">รางวัล +${WQ_XP} XP และ 🧊</span></div>
+    ${row(wk.def, wk.n, wk.def.target, wk.st.done, '🗓️', 'w')}
   </div>`;
 }
 // Cards coming due in each of the next 7 days (selected levels), so the daily load is predictable.

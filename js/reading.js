@@ -225,7 +225,7 @@ function renderRead(id) {
       S.read[st.id] = today();
       const prev = S.readScore[st.id];
       if (!prev || right > prev[0]) S.readScore[st.id] = [right, all];
-      save();
+      questEvent('story');
       if (right === all) confetti();
       const nextSt = nextStory();
       const done = STORIES.filter((x) => S.read[x.id]).length;
