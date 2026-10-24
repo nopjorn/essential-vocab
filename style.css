@@ -305,10 +305,13 @@ select.sel { background: var(--surface-2); border: 0; border-radius: 10px; paddi
 @media (max-width: 360px) { .upd-bar { font-size: var(--fs-sm); gap: 6px; padding-left: 14px; } .upd-bar .btn { padding: 0 12px; font-size: var(--fs-sm); } .upd-x { padding: 6px; } }
 @keyframes updin { from { opacity: 0; transform: translateX(-50%) translateY(-16px); } }
 
+.cl-filter { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+.cl-filter .sel { flex: 1; min-width: 0; }
+.cl-day { display: flex; align-items: baseline; justify-content: space-between; margin: 14px 4px 6px; font-weight: 800; font-size: var(--fs-md); }
+.cl-n { font-size: var(--fs-sm); font-weight: 600; color: var(--muted); }
 .cl-row { margin-bottom: 8px; }
 .cl-new { border: 2px solid var(--primary-2); }
 .cl-v { display: flex; align-items: center; flex-wrap: wrap; font-weight: 800; font-size: var(--fs-md); margin-bottom: 4px; }
-.cl-d { margin-left: auto; font-size: var(--fs-sm); font-weight: 600; color: var(--muted); }
 .cl-tag { font-size: var(--fs-xs); font-weight: 700; color: #fff; background: var(--primary); border-radius: 99px; padding: 2px 8px; margin-left: 6px; vertical-align: 2px; }
 .cl-t { font-size: var(--fs-md); line-height: 1.5; }
 
