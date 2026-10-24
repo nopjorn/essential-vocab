@@ -8,9 +8,10 @@ const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', '
 for (const [w, h] of SIZES) {
   test(`no horizontal overflow at ${w}×${h}`, async ({ page }) => {
     await page.setViewportSize({ width: w, height: h });
-    const errors = await openApp(page, { placedAt: '2026-01-01' });
+    const errors = await openApp(page, { placedAt: '2026-01-01', decks: [{ id: 'd1', name: 'ท่องเที่ยว', icon: '✈️', words: ['airport', 'hotel', 'ticket', 'taxi', 'visa'], at: 1, used: 1 }, { id: 'd2', name: 'ทำงาน', icon: '💼', words: ['boss'], at: 1, used: 2 }] });
     const screens = [...ROUTES.map((r) => [r, `go('${r}')`]), ['families', 'renderFamilies()'], ['pairs', 'renderPairs()'], ['wform', "startGame('wform')"],
-      ['deck edit', 'renderDeckEdit()'], ['idioms', 'renderIdioms()'], ['situations', 'renderSit()'], ['situation', "renderSit('restaurant')"], ['sit game', "startGame('sit')"]];
+      ['deck edit', 'renderDeckEdit()'], ['idioms', 'renderIdioms()'], ['situations', 'renderSit()'], ['situation', "renderSit('restaurant')"], ['sit game', "startGame('sit')"],
+      ['deck page', "go('decks', 'd1')"], ['games with sets', "gameSource = 'deck'; gameDecks = ['d1', 'd2']; go('games')"], ['set study', "go('cards', { deck: 'd1' })"], ['set game', "gameDecks = ['d1']; startGame('en2th')"]];
     for (const [name, js] of screens) {
       await page.evaluate(js);
       await page.waitForTimeout(150);

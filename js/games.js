@@ -64,6 +64,7 @@ function gameTile(id) {
 let gameSource = 'level';
 let gameTopic = 'food';
 let gameGoal = 'travel';
+let gameDecks = [];     // ids of the word sets picked when gameSource is 'deck' (one = updates that set's progress, several = practice only)
 let customWords = [];   // words for a one-off round, e.g. from the weekly summary
 let gameSrcOpen = false;
 let gameEdit = false;   // games menu in "จัดเกม" mode (pin / hide / reorder pins)
@@ -112,7 +113,10 @@ function gameSections() {
 }
 function renderGames() {
   if (gameSource === 'custom') gameSource = 'level';
-  const srcName = { level: `ระดับที่เลือก (${lvNames(S.settings.levels)})`, learned: 'คำที่เรียนแล้ว', all: 'ทุกระดับ', mastered: '🟢 คำที่จำได้แล้ว', star: '⭐ คำติดดาว', leech: '🐢 คำดื้อ', topic: '📂 ตามหมวด', goal: '🎯 ตามเป้าหมาย' }[gameSource] || '';
+  gameDecks = gameDecks.filter((id) => deckById(id)); // a set deleted meanwhile (also by another device) drops out
+  if (gameSource === 'deck' && !gameDecks.length) gameSource = 'level';
+  const decks = liveDecks();
+  const srcName = { level: `ระดับที่เลือก (${lvNames(S.settings.levels)})`, learned: 'คำที่เรียนแล้ว', all: 'ทุกระดับ', mastered: '🟢 คำที่จำได้แล้ว', star: '⭐ คำติดดาว', leech: '🐢 คำดื้อ', topic: '📂 ตามหมวด', goal: '🎯 ตามเป้าหมาย', deck: gameDecks.length === 1 ? `📚 ${esc(deckById(gameDecks[0]).name || 'ชุดไม่มีชื่อ')}` : `📚 ${gameDecks.length} ชุด (โหมดซ้อม)` }[gameSource] || '';
   view.innerHTML = `
     <div class="card-box">
       <button class="src-btn" id="srcBtn" aria-expanded="${gameSrcOpen}"><span class="small muted">คำจาก:</span><b>${srcName}</b><i>▾</i></button>
@@ -125,7 +129,10 @@ function renderGames() {
         <button class="chip" data-s="leech">🐢 คำดื้อ (${W.filter(isLeech).length})</button>
         <button class="chip" data-s="topic">📂 ตามหมวด</button>
         <button class="chip" data-s="goal">🎯 ตามเป้าหมาย</button>
+        ${decks.length ? `<button class="chip" data-s="deck">📚 ชุดของฉัน (${decks.length})</button>` : ''}
       </div>
+      ${gameSource === 'deck' ? `<div class="chips" id="gDecks" style="margin-top:10px">${decks.map((d) => `<button class="chip ${gameDecks.includes(d.id) ? 'on' : ''}" data-d="${d.id}" aria-pressed="${gameDecks.includes(d.id)}">${esc(d.icon)} ${esc(d.name || 'ชุดไม่มีชื่อ')} · ${deckWords(d).length}</button>`).join('')}</div>
+        <div class="small muted" style="margin-top:8px">${gameDecks.length === 1 ? 'เล่นชุดเดียว: ผลของเกมอัปเดตความคืบหน้าของชุดนั้น (สถิติหลักไม่เปลี่ยน)' : '🏋️ โหมดซ้อม (เลือกหลายชุด): ไม่นับความคืบหน้าของชุด แต่ยังได้ XP และสตรีค'}</div>` : ''}
       ${gameSource === 'topic' ? `<select class="sel block-sel" id="gTopic" style="margin-top:10px">${TOPICS.map(([id]) => `<option value="${id}" ${gameTopic === id ? 'selected' : ''}>${TOPIC_LABEL[id]} (${W.filter((w) => w.tp === id).length})</option>`).join('')}</select>` : ''}
       ${gameSource === 'goal' ? `<select class="sel block-sel" id="gGoal" style="margin-top:10px" aria-label="เป้าหมาย">${TAGS.map((t) => `<option value="${t.id}" ${gameGoal === t.id ? 'selected' : ''}>${TAG_LABEL[t.id]} (${t.w.length})</option>`).join('')}</select>` : ''}
       ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
@@ -161,8 +168,19 @@ function renderGames() {
   paint();
   if ($('#gTopic')) $('#gTopic').onchange = (e) => { gameTopic = e.target.value; };
   if ($('#gGoal')) $('#gGoal').onchange = (e) => { gameGoal = e.target.value; };
+  if ($('#gDecks')) $('#gDecks').onclick = (e) => {
+    const b = e.target.closest('[data-d]'); if (!b) return;
+    const id = b.dataset.d;
+    if (gameDecks.includes(id)) { if (gameDecks.length > 1) gameDecks = gameDecks.filter((x) => x !== id); } else gameDecks = [...gameDecks, id];
+    const top = view.scrollTop; renderGames(); view.scrollTop = top;
+  };
   $('#srcBtn').onclick = () => { gameSrcOpen = !gameSrcOpen; renderGames(); };
-  $('#src').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { gameSource = c.dataset.s; gameSrcOpen = false; renderGames(); } };
+  $('#src').onclick = (e) => {
+    const c = e.target.closest('.chip'); if (!c) return;
+    gameSource = c.dataset.s; gameSrcOpen = false;
+    if (gameSource === 'deck' && !gameDecks.length) gameDecks = [liveDecks()[0].id];
+    renderGames();
+  };
   view.querySelectorAll('[data-game]').forEach((b) => (b.onclick = () => startGame(b.dataset.game)));
 }
 
@@ -250,6 +268,7 @@ function gamePool(id) {
     : gameSource === 'custom' ? customWords
     : gameSource === 'topic' ? W.filter((w) => w.tp === gameTopic)
     : gameSource === 'goal' ? W.filter((w) => hasTag(w, gameGoal))
+    : gameSource === 'deck' ? [...new Map(gameDecks.map(deckById).filter(Boolean).flatMap((d) => deckWords(d)).map((w) => [w.idx, w])).values()]
     : gameSource === 'all' ? W : pool();
   if (id === 'cloze' || id === 'dict') list = list.filter(hasCloze);
   if (id === 'order') list = list.filter((w) => { const n = w.e.split(/\s+/).length; return n >= 4 && n <= 12; });
@@ -296,10 +315,18 @@ function startGame(id) {
   if (id === 'idiom' && !IDIOMS) { withLoading(loadIdioms()).then(() => startGame(id)); return; }
   if (id === 'sit' && !SIT) { withLoading(loadSit()).then(() => startGame(id)); return; }
   if (STORY_GAMES.includes(id) && !Object.keys(S.read).length) { toast('อ่านเรื่องสั้นให้จบอย่างน้อย 1 เรื่องก่อนนะ 📖'); if (current !== 'games') go('games'); return; }
+  if (gameSource === 'deck' && current !== 'games') gameSource = 'level'; // a set source is only for games started from the menu
+  gameDecks = gameDecks.filter((x) => deckById(x));
+  if (gameSource === 'deck' && !gameDecks.length) gameSource = 'level';
   const src = gamePool(id);
   const min = id === 'match' ? 6 : 4;
+  // Games that draw on the word source (not review, story or skill games) can run on a set's own progress.
+  const usesPool = id !== 'review' && !STORY_GAMES.includes(id) && !SKILL_GAMES.includes(id);
+  const deckRun = gameSource === 'deck' && usesPool ? (gameDecks.length === 1 ? { map: deckMap(gameDecks[0]) } : { practice: true }) : {};
   if (src.length < min) {
-    toast(id === 'emoji' || id === 'emojiRun' ? 'คำที่มีภาพอีโมจิยังน้อยไป ลองเลือกแหล่งคำเป็น "ทุกระดับ" ดูนะ'
+    const why = { cloze: ' (เกมนี้ใช้เฉพาะคำที่มีประโยคตัวอย่างให้เติม)', dict: ' (เกมนี้ใช้เฉพาะคำที่มีประโยคตัวอย่าง)', order: ' (เกมนี้ใช้ประโยคตัวอย่างที่ยาว 4–12 คำ)', colloc: ' (เกมนี้ใช้เฉพาะคำที่มีวลีที่ใช้คู่กัน)', emoji: ' (เกมนี้ใช้เฉพาะคำที่มีภาพอีโมจิ)', emojiRun: ' (เกมนี้ใช้เฉพาะคำที่มีภาพอีโมจิ)' }[id] || '';
+    toast(gameSource === 'deck' && usesPool ? `ชุดที่เลือกมีคำสำหรับเกมนี้ไม่ถึง ${min} คำ${why} ลองเพิ่มคำในชุดหรือเลือกหลายชุดนะ`
+      : id === 'emoji' || id === 'emojiRun' ? 'คำที่มีภาพอีโมจิยังน้อยไป ลองเลือกแหล่งคำเป็น "ทุกระดับ" ดูนะ'
       : id === 'review' ? 'ยังไม่มีคำที่ตอบผิด เก่งมาก! 👍'
       : gameSource === 'mastered' ? `ต้องมีคำที่จำได้แล้วอย่างน้อย ${min} คำก่อนนะ`
       : gameSource === 'star' ? `ติดดาวคำอย่างน้อย ${min} คำก่อนนะ (กด ☆ บนการ์ดหรือในหน้าคำศัพท์)`
@@ -314,11 +341,12 @@ function startGame(id) {
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === 'games'));
   const mine = S.gplay[DEV] || (S.gplay[DEV] = {});
   mine[id] = (mine[id] || 0) + 1; save();
-  if (id === 'match') return playMatch(src);
-  playQuiz(id === 'review' ? pick(['en2th', 'th2en', 'listen']) : id === 'emojiRun' ? 'emoji' : id, src, id);
+  if (id === 'match') return playMatch(src, deckRun);
+  playQuiz(id === 'review' ? pick(['en2th', 'th2en', 'listen']) : id === 'emojiRun' ? 'emoji' : id, src, id, deckRun);
 }
 
-function playQuiz(mode, src, gameId) {
+// deckRun: {} = main progress, { map } = one set's progress table, { practice: true } = several sets (no progress written).
+function playQuiz(mode, src, gameId, deckRun = {}) {
   const ROUND = 10;
   // Endless run (emojiRun): no round limit, wrong answers only reset the streak; the player ends it themselves.
   const ENDLESS = gameId === 'emojiRun';
@@ -934,7 +962,7 @@ function playQuiz(mode, src, gameId) {
     const spk = gameId === 'speak' || gameId === 'speakS';
     const soft = spk || gameId === 'order' || gameId === 'sOrder';
     asked++;
-    if (w.idx < 0 || (soft && !ok)) markActive(); else gameResult(w, ok);
+    if (w.idx < 0 || (soft && !ok) || deckRun.practice) markActive(); else gameResult(w, ok, deckRun.map);
     if (spk && ok) S.counts.speak = (S.counts.speak || 0) + 1;
     questEvent('answer', { game: gameId, ok });
     sfx(ok ? 'ok' : 'bad');
@@ -961,7 +989,7 @@ function playQuiz(mode, src, gameId) {
         : `<div class="h2">${score} แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
         <p>ถูก ${correct}/${items.length} · คอมโบสูงสุด ${bestCombo}</p>`}
       </div>
-      ${wrong.length ? `<div class="card-box wrong-list"><b>${gameId.startsWith('speak') ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b> <span class="small muted">${gameId.startsWith('speak') ? '(แตะคำเพื่อฟังเสียง)' : SKILL_GAMES.includes(gameId) ? '(แตะเพื่อฟังเสียง)' : '(ใส่ในแฟลชการ์ดให้แล้ว) · กด ☆ เพื่อติดดาว'}</span>
+      ${wrong.length ? `<div class="card-box wrong-list"><b>${gameId.startsWith('speak') ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b> <span class="small muted">${gameId.startsWith('speak') ? '(แตะคำเพื่อฟังเสียง)' : SKILL_GAMES.includes(gameId) ? '(แตะเพื่อฟังเสียง)' : deckRun.practice ? '(โหมดซ้อม) · กด ☆ เพื่อติดดาว' : deckRun.map ? '(ใส่ในการทบทวนของชุดให้แล้ว) · กด ☆ เพื่อติดดาว' : '(ใส่ในแฟลชการ์ดให้แล้ว) · กด ☆ เพื่อติดดาว'}</span>
         ${[...new Set(wrong)].map((w) => w.idx < 0 ? `<div class="wl" data-i="-1" data-say="${esc(w._q ? w._q[0].replace('___', w._q[1]) : w._m[0] + ', ' + w._m[2])}"><span><b>${esc(w.w)}</b></span><span class="muted grow" style="text-align:right">${esc(w._q ? w._q[3] : w.t)}</span></div>`
           : `<div class="wl" data-i="${w.idx}"><span><b>${esc(w.w)}</b> <span class="pos">${esc(w.p)}</span></span><span class="muted grow" style="text-align:right">${esc(w.t)}</span><button class="star-btn" data-star>${starIcon(w)}</button></div>`).join('')}</div>` : ''}
       <button class="btn primary block" id="again">เล่นอีกรอบ</button>
@@ -982,7 +1010,7 @@ function playQuiz(mode, src, gameId) {
   q();
 }
 
-function playMatch(src) {
+function playMatch(src, deckRun = {}) {
   const PAIRS = 6, ROUNDS = 3;
   let round = 0, mistakes = 0, start = Date.now(), timer;
   $('#title').textContent = GAMES.match.name;
@@ -1019,13 +1047,14 @@ function playMatch(src) {
       const a = sel, b = t; sel = null; a.classList.remove('sel');
       if (a.dataset.i === b.dataset.i) {
         a.classList.add('done'); b.classList.add('done');
-        gameResult(W[+a.dataset.i], true); sfx('ok');
+        if (deckRun.practice) markActive(); else gameResult(W[+a.dataset.i], true, deckRun.map);
+        sfx('ok');
         if (--left === 0) { round++; setTimeout(deal, 350); }
       } else {
         mistakes++; sfx('bad');
         [a, b].forEach((x) => { x.classList.remove('no'); void x.offsetWidth; x.classList.add('no'); });
         const enTile = a.dataset.k === 'en' ? a : b;
-        gameResult(W[+enTile.dataset.i], false);
+        if (deckRun.practice) markActive(); else gameResult(W[+enTile.dataset.i], false, deckRun.map);
       }
     };
   }

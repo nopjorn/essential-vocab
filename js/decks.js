@@ -132,7 +132,7 @@ function renderDecks(openId) {
     <button class="btn primary block" id="dkNew">＋ สร้างชุด</button>
     ${ds.length ? '' : `<div class="small muted" style="margin:16px 4px 6px">หรือเริ่มจากชุดสำเร็จรูป (แก้ไขเพิ่ม–ลดคำได้ภายหลัง)</div>
       <div class="chips">${goals.map(([id, ic, th]) => `<button class="chip" data-from="${id}">${ic} ${esc(th)} · ${tagWords(id).length}</button>`).join('')}</div>`}
-    <p class="small muted" style="margin:16px 4px">เลือกคำได้จากคลังคำในแอปเท่านั้น · ชุดซิงก์ข้ามเครื่องผ่านบัญชีเดียวกัน (ต้องอัปเดตแอปทุกเครื่อง) · แตะชุดเพื่อเรียนและดูสถิติของชุด · เล่นเกมจากชุดจะตามมา</p>`;
+    <p class="small muted" style="margin:16px 4px">เลือกคำได้จากคลังคำในแอปเท่านั้น · ชุดซิงก์ข้ามเครื่องผ่านบัญชีเดียวกัน (ต้องอัปเดตแอปทุกเครื่อง) · แตะชุดเพื่อเรียน เล่นเกม และดูสถิติของชุด</p>`;
   view.querySelectorAll('.deck-card').forEach((b) => { b.onclick = () => renderDeck(b.dataset.id); });
   $('#dkNew').onclick = () => renderDeckEdit();
   view.querySelectorAll('[data-from]').forEach((b) => {
@@ -167,6 +167,7 @@ function renderDeck(id) {
       <div class="dk-nums"><div><b>${st.due}</b><small>ครบกำหนด</small></div><div><b>${pct}</b><small>ความแม่น</small></div><div><b>${st.leech}</b><small>🐢 คำดื้อ</small></div></div>` : '<p class="center muted small">ยังไม่มีคำในชุดนี้ กด ✏️ แก้ไข เพื่อเพิ่มคำค่ะ</p>'}
     </div>
     <button class="btn primary block" id="dkStudy" ${st.n ? '' : 'disabled'}>▶︎ เรียนชุดนี้ <small>(ครบกำหนด ${st.due} · คำใหม่ ${Math.min(DECK_ROUND, st.fresh)})</small></button>
+    <button class="btn block" id="dkPlay" style="margin-top:8px" ${st.n ? '' : 'disabled'}>🎮 เล่นเกมจากชุดนี้</button>
     <p class="small muted" style="margin:8px 4px 14px">ความคืบหน้าของชุดแยกจากสถิติหลัก (คำที่เรียน / จำได้แล้ว ในหน้าหลักไม่เปลี่ยน) แต่สตรีค XP และปฏิทินความขยันนับรวม · "แม่นแล้ว" = ทบทวนห่างตั้งแต่ 7 วันขึ้นไป</p>
     ${st.n ? '<button class="btn ghost block" id="dkRestart">🔄 เริ่มชุดนี้ใหม่</button>' : ''}
     <div class="card-box" style="padding:4px 14px;margin-top:14px" id="dkList">${ws.map((w) => `<div class="wrow" data-i="${w.idx}"><span class="dot ${DECK_DOT[deckStatus(map[w.w])]}"></span>
@@ -175,6 +176,7 @@ function renderDeck(id) {
   $('#dkBack').onclick = () => go('decks');
   $('#dkEdit').onclick = () => renderDeckEdit(id);
   $('#dkStudy').onclick = () => go('cards', { deck: id });
+  $('#dkPlay').onclick = () => { gameSource = 'deck'; gameDecks = [id]; go('games'); };
   if ($('#dkRestart')) $('#dkRestart').onclick = () => {
     if (!confirm(`เริ่มชุด "${d.name}" ใหม่ทั้งหมดใช่ไหม? ความคืบหน้าของชุดนี้จะถูกล้าง (สถิติหลักไม่เปลี่ยน)`)) return;
     const m = deckMap(id);

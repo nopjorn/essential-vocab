@@ -1114,3 +1114,6 @@ textarea.search { font: inherit; line-height: 1.5; }
 .dk-nums b { display: block; font-size: 22px; }
 .dk-nums small { color: var(--muted); }
 #dkStudy small { font-weight: 400; opacity: .85; }
+.dk-home { padding: 8px 0; }
+.dk-open { background: none; border: 0; font: inherit; color: inherit; text-align: left; padding: 0; min-width: 0; cursor: pointer; }
+.dk-all { background: none; border: 0; font: inherit; cursor: pointer; }

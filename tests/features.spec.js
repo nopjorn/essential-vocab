@@ -244,6 +244,12 @@ test('accessibility: every visible control has a name; English text is marked la
   }
   await page.evaluate(() => { addDeck('ทดสอบ', '📚', ['airport', 'hotel']); renderDeckEdit(S.decks[0].id); });
   expect(await page.evaluate(unnamed), 'deck edit').toEqual([]);
+  await page.evaluate(() => go('decks', S.decks[0].id));
+  expect(await page.evaluate(unnamed), 'deck page').toEqual([]);
+  await page.evaluate(() => { addDeck('อีกชุด', '💼', ['hotel']); gameSource = 'deck'; gameDecks = S.decks.map((d) => d.id); go('games'); });
+  expect(await page.evaluate(unnamed), 'games with sets').toEqual([]);
+  await page.evaluate(() => { gameSource = 'level'; go('home'); });
+  expect(await page.evaluate(unnamed), 'home with sets').toEqual([]);
   await expect(page.locator('#toast')).toHaveAttribute('aria-live', 'polite');
   await page.evaluate(() => startGame('en2th'));
   await expect(page.locator('.q-prompt .word')).toHaveAttribute('lang', 'en');
