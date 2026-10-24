@@ -143,8 +143,8 @@ function renderGames() {
         <button class="ref-tile" id="toId"><span>🎭</span>สำนวน</button>
         <button class="ref-tile" id="toSit"><span>🗨️</span>ศัพท์ตามสถานการณ์</button>
       </div></div>
-    <div class="row games-head"><b class="grow">${gameEdit ? '✏️ จัดหน้าเกม' : '🎮 เกมทั้งหมด'}</b><button class="btn${gameEdit ? ' primary' : ''}" id="gEdit">${gameEdit ? '✓ เสร็จ' : '✏️ จัดเกม'}</button></div>
-    ${gameEdit ? gameEditor() : `<div class="game-grid">${Object.keys(GAMES).filter((id) => !gameHidden().has(id)).map(gameTile).join('')}</div>
+    <div class="row games-head"><b class="grow">${gameEdit ? '✏️ จัดหน้าเกม' : (gamePins().length ? '🎮 เกมอื่นๆ' : '🎮 เกมทั้งหมด')}</b><button class="btn${gameEdit ? ' primary' : ''}" id="gEdit">${gameEdit ? '✓ เสร็จ' : '✏️ จัดเกม'}</button></div>
+    ${gameEdit ? gameEditor() : `<div class="game-grid">${Object.keys(GAMES).filter((id) => !gameHidden().has(id) && !gamePins().includes(id)).map(gameTile).join('')}</div>
     ${gameHidden().size ? `<details class="card-box hidden-games"><summary class="small muted">🙈 เกมที่ซ่อนไว้ (${gameHidden().size})</summary><div class="game-grid" style="margin-top:10px">${[...gameHidden()].map(gameTile).join('')}</div></details>` : ''}`}`;
   $('#gEdit').onclick = () => { gameEdit = !gameEdit; renderGames(); if (gameEdit) $('#gEdit').scrollIntoView({ block: 'start' }); };
   if (gameEdit) bindGameEditor();

@@ -688,6 +688,8 @@ test('games menu: frequent row, pin + reorder, hide and unhide', async ({ page }
   expect(await sec('เล่นบ่อย').evaluateAll((els) => els.map((e) => e.dataset.game))).toEqual(['syn']);
   await expect(view.locator('.game-grid:not(.hidden-games .game-grid) [data-game="spell"]')).toHaveCount(0);
   await expect(view.locator('.hidden-games [data-game="spell"]')).toHaveCount(1);
+  await expect(view.locator('[data-game="emoji"]')).toHaveCount(1);   // pinned: only in the top section
+  await expect(view.locator('.games-head')).toContainText('เกมอื่นๆ');
   const st = await readState(page);
   expect(st.settings.gamePin).toEqual(['listen', 'emoji']);
   expect(st.settings.gameHide).toEqual(['spell']);
