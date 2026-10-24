@@ -72,6 +72,7 @@ function renderHome() {
     },
     feed: () => `<button class="quick-btn feed-btn" id="qFeed"><span>📱</span><b>ไถศัพท์</b><small>ปัดขึ้นเรื่อยๆ เหมือนไถฟีด</small></button>`,
     play: () => `<button class="quick-btn" id="qPlay"><span>⚡</span><b>เล่นด่วน</b><small>เกมสุ่ม 10 ข้อ ~1 นาที</small></button>`,
+    year: () => { const y = yearToShow(); return y && yearStats(y).days ? `<button class="card-box guide-link" id="qYear"><span>🎊</span><div class="grow"><b>สรุปปี ${y + 543} ของคุณ</b><div class="small muted">ดูว่าเก่งขึ้นแค่ไหน แล้วแชร์เป็นภาพได้</div></div><span class="muted">›</span></button>` : ''; },
     short: () => `<button class="quick-btn" id="qShort"><span>⏱️</span><b>เซสชัน 3 นาที</b><small>${SHORT_N} ใบ สำหรับวันที่เวลาน้อย</small></button>`,
     wgoal: () => {
       const g = S.settings.weekGoal | 0; if (!g) return '';
@@ -132,6 +133,7 @@ function renderHome() {
   click('#qFeed', () => go('feed'));
   click('#statsBtn', () => go('stats', 'home'));
   click('#qPlay', quickPlay);
+  click('#qYear', () => go('year', yearToShow()));
   click('#qShort', () => go('cards', 'short'));
   click('#qRiddle', () => go('riddle', 'home'));
   view.querySelectorAll('[data-dkopen]').forEach((b) => { b.onclick = () => go('decks', b.dataset.dkopen); });
@@ -172,6 +174,7 @@ const HOME_BLOCKS = [
   { id: 'hero', ic: '🏠', name: 'การ์ดวันนี้ + ปุ่มเริ่มเรียน', w: 'full', on: true },
   { id: 'feed', ic: '📱', name: 'ปุ่มไถศัพท์', w: 'half', on: true },
   { id: 'play', ic: '⚡', name: 'ปุ่มเล่นด่วน', w: 'half', on: true },
+  { id: 'year', ic: '🎊', name: 'สรุปปี (ปลายธันวาคม–ต้นมกราคม)', w: 'full', on: true },
   { id: 'short', ic: '⏱️', name: 'ปุ่มเซสชัน 3 นาที', w: 'half', on: true },
   { id: 'wgoal', ic: '🎯', name: 'เป้าคำใหม่ประจำสัปดาห์ (ตั้งในตั้งค่า)', w: 'full', on: true },
   { id: 'month', ic: '📅', name: 'สรุปเดือน (7 วันแรกของเดือน)', w: 'full', on: true },

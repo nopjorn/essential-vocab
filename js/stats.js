@@ -141,6 +141,10 @@ function renderStats(from) {
     <div class="h2">📝 แบบทดสอบประจำเดือน</div>
     <div class="card-box">${mtestSummary()}<button class="btn primary block" data-go="mtest" style="margin-top:10px">${S.mtest[monthKey()] ? 'ทำอีกครั้ง' : 'ทำแบบทดสอบเดือนนี้'}</button></div>
 
+    <div class="card-box row" style="gap:8px"><button class="btn primary grow" id="shareProg">📤 แชร์ความก้าวหน้า</button><button class="btn grow" data-go="year" data-year="${yearToShow() || new Date().getFullYear()}">🎊 สรุปปี</button></div>
+    <div class="h2">🎓 ทดสอบจบระดับ</div>
+    ${levelTestBox()}
+
     <div class="h2">แนวโน้มคำศัพท์</div>
     <div class="card-box">${trendChart(W_)}</div>
 
@@ -158,6 +162,8 @@ function renderStats(from) {
     <div class="h2">🏅 เหรียญรางวัล <span class="small muted">${ACH.filter((a) => S.ach[a.id]).length}/${ACH.length}</span></div>
     <div class="card-box ach-grid" id="ach">${ACH.map((a) => { const hid = a.secret && !S.ach[a.id]; return `<button class="ach ${S.ach[a.id] ? 'on' : ''}" data-ach="${a.id}"><span>${hid ? '❓' : a.icon}</span><small>${hid ? 'เหรียญลับ' : a.name}</small></button>`; }).join('')}</div>`;
   loadStories().then(() => { const h = $('#readyHost'); if (h) h.innerHTML = readyBox(); });
+  $('#shareProg').onclick = shareProgress;
+  view.querySelectorAll('[data-lt]').forEach((b) => { b.onclick = () => go('ltest', b.dataset.lt); });
   $('#sBack').onclick = () => go(from || 'home');
   bindStickers();
   bindHeatmap();
@@ -313,7 +319,7 @@ function renderMonthTest() {
     <div class="card-box">${mtestSummary()}</div>`;
   $('#mtGo').onclick = () => runMonthTest(shuffle(pool).slice(0, n));
 }
-function runMonthTest(items) {
+function runMonthTest(items, lv) {
   let i = 0, right = 0, timer = null;
   const wrong = [], modes = ['en2th', 'th2en', ...(window.speechSynthesis ? ['listen'] : [])];
   cleanup = () => clearTimeout(timer);
@@ -321,7 +327,7 @@ function runMonthTest(items) {
     if (i >= items.length) return done();
     const w = items[i], m = modes[i % modes.length], toTh = m !== 'th2en';
     const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
-    $('#title').textContent = `แบบทดสอบ · ${i + 1}/${items.length}`;
+    $('#title').textContent = `${lv ? 'ทดสอบจบ ' + LV_LABEL[lv] : 'แบบทดสอบ'} · ${i + 1}/${items.length}`;
     const prompt = m === 'en2th' ? `<div class="word" lang="en">${esc(w.w)}</div><div class="pos">${esc(w.p)}</div>`
       : m === 'th2en' ? `<div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>`
       : `<button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:88px;height:88px;font-size:40px;margin:0">🔊</button>`;
@@ -342,22 +348,56 @@ function runMonthTest(items) {
     };
   };
   const done = () => {
-    const key = monthKey(), res = { r: right, n: items.length, at: Date.now() }, prev = S.mtest[monthKey(1)];
-    const best = !S.mtest[key] || pct(res) > pct(S.mtest[key]);
-    if (best) S.mtest[key] = res;
+    const key = lv || monthKey(), res = { r: right, n: items.length, at: Date.now() };
+    const book = lv ? S.ltest : S.mtest, prev = lv ? null : S.mtest[monthKey(1)];
+    const best = !book[key] || pct(res) > pct(book[key]);
+    if (best) book[key] = res;
     save();
-    const p = pct(res), diff = prev ? p - pct(prev) : null;
-    if (p >= 90) confetti();
-    $('#title').textContent = 'ผลแบบทดสอบ';
+    const p = pct(res), diff = prev ? p - pct(prev) : null, pass = lv && p >= LTEST_PASS;
+    if (p >= 90 || pass) confetti();
+    $('#title').textContent = lv ? 'ผลทดสอบจบ ' + LV_LABEL[lv] : 'ผลแบบทดสอบ';
+    const note = lv ? (pass ? `🎓 ผ่านแบบทดสอบระดับ ${LV_LABEL[lv]} แล้ว! ได้เหรียญ “จบ ${LV_LABEL[lv]}”` : `ต้องได้ ${LTEST_PASS}% ขึ้นไปถึงจะผ่าน ลองทบทวนคำที่ผิดแล้วทำอีกครั้งนะ`)
+      : diff == null ? 'เดือนหน้ามาทำอีกครั้งเพื่อดูพัฒนาการนะ' : diff > 0 ? `📈 ดีขึ้นจากเดือนที่แล้ว ${diff}%` : diff < 0 ? `📉 น้อยกว่าเดือนที่แล้ว ${-diff}% ลองทบทวนคำที่ผิดดูนะ` : 'เท่ากับเดือนที่แล้วพอดี';
     view.innerHTML = `<div class="card-box center pop"><div class="result-emoji">${p >= 90 ? '🏆' : p >= 70 ? '🎉' : p >= 50 ? '💪' : '📚'}</div>
       <div class="h2" style="margin:4px 0">${right}/${items.length} · ${p}%</div>
-      <p class="small muted">${diff == null ? 'เดือนหน้ามาทำอีกครั้งเพื่อดูพัฒนาการนะ' : diff > 0 ? `📈 ดีขึ้นจากเดือนที่แล้ว ${diff}%` : diff < 0 ? `📉 น้อยกว่าเดือนที่แล้ว ${-diff}% ลองทบทวนคำที่ผิดดูนะ` : 'เท่ากับเดือนที่แล้วพอดี'}${best ? '' : ' · คะแนนดีที่สุดของเดือนนี้ยังเป็นครั้งก่อน'}</p>
+      <p class="small muted">${note}${best ? '' : ' · คะแนนดีที่สุดยังเป็นครั้งก่อน'}</p>
       <button class="btn primary block" id="mtAgain">ทำอีกครั้ง</button><button class="btn ghost block" style="margin-top:8px" data-go="stats">ดูสถิติ</button></div>
       ${wrong.length ? `<div class="card-box wrong-list"><b>คำที่ตอบผิด</b> <span class="small muted">(กลับไปอยู่ในแฟลชการ์ดแล้ว · แตะเพื่อดู)</span>
         ${wrong.map((w) => `<div class="wl" data-i="${w.idx}"><span><b>${esc(w.w)}</b></span><span class="muted grow" style="text-align:right">${esc(w.t)}</span></div>`).join('')}</div>` : ''}`;
-    $('#mtAgain').onclick = () => renderMonthTest();
+    $('#mtAgain').onclick = () => (lv ? renderLevelTest(lv) : renderMonthTest());
     const wl = view.querySelector('.wrong-list');
     if (wl) wl.onclick = (e) => { const r = e.target.closest('[data-i]'); if (r) openSheet(W[+r.dataset.i]); };
   };
   q();
+}
+
+/* ---------- level test (1.63) ---------- */
+// Offered when 80% of a level's words are learned: up to 30 questions from the learned words of that level, pass = 80%.
+// Best result per level in S.ltest[level]; passing gives the "ผ่านทดสอบ" medal. Same question engine as the monthly test.
+const LTEST_NEED = 0.8, LTEST_PASS = 80;
+function levelProgress(lv) {
+  const ws = W.filter((w) => w.g === lv), l = ws.filter((w) => S.prog[w.w]).length;
+  return { n: ws.length, l, f: ws.length ? l / ws.length : 0 };
+}
+function levelTestBox() {
+  return `<div class="card-box">${LEVELS.map((lv) => {
+    const p = levelProgress(lv), t = S.ltest[lv], ok = p.f >= LTEST_NEED;
+    return `<div class="wrow lt-row"><div class="grow"><b>${LV_LABEL[lv]}</b> <span class="small muted">· เรียนแล้ว ${Math.round(p.f * 100)}%${t ? ` · ดีที่สุด ${pct(t)}%${pct(t) >= LTEST_PASS ? ' 🎓 ผ่านแล้ว' : ''}` : ''}</span></div>
+      <button class="chip" data-lt="${lv}" ${ok ? '' : 'disabled'} aria-label="ทดสอบจบ ${LV_LABEL[lv]}">${ok ? (t ? 'ทำอีกครั้ง' : 'ทดสอบ') : `ต้องเรียน ${Math.round(LTEST_NEED * 100)}%`}</button></div>`;
+  }).join('')}<div class="small muted" style="margin-top:8px">เรียนครบ 80% ของระดับไหนก็ทดสอบจบระดับนั้นได้ ผ่านเมื่อได้ ${LTEST_PASS}% ขึ้นไป</div></div>`;
+}
+function renderLevelTest(lv) {
+  if (!LEVELS.includes(lv)) return go('stats');
+  const pool = W.filter((w) => w.g === lv && S.prog[w.w]), p = levelProgress(lv), t = S.ltest[lv];
+  if (p.f < LTEST_NEED || pool.length < 10) {
+    view.innerHTML = `<div class="card-box center"><div class="result-emoji">🎓</div><p>เรียนคำระดับ ${LV_LABEL[lv]} ให้ได้ ${Math.round(LTEST_NEED * 100)}% ก่อน (ตอนนี้ ${Math.round(p.f * 100)}%) แล้วค่อยมาทดสอบนะ</p><button class="btn primary block" data-go="cards">ไปเรียนแฟลชการ์ด</button></div>`;
+    return;
+  }
+  const n = Math.min(MTEST_N, pool.length);
+  view.innerHTML = `<div class="card-box center pop"><div class="result-emoji">🎓</div>
+    <div class="h2" style="margin:4px 0">ทดสอบจบระดับ ${LV_LABEL[lv]}</div>
+    <p class="small muted">${n} ข้อ สุ่มจากคำระดับ ${LV_LABEL[lv]} ที่เรียนแล้ว (${pool.length} คำ) ไม่มีตัวช่วย ผ่านเมื่อได้ ${LTEST_PASS}% ขึ้นไป คำที่ผิดจะกลับไปให้ทบทวน</p>
+    <div class="tiles mo-tiles" style="margin:12px 0"><div class="tile-s"><b>${t ? pct(t) + '%' : '–'}</b><span>ดีที่สุด</span></div><div class="tile-s"><b>${n}</b><span>ข้อ</span></div></div>
+    <button class="btn primary block" id="mtGo">เริ่มทดสอบ</button></div>`;
+  $('#mtGo').onclick = () => runMonthTest(shuffle(pool).slice(0, n), lv);
 }
