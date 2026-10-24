@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.61.0';
+const APP_VERSION = '1.62.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -154,7 +154,7 @@ function sanitizeDecks(r) {
 }
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -164,6 +164,8 @@ const defaults = () => ({
   star: {},            // word -> 1 for starred words
   freeze: 0,           // streak freezes in stock (max MAX_FREEZE)
   ach: {},             // achievement id -> date unlocked
+  wnew: { key: '', n: 0 }, // new words started this week (1.62)
+  readyAt: {},         // story level -> best 'known words' threshold reached (90/95) (1.62)
   repair: null,        // streak repair offer {count, at, base, need, done} (1.61)
   quest: { date: '', q: [], bonus: false }, // today's 3 quests (1.61)
   wq: { key: '', id: '', c: {}, done: false }, // this week's quest (1.61)
@@ -317,6 +319,10 @@ function mergeBackup(d) {
   S.backupAt = Math.max(S.backupAt || 0, d.backupAt || 0);
   Object.assign(S.star, d.star || {});
   for (const [k, v] of Object.entries(d.ach || {})) if (!S.ach[k]) S.ach[k] = v;
+  if (d.wnew && d.wnew.key) {
+    if (d.wnew.key > (S.wnew.key || '')) S.wnew = d.wnew; else if (d.wnew.key === S.wnew.key) S.wnew.n = Math.max(S.wnew.n, d.wnew.n || 0);
+  }
+  for (const [k, v] of Object.entries(d.readyAt || {})) S.readyAt[k] = Math.max(S.readyAt[k] || 0, v);
   if (d.repair && d.repair.at && (!S.repair || d.repair.at > S.repair.at)) S.repair = d.repair;
   if (d.wq && d.wq.key) {
     if (d.wq.key > (S.wq.key || '')) S.wq = d.wq;
@@ -819,6 +825,15 @@ const dueList = (list = pool(), map = S.prog) => {
 /* ---------- gentle comeback (1.60) ---------- */
 // A big pile of overdue cards (> BACKLOG_PAUSE) pauses new words and is served BACKLOG_CAP a day, most overdue first,
 // so coming back after a break never starts with a 200-card wall. Off with settings.gentle === false.
+// New words started this week, for the adjustable weekly goal (settings.weekGoal, 0 = off).
+function wnewAdd() {
+  const k = mondayKey();
+  if (!S.wnew || S.wnew.key !== k) S.wnew = { key: k, n: 0 };
+  S.wnew.n++;
+  const g = S.settings.weekGoal | 0;
+  if (g && S.wnew.n === g) setTimeout(() => { confetti(); toast(`🎯 ครบเป้าคำใหม่ประจำสัปดาห์ ${g} คำแล้ว เก่งมาก!`); }, 600);
+}
+const wnewNow = () => (S.wnew && S.wnew.key === mondayKey() ? S.wnew.n : 0);
 const BACKLOG_CAP = 50, BACKLOG_PAUSE = 60;
 function backlogPlan() {
   rollDay();
@@ -975,7 +990,7 @@ function grade(w, g, map = S.prog) {
   const leechHit = main && p && (p.x || 0) >= LEECH && g >= 2;
   if (!main) { /* a set: only effort counts (XP, streak, history, quests) */ }
   else if (!p) {
-    S.daily.fresh++;
+    S.daily.fresh++; wnewAdd();
     if (S.daily.fresh === S.settings.newPerDay) setTimeout(() => { confetti(); toast('🎯 ครบเป้าคำใหม่วันนี้แล้ว เก่งมาก!'); }, 300);
   } else S.daily.reviews++;
   const n = sched(p, g);
@@ -1000,6 +1015,7 @@ function gameResult(w, ok, map = S.prog) {
   markActive();
   const p = map[w.w];
   const leechHit = ok && map === S.prog && p && (p.x || 0) >= LEECH;
+  if (!p && map === S.prog) wnewAdd();
   if (ok) {
     if (!p) map[w.w] = { b: 1, i: 1, e: EASE0, d: dueAt(1), s: 1, c: 1, x: 0 };
     else { p.c++; p.s++; }

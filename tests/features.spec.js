@@ -899,3 +899,24 @@ test('streak repair (1.61): broken 5-day streak is restored after 2x goal; expir
   await expect(page.locator('#ach')).toContainText('เหรียญลับ');
   expect(errors).toEqual([]);
 });
+
+test('1.62: 3-minute session, tomorrow box, weekly new-word goal, ready-to-read box', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'], newPerDay: 10, weekGoal: 5 }, placedAt: '2026-01-01' });
+  // home block + short queue
+  await page.evaluate(() => go('home'));
+  await expect(page.locator('#qShort')).toBeVisible();
+  const q = await page.evaluate(() => buildQueue('short').length);
+  expect(q).toBe(12);
+  // weekly goal counts new words and shows on home
+  await page.evaluate(() => { const w = W.filter((x) => x.g === 'A1'); for (let i = 0; i < 3; i++) grade(w[i], 2); go('home'); });
+  await expect(page.locator('[data-hb="wgoal"]')).toContainText('3/5');
+  // finishing a round shows tomorrow's box
+  await page.evaluate(() => { const w = W.filter((x) => x.g === 'A1')[5]; S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: Date.now() + 0.5 * DAY, s: 1, c: 1, x: 0 }; S.daily.fresh = S.settings.newPerDay; go('cards'); });
+  await expect(page.locator('.tomorrow')).toContainText('พรุ่งนี้รอคุณอยู่');
+  // ready box in the library and on stats
+  await page.evaluate(() => loadStories().then(() => go('read')));
+  await expect(page.locator('.ready-box')).toContainText('พร้อมอ่านระดับไหนแล้ว');
+  await page.evaluate(() => go('stats'));
+  await expect(page.locator('#readyHost .ready-box')).toBeVisible();
+  expect(errors).toEqual([]);
+});
