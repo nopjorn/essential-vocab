@@ -764,3 +764,62 @@ test('1.58: grouped topic picks (whole group or one topic), stickers of retired 
   expect(n2).toBeGreaterThan(0);
   expect(errors).toEqual([]);
 });
+
+// ---- 1.59: look & feel ----
+test('home goal rings: fill with progress, close with ✓ when everything is done', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'], newPerDay: 5 } });
+  await expect(page.locator('.hero .ring')).toBeVisible();
+  await expect(page.locator('.ring-legend')).toContainText('คำใหม่ 0/5');
+  expect(await page.locator('.ring .rg').count()).toBe(2);
+  // 3 of 5 new words learned: inner ring at 60%
+  await page.evaluate(() => { S.daily = { date: today(), fresh: 3, reviews: 0 }; go('home'); });
+  expect(await page.locator('.ring .rg.r2').evaluate((e) => e.style.strokeDashoffset)).toBe('40');
+  await expect(page.locator('.hero')).not.toHaveClass(/ring-closed/);
+  // nothing left to learn or review, something done → closed
+  await page.evaluate(() => { S.daily = { date: today(), fresh: 5, reviews: 0 }; go('home'); });
+  await expect(page.locator('.hero')).toHaveClass(/ring-closed/);
+  await expect(page.locator('.ring-c')).toHaveText('✓');
+  expect(errors).toEqual([]);
+});
+
+test('celebrations: level-up screen, XP fly, streak flash; level-up falls back to a toast with confetti off', async ({ page }) => {
+  const errors = await openApp(page, { xp: 45 });
+  await page.evaluate(() => addXP(10));
+  await expect(page.locator('.xp-fly')).toHaveCount(1);
+  await expect(page.locator('.lvlup')).toBeVisible();
+  await expect(page.locator('.lvlup')).toContainText('Lv.2');
+  await page.locator('.lvlup [data-close]').click();
+  await expect(page.locator('.lvlup')).toHaveCount(0);
+  await page.evaluate(() => { S.streak = { last: '', count: 0 }; markActive(); });
+  await expect(page.locator('.streak-flash')).toBeVisible();
+  expect(await page.locator('.streak-flash').evaluate((e) => getComputedStyle(e).pointerEvents)).toBe('none');
+  await page.evaluate(() => { S.settings.confetti = false; addXP(200); });
+  await expect(page.locator('#toast')).toContainText('เลเวลอัป');
+  await expect(page.locator('.lvlup')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('topic tint and haptics: tint on card + sheet, switches in settings', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  const hue = await page.evaluate(() => { const w = W.find((x) => FEED_HUE[x.tp] != null); return { w: w.w, hue: FEED_HUE[w.tp] }; });
+  await page.evaluate((w) => { openSheet(W.find((x) => x.w === w)); }, hue.w);
+  await expect(page.locator('.sheet.tint')).toHaveCSS('--hue', String(hue.hue));
+  await page.evaluate(() => { document.querySelector('.sheet-wrap').remove(); S.settings.topicTint = false; });
+  await page.evaluate((w) => { openSheet(W.find((x) => x.w === w)); }, hue.w);
+  await expect(page.locator('.sheet.tint')).toHaveCount(0);
+  await page.evaluate(() => { document.querySelector('.sheet-wrap').remove(); S.settings.topicTint = true; go('cards'); });
+  await expect(page.locator('#stage .fc')).toBeVisible();
+  // haptics: sfx() ticks the hidden switch input (1 for right, 2 for wrong); off → none
+  await page.evaluate(() => { window.__t = 0; sfx('ok'); document.querySelector('.hap input').addEventListener('click', () => window.__t++); });
+  await page.waitForTimeout(300);
+  await page.evaluate(() => { window.__t = 0; sfx('bad'); });
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.__t)).toBe(2);
+  await page.evaluate(() => { S.settings.haptic = false; window.__t = 0; sfx('bad'); });
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.__t)).toBe(0);
+  await page.evaluate(() => go('settings'));
+  await expect(page.locator('#haptic')).toBeAttached();
+  await expect(page.locator('#topicTint')).toBeAttached();
+  expect(errors).toEqual([]);
+});

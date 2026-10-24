@@ -12,6 +12,8 @@
 const FEED_HUE = { people: 340, anatomy: 0, health: 355, food: 25, home: 35, clothes: 290, animal: 100, plant: 130, weather: 165, places: 200, transport: 185, job: 45, money: 55, edu: 230, sci: 215, tech: 245, comm: 270, arts: 285, sport: 95, gov: 210, law: 190, social: 170, clock: 180, num: 195, qty: 150, emo: 320, mind: 300, char: 335, move: 150, make: 20, act: 120, look: 260, value: 50, degree: 240, grammar: 220 };
 const FEED_LOOK = { fam: ['🧬', 160], colloc: ['🤝', 190], conf: ['⚖️', 30], story: ['📖', 250], sum: ['🏆', 48], boss: ['👾', 0] };
 const TOPIC_ICON = Object.fromEntries(TOPICS.map(([id, ic]) => [id, ic]));
+// Topic colour for the soft tint on flashcards and the word sheet (settings.topicTint); '' = no tint.
+const tintStyle = (w) => (S.settings.topicTint !== false && w && FEED_HUE[w.tp] != null ? ` style="--hue:${FEED_HUE[w.tp]}"` : '');
 const FEED_SPECIALS = ['fam', 'colloc', 'conf', 'story'];
 const FEED_SP_EVERY = 6, FEED_SUM_EVERY = 20, FEED_TIMER = 6, BOSS_HP = 3, BOSS_XP = 15, FEVER_AT = 10;
 const BLANK = '<span class="blank">_____</span>';

@@ -100,7 +100,7 @@ function openSheet(w, onChange, opt = {}) {
   const stLabel = { new: 'ยังไม่เรียน', learning: '🟡 กำลังเรียน', mastered: dm ? '🟢 แม่นแล้ว' : '🟢 จำได้แล้ว' }[st] + ((dm ? leechIn(w, dm) : isLeech(w)) ? ' · 🐢 คำดื้อ' : '');
   const el = document.createElement('div');
   el.className = 'sheet-wrap';
-  el.innerHTML = `<div class="sheet wsheet" role="dialog" aria-label="${esc(w.w)}">
+  el.innerHTML = `<div class="sheet wsheet${tintStyle(w) ? ' tint' : ''}" role="dialog" aria-label="${esc(w.w)}"${tintStyle(w)}>
       <div class="grab"></div>
       <div class="sheet-body">
       <div class="row" style="justify-content:space-between">${lvBadge(w.g)}<a class="oxl" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(w.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener" aria-label="ดูใน Oxford Learner's Dictionaries">📖 Oxford ↗</a><span class="st-pill ${st}">${stLabel}</span></div>

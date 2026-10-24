@@ -261,3 +261,10 @@ test('every word row uses a topic id from TOPICS (and no retired id)', () => {
   expect(bad).toEqual([]);
   topics.forEach((t) => expect(w.some((r) => r[7] === t), t).toBe(true));
 });
+
+test('iOS splash images: every apple-touch-startup-image exists, light + dark, portrait + landscape', () => {
+  const links = [...read('index.html').matchAll(/<link rel="apple-touch-startup-image" href="([^"]+)" media="([^"]+)">/g)];
+  expect(links.length).toBe(12);
+  links.forEach(([, f]) => expect(fs.existsSync(path.join(root, f)), f).toBe(true));
+  ['light', 'dark', 'portrait', 'landscape'].forEach((k) => expect(links.filter((l) => l[2].includes(k)).length).toBe(6));
+});

@@ -22,19 +22,33 @@ function renderHome() {
   const lastBackup = S.backupAt ? Math.floor((Date.now() - S.backupAt) / DAY) : null;
   // Each home block returns its HTML ('' = nothing to show today); order/width/visibility come from homeBlocks().
   const B = {
-    hero: () => `<div class="hero pop">
-      <div class="small" style="opacity:.9">${greeting()}</div>
-      <div class="big" style="margin-top:6px">${todo}</div>
-      <div>การ์ดที่รอวันนี้ (${lvNames(S.settings.levels)})</div>
+    hero: () => {
+      // Two-ring goal: outer = reviews done / (done + still due), inner = new words / what can still be learned today.
+      const revTot = S.daily.reviews + due, rf = revTot ? S.daily.reviews / revTot : 1;
+      const newTot = Math.min(goal, S.daily.fresh + Math.min(newLeft, unseen)), nf = newTot ? Math.min(1, S.daily.fresh / newTot) : 1;
+      const closed = rf >= 1 && nf >= 1 && (doneToday > 0 || todo === 0), pct = Math.round((rf + nf) / 2 * 100);
+      const arc = (r, f, cls) => `<circle class="rg ${cls}${f <= 0 ? ' z' : ''}" cx="50" cy="50" r="${r}" pathLength="100" style="stroke-dashoffset:${(100 - f * 100).toFixed(1)}" transform="rotate(-90 50 50)"/>`;
+      return `<div class="hero pop${closed ? ' ring-closed' : ''}">
+      <div class="hero-top">
+        <div class="hero-main">
+          <div class="small" style="opacity:.9">${greeting()}</div>
+          <div class="big" style="margin-top:6px">${todo}</div>
+          <div>การ์ดที่รอวันนี้ (${lvNames(S.settings.levels)})</div>
+        </div>
+        <div class="ring" role="img" aria-label="ความคืบหน้าวันนี้ ${pct}% ทบทวน ${S.daily.reviews} จาก ${revTot} ใบ คำใหม่ ${S.daily.fresh} จาก ${goal} คำ">
+          <svg viewBox="0 0 100 100" aria-hidden="true"><circle class="rt" cx="50" cy="50" r="43"/><circle class="rt" cx="50" cy="50" r="30"/>${arc(43, rf, 'r1')}${arc(30, nf, 'r2')}</svg>
+          <span class="ring-c" aria-hidden="true">${closed ? '✓' : pct + '%'}</span>
+        </div>
+      </div>
+      <div class="ring-legend small"><span><i class="d1"></i>ทบทวน ${S.daily.reviews}/${revTot}</span><span><i class="d2"></i>คำใหม่ ${S.daily.fresh}/${goal}</span></div>
       <div class="stats">
         <div class="stat"><b>${due}</b><span>ต้องทบทวน</span></div>
         <div class="stat"><b>${Math.min(newLeft, unseen)}</b><span>คำใหม่</span></div>
         <div class="stat"><b>${doneToday}</b><span>ทำแล้ววันนี้</span></div>
       </div>
       <button class="btn" id="startBtn">${todo ? '▶︎ เริ่มเรียนเลย' : '🎉 วันนี้ครบแล้ว! ทำอะไรต่อดี'}</button>
-      <div class="goal-bar"><div style="width:${Math.min(100, S.daily.fresh / goal * 100)}%"></div></div>
-      <div class="small" style="margin-top:4px;opacity:.9">เป้าคำใหม่วันนี้ ${S.daily.fresh}/${goal}</div>
-    </div>`,
+    </div>`;
+    },
     feed: () => `<button class="quick-btn feed-btn" id="qFeed"><span>📱</span><b>ไถศัพท์</b><small>ปัดขึ้นเรื่อยๆ เหมือนไถฟีด</small></button>`,
     play: () => `<button class="quick-btn" id="qPlay"><span>⚡</span><b>เล่นด่วน</b><small>เกมสุ่ม 10 ข้อ ~1 นาที</small></button>`,
     month: () => new Date().getDate() <= 7 && S.monthSeen !== monthKey() && monthStats(1).total ? `<div class="card-box week-card" id="monthCard"><b>📅 สรุปเดือน${monthName(monthKey(1))}</b>${monthBox(1, true)}${S.mtest[monthKey()] ? '' : '<button class="btn primary block" data-go="mtest" style="margin-top:10px">📝 ทำแบบทดสอบประจำเดือน</button>'}</div>` : '',

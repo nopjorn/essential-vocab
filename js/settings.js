@@ -67,6 +67,10 @@ function renderSettings() {
         <label class="switch"><input type="checkbox" id="animAnswer" aria-label="ปุ่มเด้ง/สั่นตอนตอบ" ${st.animAnswer !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🎉 พลุฉลอง<br><span class="small muted">ตอนเลเวลอัป ทำภารกิจครบ ได้เหรียญ (เสียงฉลองยังมี)</span></span>
         <label class="switch"><input type="checkbox" id="confetti" aria-label="พลุฉลอง" ${st.confetti !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>🌈 สีตามหมวดบนการ์ด<br><span class="small muted">แฟลชการ์ดและหน้าคำมีสีอ่อนตามหมวด ช่วยจำด้วยสี</span></span>
+        <label class="switch"><input type="checkbox" id="topicTint" aria-label="สีตามหมวดบนการ์ด" ${st.topicTint !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>📳 สั่นตอบรับ<br><span class="small muted">สั่นเบาๆ ตอนตอบถูก/ผิด (iPhone ต้อง iOS 18 ขึ้นไป · Android สั่นได้เลย)</span></span>
+        <label class="switch"><input type="checkbox" id="haptic" aria-label="สั่นตอบรับ" ${st.haptic !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🎯 แสดงการ์ดภารกิจต่อ แม้ทำครบแล้ว</span>
         <label class="switch"><input type="checkbox" id="questShow" ${st.questShowDone ? 'checked' : ''}><span></span></label></div>
       <button class="set-row set-link" id="homeSetBtn"><span>🧩 จัดเรียงหน้าแรก<br><span class="small muted">เปิด/ปิด สลับลำดับ และปรับความกว้างของกล่อง</span></span><span class="muted">›</span></button>
@@ -157,6 +161,7 @@ function renderSettings() {
     }
     updateBadge();
   };
+  $('#haptic').onchange = (e) => { st.haptic = e.target.checked; save(); if (st.haptic) haptic('ok'); };
   $('#sfx').onchange = (e) => { st.sfx = e.target.checked; save(); sfx('ok'); };
   $('#acc').onchange = (e) => { st.accent = e.target.value; save(); speak('Hello! Nice to meet you.'); };
   $('#rate').onchange = (e) => { st.rate = +e.target.value; save(); speak('vocabulary'); };
@@ -186,7 +191,7 @@ function renderSettings() {
       const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); x.firstElementChild.textContent = on ? '✓' : '';
     });
   };
-  ['animPage', 'animAnswer', 'confetti'].forEach((k) => { $('#' + k).onchange = (e) => { st[k] = e.target.checked; save(); applyAnim(); }; });
+  ['animPage', 'animAnswer', 'confetti', 'topicTint'].forEach((k) => { $('#' + k).onchange = (e) => { st[k] = e.target.checked; save(); applyAnim(); }; });
   $('#homeSetBtn').onclick = () => go('homeset');
   $('#remind').onchange = (e) => {
     S.remind = e.target.value; save(); $('#remindAdd').href = `reminders/${S.remind}.ics`;

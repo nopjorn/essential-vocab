@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.58.0';
+const APP_VERSION = '1.59.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -154,7 +154,7 @@ function sanitizeDecks(r) {
 }
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -361,6 +361,7 @@ function markActive() {
     setTimeout(() => toast(`🧊 ใช้ตัวกันสตรีค ${missed} อัน สตรีคไม่ขาด!`), 400);
   } else S.streak.count = 1;
   S.streak.last = t;
+  setTimeout(() => streakFlash(S.streak.count), 500);
   if (S.streak.count % 7 === 0 && S.freeze < MAX_FREEZE) {
     S.freeze++;
     setTimeout(() => toast('🧊 ได้ตัวกันสตรีคเพิ่ม 1 อัน (เรียนต่อเนื่องครบ 7 วัน)'), 1500);
@@ -432,8 +433,9 @@ function addXP(n) {
   S.xp = (S.xp || 0) + n;
   if (typeof mondayKey === 'function') { const k = mondayKey(); S.xpWeek[k] = (S.xpWeek[k] || 0) + n; }
   const after = levelOf(S.xp);
-  if (after > before) setTimeout(() => { confetti(); toast(`⬆️ เลเวลอัป! ตอนนี้ Lv.${after}`); }, 400);
+  if (after > before) setTimeout(() => levelUpScreen(after), 400);
   updateStreak();
+  if (n > 0) xpFly(n);
 }
 const comboXP = (combo) => 2 + Math.min(combo - 1, 5); // 2 XP per right answer, up to +5 for a combo
 
@@ -554,6 +556,7 @@ const bindSayEx = (root, text) => root.querySelectorAll('[data-sayex]').forEach(
 // Tiny sound effects with Web Audio (no files needed).
 let actx;
 function sfx(kind) {
+  haptic(kind);
   if (!S.settings.sfx) return;
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)();
@@ -587,6 +590,80 @@ function confetti() {
   document.body.appendChild(box);
   setTimeout(() => box.remove(), 3200);
   sfx('win');
+}
+
+/* ---------- feedback: haptics, floating XP, streak + level-up screens ---------- */
+// Haptics: iOS Safari has no navigator.vibrate, but iOS 18+ gives a light tick whenever an <input type="checkbox" switch>
+// is toggled, so a hidden one is clicked from the answer handler (needs a user gesture). Android uses navigator.vibrate.
+// right = one tick, wrong = two, win = three. Switch: settings.haptic.
+let hapInput = null;
+function haptic(kind) {
+  if (S.settings.haptic === false) return;
+  const ticks = { ok: 1, bad: 2, win: 3 }[kind] || 1;
+  try {
+    if (navigator.vibrate && navigator.userActivation && navigator.userActivation.isActive) navigator.vibrate(kind === 'bad' ? [25, 50, 25] : kind === 'win' ? [20, 40, 20, 40, 40] : 15);
+    if (!hapInput) {
+      const l = document.createElement('label');
+      l.className = 'hap'; l.setAttribute('aria-hidden', 'true');
+      l.innerHTML = '<input type="checkbox" switch tabindex="-1" aria-label="สั่นตอบรับ">';
+      document.body.appendChild(l); hapInput = l.firstChild;
+    }
+    for (let k = 0; k < ticks; k++) setTimeout(() => hapInput.click(), k * 90);
+  } catch (e) { /* no haptics here */ }
+}
+// "+N XP" flies from the last tap to the Lv. chip at the top, which then gives a small bump.
+let lastTap = { x: 0, y: 0, t: 0 }, xpFlyAt = 0;
+document.addEventListener('pointerdown', (e) => { lastTap = { x: e.clientX, y: e.clientY, t: Date.now() }; }, true);
+function xpFly(n) {
+  if (S.settings.animAnswer === false || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const chip = $('#streak'), now = Date.now();
+  if (!chip || !chip.animate || now - xpFlyAt < 120) return;
+  xpFlyAt = now;
+  const to = chip.getBoundingClientRect(), tap = now - lastTap.t < 4000;
+  const x = tap ? lastTap.x : innerWidth / 2, y = tap ? lastTap.y : innerHeight * 0.6;
+  const el = document.createElement('div');
+  el.className = 'xp-fly'; el.textContent = '+' + n + ' XP'; el.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(el);
+  const at = (px, py, sc) => `translate(${px}px, ${py}px) translate(-50%, -50%) scale(${sc})`;
+  const end = () => { el.remove(); chip.classList.add('bump'); setTimeout(() => chip.classList.remove('bump'), 320); };
+  const a = el.animate([{ transform: at(x, y, .6), opacity: 0 }, { transform: at(x, y - 30, 1.1), opacity: 1, offset: .22 },
+    { transform: at(to.left + to.width / 2, to.top + to.height / 2, .7), opacity: .25 }], { duration: 800, easing: 'cubic-bezier(.5,0,.3,1)' });
+  a.onfinish = end;
+  setTimeout(() => el.isConnected && end(), 1500);
+}
+// First activity of the day: 🔥 pops and the streak number counts up. Never blocks taps (pointer-events: none).
+function streakFlash(count) {
+  if (confettiOff() || !count) return;
+  const el = document.createElement('div');
+  el.className = 'celebrate streak-flash'; el.setAttribute('role', 'status');
+  el.innerHTML = `<div class="cel-card"><div class="cel-fire" aria-hidden="true">🔥</div><div class="cel-num">${count > 1 ? count - 1 : 1}</div>
+    <div class="cel-t">${count > 1 ? 'วันติดต่อกัน!' : 'เริ่มสตรีควันแรกแล้ว!'}</div></div>`;
+  document.body.appendChild(el);
+  const num = el.querySelector('.cel-num');
+  if (count > 1) setTimeout(() => { num.textContent = count; num.classList.add('up'); }, 650);
+  setTimeout(() => el.classList.add('out'), 2000);
+  setTimeout(() => el.remove(), 2400);
+}
+// Level-up: full screen with what was unlocked (level medals) and the XP to the next level. Tap or the button closes it.
+function levelUpScreen(L) {
+  confetti();
+  if (confettiOff()) { toast(`⬆️ เลเวลอัป! ตอนนี้ Lv.${L}`); return; }
+  document.querySelectorAll('.lvlup').forEach((x) => x.remove());
+  const medals = ACH.filter((a) => /^lvl/.test(a.id)).filter((a) => { try { return a.ok({ level: L }) && !a.ok({ level: L - 1 }); } catch (e) { return false; } });
+  const el = document.createElement('div');
+  el.className = 'celebrate lvlup'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'เลเวลอัป');
+  el.innerHTML = `<div class="cel-card"><div class="cel-badge" aria-hidden="true">Lv.<b>${L}</b></div><div class="h2">เลเวลอัป!</div>
+    <p>เก่งมาก! ตอนนี้ถึง Lv.${L} แล้ว</p>
+    ${medals.length ? `<div class="cel-unlock">🏅 ปลดล็อกเหรียญ ${medals.map((a) => `${a.icon} ${esc(a.name)}`).join(' · ')}</div>` : ''}
+    <p class="small muted">อีก ${(levelStart(L + 1) - S.xp).toLocaleString()} XP ถึง Lv.${L + 1}</p>
+    <button class="btn primary block" data-close>ไปต่อ</button></div>`;
+  const close = () => { clearTimeout(t); el.classList.add('out'); setTimeout(() => el.remove(), 250); document.removeEventListener('keydown', esc_); };
+  const esc_ = (e) => { if (e.key === 'Escape') close(); };
+  const t = setTimeout(close, 5000);
+  el.onclick = close;
+  document.addEventListener('keydown', esc_);
+  document.body.appendChild(el);
+  const b = el.querySelector('[data-close]'); if (b) b.focus({ preventScroll: true });
 }
 
 let toastTimer;
