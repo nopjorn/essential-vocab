@@ -110,7 +110,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
   list should be replaced (e.g. an openly licensed list such as NGSL).
 
 ## Testing
-- Run before every push: `npm ci` (once) then `PW_CHROMIUM=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm test`
+- Run before every push: `npm ci` (once) then `PW_CHROMIUM=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome npm test`
   (the config starts `python3 -m http.server 8765` itself). CI (GitHub Actions "Tests") runs the same suite on every
   push to `master`; it must stay green.
 - `tests/data.spec.js` (no browser): version in app.js/sw.js/README, sw.js file list, word rows, families, pairs,
@@ -120,7 +120,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 - `tests/helpers.js` `openApp(page, state)`: overrides `config.js` (sync off), fakes speech synthesis
   (`window.__said`) and recognition (hears `window.__heard`), collects `pageerror`s (assert none).
 - One-off scripts (screenshots etc.) go in the scratchpad (`pw/`), using
-  `executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'`, `args: ['--headless=new']`,
+  `executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome'`, `args: ['--headless=new']`,
   viewport 440×956. Manual serve: `nohup python3 -m http.server 8765 >/dev/null 2>&1 &`; stop with
   `kill $(pgrep -f "[h]ttp.server 8765")` (`pkill -f` kills the calling shell).
 - Seed state by writing `localStorage['oxford3000.v1']` and reloading; app functions

@@ -1,5 +1,5 @@
 // Browser tests: `npm test` (serves the repo on :8765 with Python's static server).
-// Locally in the Claude cloud container set PW_CHROMIUM=/opt/pw-browsers/chromium-1194/chrome-linux/chrome.
+// Locally in the Claude cloud container set PW_CHROMIUM=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome.
 const { defineConfig } = require('@playwright/test');
 
 module.exports = defineConfig({

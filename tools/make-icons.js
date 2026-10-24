@@ -41,7 +41,7 @@ const svg = (scale, c = STYLES.purple) => `
   </g>
 </svg>`;
 (async () => {
-  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--headless=new'] });
+  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: ['--headless=new'] });
   for (const [name, size, scale] of [['icon-512', 512, 1], ['icon-192', 192, 1], ['apple-touch-icon', 180, 1], ['icon-maskable-512', 512, 0.8]]) {
     const p = await b.newPage({ viewport: { width: size, height: size }, deviceScaleFactor: 1 });
     await p.setContent(`<html><body style="margin:0">${svg(scale).replace('width="512" height="512"', `width="${size}" height="${size}"`)}</body></html>`);
