@@ -53,4 +53,5 @@ const svg = (scale, c = STYLES.purple) => `
     await p.screenshot({ path: `${DEST}/apple-touch-icon-${id}.png` });
   }
   await b.close();
+  try { require('child_process').execFileSync('python3', [require('path').join(__dirname, 'optimize-icons.py'), DEST], { stdio: 'inherit' }); } catch (e) { console.log('optimize-icons.py skipped:', e.message); } // lossless recompression
 })();

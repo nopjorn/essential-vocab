@@ -39,5 +39,6 @@ const html = (w, h, t) => {
     }
   }
   await b.close();
+  try { require('child_process').execFileSync('python3', [require('path').join(__dirname, 'optimize-icons.py'), path.join(ROOT, 'icons')], { stdio: 'inherit' }); } catch (e) { console.log('optimize-icons.py skipped:', e.message); }
   console.log(tags.join('\n')); // paste into index.html <head>
 })();

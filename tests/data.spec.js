@@ -268,3 +268,13 @@ test('iOS splash images: every apple-touch-startup-image exists, light + dark, p
   links.forEach(([, f]) => expect(fs.existsSync(path.join(root, f)), f).toBe(true));
   ['light', 'dark', 'portrait', 'landscape'].forEach((k) => expect(links.filter((l) => l[2].includes(k)).length).toBe(6));
 });
+
+test('icons are valid PNGs and stay small (lossless recompression, tools/optimize-icons.py)', () => {
+  const sizes = { 'icon-512.png': [512, 120000], 'icon-maskable-512.png': [512, 120000], 'icon-192.png': [192, 30000], 'apple-touch-icon.png': [180, 30000] };
+  for (const [f, [px, max]] of Object.entries(sizes)) {
+    const b = fs.readFileSync(path.join(root, 'icons', f));
+    expect(b.subarray(0, 8).toString('hex'), f).toBe('89504e470d0a1a0a');
+    expect(b.readUInt32BE(16), f + ' width').toBe(px); expect(b.readUInt32BE(20), f + ' height').toBe(px);
+    expect(b.length, f + ' size').toBeLessThan(max);
+  }
+});
