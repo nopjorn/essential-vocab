@@ -273,7 +273,7 @@ const GUIDE = [
       <li>ถ้ากำลังเปิดแอปค้างไว้แล้วมีเวอร์ชันใหม่ จะมีแถบ "มีเวอร์ชันใหม่พร้อมใช้งาน" เด้งขึ้นมา กด <b>โหลดใหม่</b> ได้เลย (กด ✕ เพื่อปิดไว้ก่อนก็ได้)</li>
       <li>หรือปิดแอป (ปัดขึ้นออกจากหน้าสลับแอป) แล้วเปิดใหม่ตอนต่อเน็ต แอปจะโหลดเวอร์ชันใหม่เอง อาจต้องทำ 2 รอบ</li>
       <li>เช็คเวอร์ชันได้ที่ท้ายหน้าแรกหรือหน้าตั้งค่า (ตอนนี้ ${APP_VERSION})</li>
-      <li>หลังอัปเดตแล้วจะมีแถบ "ดูมีอะไรใหม่" เด้งขึ้นครั้งเดียว กดเพื่อดูว่าเวอร์ชันนี้เพิ่มอะไร หรือดูย้อนหลังทุกเวอร์ชันได้ที่ ⚙️ ตั้งค่า → ประวัติการอัปเดต</li>
+      <li>หลังอัปเดตแล้วจะมีแถบ "ดูมีอะไรใหม่" เด้งขึ้นครั้งเดียว กดเพื่อดูว่าเวอร์ชันนี้เพิ่มอะไร หรือดูย้อนหลังทุกเวอร์ชันได้ที่ ⚙️ ตั้งค่า → ประวัติการอัปเดต (จัดกลุ่มตามวัน เห็นว่าแต่ละวันอัปเดตกี่ครั้ง และเลือกดูวันเดียวหรือ “ทั้งหมด” ได้)</li>
       <li><b>ไม่ต้อง</b> ลบไอคอนแล้วเพิ่มใหม่ เพราะจะทำให้ข้อมูลหาย</li>
     </ul>`],
   ['💡', 'ทริกให้จำได้เร็วและได้ผลที่สุด', `
@@ -340,11 +340,28 @@ function renderChangelog(from) {
   $('#clBack').onclick = () => go(back);
   loadChangelog().then((list) => {
     if (current !== 'changelog') return;
-    $('#clBody').className = '';
-    $('#clBody').removeAttribute('style');
-    $('#clBody').innerHTML = (list.length ? list : [[APP_VERSION, 'โหลดประวัติไม่สำเร็จ ลองใหม่ตอนต่อเน็ตนะ']]).map(([v, t, d], i) => `
-      <div class="card-box cl-row${i === 0 ? ' cl-new' : ''}"><div class="cl-v">${esc(v)}${v === APP_VERSION ? ' <span class="cl-tag">เวอร์ชันนี้</span>' : ''}${d ? `<span class="cl-d">${thaiDate(d)}</span>` : ''}</div><div class="cl-t">${esc(t)}</div></div>`).join('')
-      + `<p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
+    const body = $('#clBody');
+    body.className = '';
+    body.removeAttribute('style');
+    if (!list.length) list = [[APP_VERSION, 'โหลดประวัติไม่สำเร็จ ลองใหม่ตอนต่อเน็ตนะ', '']];
+    const days = [];
+    list.forEach((r) => {
+      const k = r[2] || '';
+      let g = days[days.length - 1];
+      if (!g || g.d !== k) days.push(g = { d: k, rows: [] });
+      g.rows.push(r);
+    });
+    let pick = 'all';
+    const draw = () => {
+      const shown = pick === 'all' ? days : days.filter((g) => g.d === pick);
+      body.innerHTML = `<div class="cl-filter"><label for="clPick" class="small muted">แสดง</label>
+        <select class="sel" id="clPick"><option value="all">ทั้งหมด (${list.length} อัปเดต · ${days.length} วัน)</option>${days.map((g) => `<option value="${esc(g.d)}"${g.d === pick ? ' selected' : ''}>${g.d ? thaiDate(g.d) : 'ไม่ระบุวัน'} (${g.rows.length})</option>`).join('')}</select></div>`
+        + shown.map((g) => `<div class="cl-day"><span>${g.d ? thaiDate(g.d) : 'ไม่ระบุวัน'}</span><span class="cl-n">${g.rows.length} อัปเดต</span></div>`
+          + g.rows.map(([v, t]) => `<div class="card-box cl-row${v === list[0][0] ? ' cl-new' : ''}"><div class="cl-v">${esc(v)}${v === APP_VERSION ? ' <span class="cl-tag">เวอร์ชันนี้</span>' : ''}</div><div class="cl-t">${esc(t)}</div></div>`).join('')).join('')
+        + `<p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
+      $('#clPick').onchange = (e) => { pick = e.target.value; draw(); };
+    };
+    draw();
   });
 }
 // After an update: once per version, offer a look at what changed (silent for brand-new installs).

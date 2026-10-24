@@ -1093,7 +1093,7 @@ test('1.66: level test (gate, pass, medal), share card, year in review', async (
   expect(errors).toEqual([]);
 });
 
-test('due-date fuzz (1.68): short gaps exact, longer gaps spread within ±5/8/10%, labels unchanged', async ({ page }) => {
+test('due-date fuzz (1.69): short gaps exact, longer gaps spread within ±5/8/10%, labels unchanged', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   const r = await page.evaluate(() => {
     const spread = (i) => { const v = Array.from({ length: 400 }, () => (dueAt(i) - Date.now() + 3600000) / (i * DAY)); return [Math.min(...v), Math.max(...v)]; };
