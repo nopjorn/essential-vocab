@@ -22,6 +22,7 @@ const FILES = [
   'js/decks.js',
   'js/share.js',
   'js/mascot.js',
+  'js/events.js',
   'js/boot.js',
   'config.js',
   'data/changelog.js',

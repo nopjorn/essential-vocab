@@ -169,6 +169,7 @@ const defaults = () => ({
   mascot: { equip: { head: '', face: '', body: '' }, at: 0 }, // น้องคำ outfit (1.67)
   owned: [],           // item ids won early from the daily box (1.67)
   box: { date: '', got: '' }, // today's mystery box
+  evt: {},             // 'eventId-year' -> { r, n, pass, at } seasonal event quiz results (1.72)
   wnew: { key: '', n: 0 }, // new words started this week (1.62)
   readyAt: {},         // story level -> best 'known words' threshold reached (90/95) (1.62)
   repair: null,        // streak repair offer {count, at, base, need, done} (1.61)
@@ -216,6 +217,7 @@ function load() {
       // A missing/odd riddle record (older backup, sync from another device) must never break the home screen.
       if (!r.mascot || typeof r.mascot !== 'object' || !r.mascot.equip || typeof r.mascot.equip !== 'object') r.mascot = d.mascot;
       if (!Array.isArray(r.owned)) r.owned = [];
+      if (!r.evt || typeof r.evt !== 'object' || Array.isArray(r.evt)) r.evt = {};
       if (!r.box || typeof r.box !== 'object') r.box = d.box;
       if (!r.riddle || typeof r.riddle !== 'object' || !Array.isArray(r.riddle.g)) r.riddle = d.riddle;
       if (!r.riddleStat || typeof r.riddleStat !== 'object') r.riddleStat = d.riddleStat;
@@ -334,6 +336,7 @@ function mergeBackup(d) {
   for (const [k, v] of Object.entries(d.ach || {})) if (!S.ach[k]) S.ach[k] = v;
   if (d.mascot && d.mascot.equip && (d.mascot.at || 0) > (S.mascot.at || 0)) S.mascot = d.mascot;
   if (Array.isArray(d.owned)) S.owned = [...new Set([...S.owned, ...d.owned.filter((x) => typeof x === 'string')])];
+  for (const [k, v] of Object.entries(d.evt || {})) if (v && v.n) { const m = S.evt[k]; S.evt[k] = !m ? v : { ...(v.r > m.r ? v : m), pass: !!(m.pass || v.pass) }; }
   if (d.box && d.box.date && d.box.date > (S.box.date || '')) S.box = d.box;
   if (d.wnew && d.wnew.key) {
     if (d.wnew.key > (S.wnew.key || '')) S.wnew = d.wnew; else if (d.wnew.key === S.wnew.key) S.wnew.n = Math.max(S.wnew.n, d.wnew.n || 0);
@@ -594,6 +597,8 @@ const ACH = [
   { id: 'qsets10', icon: '🎁', name: 'ครบชุดภารกิจ', desc: 'ทำครบ 3 ภารกิจประจำวัน 10 วัน', ok: (s) => s.qsets >= 10 },
   { id: 'wq4', icon: '🗓️', name: 'สัปดาห์สำเร็จ', desc: 'ทำภารกิจประจำสัปดาห์สำเร็จ 4 ครั้ง', ok: (s) => s.wquests >= 4 },
   { id: 'repair', icon: '🩹', name: 'ซ่อมสตรีค', desc: 'ซ่อมสตรีคที่ขาดสำเร็จ', ok: (s) => s.repairs >= 1 },
+  { id: 'evt1', icon: '🏷️', name: 'นักสะสมเทศกาล', desc: 'ผ่านควิซกิจกรรมเทศกาล 1 ครั้ง', ok: (s) => s.events >= 1 },
+  { id: 'evt4', icon: '🎊', name: 'ครบทุกเทศกาล', desc: 'ผ่านควิซกิจกรรมครบทั้ง 4 เทศกาล (ฮาโลวีน สงกรานต์ ลอยกระทง ปีใหม่)', ok: (s) => s.events >= 4 },
   { id: 'early', icon: '🌅', name: 'นกที่ตื่นเช้า', desc: 'เรียนตอนตี 5', secret: true, ok: (s) => s.early },
   { id: 'owl', icon: '🦉', name: 'นกฮูกยามดึก', desc: 'เรียนหลังเที่ยงคืนถึงตีสาม', secret: true, ok: (s) => s.owl },
   { id: 'newyear', icon: '🎆', name: 'เริ่มปีด้วยศัพท์', desc: 'เรียนในวันปีใหม่ 1 มกราคม', secret: true, ok: (s) => s.newyear },
@@ -614,6 +619,7 @@ function checkAch() {
     early: S.counts.early, owl: S.counts.owl, newyear: S.counts.newyear, comeback: S.counts.comeback,
     allGames: typeof GAMES !== 'undefined' && Object.keys(GAMES).every((g) => gamePlays(g) > 0 || (!canListen && /^speak/.test(g))),
     lt: Object.fromEntries(LEVELS.map((l) => [l, ((m) => !!(m && m.n && m.r / m.n >= 0.8))(S.ltest[l])])),
+    events: new Set(Object.entries(S.evt).filter(([, v]) => v && v.pass).map(([k]) => k.replace(/-\d+$/, ''))).size,
     mtestFull: Object.values(S.mtest).some((m) => m && m.n && m.r === m.n),
   };
   checkStickers();
@@ -1168,7 +1174,7 @@ function markForReview(w, map = S.prog) {
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { mascot: 'น้องคำ', year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
+const TITLES = { event: 'กิจกรรมเทศกาล', mascot: 'น้องคำ', year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
 function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
@@ -1182,7 +1188,7 @@ function go(tab, ...args) {
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab || (tab === 'decks' && !wide && b.dataset.tab === 'list')));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, mascot: renderMascot, riddle: renderRiddle, decks: renderDecks }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, mascot: renderMascot, event: renderEvent, riddle: renderRiddle, decks: renderDecks }[tab])(...args);
   updateStreak();
   const a = TAB_ORDER.indexOf(prev), b = TAB_ORDER.indexOf(tab);
   animView(a < 0 || b < 0 || a === b ? 'vin' : b > a ? 'vin-l' : 'vin-r');

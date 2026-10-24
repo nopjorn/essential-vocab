@@ -15,6 +15,11 @@ const ITEMS = [
   { id: 'pal:galaxy', kind: 'pal', lv: 20, name: 'ธีมสีกาแล็กซี', ic: '🌌' },
   { id: 'acc:cape', kind: 'acc', slot: 'body', lv: 25, name: 'ผ้าคลุมฮีโร่', ic: '🦸' },
   { id: 'acc:phones', kind: 'acc', slot: 'head', lv: 30, name: 'หูฟัง', ic: '🎧' },
+  // seasonal (js/events.js): only from passing the event quiz, kept for good
+  { id: 'evt:pumpkin', kind: 'acc', slot: 'head', lv: Infinity, evt: true, name: 'หมวกฟักทอง (ฮาโลวีน)', ic: '🎃' },
+  { id: 'evt:garland', kind: 'acc', slot: 'body', lv: Infinity, evt: true, name: 'พวงมาลัยดอกไม้ (สงกรานต์)', ic: '💐' },
+  { id: 'evt:lotus', kind: 'acc', slot: 'head', lv: Infinity, evt: true, name: 'ดอกบัวบนหัว (ลอยกระทง)', ic: '🪷' },
+  { id: 'evt:party', kind: 'acc', slot: 'head', lv: Infinity, evt: true, name: 'หมวกปาร์ตี้ (ปีใหม่)', ic: '🥳' },
 ];
 const itemOpen = (id) => { const it = ITEMS.find((x) => x.id === id); return !it || levelOf(S.xp) >= it.lv || (S.owned || []).includes(id); };
 const paletteOpen = (pal) => itemOpen('pal:' + pal);
@@ -70,12 +75,15 @@ function mascotSvg({ mood = 'normal', size = 96, equip = S.mascot && S.mascot.eq
   const head = {
     cap: '<path d="M32 28q4-18 30-18t28 18z" fill="#e8504a"/><path d="M28 28h68q3 0 3 3t-3 3H30q-3 0-2-6z" fill="#c43a35"/><circle cx="62" cy="10" r="2.6" fill="#fff"/>',
     crown: '<path d="M36 22l-4-18 14 10 14-14 14 14 14-10-4 18z" fill="#ffd34d" stroke="#d9a400" stroke-width="2" stroke-linejoin="round"/><circle cx="46" cy="14" r="2" fill="#e8504a"/><circle cx="62" cy="9" r="2" fill="#4a90e8"/><circle cx="78" cy="14" r="2" fill="#e8504a"/>',
+    pumpkin: '<ellipse cx="62" cy="16" rx="24" ry="14" fill="#f28c28" stroke="#c96a0f" stroke-width="2.5"/><path d="M62 3q-6 8 0 26M48 6q-8 10-2 22M76 6q8 10 2 22" stroke="#c96a0f" stroke-width="2" fill="none"/><path d="M60 3q0-7 6-8" stroke="#3f9d5a" stroke-width="4" stroke-linecap="round" fill="none"/>',
+    lotus: '<path d="M62 22q-16-4-18-20 14 2 18 20zM62 22q16-4 18-20-14 2-18 20zM62 22q-5-12 0-24 5 12 0 24z" fill="#ff8fb8" stroke="#e0609a" stroke-width="2"/><path d="M62 24q-12 0-24-6 10 10 24 10zM62 24q12 0 24-6-10 10-24 10z" fill="#ffc0d8"/><ellipse cx="62" cy="-4" rx="2.4" ry="4" fill="#ffd34d"/>',
+    party: '<path d="M44 24L62-8 80 24z" fill="#8f7be0" stroke="#5b46c4" stroke-width="2" stroke-linejoin="round"/><path d="M50 16h24M55 6h14" stroke="#ffd34d" stroke-width="3"/><circle cx="62" cy="-9" r="4" fill="#ff6b9b"/>',
     phones: '<path d="M30 40q0-30 31-30t31 30" fill="none" stroke="#3d3d46" stroke-width="5" stroke-linecap="round"/><rect x="23" y="38" width="12" height="20" rx="6" fill="#3d3d46"/><rect x="87" y="38" width="12" height="20" rx="6" fill="#3d3d46"/>',
   }[(eq.head || '')] || '';
   const face = eq.face === 'glasses' ? `<g fill="rgba(255,255,255,.35)" stroke="${dark}" stroke-width="2.6"><circle cx="50" cy="49" r="10"/><circle cx="70" cy="49" r="10"/></g><path d="M58.5 48h3" stroke="${dark}" stroke-width="2.6" fill="none"/>` : '';
-  const body = { bow: '<path d="M60 84l-14-8v14zM60 84l14-8v14z" fill="#ff6b9b"/><circle cx="60" cy="84" r="4" fill="#e04c80"/>' }[(eq.body || '')] || '';
+  const body = { garland: '<g stroke="#fff" stroke-width="1.2"><circle cx="40" cy="82" r="5" fill="#ff6b9b"/><circle cx="50" cy="86" r="5" fill="#ffd34d"/><circle cx="60" cy="88" r="5" fill="#ff8c42"/><circle cx="70" cy="86" r="5" fill="#ffd34d"/><circle cx="80" cy="82" r="5" fill="#ff6b9b"/></g>', bow: '<path d="M60 84l-14-8v14zM60 84l14-8v14z" fill="#ff6b9b"/><circle cx="60" cy="84" r="4" fill="#e04c80"/>' }[(eq.body || '')] || '';
   const cape = eq.body === 'cape' ? '<path d="M34 50Q20 80 24 98q18-8 36-6 18-2 36 6 4-18-10-48z" fill="#e8504a" opacity=".95"/>' : '';
-  return `<svg class="mascot" viewBox="-6 -4 132 128" width="${size}" height="${size}" role="img" aria-label="น้องคำ มาสคอต อารมณ์${{ happy: 'ดีใจ', normal: 'ปกติ', miss: 'คิดถึง', sleepy: 'ง่วง' }[mood]}">
+  return `<svg class="mascot" viewBox="-6 -12 132 136" width="${size}" height="${size}" role="img" aria-label="น้องคำ มาสคอต อารมณ์${{ happy: 'ดีใจ', normal: 'ปกติ', miss: 'คิดถึง', sleepy: 'ง่วง' }[mood]}">
     ${aura}${cape}
     <path d="M30 30Q30 18 44 18H78Q92 18 92 32V70Q92 84 78 84H54L38 102L40 84Q30 82 30 70Z" fill="var(--primary-2)" stroke="var(--primary)" stroke-width="3.5" stroke-linejoin="round"/>
     <ellipse cx="46" cy="28" rx="12" ry="5" fill="#fff" opacity=".3"/>
@@ -89,7 +97,7 @@ function mascotSvg({ mood = 'normal', size = 96, equip = S.mascot && S.mascot.eq
 function boxReady() { return todayClosed() && (!S.box || S.box.date !== today()); }
 function openBox() {
   if (!boxReady()) return null;
-  const r = Math.random(), lockedItems = ITEMS.filter((it) => !itemOpen(it.id));
+  const r = Math.random(), lockedItems = ITEMS.filter((it) => !it.evt && !itemOpen(it.id));
   let text;
   if (r >= 0.8 && lockedItems.length) {
     const it = lockedItems[Math.floor(Math.random() * lockedItems.length)];
@@ -115,7 +123,7 @@ function renderMascot() {
   const mood = mascotMood(), st = mascotStage(), eq = (S.mascot = S.mascot || { equip: {} }).equip, L = levelOf(S.xp);
   const chip = (it, on, attr) => {
     const open = itemOpen(it.id);
-    return `<button class="chip wd${on ? ' on' : ''}" ${attr}${open ? '' : ' disabled'} aria-pressed="${on}">${it.ic} ${it.name}${open ? '' : ` 🔒 Lv.${it.lv}`}</button>`;
+    return `<button class="chip wd${on ? ' on' : ''}" ${attr}${open ? '' : ' disabled'} aria-pressed="${on}">${it.ic} ${it.name}${open ? '' : it.evt ? ' 🔒 กิจกรรมเทศกาล' : ` 🔒 Lv.${it.lv}`}</button>`;
   };
   const SLOTS = [['head', 'บนหัว'], ['face', 'ใบหน้า'], ['body', 'ตัว']];
   view.innerHTML = `<div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="mBack">‹ กลับ</button></div>
