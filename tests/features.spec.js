@@ -962,3 +962,27 @@ test('minutes goal (1.63): new words are worked out from time per card and the r
   await expect(page.locator('#npd')).toBeDisabled();
   expect(errors).toEqual([]);
 });
+
+test('leech session (1.64): 15 stubborn words as flashcards with the memory hook; hook shown in game feedback', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const names = await page.evaluate(() => {
+    const ws = W.filter((w) => w.g === 'A1').slice(0, 20);
+    ws.forEach((w) => { S.prog[w.w] = { b: 0, i: 1, e: 2, d: Date.now() + 5 * DAY, s: 6, c: 1, x: 5 }; });
+    ws.forEach((w) => { S.note[w.w] = 'ท่องเป็นเพลง'; }); save();
+    return { n: buildQueue('leech').length, all: buildQueue('leech').every(isLeech), hook: hookBox(ws[0]), none: hookBox(W.find((w) => !S.note[w.w])) };
+  });
+  expect(names.n).toBe(15); expect(names.all).toBe(true);
+  expect(names.hook).toContain('ท่องเป็นเพลง'); expect(names.none).toBe('');
+  // flashcards: leech button on the done screen opens the session, back of card shows the hook
+  await page.evaluate(() => go('cards', 'leech'));
+  await expect(page.locator('#fc')).toBeVisible();
+  // game: a wrong answer shows the hook of that word (every leech word has one)
+  let hooked = false;
+  for (let k = 0; k < 8 && !hooked; k++) {
+    await page.evaluate(() => { gameSource = 'leech'; startGame('en2th'); });
+    await page.locator('#view .opt').nth(k % 4).click();
+    if ((await page.locator('#reveal').innerText()).includes('❌')) { await expect(page.locator('#reveal .note-box.hook')).toContainText('ท่องเป็นเพลง'); hooked = true; }
+  }
+  expect(hooked).toBe(true);
+  expect(errors).toEqual([]);
+});

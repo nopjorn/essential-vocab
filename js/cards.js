@@ -29,11 +29,12 @@ function buildQueue(extra) {
   if (S.settings.order === 'shuffle') fresh = shuffle(fresh);
   if (extra === 'short') {
     // 3-minute session: the most overdue cards, topped up with new words (unless a backlog is being cleared).
-    const d = dueList(p).slice(0, SHORT_N);
+    const d = dueList().slice(0, SHORT_N);
     const room = backlogPlan().on ? 0 : SHORT_N - d.length;
     if (fresh.length && room > 0) d.push(...fresh.slice(0, room));
     return d.length ? d : p.filter((w) => S.prog[w.w]).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d).slice(0, SHORT_N);
   }
+  if (extra === 'leech') return shuffle(W.filter(isLeech)).slice(0, 15); // 🐢 leech session: back of each card shows the memory hook
   if (extra === 'mastered') return shuffle(masteredWords()).slice(0, 20);
   if (extra === 'ahead') return W.filter((w) => S.prog[w.w]).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d).slice(0, 20);
   const n = extra ? 10 : plan.on ? 0 : Math.max(0, newGoal() - S.daily.fresh);
@@ -78,7 +79,8 @@ function bindNextSteps() {
       else if (id === 'backlog') go('cards', 'backlog');
       else if (id === 'mastered') go('cards', 'mastered');
       else if (id === 'play') quickPlay();
-      else if (id === 'leech' || id === 'star') { gameSource = id; startGame('en2th'); }
+      else if (id === 'leech') go('cards', 'leech');
+      else if (id === 'star') { gameSource = id; startGame('en2th'); }
       else if (id.startsWith('g:')) { // extra games picked in settings (nextGames)
         gameSource = W.filter((w) => S.prog[w.w] && S.settings.levels.includes(w.g)).length >= 10 ? 'learned' : 'level';
         startGame(id.slice(2));
@@ -88,7 +90,7 @@ function bindNextSteps() {
   });
 }
 
-// extra: undefined (today's cards), true (10 more new), 'ahead', 'mastered', or { deck: id, ahead? } = study one of my word sets.
+// extra: undefined (today's cards), true (10 more new), 'ahead', 'mastered', 'leech' (stubborn words, 15), or { deck: id, ahead? } = study one of my word sets.
 // A set uses its own progress table `map` (S.dprog[id]); the main S.prog and the daily counts stay untouched.
 function renderCards(extra) {
   const deck = extra && typeof extra === 'object' ? deckById(extra.deck) : null;
