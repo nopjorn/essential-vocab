@@ -900,7 +900,7 @@ test('streak repair (1.61): broken 5-day streak is restored after 2x goal; expir
   expect(errors).toEqual([]);
 });
 
-test('reviews come from every learned level (1.62): A1 due cards stay in the queue when only A2 is selected', async ({ page }) => {
+test('reviews come from every learned level (1.62.1): A1 due cards stay in the queue when only A2 is selected', async ({ page }) => {
   const errors = await openApp(page, { settings: { levels: ['A2'], newPerDay: 5 } });
   await page.evaluate(() => {
     W.filter((w) => w.g === 'A1').slice(0, 12).forEach((w, i) => { S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: Date.now() - (i + 1) * 3600000, s: 1, c: 1, x: 0 }; });
@@ -908,5 +908,26 @@ test('reviews come from every learned level (1.62): A1 due cards stay in the que
   const r = await page.evaluate(() => { const q = buildQueue(); return { due: q.filter((w) => w.g === 'A1').length, fresh: q.filter((w) => !S.prog[w.w]).every((w) => w.g === 'A2'), n: dueList().length }; });
   expect(r.due).toBe(12); expect(r.fresh).toBe(true); expect(r.n).toBe(12);
   expect(await page.evaluate(() => buildQueue('ahead').length)).toBe(12);
+  expect(errors).toEqual([]);
+});
+
+test('1.62: 3-minute session, tomorrow box, weekly new-word goal, ready-to-read box', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'], newPerDay: 10, weekGoal: 5 }, placedAt: '2026-01-01' });
+  // home block + short queue
+  await page.evaluate(() => go('home'));
+  await expect(page.locator('#qShort')).toBeVisible();
+  const q = await page.evaluate(() => buildQueue('short').length);
+  expect(q).toBe(12);
+  // weekly goal counts new words and shows on home
+  await page.evaluate(() => { const w = W.filter((x) => x.g === 'A1'); for (let i = 0; i < 3; i++) grade(w[i], 2); go('home'); });
+  await expect(page.locator('[data-hb="wgoal"]')).toContainText('3/5');
+  // finishing a round shows tomorrow's box
+  await page.evaluate(() => { const w = W.filter((x) => x.g === 'A1')[5]; S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: Date.now() + 0.5 * DAY, s: 1, c: 1, x: 0 }; S.daily.fresh = S.settings.newPerDay; go('cards'); });
+  await expect(page.locator('.tomorrow')).toContainText('พรุ่งนี้รอคุณอยู่');
+  // ready box in the library and on stats
+  await page.evaluate(() => loadStories().then(() => go('read')));
+  await expect(page.locator('.ready-box')).toContainText('พร้อมอ่านระดับไหนแล้ว');
+  await page.evaluate(() => go('stats'));
+  await expect(page.locator('#readyHost .ready-box')).toBeVisible();
   expect(errors).toEqual([]);
 });

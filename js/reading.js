@@ -243,6 +243,33 @@ function renderRead(id) {
   };
   cleanup = () => { view.onclick = null; view.removeEventListener('scroll', onScroll); token++; if (window.speechSynthesis) speechSynthesis.cancel(); };
 }
+// "Ready to read" (1.62): share of the words in each level's stories you already know (storyInfo().known, averaged).
+// 90% = ready, 95% = reads smoothly; crossing a threshold the first time is celebrated once (S.readyAt, per level).
+function readyStats() {
+  return RLEVELS.map((lv) => {
+    const list = STORIES.filter((st) => st.level === lv);
+    if (!list.length) return null;
+    const pct = Math.round(list.reduce((a, st) => a + storyInfo(st).known, 0) / list.length);
+    return { lv, pct, n: list.length };
+  }).filter(Boolean);
+}
+function readyCheck(rs) {
+  const hit = [];
+  for (const r of rs) {
+    const t = r.pct >= 95 ? 95 : r.pct >= 90 ? 90 : 0;
+    if (t > (S.readyAt[r.lv] || 0)) { S.readyAt[r.lv] = t; hit.push(`${LV_LABEL[r.lv]} (${t}%+)`); }
+  }
+  if (hit.length) { save(); setTimeout(() => { confetti(); toast(`📖 พร้อมอ่านเรื่องสั้นระดับ ${hit.join(', ')} แล้ว!`); }, 500); }
+}
+function readyBox() {
+  if (!STORIES || !STORIES.length) return '';
+  const rs = readyStats(); readyCheck(rs);
+  const best = [...rs].reverse().find((r) => r.pct >= 90);
+  return `<div class="card-box ready-box"><b>📖 พร้อมอ่านระดับไหนแล้ว?</b>
+    <div class="small" style="margin-top:4px">${best ? `คุณรู้คำศัพท์ ${best.pct}% ในเรื่องสั้นระดับ ${LV_LABEL[best.lv]} → <b>พร้อมอ่าน ${LV_LABEL[best.lv]}</b> 🎉` : 'เรียนคำศัพท์เพิ่ม แล้วระดับที่พร้อมอ่านจะขึ้นที่นี่ (เกณฑ์ 90%)'}</div>
+    ${rs.map((r) => `<div class="small" style="margin-top:8px">${LV_LABEL[r.lv]} <span class="muted">· รู้ ${r.pct}% ${r.pct >= 95 ? '· อ่านลื่น ✨' : r.pct >= 90 ? '· พร้อมอ่าน ✅' : ''}</span></div>
+      <div class="bar" style="margin-top:3px"><div class="l" style="width:${r.pct}%"></div></div>`).join('')}</div>`;
+}
 function renderLibrary() {
   const done = STORIES.filter((st) => S.read[st.id]).length;
   const pick = nextStory();
@@ -254,6 +281,7 @@ function renderLibrary() {
         <div class="small muted">อ่านแล้ว ${done} จาก ${STORIES.length} เรื่อง</div></div><div class="lib-pct">${Math.round((100 * done) / STORIES.length)}%</div></div>
       <div class="lib-bars">${RLEVELS.map((lv) => { const n = counts[lv].length, r = counts[lv].filter((st) => S.read[st.id]).length; return n ? `<div class="lib-bar"><div class="lib-fill lv-${lv}" style="width:${(100 * r) / n}%"></div><span>${LV_LABEL[lv]} ${r}/${n}</span></div>` : ''; }).join('')}</div>
     </div>
+    ${readyBox()}
     ${pick ? `<button class="st-pick lv-${pick.level}" data-id="${pick.id}">
       <div class="st-pick-tag">แนะนำให้อ่านต่อ</div>
       <div class="row" style="gap:14px;align-items:center"><div class="st-pick-emoji">${pick.emoji || '📖'}</div>

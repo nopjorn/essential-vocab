@@ -72,6 +72,13 @@ function renderHome() {
     },
     feed: () => `<button class="quick-btn feed-btn" id="qFeed"><span>📱</span><b>ไถศัพท์</b><small>ปัดขึ้นเรื่อยๆ เหมือนไถฟีด</small></button>`,
     play: () => `<button class="quick-btn" id="qPlay"><span>⚡</span><b>เล่นด่วน</b><small>เกมสุ่ม 10 ข้อ ~1 นาที</small></button>`,
+    short: () => `<button class="quick-btn" id="qShort"><span>⏱️</span><b>เซสชัน 3 นาที</b><small>${SHORT_N} ใบ สำหรับวันที่เวลาน้อย</small></button>`,
+    wgoal: () => {
+      const g = S.settings.weekGoal | 0; if (!g) return '';
+      const n = wnewNow(), left = 7 - ((new Date().getDay() + 6) % 7);
+      return `<div class="card-box"><div class="row" style="justify-content:space-between"><b>🎯 เป้าคำใหม่ประจำสัปดาห์</b><span class="small muted">${n >= g ? 'ครบแล้ว ✅' : `${n}/${g} คำ · เหลือ ${left} วัน`}</span></div>
+        <div class="qbar" style="margin-top:8px"><span style="width:${Math.min(100, n / g * 100)}%"></span></div></div>`;
+    },
     month: () => new Date().getDate() <= 7 && S.monthSeen !== monthKey() && monthStats(1).total ? `<div class="card-box week-card" id="monthCard"><b>📅 สรุปเดือน${monthName(monthKey(1))}</b>${monthBox(1, true)}${S.mtest[monthKey()] ? '' : '<button class="btn primary block" data-go="mtest" style="margin-top:10px">📝 ทำแบบทดสอบประจำเดือน</button>'}</div>` : '',
     week: () => S.weekSeen !== mondayKey() && weekStats(1).total ? `<div class="card-box week-card" id="weekCard"><b>📊 สรุปสัปดาห์ที่แล้ว</b>${weekBox(1, true)}</div>` : '',
     quest: questCard,
@@ -125,6 +132,7 @@ function renderHome() {
   click('#qFeed', () => go('feed'));
   click('#statsBtn', () => go('stats', 'home'));
   click('#qPlay', quickPlay);
+  click('#qShort', () => go('cards', 'short'));
   click('#qRiddle', () => go('riddle', 'home'));
   view.querySelectorAll('[data-dkopen]').forEach((b) => { b.onclick = () => go('decks', b.dataset.dkopen); });
   view.querySelectorAll('[data-dkgo]').forEach((b) => { b.onclick = () => go('cards', { deck: b.dataset.dkgo }); });
@@ -164,6 +172,8 @@ const HOME_BLOCKS = [
   { id: 'hero', ic: '🏠', name: 'การ์ดวันนี้ + ปุ่มเริ่มเรียน', w: 'full', on: true },
   { id: 'feed', ic: '📱', name: 'ปุ่มไถศัพท์', w: 'half', on: true },
   { id: 'play', ic: '⚡', name: 'ปุ่มเล่นด่วน', w: 'half', on: true },
+  { id: 'short', ic: '⏱️', name: 'ปุ่มเซสชัน 3 นาที', w: 'half', on: true },
+  { id: 'wgoal', ic: '🎯', name: 'เป้าคำใหม่ประจำสัปดาห์ (ตั้งในตั้งค่า)', w: 'full', on: true },
   { id: 'month', ic: '📅', name: 'สรุปเดือน (7 วันแรกของเดือน)', w: 'full', on: true },
   { id: 'week', ic: '📊', name: 'สรุปสัปดาห์ (ทุกวันจันทร์)', w: 'full', on: true },
   { id: 'quest', ic: '🎯', name: 'ภารกิจวันนี้', w: 'full', on: true },

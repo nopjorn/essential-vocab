@@ -27,6 +27,8 @@ function renderSettings() {
     <details class="set-group" data-g="learn" ${setIsOpen('learn')}><summary>🧠 การเรียน</summary><div class="card-box">
       <div class="set-row"><span>คำใหม่ต่อวัน</span>
         <select class="sel" id="npd">${[5, 10, 15, 20, 30, 50, 100].map((n) => `<option ${n === st.newPerDay ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+      <div class="set-row"><span>เป้าคำใหม่ต่อสัปดาห์<br><span class="small muted">โชว์แถบความคืบหน้าบนหน้าแรก (ปิด = ไม่แสดง)</span></span>
+        <select class="sel" id="wgoal">${[0, 20, 35, 50, 70, 100].map((n) => `<option value="${n}" ${n === (st.weekGoal | 0) ? 'selected' : ''}>${n ? n + ' คำ' : 'ปิด'}</option>`).join('')}</select></div>
       <div class="set-row"><span>กลับมาแบบไม่ท้อ<br><span class="small muted">การ์ดค้างเกิน 60 ใบ: พักคำใหม่ และทวนวันละ 50 ใบที่ค้างนานสุดก่อน</span></span>
         <label class="switch"><input type="checkbox" id="gentle" aria-label="กลับมาแบบไม่ท้อ" ${st.gentle !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>ลำดับคำใหม่</span>
@@ -167,6 +169,7 @@ function renderSettings() {
   $('#sfx').onchange = (e) => { st.sfx = e.target.checked; save(); sfx('ok'); };
   $('#acc').onchange = (e) => { st.accent = e.target.value; save(); speak('Hello! Nice to meet you.'); };
   $('#rate').onchange = (e) => { st.rate = +e.target.value; save(); speak('vocabulary'); };
+  $('#wgoal').onchange = (e) => { st.weekGoal = +e.target.value; save(); };
   $('#gentle').onchange = (e) => { st.gentle = e.target.checked; save(); };
   $('#slowRep').onchange = (e) => { st.slowRepeat = e.target.checked; save(); };
   $('#test').onclick = () => speak('Hello! Let\'s learn English together.');

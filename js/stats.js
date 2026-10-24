@@ -103,6 +103,7 @@ function renderStats(from) {
   view.innerHTML = `
     <div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="sBack">‹ กลับ</button></div>
     ${levelCard()}
+    <div id="readyHost"></div>
     <div class="h2">ความคืบหน้าแต่ละระดับ</div>
     <div class="card-box">${lvRows}
       <div class="small muted" style="margin-top:8px"><span class="key bl"></span>เรียนแล้ว &nbsp; <span class="key bm"></span>จำได้แล้ว (ทบทวนผ่านหลายรอบ)</div></div>
@@ -146,6 +147,7 @@ function renderStats(from) {
     ${stickerBook()}
     <div class="h2">🏅 เหรียญรางวัล <span class="small muted">${ACH.filter((a) => S.ach[a.id]).length}/${ACH.length}</span></div>
     <div class="card-box ach-grid" id="ach">${ACH.map((a) => { const hid = a.secret && !S.ach[a.id]; return `<button class="ach ${S.ach[a.id] ? 'on' : ''}" data-ach="${a.id}"><span>${hid ? '❓' : a.icon}</span><small>${hid ? 'เหรียญลับ' : a.name}</small></button>`; }).join('')}</div>`;
+  loadStories().then(() => { const h = $('#readyHost'); if (h) h.innerHTML = readyBox(); });
   $('#sBack').onclick = () => go(from || 'home');
   bindStickers();
   bindHeatmap();

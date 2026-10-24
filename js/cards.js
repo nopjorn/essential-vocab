@@ -3,6 +3,22 @@
 // Classic script sharing globals with app.js (load order: index.html).
 
 /* ---------- flashcards ---------- */
+const SHORT_N = 12; // cards in a "3 minutes" session
+// "Tomorrow" box for the end of a session: what is waiting, so there is a reason to come back.
+function tomorrowBox() {
+  const st = new Date(); st.setHours(0, 0, 0, 0);
+  const endT = st.getTime() + 2 * DAY, p = pool();
+  const due = p.filter((w) => S.prog[w.w] && S.prog[w.w].d < endT);
+  const plan = backlogPlan();
+  const rev = plan.on ? Math.min(due.length, BACKLOG_CAP) : due.length;
+  const unseen = p.filter((w) => !S.prog[w.w] && inTopic(w)).length;
+  const nw = plan.on || due.length > BACKLOG_PAUSE ? 0 : Math.min(S.settings.newPerDay, unseen);
+  if (!rev && !nw) return '';
+  const leech = due.filter(isLeech).length, mins = Math.max(1, Math.ceil((rev + nw) / 4));
+  return `<div class="card-box center tomorrow"><b>🌙 พรุ่งนี้รอคุณอยู่</b>
+    <div style="margin-top:4px">ทบทวน ${rev} ใบ${nw ? ` + คำใหม่ ${nw} คำ` : ''}${leech ? ` · 🐢 คำดื้อ ${leech} คำกลับมาให้ฝึก` : ''}</div>
+    <div class="small muted">ใช้เวลาประมาณ ${mins} นาที</div></div>`;
+}
 function buildQueue(extra) {
   rollDay();
   const p = pool();
@@ -11,6 +27,13 @@ function buildQueue(extra) {
   const due = dueList().slice(0, plan.on ? plan.show : 200);
   let fresh = p.filter((w) => !S.prog[w.w] && inTopic(w));
   if (S.settings.order === 'shuffle') fresh = shuffle(fresh);
+  if (extra === 'short') {
+    // 3-minute session: the most overdue cards, topped up with new words (unless a backlog is being cleared).
+    const d = dueList(p).slice(0, SHORT_N);
+    const room = backlogPlan().on ? 0 : SHORT_N - d.length;
+    if (fresh.length && room > 0) d.push(...fresh.slice(0, room));
+    return d.length ? d : p.filter((w) => S.prog[w.w]).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d).slice(0, SHORT_N);
+  }
   if (extra === 'mastered') return shuffle(masteredWords()).slice(0, 20);
   if (extra === 'ahead') return W.filter((w) => S.prog[w.w]).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d).slice(0, 20);
   const n = extra ? 10 : plan.on ? 0 : Math.max(0, S.settings.newPerDay - S.daily.fresh);
@@ -81,7 +104,7 @@ function renderCards(extra) {
     view.innerHTML = `<div class="card-box center pop" style="margin-top:20px">
       <div class="result-emoji">🎉</div><div class="h2">วันนี้ทำครบแล้ว!</div>
       <p class="muted">ไม่มีการ์ดค้างสำหรับระดับ ${lvNames(S.settings.levels)} · อยากทำอะไรต่อดี?</p></div>
-      ${nextSteps(learned)}`;
+      ${tomorrowBox()}${nextSteps(learned)}`;
     bindNextSteps();
     return;
   }
@@ -259,7 +282,7 @@ function renderCards(extra) {
       <div class="result-emoji">🏆</div><div class="h2">จบรอบแล้ว เก่งมาก!</div>
       <p>ทบทวน ${total} ใบ · กด "ลืม" ${stats.again} ครั้ง</p>
       <p class="muted small">คำที่ลืมจะกลับมาให้ทบทวนอีกเร็วๆ นี้</p></div>
-      ${nextSteps(W.filter((w) => S.prog[w.w]).length)}`;
+      ${tomorrowBox()}${nextSteps(W.filter((w) => S.prog[w.w]).length)}`;
     bindNextSteps();
   }
 
