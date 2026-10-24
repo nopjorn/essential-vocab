@@ -920,3 +920,44 @@ test('1.62: 3-minute session, tomorrow box, weekly new-word goal, ready-to-read 
   await expect(page.locator('#readyHost .ready-box')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('1.63: level test (gate, pass, medal), share card, year in review', async ({ page }) => {
+  test.setTimeout(180000);
+  const errors = await openApp(page, { settings: { levels: ['A1'] }, placedAt: '2026-01-01' });
+  // gate: nothing learned → test locked; learn 80% of A1 → opens
+  await page.evaluate(() => go('stats'));
+  await expect(page.locator('[data-lt="A1"]')).toBeDisabled();
+  await page.evaluate(() => {
+    const a1 = W.filter((w) => w.g === 'A1'); a1.slice(0, Math.ceil(a1.length * 0.85)).forEach((w) => { S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: Date.now() + DAY, s: 1, c: 1, x: 0 }; });
+    go('stats');
+  });
+  await expect(page.locator('[data-lt="A1"]')).toBeEnabled();
+  await page.locator('[data-lt="A1"]').click();
+  await page.locator('#mtGo').click();
+  for (let i = 0; i < 30; i++) {
+    await page.waitForTimeout(250);
+    const idx = await page.evaluate(() => {
+      const t = document.querySelector('.q-prompt .word, .q-prompt .th'), isEn = !!document.querySelector('.q-prompt .word');
+      const said = (window.__said || []).slice(-1)[0], sw = typeof said === 'string' ? said : said && said.text;
+      const rows = t ? W.filter((x) => (isEn ? x.w === t.textContent : x.t === t.textContent)) : W.filter((x) => x.w === sw);
+      const toTh = !t || isEn, good = new Set(rows.map((x) => (toTh ? x.t : x.w)));
+      return [...document.querySelectorAll('.opt')].findIndex((o) => good.has(o.textContent));
+    });
+    expect(idx).toBeGreaterThanOrEqual(0);
+    await page.locator('.opt').nth(idx).click();
+    await page.waitForTimeout(700);
+  }
+  await expect(page.locator('.result-emoji')).toBeVisible();
+  expect(await page.evaluate(() => pct(S.ltest.A1))).toBeGreaterThanOrEqual(80);
+  expect(await page.evaluate(() => !!S.ach.ltA1)).toBe(true);
+  // share card downloads a PNG
+  await page.evaluate(() => go('stats'));
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('#shareProg').click()]);
+  expect(dl.suggestedFilename()).toMatch(/\.png$/);
+  // year in review
+  await page.evaluate(() => { const y = new Date().getFullYear(); S.hist[`${y}-02-03`] = 12; S.hist[`${y}-02-04`] = 30; S.chist[`${y}-02-04`] = 10; go('year', y); });
+  await expect(page.locator('.year-slide')).toContainText('ปี');
+  for (let i = 0; i < 12 && await page.locator('#yNext').count(); i++) await page.locator('#yNext').click();
+  await expect(page.locator('#yShare')).toBeVisible();
+  expect(errors).toEqual([]);
+});

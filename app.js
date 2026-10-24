@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.62.0';
+const APP_VERSION = '1.63.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -181,6 +181,7 @@ const defaults = () => ({
   monthSeen: '',       // 'YYYY-MM' of the month whose summary card was dismissed
   read: {},            // story id -> date finished
   readScore: {},       // story id -> [best right answers, questions]
+  ltest: {},           // level -> best level-test result { r, n, at } (1.63)
   mtest: {},           // 'YYYY-MM' -> { r: right, n: questions, at: ms } best monthly-test score
   riddle: { d: '', g: [], over: false, win: false }, // daily word riddle: today's guesses
   riddleStat: { played: 0, won: 0, streak: 0, best: 0, dist: [0, 0, 0, 0, 0, 0], last: '' }, // riddle totals; dist[i] = solved in i+1 tries
@@ -348,6 +349,7 @@ function mergeBackup(d) {
   for (const [k, v] of Object.entries(d.readScore || {})) if (!S.readScore[k] || v[0] > S.readScore[k][0]) S.readScore[k] = v;
   if (d.riddle && (d.riddle.d > S.riddle.d || (d.riddle.d === S.riddle.d && (d.riddle.g || []).length > S.riddle.g.length))) S.riddle = { d: d.riddle.d, g: d.riddle.g || [], over: !!d.riddle.over, win: !!d.riddle.win, lv: d.riddle.lv || ['A1', 'A2'] };
   if (d.riddleStat && d.riddleStat.played > S.riddleStat.played) S.riddleStat = { ...S.riddleStat, ...d.riddleStat, dist: (d.riddleStat.dist || []).concat([0, 0, 0, 0, 0, 0]).slice(0, 6) };
+  for (const [k, v] of Object.entries(d.ltest || {})) if (v && v.n && (!S.ltest[k] || v.r / v.n > S.ltest[k].r / S.ltest[k].n)) S.ltest[k] = v;
   for (const [k, v] of Object.entries(d.mtest || {})) if (!S.mtest[k] || v.r / v.n > S.mtest[k].r / S.mtest[k].n) S.mtest[k] = v;
   for (const [k, v] of Object.entries(d.chist || {})) S.chist[k] = Math.max(S.chist[k] || 0, v);
   for (const [k, v] of Object.entries(d.snap || {})) S.snap[k] = (S.snap[k] || [0, 0, 0, 0]).map((x, i) => Math.max(x, v[i] || 0));
@@ -580,6 +582,7 @@ const ACH = [
   { id: 'owl', icon: '🦉', name: 'นกฮูกยามดึก', desc: 'เรียนหลังเที่ยงคืนถึงตีสาม', secret: true, ok: (s) => s.owl },
   { id: 'newyear', icon: '🎆', name: 'เริ่มปีด้วยศัพท์', desc: 'เรียนในวันปีใหม่ 1 มกราคม', secret: true, ok: (s) => s.newyear },
   { id: 'comeback', icon: '🦋', name: 'กลับมาอีกครั้ง', desc: 'กลับมาเรียนหลังหายไปเกิน 30 วัน', secret: true, ok: (s) => s.comeback },
+  ...LEVELS.map((l) => ({ id: 'lt' + l, icon: '🎓', name: `ผ่านทดสอบ ${LV_LABEL[l]}`, desc: `ผ่านแบบทดสอบจบระดับ ${LV_LABEL[l]} (ตั้งแต่ 80%)`, ok: (s) => s.lt[l] })),
   ...LEVELS.map((l) => ({ id: 'lv' + l, icon: '🎓', name: `จบ ${LV_LABEL[l]}`, desc: `เรียนครบทุกคำในระดับ ${LV_LABEL[l]}`, ok: (s) => s.lv[l] })),
 ];
 const GROUP = Object.fromEntries(LEVELS.map((l) => [l, W.filter((w) => w.g === l)]));
@@ -594,6 +597,7 @@ function checkAch() {
     notes: Object.keys(S.note).length, qsets: S.counts.qsets || 0, wquests: S.counts.wquests || 0, repairs: S.counts.repairs || 0,
     early: S.counts.early, owl: S.counts.owl, newyear: S.counts.newyear, comeback: S.counts.comeback,
     allGames: typeof GAMES !== 'undefined' && Object.keys(GAMES).every((g) => gamePlays(g) > 0 || (!canListen && /^speak/.test(g))),
+    lt: Object.fromEntries(LEVELS.map((l) => [l, ((m) => !!(m && m.n && m.r / m.n >= 0.8))(S.ltest[l])])),
     mtestFull: Object.values(S.mtest).some((m) => m && m.n && m.r === m.n),
   };
   checkStickers();
@@ -1041,7 +1045,7 @@ function markForReview(w, map = S.prog) {
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
+const TITLES = { year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
 function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
@@ -1055,7 +1059,7 @@ function go(tab, ...args) {
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab || (tab === 'decks' && !wide && b.dataset.tab === 'list')));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, riddle: renderRiddle, decks: renderDecks }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, riddle: renderRiddle, decks: renderDecks }[tab])(...args);
   updateStreak();
   const a = TAB_ORDER.indexOf(prev), b = TAB_ORDER.indexOf(tab);
   animView(a < 0 || b < 0 || a === b ? 'vin' : b > a ? 'vin-l' : 'vin-r');
@@ -1079,7 +1083,7 @@ function updateStreak() {
   el.textContent = '🔥 ' + streakNow() + (S.freeze ? ' · 🧊' + S.freeze : '') + ' · Lv.' + L;
   el.style.setProperty('--xp', Math.min(100, Math.max(0, ((S.xp || 0) - levelStart(L)) / (50 * L) * 100)) + '%'); // progress to the next level
 }
-view.addEventListener('click', (e) => { const g = e.target.closest('[data-go]'); if (g) go(g.dataset.go); });
+view.addEventListener('click', (e) => { const g = e.target.closest('[data-go]'); if (g) go(g.dataset.go, g.dataset.year); });
 // 🐢 buttons (data-slow = the text) replay slowly on any screen.
 document.addEventListener('click', (e) => { const b = e.target.closest('[data-slow]'); if (b) speak(b.dataset.slow, { slow: true }); });
 const slowBtn = (text, label = 'ฟังช้า') => `<button class="slow-btn" data-slow="${esc(text)}" aria-label="ฟังช้าๆ">🐢 ${label}</button>`;
