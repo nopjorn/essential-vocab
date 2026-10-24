@@ -234,3 +234,78 @@ function renderGramPat() {
   $('#gpList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
 }
 const gpItems = () => GRAMPAT.filter((r) => r.kind !== 'both').map((r) => ({ idx: -1, w: r.head, t: r.th, p: '', g: '', _gp: r, _q: [r.frame, r.right, '', r.th] }));
+
+/* ---------- reading IPA ---------- */
+// The sound chart uses the same IPA as the word list (US style: ɑː ɔː ɜː, əʊ, er for "air"). Every example is a list word that has the symbol (a test checks).
+// [symbol, Thai approximation, [example words], tip for Thai speakers]
+const IPA_GROUPS = [
+  ['🔣 เครื่องหมายพิเศษ', 'ˈ ˌ ː ที่เห็นในวงเล็บทุกคำ', [
+    ['ˈ', 'เน้นเสียงหนัก', ['about', 'apple', 'father'], 'อยู่ก่อนพยางค์ที่เน้นหนักที่สุด เช่น /əˈbaʊt/ เน้นที่ -bout'],
+    ['ˌ', 'เน้นเสียงรอง', ['afternoon', 'goodbye', 'information'], 'คำยาวมักมีเน้นรองด้วย เช่น /ˌæftərˈnuːn/ (เน้นรองที่ af- เน้นหนักที่ -noon)'],
+    ['ː', 'ออกเสียงยาว', ['beach', 'school', 'also'], 'ตัวที่มี ː ต้องลากเสียงให้ยาวกว่าตัวสั้น (sheep ยาว ship สั้น)'],
+  ]],
+  ['🅰️ สระเดี่ยว', 'แยกสั้น–ยาวให้ชัด คนไทยมักอ่านเป็นสระเดียวกัน', [
+    ['iː', 'อี ยาว', ['beach', 'agree', 'between'], 'ยิ้มกว้างและลากยาว ต่างจาก ɪ ที่สั้นและผ่อนกว่า'],
+    ['ɪ', 'อิ สั้น (คล้ายระหว่าง อิ-เอะ)', ['big', 'sit', 'ticket'], 'ผ่อนปากไม่ต้องยิ้มกว้าง ลิ้นต่ำกว่า iː เล็กน้อย'],
+    ['e', 'เอะ', ['bed', 'ten', 'friend'], 'ปากเปิดครึ่งหนึ่ง คล้ายเอะในภาษาไทย'],
+    ['æ', 'แอ (อ้าปากกว้าง)', ['cat', 'apple', 'bad'], 'อ้าปากกว้างกว่า e แล้วเสียงแบน ๆ แบบ “แอ” ไม่ใช่ “เอ”'],
+    ['ʌ', 'อะ (สั้น ๆ จากลำคอ)', ['cup', 'bus', 'love'], 'คล้ายอะแต่ไม่อ้าปากมาก ต่างจาก ɑː ที่ยาว'],
+    ['ɑː', 'อา ยาว', ['arm', 'art', 'father'], 'อ้าปากกว้างและลากยาว หลังสระมักตามด้วยเสียง r แบบอเมริกัน'],
+    ['ɔː', 'ออ ยาว', ['all', 'also', 'across'], 'ปากห่อกลมและลากยาว'],
+    ['ʊ', 'อุ สั้น', ['book', 'good', 'put'], 'ริมฝีปากห่อน้อย ๆ สั้นกว่า uː'],
+    ['uː', 'อู ยาว', ['afternoon', 'bathroom', 'school'], 'ห่อปากให้กลมและลากยาว'],
+    ['ə', 'เออ แผ่วมาก (ชวา)', ['about', 'again', 'ago'], 'เสียงในพยางค์ที่ไม่เน้น ออกเบา ๆ รีบผ่าน พบบ่อยที่สุดในภาษาอังกฤษ'],
+    ['ɜː', 'เออ ยาว (ม้วนลิ้นแบบ r)', ['bird', 'early', 'dirty'], 'ทำเสียงเออ แล้วม้วนลิ้นขึ้นเล็กน้อยโดยไม่แตะเพดาน'],
+  ]],
+  ['🅱️ สระประสม', 'เลื่อนจากเสียงแรกไปเสียงที่สอง', [
+    ['eɪ', 'เอ-อิ', ['age', 'always', 'amazing'], 'ออกเสียงเอ แล้วเลื่อนไปอิ ไม่ใช่เอเฉยๆ'],
+    ['aɪ', 'อาย', ['advice', 'arrive', 'bicycle'], 'อ้าปากแล้วค่อยหุบ คล้าย “ไอ” ในภาษาไทย'],
+    ['ɔɪ', 'ออย', ['boy', 'enjoy', 'join'], 'ออแล้วเลื่อนเป็นอิ'],
+    ['əʊ', 'โอ (เลื่อนไปอุ)', ['ago', 'below', 'boat'], 'อ่านเป็นโอ แล้วห่อปากท้ายเสียง'],
+    ['aʊ', 'อาว', ['about', 'around', 'brown'], 'อ้าปากแล้วห่อ ต่างจาก “อ๊า” ตรงห่อท้ายเสียง'],
+    ['ɪr', 'เอียร์', ['beer', 'career', 'dear'], 'เสียงอิตามด้วย r ม้วนลิ้น'],
+    ['er', 'แอร์ (เอ + r)', ['chair', 'airport', 'care'], 'เสียงเอตามด้วย r ม้วนลิ้น ไม่ต้องออกเสียง “แอร์” เป็นคำไทย'],
+    ['ʊr', 'อัวร์', ['during', 'poor', 'sure'], 'เสียงอุตามด้วย r ม้วนลิ้น'],
+  ]],
+  ['🔤 พยัญชนะที่คนไทยมักพลาด', 'เสียงที่ภาษาไทยไม่มีหรือใช้ต่างกัน', [
+    ['θ', 'ลิ้นแตะฟัน ไม่มีเสียงสั่น', ['think', 'bathroom', 'birthday'], 'วางปลายลิ้นระหว่างฟันแล้วเป่าลมเบา ๆ ไม่ใช่ “ท” หรือ “ซ” ไทย'],
+    ['ð', 'ลิ้นแตะฟัน มีเสียงสั่น', ['this', 'mother', 'another'], 'ตำแหน่งเดียวกับ θ แต่ให้เส้นเสียงสั่น คล้าย “ด” ที่ลิ้นยื่น'],
+    ['ʃ', 'ช เบา ๆ (ปากห่อ)', ['she', 'shop', 'fish'], 'เสียงฟู่ “ช” ไม่ใช่ “ซ”'],
+    ['ʒ', 'เสียงสั่นของ ʃ', ['usually', 'television', 'vision'], 'ตำแหน่งเดียวกับ ʃ แต่มีเสียงสั่น คล้าย “ฌ”'],
+    ['tʃ', 'ช (กระแทก)', ['beach', 'chair', 'change'], 'ท้ายคำต้องออกเสียงด้วย ไม่ใช่ตัดทิ้ง (beach ไม่ใช่ “บี”)'],
+    ['dʒ', 'จ (มีเสียงสั่น)', ['age', 'change', 'college'], 'เหมือน j ใน jump · ท้ายคำก็ต้องออกเสียง'],
+    ['v', 'ฟัน–ริมฝีปากล่างมีเสียงสั่น', ['arrive', 'believe', 'very'], 'ไม่ใช่ “ว” ไทย: ฟันบนแตะริมฝีปากล่างแล้วให้เสียงสั่น'],
+    ['z', 'ซ (มีเสียงสั่น)', ['always', 'easy', 'zero'], 'ซที่ให้คอสั่น ท้ายคำเช่น -s ที่ออกเสียง z ต้องไม่ทิ้ง'],
+    ['r', 'ม้วนลิ้น ไม่แตะเพดาน', ['arm', 'birthday', 'ear'], 'ไม่รัวเหมือน ร ไทย: ม้วนลิ้นไปด้านหลังเฉย ๆ'],
+    ['l', 'ลิ้นแตะเหงือกบน', ['all', 'early', 'also'], 'ท้ายคำ (all, call) ให้ลิ้นแตะเหงือกค้างไว้ ไม่เปลี่ยนเป็น “น”'],
+    ['ŋ', 'ง (ท้ายคำ)', ['angry', 'sing', 'long'], 'เสียง ng เสียงเดียว ไม่ต้องออก “ก” ตามหลัง (sing ไม่ใช่ “ซิงก์”)'],
+    ['w', 'ว (ห่อปาก)', ['between', 'always', 'we'], 'ห่อปากกลม ๆ ก่อนเริ่มเสียง ต่างจาก v'],
+    ['j', 'ย', ['you', 'yes', 'euro'], 'เหมือน ย ในภาษาไทย (ไม่ใช่ j ในตัวอักษรอังกฤษ)'],
+  ]],
+];
+function renderIpa() {
+  $('#title').textContent = 'ตารางเสียง IPA';
+  view.scrollTop = 0;
+  const wordBtn = (x) => { const w = WORD_BY[x]; return `<button class="ipa-w" data-say="${esc(x)}" lang="en"><b>${esc(x)}</b> <span class="muted">${w ? esc(w.i) : ''}</span></button>`; };
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="ipBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="ipPlay">🔡 เล่นเกมอ่าน IPA</button></div>
+    <p class="small muted" style="margin:0 4px 10px">IPA คือสัญลักษณ์ที่บอกวิธีออกเสียง อยู่ในวงเล็บเฉียงทุกคำ เช่น /ˈæpl/ · เรียนตารางนี้แล้วเปิดพจนานุกรมก็อ่านคำใหม่ได้เอง · แตะคำเพื่อฟัง · อยากฝึกหูแยกเสียงคล้าย ship / sheep ไปที่ 👂 ฝึกหูแยกเสียง</p>
+    ${IPA_GROUPS.map(([title, note, rows]) => `<div class="card-box pair-card"><div class="pair-h"><b>${title}</b></div><div class="small muted" style="margin-bottom:6px">${note}</div>
+      ${rows.map(([sym, th, ex, tip]) => `<div class="ipa-row"><div class="ipa-sym" lang="en">/${esc(sym)}/</div><div class="grow"><b>${esc(th)}</b><div class="small muted">${esc(tip)}</div><div class="ipa-ex">${ex.map(wordBtn).join('')}</div></div></div>`).join('')}</div>`).join('')}
+    <button class="btn block" id="ipMin" style="margin-top:10px">👂 ฝึกหูแยกเสียงคล้าย</button>`;
+  $('#ipBack').onclick = () => go('games');
+  $('#ipPlay').onclick = () => startGame('ipa');
+  $('#ipMin').onclick = () => startGame('minpair');
+  view.onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
+}
+// Wrong spellings for the IPA game: words that start and end alike and have a different sound (never a homophone).
+function ipaDistractors(w) {
+  const a = w.w.toLowerCase();
+  const score = (x) => {
+    const b = x.w.toLowerCase();
+    let c = 0; while (c < a.length && a[c] === b[c]) c++;
+    let e = 0; while (e < a.length && e < b.length && a[a.length - 1 - e] === b[b.length - 1 - e]) e++;
+    return c * 2 + e - Math.abs(a.length - b.length);
+  };
+  const near = W.filter((x) => x !== w && x.i && x.i !== w.i && !/\s/.test(x.w)).map((x) => [score(x), x]).sort((p, q) => q[0] - p[0]).slice(0, 14).map((p) => p[1]);
+  return shuffle(near).slice(0, 3);
+}

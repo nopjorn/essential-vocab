@@ -1353,3 +1353,27 @@ test('grammar tied to words (1.88): browser, word sheet box, game with right and
   await expect(page.locator('#view .opt')).toHaveCount(3);
   expect(errors).toEqual([]);
 });
+
+test('IPA chart and game (1.90): every example word has its symbol, chart speaks, game shows IPA and spells the options', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const bad = await page.evaluate(() => IPA_GROUPS.flatMap(([, , rows]) => rows.flatMap(([sym, , ex]) => ex.filter((x) => !WORD_BY[x] || !WORD_BY[x].i.includes(sym)).map((x) => `${sym} ${x}`))));
+  expect(bad).toEqual([]);
+  await page.evaluate(() => renderIpa());
+  expect(await page.locator('.ipa-row').count()).toBeGreaterThan(30);
+  await page.locator('.ipa-w').first().click();
+  expect(await page.evaluate(() => window.__said.length)).toBeGreaterThan(0);
+  // distractors: never a homophone (same IPA), never the word itself, three different ones
+  const d = await page.evaluate(() => {
+    const out = [];
+    for (const w of W.filter((x) => x.i && x.i.length >= 4 && !/\s/.test(x.w)).slice(0, 400)) {
+      const o = ipaDistractors(w);
+      if (o.length !== 3 || o.some((x) => x.i === w.i || x.w === w.w) || new Set(o.map((x) => x.w)).size !== 3) out.push(w.w);
+    }
+    return out;
+  });
+  expect(d).toEqual([]);
+  await page.evaluate(() => { Math.random = () => 0.3; startGame('ipa'); });
+  await expect(page.locator('#view .opt')).toHaveCount(4);
+  await expect(page.locator('.q-prompt .word')).toContainText('/');
+  expect(errors).toEqual([]);
+});

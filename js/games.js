@@ -46,6 +46,7 @@ const GAMES = {
   affix: { icon: '🧱', name: 'เติมหน้า–ท้ายคำ', desc: 'un-, -ful, -less … เลือกให้ได้ความหมาย' },
   idiom: { icon: '🎭', name: 'สำนวน', desc: 'piece of cake = ? เลือกความหมายหรือสำนวนให้ถูก' },
   sit: { icon: '🗨️', name: 'ตอบให้เข้าสถานการณ์', desc: 'เลือกประโยคถัดไปในบทสนทนา' },
+  ipa: { icon: '🔡', name: 'อ่าน IPA', desc: 'ดูวิธีออกเสียง /ˈæpl/ แล้วเลือกคำที่ถูก' },
   gpat: { icon: '📐', name: 'เลือกรูปที่ถูก (ไวยากรณ์ผูกกับคำ)', desc: 'some advice / enjoy swimming / let me go เลือกรูปให้ถูก' },
   thaierr: { icon: '🩹', name: 'ประโยคไหนถูก', desc: 'ข้อผิดที่คนไทยพบบ่อย เช่น discuss about, advices' },
   dprep: { icon: '🔗', name: 'บุพบทที่ตามหลังคำ', desc: 'interested ___ sports เลือก in / on / at ให้ถูก' },
@@ -175,6 +176,7 @@ function renderGames() {
         <button class="ref-tile" id="toDp"><span>🔗</span>บุพบทที่ตามหลังคำ</button>
         <button class="ref-tile" id="toMis"><span>🩹</span>ข้อผิดที่พบบ่อย</button>
         <button class="ref-tile" id="toGp"><span>📐</span>ไวยากรณ์ผูกกับคำ</button>
+        <button class="ref-tile" id="toIpa"><span>🔡</span>ตารางเสียง IPA</button>
       </div></div>
     <div class="row games-head"><b class="grow">${gameEdit ? '✏️ จัดหน้าเกม' : (gamePins().length ? '🎮 เกมอื่นๆ' : '🎮 เกมทั้งหมด')}</b><button class="btn${gameEdit ? ' primary' : ''}" id="gEdit">${gameEdit ? '✓ เสร็จ' : '✏️ จัดเกม'}</button></div>
     ${gameEdit ? gameEditor() : `<div class="game-grid">${Object.keys(GAMES).filter((id) => !gameHidden().has(id) && !gamePins().includes(id)).map(gameTile).join('')}</div>
@@ -193,6 +195,7 @@ function renderGames() {
   $('#toDp').onclick = () => renderDepPrep();
   $('#toMis').onclick = () => renderMistakes();
   $('#toGp').onclick = () => renderGramPat();
+  $('#toIpa').onclick = () => renderIpa();
   $('#toPairs').onclick = () => renderPairs();
   $('#toFams').onclick = () => renderFamilies();
   $('#toPV').onclick = () => renderPhrasal();
@@ -313,6 +316,7 @@ function gamePool(id) {
   if (id === 'order') list = list.filter((w) => { const n = w.e.split(/\s+/).length; return n >= 4 && n <= 12; });
   if (id === 'colloc') list = list.filter((w) => COLLOC && COLLOC[w.w]);
   if (id === 'emoji' || id === 'emojiRun') list = list.filter((w) => EMOJI && EMOJI[w.w]);
+  if (id === 'ipa') list = list.filter((w) => w.i && w.i.length >= 4 && !/\s/.test(w.w));
   if (id === 'hangman' || id === 'anagram') list = list.filter((w) => /^[a-z]{4,12}$/i.test(w.w)); // single words: letters only
   return list;
 }
@@ -527,13 +531,14 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'dprep') return qDprep(w);
     if (m === 'thaierr') return qMistake(w);
     if (m === 'gpat') return qGpat(w);
-    const toTh = m !== 'th2en' && m !== 'cloze';
+    const toTh = m !== 'th2en' && m !== 'cloze' && m !== 'ipa';
     const diff = gameDiff();
-    const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w', diff >= 2)]);
+    const opts = shuffle([w, ...(m === 'ipa' ? ipaDistractors(w) : distractors(w, 3, toTh ? 't' : 'w', diff >= 2))]);
     const limit = diff >= 3 && !ENDLESS ? (m === 'cloze' ? 15 : 12) : 0; // seconds per question
     let prompt;
     if (m === 'en2th') prompt = `<div class="word" lang="en">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>`;
     else if (m === 'th2en') prompt = `<div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>`;
+    else if (m === 'ipa') prompt = `<div class="small muted">คำนี้อ่านว่าอะไร</div><div class="word" lang="en" style="font-family:'Noto Sans','Segoe UI',system-ui,sans-serif">${esc(w.i)}</div><div class="pos">${esc(w.p)}</div>`;
     else if (m === 'cloze') {
       const blank = w.e.replace(clozeRe(w), (all, pre) => pre + '\u0000');
       prompt = `<div class="cloze" lang="en">${esc(blank).replace('\u0000', '<span class="blank">_____</span>')}</div>
@@ -566,7 +571,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
         + `<button class="btn primary block" id="nextQ" style="margin-top:12px">${out ? 'ดูผล →' : 'ถัดไป →'}</button>`;
       bindSayEx(view, w.e); // buttons only present when the example is shown
       $('#nextQ').onclick = next;
-      if (!TIMED) { if (m === 'cloze') speak(w.e); else if (m === 'th2en') speak(w.w); }
+      if (!TIMED) { if (m === 'cloze') speak(w.e); else if (m === 'th2en' || m === 'ipa') speak(w.w); }
       if (TIMED) setTimeout(() => { if (items[i] === w) next(); }, ok ? 350 : 1200);
       else if (ok && m !== 'cloze') setTimeout(() => { if (items[i] === w) next(); }, 1000);
     };

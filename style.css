@@ -783,6 +783,12 @@ input.sel { color: var(--text); font: inherit; }
 /* collocations in the word sheet */
 .col-row { display: flex; justify-content: space-between; gap: 12px; width: 100%; padding: 9px 12px; margin-bottom: 6px; border: 0; border-radius: 12px; background: var(--surface-2); color: var(--text); font: inherit; font-size: var(--fs-md); text-align: left; }
 .col-row span { color: var(--muted); text-align: right; }
+/* IPA chart: symbol on the left, Thai sound + tip + example words on the right */
+.ipa-row { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line, rgba(127,127,127,.2)); }
+.ipa-row:first-of-type { border-top: 0; }
+.ipa-sym { flex: 0 0 64px; font-size: 24px; font-weight: 700; color: var(--accent, var(--text)); text-align: center; align-self: flex-start; padding-top: 2px; }
+.ipa-ex { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.ipa-w { border: 0; border-radius: 10px; padding: 6px 10px; background: var(--surface-2); color: var(--text); font: inherit; font-size: var(--fs-sm, 14px); }
 
 /* word families (1.17) */
 .col-row b .pos { font-weight: 500; font-size: var(--fs-xs); margin-left: 4px; }
