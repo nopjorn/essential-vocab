@@ -190,3 +190,54 @@ test('anagram (1.81): tap letters to spell the word, one wrong try is forgiven, 
   await expect(view.locator('#reveal')).toContainText(rev ? 'ต้องลองสองครั้ง' : '✅');
   expect(errors).toEqual([]);
 });
+
+test('automatic difficulty (1.82): level from rolling accuracy, look-alike options, per-question timer, setting overrides', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01', gacc: { a: 0.7, n: 0 } });
+  const lv = (gacc, gdiff) => page.evaluate(([g, d]) => { S.gacc = g; S.settings.gdiff = d; return gameDiff(); }, [gacc, gdiff]);
+  expect(await lv({ a: 0.99, n: 5 }, 'auto')).toBe(1);   // too few answers to judge
+  expect(await lv({ a: 0.7, n: 40 }, 'auto')).toBe(1);
+  expect(await lv({ a: 0.85, n: 40 }, 'auto')).toBe(2);
+  expect(await lv({ a: 0.95, n: 40 }, 'auto')).toBe(3);
+  expect(await lv({ a: 0.95, n: 40 }, '1')).toBe(1);     // fixed levels ignore accuracy
+  expect(await lv({ a: 0.5, n: 40 }, '3')).toBe(3);
+  // look-alike options really look alike (English) and share a topic (Thai)
+  const cmp = await page.evaluate(() => {
+    const words = W.filter((w) => w.g === 'B1' && /^[a-z]{5,8}$/.test(w.w)).slice(0, 60);
+    const avg = (f) => words.reduce((s, w) => s + f(w), 0) / words.length;
+    const sim = (hard) => avg((w) => distractors(w, 3, 'w', hard).reduce((s, x) => s + simScore(w.w, x.w), 0) / 3);
+    const top = (hard) => avg((w) => distractors(w, 3, 't', hard).filter((x) => x.tp === w.tp).length);
+    const hard = words.map((w) => distractors(w, 3, 'w', true)), hardT = words.map((w, k) => distractors(w, 3, 't', true));
+    return {
+      simHard: sim(true), simEasy: sim(false), topHard: top(true), topEasy: top(false),
+      distinct: hard.every((d, k) => d.length === 3 && new Set([...d.map((x) => x.w), words[k].w]).size === 4) && hardT.every((d, k) => d.length === 3 && new Set([...d.map((x) => thFirst(x.t)), thFirst(words[k].t)]).size === 4),
+    };
+  });
+  expect(cmp.simHard).toBeGreaterThan(cmp.simEasy + 1);
+  expect(cmp.topHard).toBeGreaterThan(cmp.topEasy);
+  expect(cmp.distinct).toBe(true);
+  // games menu shows the level; the setting is saved
+  await page.evaluate(() => { S.gacc = { a: 0.85, n: 40 }; S.settings.gdiff = 'auto'; go('games'); });
+  await expect(page.locator('#gDiff')).toContainText('⭐⭐');
+  await expect(page.locator('#gDiff')).toContainText('แม่น 85%');
+  await page.locator('#gDiffSet').click();
+  await expect(page.locator('#gdiff')).toBeVisible();
+  await page.locator('#gdiff').selectOption('3');
+  expect((await readState(page)).settings.gdiff).toBe('3');
+  // level 3: a timer bar; running out of time counts as wrong and lowers the accuracy
+  await page.evaluate(() => {
+    S.gacc = { a: 0.95, n: 40 }; S.settings.gdiff = 'auto';
+    const st = window.setTimeout; window.setTimeout = (f, ms, ...a) => st(f, ms >= 10000 ? 300 : ms, ...a); // 12 s → 0.3 s
+    gameSource = 'all'; startGame('en2th');
+  });
+  const view = page.locator('#view');
+  await expect(view.locator('.q-timer')).toBeVisible();
+  await expect(view.locator('#reveal')).toContainText('หมดเวลา');
+  await expect(view.locator('.opt.correct')).toHaveCount(1);
+  const after = await page.evaluate(() => S.gacc);
+  expect(after.n).toBe(41); expect(after.a).toBeLessThan(0.95);
+  // level 1: no timer; a right answer raises the count
+  await page.evaluate(() => { S.gacc = { a: 0.7, n: 40 }; S.settings.gdiff = 'auto'; startGame('en2th'); });
+  await expect(view.locator('.opt').first()).toBeVisible();
+  expect(await view.locator('.q-timer').count()).toBe(0);
+  expect(errors).toEqual([]);
+});

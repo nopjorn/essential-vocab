@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.81.0';
+const APP_VERSION = '1.82.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -190,6 +190,7 @@ const defaults = () => ({
   ltest: {},           // level -> best level-test result { r, n, at } (1.63)
   mtest: {},           // 'YYYY-MM' -> { r: right, n: questions, at: ms } best monthly-test score
   riddle: { d: '', g: [], over: false, win: false }, // daily word riddle: today's guesses
+  gacc: { a: 0.7, n: 0 }, // rolling accuracy (a) of multiple-choice game answers (n answers) → automatic game difficulty
   duel: {},            // challenge code -> [right, questions, seconds, played at ms] best result per code (latest 30)
   riddleStat: { played: 0, won: 0, streak: 0, best: 0, dist: [0, 0, 0, 0, 0, 0], last: '' }, // riddle totals; dist[i] = solved in i+1 tries
   placedAt: '',        // date the placement test was taken/dismissed
@@ -384,6 +385,7 @@ function mergeBackup(d) {
   if (d.riddle && (d.riddle.d > S.riddle.d || (d.riddle.d === S.riddle.d && (d.riddle.g || []).length > S.riddle.g.length))) S.riddle = { d: d.riddle.d, g: d.riddle.g || [], over: !!d.riddle.over, win: !!d.riddle.win, lv: d.riddle.lv || ['A1', 'A2'] };
   if (d.riddleStat && d.riddleStat.played > S.riddleStat.played) S.riddleStat = { ...S.riddleStat, ...d.riddleStat, dist: (d.riddleStat.dist || []).concat([0, 0, 0, 0, 0, 0]).slice(0, 6) };
   for (const [k, v] of Object.entries(d.ltest || {})) if (v && v.n && (!S.ltest[k] || v.r / v.n > S.ltest[k].r / S.ltest[k].n)) S.ltest[k] = v;
+  if (d.gacc && d.gacc.n > (S.gacc.n || 0)) S.gacc = { a: +d.gacc.a || 0.7, n: d.gacc.n | 0 };
   for (const [k, v] of Object.entries(d.duel || {})) if (Array.isArray(v) && (!Array.isArray(S.duel[k]) || v[0] > S.duel[k][0] || (v[0] === S.duel[k][0] && v[2] < S.duel[k][2]))) S.duel[k] = v;
   S.duel = Object.fromEntries(Object.entries(S.duel).sort((a, b) => b[1][3] - a[1][3]).slice(0, 30));
   for (const [k, v] of Object.entries(d.mtest || {})) if (!S.mtest[k] || v.r / v.n > S.mtest[k].r / S.mtest[k].n) S.mtest[k] = v;

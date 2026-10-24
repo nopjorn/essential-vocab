@@ -1266,3 +1266,8 @@ html.no-ans .streak.bump { animation: none; }
 .hg-k.hit { border-color: var(--good); background: var(--surface-2); }
 .hg-k.miss { opacity: .35; box-shadow: none; }
 .hg-k:disabled { cursor: default; }
+
+/* per-question timer (automatic difficulty level 3) */
+.q-timer { width: 100%; height: 5px; margin: 14px 0 0; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
+.q-timer i { display: block; height: 100%; background: var(--primary-2); transform-origin: left; animation: qtimer var(--t, 12s) linear forwards; }
+@keyframes qtimer { to { transform: scaleX(0); } }

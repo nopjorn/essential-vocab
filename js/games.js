@@ -118,6 +118,11 @@ function gameSections() {
   const sec = (title, ids) => `<div class="small muted games-sec"><b>${title}</b></div><div class="game-grid">${ids.map(gameTile).join('')}</div>`;
   return (pins.length ? sec('📌 เกมโปรด', pins) : '') + (freq.length ? sec('🕘 เล่นบ่อย', freq) : '');
 }
+// "ความยากเกมตัวเลือก" text for the games menu and result screen.
+function diffLabel() {
+  const d = gameDiff(), auto = !S.settings.gdiff || S.settings.gdiff === 'auto';
+  return '⭐'.repeat(d) + ' ' + ['ปกติ', 'ตัวเลือกลวงคล้ายขึ้น', 'ตัวเลือกคล้ายขึ้น + จับเวลาข้อละ 12 วินาที'][d - 1] + (auto ? ` · อัตโนมัติ (แม่น ${Math.round(((S.gacc || {}).a || 0.7) * 100)}%)` : ' · ตั้งเอง');
+}
 function renderGames() {
   if (gameSource === 'custom') gameSource = 'level';
   gameDecks = gameDecks.filter((id) => deckById(id)); // a set deleted meanwhile (also by another device) drops out
@@ -142,6 +147,7 @@ function renderGames() {
         <div class="small muted" style="margin-top:8px">${gameDecks.length === 1 ? 'เล่นชุดเดียว: ผลของเกมอัปเดตความคืบหน้าของชุดนั้น (สถิติหลักไม่เปลี่ยน)' : '🏋️ โหมดซ้อม (เลือกหลายชุด): ไม่นับความคืบหน้าของชุด แต่ยังได้ XP และสตรีค'}</div>` : ''}
       ${gameSource === 'topic' ? `<select class="sel block-sel" id="gTopic" style="margin-top:10px">${topicOptions(gameTopic, (id) => W.filter((w) => topicMatch(id, w.tp)).length)}</select>` : ''}
       ${gameSource === 'goal' ? `<select class="sel block-sel" id="gGoal" style="margin-top:10px" aria-label="เป้าหมาย">${TAGS.map((t) => `<option value="${t.id}" ${gameGoal === t.id ? 'selected' : ''}>${TAG_LABEL[t.id]} (${t.w.length})</option>`).join('')}</select>` : ''}
+      <div class="small muted" id="gDiff" style="margin-top:8px">🎚️ ความยากเกมตัวเลือก: <b>${diffLabel()}</b> · <a href="#" id="gDiffSet">ปรับในตั้งค่า</a></div>
       ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
     </div>
     ${gameEdit ? '' : gameSections()}
@@ -165,6 +171,7 @@ function renderGames() {
   if (gameEdit) bindGameEditor();
   $('#toRead').onclick = () => go('read');
   $('#toRiddle').onclick = () => go('riddle');
+  $('#gDiffSet').onclick = (e) => { e.preventDefault(); go('settings'); };
   $('#toDuel').onclick = () => go('duel');
   $('#toId').onclick = () => renderIdioms();
   $('#toSit').onclick = () => renderSit();
@@ -288,7 +295,44 @@ function gamePool(id) {
   return list;
 }
 
-function distractors(w, n, field) {
+/* ---------- automatic difficulty ---------- */
+// Level 1 = normal, 2 = look-alike wrong options, 3 = look-alike options + 12 s per question (15 s for sentences).
+// settings.gdiff: 'auto' (default, from the rolling accuracy S.gacc of multiple-choice answers) or a fixed '1' | '2' | '3'.
+function gameDiff() {
+  const g = S.settings.gdiff;
+  if (g && g !== 'auto') return +g || 1;
+  const { a, n } = S.gacc || { a: 0.7, n: 0 };
+  return n < 15 ? 1 : a >= 0.92 ? 3 : a >= 0.8 ? 2 : 1;
+}
+function gameAcc(ok) {
+  const g = S.gacc && typeof S.gacc === 'object' ? S.gacc : (S.gacc = { a: 0.7, n: 0 });
+  g.a = g.a * 0.92 + (ok ? 0.08 : 0); g.n++;
+}
+// How alike two English words look: shared start, shared ending and similar length.
+function simScore(a, b) {
+  a = a.toLowerCase(); b = b.toLowerCase();
+  let k = 0; while (k < 4 && a[k] && a[k] === b[k]) k++;
+  let e = 0; while (e < 3 && a[a.length - 1 - e] && a[a.length - 1 - e] === b[b.length - 1 - e]) e++;
+  return k * 2 + e + Math.max(0, 3 - Math.abs(a.length - b.length));
+}
+// Harder wrong options: English ones that look like the answer, Thai ones from the same topic and part of speech.
+function hardDistractors(w, n, field) {
+  const pos = w.p.split('/')[0];
+  const key = (x) => (field === 't' ? thFirst(x.t) : x.w.toLowerCase());
+  const score = (x) => (field === 't' ? (x.tp === w.tp ? 3 : 0) + (x.g === w.g ? 1 : 0) : simScore(w.w, x.w) + (x.g === w.g ? 1 : 0))
+    + (x.p.split('/')[0] === pos ? 2 : 0) + Math.random() * 2;
+  const used = new Set([key(w)]), out = [];
+  for (const x of W.filter((x) => x !== w && x.t !== w.t).map((x) => [score(x), x]).sort((a, b) => b[0] - a[0])) {
+    const k = key(x[1]);
+    if (used.has(k)) continue;
+    used.add(k); out.push(x[1]);
+    if (out.length >= n) break;
+  }
+  return out;
+}
+
+function distractors(w, n, field, hard) {
+  if (hard) return hardDistractors(w, n, field);
   const key = (x) => (field === 't' ? thFirst(x.t) : x.w.toLowerCase());
   const used = new Set([key(w)]);
   const out = [];
@@ -443,7 +487,9 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
     if (m === 'sit') return qSit(w);
     if (m === 'num') return qNum(w);
     const toTh = m !== 'th2en' && m !== 'cloze';
-    const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
+    const diff = gameDiff();
+    const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w', diff >= 2)]);
+    const limit = diff >= 3 && !ENDLESS ? (m === 'cloze' ? 15 : 12) : 0; // seconds per question
     let prompt;
     if (m === 'en2th') prompt = `<div class="word" lang="en">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>`;
     else if (m === 'th2en') prompt = `<div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>`;
@@ -454,24 +500,26 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
     }
     else prompt = `<button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:96px;height:96px;font-size:44px;margin:0">🔊</button><div class="muted small" style="margin-top:10px">แตะเพื่อฟังอีกครั้ง</div>${slowBtn(w.w)}`;
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>${prompt}</div>
+      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>${prompt}${limit ? `<div class="q-timer" aria-hidden="true"><i style="--t:${limit}s"></i></div>` : ''}</div>
       <div class="options">${opts.map((o) => `<button class="opt" data-i="${o.idx}">${esc(toTh ? o.t : o.w)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = quit;
     if ((m === 'en2th' || m === 'listen') && !TIMED) speak(w.w);
     const say = view.querySelector('[data-say]'); if (say) say.onclick = () => speak(w.w);
     const hb = $('#clozeHint'); if (hb) hb.onclick = () => { $('#clozeTh').hidden = false; hb.remove(); };
-    let answered = false;
-    view.querySelector('.options').onclick = (e) => {
-      const b = e.target.closest('.opt'); if (!b || answered) return;
-      answered = true;
-      const ok = +b.dataset.i === w.idx;
+    let answered = false, tm = null;
+    // b = the tapped option, or null when the time ran out
+    const choose = (b) => {
+      if (answered) return;
+      answered = true; clearTimeout(tm);
+      const ok = !!b && +b.dataset.i === w.idx;
       view.querySelectorAll('.opt').forEach((o) => { if (+o.dataset.i === w.idx) o.classList.add('correct'); });
-      if (!ok) b.classList.add('wrong');
+      if (b && !ok) b.classList.add('wrong');
+      gameAcc(ok);
       mark(w, ok);
       if (ENDLESS) $('#runStat').innerHTML = runStat();
       const out = SURV && hearts <= 0;
-      $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! <b>${esc(w.w)}</b> = ${esc(w.t)}` : `❌ <b>${esc(w.w)}</b> = ${esc(w.t)}`)
+      $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! <b>${esc(w.w)}</b> = ${esc(w.t)}` : `${b ? '❌' : '⏰ หมดเวลา'} <b>${esc(w.w)}</b> = ${esc(w.t)}`)
         + (!TIMED && (m === 'cloze' || !ok) ? hookBox(w) + exampleBox(w) : '')
         + (out ? '<div class="center" style="margin-top:8px">💔 หัวใจหมดแล้ว</div>' : '')
         + `<button class="btn primary block" id="nextQ" style="margin-top:12px">${out ? 'ดูผล →' : 'ถัดไป →'}</button>`;
@@ -481,6 +529,11 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
       if (TIMED) setTimeout(() => { if (items[i] === w) next(); }, ok ? 350 : 1200);
       else if (ok && m !== 'cloze') setTimeout(() => { if (items[i] === w) next(); }, 1000);
     };
+    view.querySelector('.options').onclick = (e) => { const b = e.target.closest('.opt'); if (b) choose(b); };
+    if (limit) {
+      tm = setTimeout(() => { if (current === 'games') choose(null); }, limit * 1000);
+      cleanup = () => clearTimeout(tm);
+    }
   }
 
   function qSpell(w) {
@@ -1183,6 +1236,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
         <p>เล่นไป ${total} ข้อ · ถูก ${correct} · ${score} แต้ม${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>`
         : `<div class="h2">${score} แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
         <p>ถูก ${correct}/${items.length} · คอมโบสูงสุด ${bestCombo}</p>`}
+        ${['en2th', 'th2en', 'listen', 'cloze'].includes(gameId) ? `<p class="small muted">🎚️ ความยากตอนนี้ ${diffLabel()}</p>` : ''}
       </div>
       ${wrong.length ? `<div class="card-box wrong-list"><b>${gameId.startsWith('speak') ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b> <span class="small muted">${gameId.startsWith('speak') ? '(แตะคำเพื่อฟังเสียง)' : SKILL_GAMES.includes(gameId) ? '(แตะเพื่อฟังเสียง)' : deckRun.practice ? '(โหมดซ้อม) · กด ☆ เพื่อติดดาว' : deckRun.map ? '(ใส่ในการทบทวนของชุดให้แล้ว) · กด ☆ เพื่อติดดาว' : '(ใส่ในแฟลชการ์ดให้แล้ว) · กด ☆ เพื่อติดดาว'}</span>
         ${[...new Set(wrong)].map((w) => w.idx < 0 ? `<div class="wl" data-i="-1" data-say="${esc(w._q ? w._q[0].replace('___', w._q[1]) : w._m[0] + ', ' + w._m[2])}"><span><b>${esc(w.w)}</b></span><span class="muted grow" style="text-align:right">${esc(w._q ? w._q[3] : w.t)}</span></div>`
