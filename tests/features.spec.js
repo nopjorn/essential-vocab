@@ -319,7 +319,8 @@ test.describe('service worker', () => {
       if (!keys.includes('o3k-data') || !keys.includes('o3k-' + APP_VERSION)) return 0;
       return (await (await caches.open('o3k-data')).keys()).length;
     });
-    await expect.poll(ready, { timeout: 20000 }).toBe(22);
+    const dataFiles = require('fs').readFileSync(require('path').join(__dirname, '..', 'sw.js'), 'utf8').match(/const DATA = \[([\s\S]*?)\];/)[1].match(/'data\//g).length;
+    await expect.poll(ready, { timeout: 20000 }).toBe(dataFiles);
     await page.reload();
     expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
     await context.setOffline(true);
@@ -1238,5 +1239,40 @@ test('number listening game (1.78): words, ordinals and options are always three
   await page.evaluate(() => startGame('num'));
   await expect(page.locator('#view .opt')).toHaveCount(4);
   expect(await page.evaluate(() => Object.keys(S.lex).filter((k) => k.startsWith('num:')).length)).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+test('irregular verbs (1.80): data, browser, game, word sheet and story lookup', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const d = await page.evaluate(async () => {
+    await loadIrregular();
+    const bad = [];
+    for (const rnd of [() => 0, () => 0.3, () => 0.99, Math.random]) {
+      const orig = Math.random; Math.random = rnd;
+      try {
+        for (const it of irregItems()) {
+          const o = irregOpts(it._ir, it._k, it.w);
+          if (o.length !== 3 || new Set([it.w, ...o]).size !== 4) bad.push([it._ir.v1, it._k, it.w, o]);
+        }
+      } finally { Math.random = orig; }
+    }
+    return { n: IRREG.length, bad: bad.slice(0, 5), went: lookupWord('went').w, found: lookupWord('found').w, left: lookupWord('left').w, got: lookupWord('got').w, saw: lookupWord('saw').w, go: lookupWord('go').w };
+  });
+  expect(d.n).toBeGreaterThan(100);
+  expect(d.bad).toEqual([]);
+  expect(d).toMatchObject({ went: 'go', found: 'find', left: 'leave', got: 'get', saw: 'see', go: 'go' });
+  // browser: search by an irregular form and by Thai, pattern filter, tap to hear
+  await page.evaluate(() => renderIrregular());
+  await expect(page.locator('#irList .col-row').first()).toBeVisible();
+  await page.locator('#irq').fill('went');
+  await expect(page.locator('#irList .col-row')).toHaveCount(1);
+  await page.locator('#irList .col-row').click();
+  expect(await page.evaluate(() => window.__said.at(-1))).toBe('go, went, gone');
+  await page.locator('#irq').fill('');
+  await page.locator('#irPat [data-p="same"]').click();
+  expect(await page.locator('#irList .col-row').count()).toBeGreaterThan(5);
+  // word sheet of a verb shows its three forms
+  await page.evaluate(() => openSheet(W.find((w) => w.w === 'go')));
+  await expect(page.locator('#irBox .col-row')).toContainText('went');
   expect(errors).toEqual([]);
 });

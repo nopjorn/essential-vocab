@@ -17,7 +17,7 @@ function loadStories() {
     sc.onload = sc.onerror = res;
     document.head.appendChild(sc);
   });
-  return Promise.all(STORY_FILES.map(one)).then(() => (STORIES = window.STORIES.sort((a, b) => a.id - b.id)));
+  return Promise.all(STORY_FILES.map(one)).then(() => loadIrregular()).then(() => (STORIES = window.STORIES.sort((a, b) => a.id - b.id)));
 }
 // data/collocations.js: window.COLLOC = { headword: [[phrase, thai], ...] } — lazy-loaded like stories.
 let COLLOC = window.COLLOC || null;
@@ -78,6 +78,8 @@ let WORD_INDEX = null;
 function lookupWord(tok) {
   if (!WORD_INDEX) { WORD_INDEX = new Map(); W.forEach((w) => { const k = w.w.toLowerCase(); if (!/\s/.test(k) && !WORD_INDEX.has(k)) WORD_INDEX.set(k, w); }); }
   const t = tok.toLowerCase().replace(/[’']s$/, '');
+  const irr = IRR_FORM && IRR_FORM.get(t); // went / found / left → go / find / leave
+  if (irr && WORD_INDEX.has(irr.v1)) return WORD_INDEX.get(irr.v1);
   const tries = [t];
   if (t.endsWith('ies')) tries.push(t.slice(0, -3) + 'y');
   if (t.endsWith('es')) tries.push(t.slice(0, -2));

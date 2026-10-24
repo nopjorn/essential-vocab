@@ -278,3 +278,16 @@ test('icons are valid PNGs and stay small (lossless recompression, tools/optimiz
     expect(b.length, f + ' size').toBeLessThan(max);
   }
 });
+
+test('irregular verbs are valid practice data', () => {
+  const { IRREGULAR } = load('data/irregular.js');
+  expect(IRREGULAR.length).toBeGreaterThan(100);
+  const seen = new Set(), bad = [];
+  IRREGULAR.forEach(([v1, v2, v3, th]) => {
+    if (seen.has(v1)) bad.push(`${v1}: duplicate`); seen.add(v1);
+    if (![v1, v2, v3, th].every((x) => typeof x === 'string' && x.length)) bad.push(`${v1}: empty field`);
+    if (![v1, v2, v3].every((x) => /^[a-z]+( \/ [a-z]+)?$/.test(x))) bad.push(`${v1}: forms must be lowercase words (two forms only as "a / b")`);
+    if (v1 === v2 && v2 === v3 && !['cut', 'hit', 'hurt', 'let', 'put', 'set', 'shut', 'cost', 'bet', 'quit', 'split', 'spread', 'burst', 'read'].includes(v1)) bad.push(`${v1}: same in all three`);
+  });
+  expect(bad).toEqual([]);
+});
