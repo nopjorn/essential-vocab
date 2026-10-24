@@ -48,6 +48,8 @@ const GAMES = {
   sit: { icon: '🗨️', name: 'ตอบให้เข้าสถานการณ์', desc: 'เลือกประโยคถัดไปในบทสนทนา' },
   emoji: { icon: '🖼️', name: 'ทายจากภาพอีโมจิ', desc: 'ดูอีโมจิ เลือกคำอังกฤษที่ตรงกับภาพ' },
   emojiRun: { icon: '♾️', name: 'อีโมจิไม่จำกัด', desc: 'เล่นไปเรื่อยๆ ดูว่าถูกติดต่อกันได้กี่ข้อ' },
+  survival: { icon: '❤️', name: 'โหมดเอาตัวรอด', desc: 'หัวใจ 3 ดวง คำยากขึ้นเรื่อยๆ ตอบผิดเสียหัวใจ' },
+  timeAttack: { icon: '⏱️', name: 'จับเวลา 60 วินาที', desc: 'ตอบให้ได้มากที่สุดใน 1 นาที เล่นซ้ำทำสถิติใหม่' },
   review: { icon: '🔁', name: 'คำที่ผิดบ่อย', desc: 'ฝึกคำที่เคยตอบผิด' },
 };
 // Games whose data is lazy-loaded (stories / collocations) or built from sentences instead of the word pool.
@@ -342,26 +344,34 @@ function startGame(id) {
   const mine = S.gplay[DEV] || (S.gplay[DEV] = {});
   mine[id] = (mine[id] || 0) + 1; save();
   if (id === 'match') return playMatch(src, deckRun);
-  playQuiz(id === 'review' ? pick(['en2th', 'th2en', 'listen']) : id === 'emojiRun' ? 'emoji' : id, src, id, deckRun);
+  playQuiz(id === 'review' ? pick(['en2th', 'th2en', 'listen']) : id === 'emojiRun' ? 'emoji' : id === 'survival' || id === 'timeAttack' ? 'en2th' : id, src, id, deckRun);
 }
 
 // deckRun: {} = main progress, { map } = one set's progress table, { practice: true } = several sets (no progress written).
 function playQuiz(mode, src, gameId, deckRun = {}) {
   const ROUND = 10;
   // Endless run (emojiRun): no round limit, wrong answers only reset the streak; the player ends it themselves.
-  const ENDLESS = gameId === 'emojiRun';
-  const items = SKILL_GAMES.includes(gameId) ? lexPick(gameId, src, ROUND) : shuffle(src).slice(0, ENDLESS ? src.length : ROUND);
-  let i = 0, score = 0, combo = 0, bestCombo = 0, asked = 0;
+  // Survival (3 hearts, words climb from A1 to C1) and time attack (60 s) are endless runs too.
+  const SURV = gameId === 'survival', TIMED = gameId === 'timeAttack', EMOJI_RUN = gameId === 'emojiRun';
+  const ENDLESS = EMOJI_RUN || SURV || TIMED;
+  const TIME_LIMIT = 60;
+  const items = SURV ? [] : SKILL_GAMES.includes(gameId) ? lexPick(gameId, src, ROUND) : shuffle(src).slice(0, ENDLESS ? src.length : ROUND);
+  let i = 0, score = 0, combo = 0, bestCombo = 0, asked = 0, hearts = 3, reach = 0, finished = false, timeLeft = TIME_LIMIT;
   const wrong = [];
   $('#title').textContent = GAMES[gameId].name;
 
+  // Top-right status of an endless run (rebuilt after every answer).
+  const runStat = () => (SURV ? `${'❤️'.repeat(hearts)}${'🖤'.repeat(3 - hearts)} · ✅ <b>${asked - wrong.length}</b>`
+    : TIMED ? `⏱ <b id="tLeft">${Math.ceil(timeLeft)}</b> · ✅ <b>${asked - wrong.length}</b>`
+    : `🔥 <b>${combo}</b> · 🏅 ${Math.max(S.best[gameId] || 0, bestCombo)}`);
   function header() {
     if (ENDLESS) {
       $('#title').textContent = `${GAMES[gameId].name} · ข้อ ${i + 1}`;
+      const bar = TIMED ? timeLeft / TIME_LIMIT * 100 : SURV ? asked % 5 * 20 : combo % 10 * 10;
       return `<div class="session-top">
       <button class="icon-btn" id="quit" aria-label="จบรอบ">✕</button>
-      <div class="progress"><div style="width:${combo % 10 * 10}%"></div></div>
-      <span class="small" id="runStat">🔥 <b>${combo}</b> · 🏅 ${Math.max(S.best[gameId] || 0, bestCombo)}</span></div>`;
+      <div class="progress"><div id="tBar" style="width:${bar}%"></div></div>
+      <span class="small" id="runStat">${runStat()}</span></div>`;
     }
     if (i < items.length) $('#title').textContent = `${GAMES[gameId].name} · ${i + 1}/${items.length}`;
     return `<div class="session-top">
@@ -371,11 +381,38 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
   }
 
   const quit = () => (ENDLESS && asked ? result() : go('games'));
+  // Survival: the level climbs every 5 questions (A1 → C1); falls back to the nearest level the word source has.
+  function survivalPick() {
+    const want = Math.min(LEVELS.length - 1, Math.floor(i / 5));
+    const recent = new Set(items.slice(-15));
+    for (let d = 0; d < LEVELS.length; d++) {
+      for (const l of d ? [want - d, want + d] : [want]) {
+        const c = src.filter((x) => x.g === LEVELS[l] && !recent.has(x));
+        if (c.length) return pick(c);
+      }
+    }
+    return pick(src);
+  }
+  if (TIMED) {
+    const t0 = Date.now();
+    const tick = setInterval(() => {
+      timeLeft = Math.max(0, TIME_LIMIT - (Date.now() - t0) / 1000);
+      const l = $('#tLeft'), b = $('#tBar');
+      if (l) l.textContent = Math.ceil(timeLeft);
+      if (b) b.style.width = timeLeft / TIME_LIMIT * 100 + '%';
+      if (timeLeft <= 0) result();
+    }, 100);
+    cleanup = () => clearInterval(tick);
+  }
   function q() {
-    if (ENDLESS && i >= items.length) items.push(...shuffle(src).filter((x) => x !== items[items.length - 1]));
+    if (finished) return;
+    if (ENDLESS && i >= items.length) items.push(...(SURV ? [survivalPick()] : shuffle(src).filter((x) => x !== items[items.length - 1])));
     if (i >= items.length) return result();
     const w = items[i];
-    const m = gameId === 'review' ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'spell', 'cloze'] : ['en2th', 'th2en', 'listen', 'spell']) : mode;
+    reach = Math.max(reach, LEVELS.indexOf(w.g));
+    const m = SURV ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'cloze'] : ['en2th', 'th2en', 'listen'])
+      : TIMED ? pick(['en2th', 'th2en'])
+      : gameId === 'review' ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'spell', 'cloze'] : ['en2th', 'th2en', 'listen', 'spell']) : mode;
     if (m === 'spell') return qSpell(w);
     if (m === 'speak') return qSpeak(w);
     if (m === 'speakS') return qSpeak(w, true);
@@ -408,8 +445,8 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
       <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>${prompt}</div>
       <div class="options">${opts.map((o) => `<button class="opt" data-i="${o.idx}">${esc(toTh ? o.t : o.w)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
-    if (m === 'en2th' || m === 'listen') speak(w.w);
+    $('#quit').onclick = quit;
+    if ((m === 'en2th' || m === 'listen') && !TIMED) speak(w.w);
     const say = view.querySelector('[data-say]'); if (say) say.onclick = () => speak(w.w);
     const hb = $('#clozeHint'); if (hb) hb.onclick = () => { $('#clozeTh').hidden = false; hb.remove(); };
     let answered = false;
@@ -420,13 +457,17 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
       view.querySelectorAll('.opt').forEach((o) => { if (+o.dataset.i === w.idx) o.classList.add('correct'); });
       if (!ok) b.classList.add('wrong');
       mark(w, ok);
+      if (ENDLESS) $('#runStat').innerHTML = runStat();
+      const out = SURV && hearts <= 0;
       $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! <b>${esc(w.w)}</b> = ${esc(w.t)}` : `❌ <b>${esc(w.w)}</b> = ${esc(w.t)}`)
-        + (m === 'cloze' || !ok ? hookBox(w) + exampleBox(w) : '')
-        + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+        + (!TIMED && (m === 'cloze' || !ok) ? hookBox(w) + exampleBox(w) : '')
+        + (out ? '<div class="center" style="margin-top:8px">💔 หัวใจหมดแล้ว</div>' : '')
+        + `<button class="btn primary block" id="nextQ" style="margin-top:12px">${out ? 'ดูผล →' : 'ถัดไป →'}</button>`;
       bindSayEx(view, w.e); // buttons only present when the example is shown
       $('#nextQ').onclick = next;
-      if (m === 'cloze') speak(w.e); else if (m === 'th2en') speak(w.w);
-      if (ok && m !== 'cloze') setTimeout(() => { if (items[i] === w) next(); }, 1000);
+      if (!TIMED) { if (m === 'cloze') speak(w.e); else if (m === 'th2en') speak(w.w); }
+      if (TIMED) setTimeout(() => { if (items[i] === w) next(); }, ok ? 350 : 1200);
+      else if (ok && m !== 'cloze') setTimeout(() => { if (items[i] === w) next(); }, 1000);
     };
   }
 
@@ -968,24 +1009,33 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
     questEvent('answer', { game: gameId, ok });
     sfx(ok ? 'ok' : 'bad');
     if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); S.counts.maxCombo = Math.max(S.counts.maxCombo || 0, combo); score += 10 + Math.min(combo - 1, 5) * 2; addXP(comboXP(combo)); }
-    else { combo = 0; wrong.push(w); }
+    else { combo = 0; wrong.push(w); if (SURV) hearts--; }
   }
-  function next() { i++; q(); }
+  function next() { if (SURV && hearts <= 0) return result(); i++; q(); }
 
   function result() {
+    if (finished) return;
+    finished = true;
+    if (cleanup) { cleanup(); cleanup = null; }
     const prev = S.best[gameId];
-    const mark_ = ENDLESS ? bestCombo : score; // endless: the record is the longest run of right answers
-    const isBest = prev == null || mark_ > prev;
+    const right_ = asked - wrong.length;
+    // endless emoji run: the record is the longest run of right answers; survival / time attack: how many were right
+    const mark_ = SURV || TIMED ? right_ : ENDLESS ? bestCombo : score;
+    const isBest = (prev == null || mark_ > prev) && (mark_ > 0 || !ENDLESS);
     if (isBest) { S.best[gameId] = mark_; save(); }
     const total = ENDLESS ? asked : items.length;
     const correct = total - wrong.length;
     if (!ENDLESS && correct === items.length && items.length >= 10) S.counts.perfect = (S.counts.perfect || 0) + 1;
     questEvent('round', { game: gameId, correct, bestCombo, perfect: !ENDLESS && correct === items.length && items.length >= 10 });
-    if (ENDLESS ? bestCombo >= 10 : correct >= 8) confetti();
-    const emoji = ENDLESS ? (bestCombo >= 20 ? '🏆' : bestCombo >= 10 ? '🎉' : '💪') : correct === items.length ? '🏆' : correct >= 7 ? '🎉' : correct >= 4 ? '💪' : '📚';
+    if (SURV || TIMED ? right_ >= 20 : ENDLESS ? bestCombo >= 10 : correct >= 8) confetti();
+    const emoji = SURV || TIMED ? (right_ >= 30 ? '🏆' : right_ >= 15 ? '🎉' : '💪') : ENDLESS ? (bestCombo >= 20 ? '🏆' : bestCombo >= 10 ? '🎉' : '💪') : correct === items.length ? '🏆' : correct >= 7 ? '🎉' : correct >= 4 ? '💪' : '📚';
     view.innerHTML = `<div class="card-box center pop">
         <div class="result-emoji">${emoji}</div>
-        ${ENDLESS ? `<div class="h2">🔥 ถูกติดต่อกันสูงสุด ${bestCombo} ข้อ ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
+        ${SURV ? `<div class="h2">❤️ รอดมาได้ ${right_} ข้อ ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
+        <p>ไปถึงคำระดับ ${LV_LABEL[LEVELS[reach]]} · คอมโบสูงสุด ${bestCombo}${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>`
+        : TIMED ? `<div class="h2">⏱️ ตอบถูก ${right_} ข้อใน ${TIME_LIMIT} วินาที ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
+        <p>ตอบไป ${asked} ข้อ · คอมโบสูงสุด ${bestCombo}${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>`
+        : ENDLESS ? `<div class="h2">🔥 ถูกติดต่อกันสูงสุด ${bestCombo} ข้อ ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
         <p>เล่นไป ${total} ข้อ · ถูก ${correct} · ${score} แต้ม${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>`
         : `<div class="h2">${score} แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
         <p>ถูก ${correct}/${items.length} · คอมโบสูงสุด ${bestCombo}</p>`}
