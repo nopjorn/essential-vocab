@@ -313,3 +313,18 @@ test('dependent prepositions are valid practice data', () => {
   Object.entries(fine).forEach(([head, set]) => { if (pool.filter((p) => !set.has(p)).length < 3) bad.push(`${head}: fewer than 3 wrong options left`); });
   expect(bad).toEqual([]);
 });
+
+test('Thai-learner mistakes are valid practice data', () => {
+  const { MISTAKES } = load('data/mistakes.js');
+  expect(MISTAKES.length).toBeGreaterThan(55);
+  const cats = ['prep', 'noun', 'article', 'verb', 'be', 'word', 'order'], seen = new Set(), bad = [];
+  MISTAKES.forEach(([cat, ok, no, tip, th]) => {
+    if (!cats.includes(cat)) bad.push(`${ok}: category ${cat}`);
+    if (seen.has(ok)) bad.push(`${ok}: duplicate`); seen.add(ok);
+    if (ok === no || ok.toLowerCase() === no.toLowerCase()) bad.push(`${ok}: wrong sentence is the same`);
+    if (!/^[A-Z]/.test(ok) || !/^[A-Z]/.test(no) || !/[.?!]$/.test(ok) || !/[.?!]$/.test(no)) bad.push(`${ok}: sentences start with a capital and end with . ? !`);
+    if (!/[฀-๿]/.test(tip) || !/[฀-๿]/.test(th)) bad.push(`${ok}: Thai tip and meaning needed`);
+  });
+  cats.forEach((c) => { if (!MISTAKES.some((r) => r[0] === c)) bad.push(`category ${c} is empty`); });
+  expect(bad).toEqual([]);
+});

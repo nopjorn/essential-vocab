@@ -134,3 +134,39 @@ function renderDepPrep() {
   $('#dpList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
 }
 const dpItems = () => DEPPREP.map((r) => ({ idx: -1, w: r.ph, t: r.th, p: '', g: '', _dp: r, _q: [r.ex.replace(/\[[^\]]+\]/, '___'), r.prep, '', r.th] }));
+
+/* ---------- mistakes Thai learners make ---------- */
+// data/mistakes.js rows: [category, correct sentence, wrong sentence, Thai tip, Thai meaning]
+let MISTAKES = null;
+const MIS_CAT = { prep: 'บุพบทที่ไม่ต้องมีหรือผิด', noun: 'นามนับได้ นับไม่ได้ พหูพจน์', article: 'a / an / the', verb: 'รูปกริยาและรูปแบบหลังกริยา', be: 'ลืมกริยา be', word: 'เลือกคำผิด', order: 'ลำดับคำ' };
+const loadMistakes = () => loadData('data/mistakes.js', 'MISTAKES').then((rows) => {
+  if (!MISTAKES) MISTAKES = rows.map(([cat, ok, no, tip, th]) => ({ cat, ok, no, tip, th }));
+  return MISTAKES;
+});
+let misQuery = '', misCat = 'all';
+function renderMistakes() {
+  if (!MISTAKES) { withLoading(loadMistakes()).then(renderMistakes); return; }
+  $('#title').textContent = 'ข้อผิดที่พบบ่อย';
+  view.scrollTop = 0;
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="misBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="misPlay">🩹 เล่นเกม</button></div>
+    <p class="small muted" style="margin:0 4px 10px">${MISTAKES.length} ข้อที่คนไทยมักพลาดเพราะนึกตามภาษาไทย เช่น discuss <s>about</s>, <s>advices</s>, <s>I tired</s> · ❌ = ผิด ✅ = ถูก แตะแถวเพื่อฟังประโยคที่ถูก</p>
+    <input class="search" id="misq" type="search" placeholder="ค้นหา เช่น discuss หรือ พหูพจน์" value="${esc(misQuery)}" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="ค้นหาข้อผิดที่พบบ่อย">
+    <div class="chips" id="misCat" style="margin:10px 0"><button class="chip" data-c="all">ทั้งหมด</button>${Object.entries(MIS_CAT).map(([k, t]) => `<button class="chip" data-c="${k}">${t}</button>`).join('')}</div>
+    <div class="pair-list" id="misList"></div>`;
+  const paint = () => {
+    const q = misQuery.trim().toLowerCase();
+    view.querySelectorAll('#misCat .chip').forEach((c) => { const on = c.dataset.c === misCat; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
+    const list = MISTAKES.filter((r) => (misCat === 'all' || r.cat === misCat) && (!q || (r.ok + ' ' + r.no).toLowerCase().includes(q) || (r.tip + r.th).includes(q)));
+    const cats = Object.keys(MIS_CAT).filter((c) => list.some((r) => r.cat === c));
+    $('#misList').innerHTML = cats.length ? cats.map((c) => `<div class="card-box pair-card"><div class="pair-h"><b>${MIS_CAT[c]}</b> <span class="small muted">${list.filter((r) => r.cat === c).length} ข้อ</span></div>
+      ${list.filter((r) => r.cat === c).map((r) => `<button class="pair-ex" data-say="${esc(r.ok)}"><span lang="en">❌ <s>${esc(r.no)}</s></span><span lang="en">✅ <b>${esc(r.ok)}</b></span><small class="muted">💡 ${esc(r.tip)}</small></button>`).join('')}</div>`).join('')
+      : '<p class="muted center">ไม่พบข้อนี้</p>';
+  };
+  paint();
+  $('#misq').oninput = (e) => { misQuery = e.target.value; paint(); };
+  $('#misCat').onclick = (e) => { const c = e.target.closest('[data-c]'); if (c) { misCat = c.dataset.c; paint(); } };
+  $('#misBack').onclick = () => go('games');
+  $('#misPlay').onclick = () => startGame('thaierr');
+  $('#misList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
+}
+const misItems = () => MISTAKES.map((r) => ({ idx: -1, w: r.ok, t: r.th, p: '', g: '', _mis: r, _q: [r.ok, '', '', r.th] }));

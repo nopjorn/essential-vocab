@@ -1309,3 +1309,23 @@ test('dependent prepositions (1.84): browser, word sheet box, game never offers 
   await expect(page.locator('#dpBox .col-row')).toContainText('depend');
   expect(errors).toEqual([]);
 });
+
+test('Thai-learner mistakes (1.86): browser with category filter and search, game with right and wrong answers', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => renderMistakes());
+  await expect(page.locator('#misList .pair-ex').first()).toBeVisible();
+  const all = await page.locator('#misList .pair-ex').count();
+  await page.locator('#misq').fill('discuss');
+  await expect(page.locator('#misList .pair-ex')).toHaveCount(1);
+  await page.locator('#misList .pair-ex').click();
+  expect(await page.evaluate(() => window.__said.at(-1))).toBe('I want to discuss the problem with you.');
+  await page.locator('#misq').fill('');
+  await page.locator('#misCat [data-c="article"]').click();
+  const art = await page.locator('#misList .pair-ex').count();
+  expect(art).toBeGreaterThan(3);
+  expect(art).toBeLessThan(all);
+  // game: one right and one wrong answer, the wrong list can replay the correct sentence
+  await page.evaluate(() => startGame('thaierr'));
+  await expect(page.locator('#view .opt')).toHaveCount(2);
+  expect(errors).toEqual([]);
+});
