@@ -1276,3 +1276,36 @@ test('irregular verbs (1.80): data, browser, game, word sheet and story lookup',
   await expect(page.locator('#irBox .col-row')).toContainText('went');
   expect(errors).toEqual([]);
 });
+
+test('dependent prepositions (1.84): browser, word sheet box, game never offers another fitting preposition', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const d = await page.evaluate(async () => {
+    await loadDepPrep();
+    const bad = [];
+    for (const rnd of [() => 0, () => 0.5, () => 0.99, Math.random]) {
+      const orig = Math.random; Math.random = rnd;
+      try {
+        for (const r of DEPPREP) {
+          const o = dpDistractors(r), fine = new Set(dpOf(r.head).flatMap((x) => [x.prep, ...x.ok]));
+          if (o.length !== 3 || o.some((p) => fine.has(p))) bad.push([r.ph, o]);
+        }
+      } finally { Math.random = orig; }
+    }
+    return { n: DEPPREP.length, bad: bad.slice(0, 5), agree: dpOf('agree').map((r) => r.prep).sort() };
+  });
+  expect(d.n).toBeGreaterThan(90);
+  expect(d.bad).toEqual([]);
+  expect(d.agree).toEqual(['on', 'to', 'with']);
+  await page.evaluate(() => renderDepPrep());
+  await expect(page.locator('#dpList .pair-ex').first()).toBeVisible();
+  await page.locator('#dpq').fill('depend');
+  await expect(page.locator('#dpList .pair-ex')).toHaveCount(1);
+  await page.locator('#dpList .pair-ex').click();
+  expect(await page.evaluate(() => window.__said.at(-1))).toBe('It all depends on the weather.');
+  await page.locator('#dpq').fill('');
+  await page.locator('#dpGroup [data-g="of"]').click();
+  expect(await page.locator('#dpList .pair-ex').count()).toBeGreaterThan(5);
+  await page.evaluate(() => openSheet(W.find((w) => w.w === 'depend')));
+  await expect(page.locator('#dpBox .col-row')).toContainText('depend');
+  expect(errors).toEqual([]);
+});

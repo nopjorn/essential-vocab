@@ -46,6 +46,7 @@ const GAMES = {
   affix: { icon: '🧱', name: 'เติมหน้า–ท้ายคำ', desc: 'un-, -ful, -less … เลือกให้ได้ความหมาย' },
   idiom: { icon: '🎭', name: 'สำนวน', desc: 'piece of cake = ? เลือกความหมายหรือสำนวนให้ถูก' },
   sit: { icon: '🗨️', name: 'ตอบให้เข้าสถานการณ์', desc: 'เลือกประโยคถัดไปในบทสนทนา' },
+  dprep: { icon: '🔗', name: 'บุพบทที่ตามหลังคำ', desc: 'interested ___ sports เลือก in / on / at ให้ถูก' },
   irreg: { icon: '⏪', name: 'กริยาไม่ปกติ', desc: 'go → went → gone เลือกกริยาช่อง 2–3 ให้ถูก' },
   num: { icon: '🔢', name: 'ฟังตัวเลข ราคา เวลา', desc: 'ฟัง fifteen / fifty, $12.50, 7:45, 3 May แล้วเลือกให้ถูก' },
   emoji: { icon: '🖼️', name: 'ทายจากภาพอีโมจิ', desc: 'ดูอีโมจิ เลือกคำอังกฤษที่ตรงกับภาพ' },
@@ -65,7 +66,7 @@ const PAIR_GAMES = ['confuse', 'minpair'];
 // Skill games with their own items (idx -1): practice only, no flashcard scheduling.
 // Generated skill games: the questions are made up on the spot, so they are not scheduled (no S.lex keys).
 const GEN_GAMES = ['num'];
-const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix', 'idiom', 'sit', 'irreg', ...GEN_GAMES];
+const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix', 'idiom', 'sit', 'irreg', 'dprep', ...GEN_GAMES];
 function gameTile(id) {
   const g = GAMES[id];
   const best = S.best[id] != null ? `<span>🏅 สถิติ: ${S.best[id]}</span>` : '';
@@ -168,6 +169,7 @@ function renderGames() {
         <button class="ref-tile" id="toId"><span>🎭</span>สำนวน</button>
         <button class="ref-tile" id="toSit"><span>🗨️</span>ศัพท์ตามสถานการณ์</button>
         <button class="ref-tile" id="toIrr"><span>⏪</span>กริยาไม่ปกติ</button>
+        <button class="ref-tile" id="toDp"><span>🔗</span>บุพบทที่ตามหลังคำ</button>
       </div></div>
     <div class="row games-head"><b class="grow">${gameEdit ? '✏️ จัดหน้าเกม' : (gamePins().length ? '🎮 เกมอื่นๆ' : '🎮 เกมทั้งหมด')}</b><button class="btn${gameEdit ? ' primary' : ''}" id="gEdit">${gameEdit ? '✓ เสร็จ' : '✏️ จัดเกม'}</button></div>
     ${gameEdit ? gameEditor() : `<div class="game-grid">${Object.keys(GAMES).filter((id) => !gameHidden().has(id) && !gamePins().includes(id)).map(gameTile).join('')}</div>
@@ -182,6 +184,7 @@ function renderGames() {
   $('#toId').onclick = () => renderIdioms();
   $('#toSit').onclick = () => renderSit();
   $('#toIrr').onclick = () => renderIrregular();
+  $('#toDp').onclick = () => renderDepPrep();
   $('#toPairs').onclick = () => renderPairs();
   $('#toFams').onclick = () => renderFamilies();
   $('#toPV').onclick = () => renderPhrasal();
@@ -279,6 +282,7 @@ function gamePool(id) {
   if (id === 'affix') return AFFIX.flatMap((a) => a.ex.filter(([w]) => affixDistractors(a, w).length === 3).map(([w, th]) => ({ idx: -1, w, t: th, p: '', g: '', _af: a, _q: ['___', w, '', th] })));
   if (id === 'idiom') return IDIOMS.map((r) => ({ idx: -1, w: r.id, t: r.th, p: '', g: '', _id: r, _q: [r.plain, '', '', r.th] }));
   if (id === 'irreg') return irregItems();
+  if (id === 'dprep') return dpItems();
   if (id === 'num') return numItems();
   if (id === 'sit') return sitItems().map(({ st, k }) => ({ idx: -1, w: st.d[k][1], t: st.d[k][2], p: '', g: '', _sit: st, _k: k, _q: [st.d[k][1], '', '', st.d[k][2]] }));
   if (id === 'minpair') return MINPAIRS.map((m) => ({ idx: -1, w: `${m[0]} / ${m[2]}`, t: `${m[1]} / ${m[3]}`, p: '', g: '', _m: m }));
@@ -376,6 +380,7 @@ function startGame(id) {
   if (id === 'syn' && !SYN) { withLoading(loadSyn()).then(() => startGame(id)); return; }
   if (id === 'affix' && !AFFIX) { withLoading(loadAffix()).then(() => startGame(id)); return; }
   if (id === 'idiom' && !IDIOMS) { withLoading(loadIdioms()).then(() => startGame(id)); return; }
+  if (id === 'dprep' && !DEPPREP) { withLoading(loadDepPrep()).then(() => startGame(id)); return; }
   if (id === 'irreg' && !IRREG) { withLoading(loadIrregular()).then(() => startGame(id)); return; }
   if (id === 'sit' && !SIT) { withLoading(loadSit()).then(() => startGame(id)); return; }
   if (STORY_GAMES.includes(id) && !Object.keys(S.read).length) { toast('อ่านเรื่องสั้นให้จบอย่างน้อย 1 เรื่องก่อนนะ 📖'); if (current !== 'games') go('games'); return; }
@@ -507,6 +512,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'sit') return qSit(w);
     if (m === 'num') return qNum(w);
     if (m === 'irreg') return qIrreg(w);
+    if (m === 'dprep') return qDprep(w);
     const toTh = m !== 'th2en' && m !== 'cloze';
     const diff = gameDiff();
     const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w', diff >= 2)]);
@@ -1152,6 +1158,34 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       view.querySelector('[data-sayex]').onclick = () => speak(right);
       $('#nextQ').onclick = next;
       speak(right);
+    };
+  }
+
+  // Dependent prepositions: fill the blank with the preposition that goes with the word (interested ___ sports).
+  function qDprep(w) {
+    const r = w._dp, opts = shuffle([r.prep, ...dpDistractors(r)]);
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit pop"><div class="small muted">เติมบุพบทให้ถูก · ${esc(r.th)}</div>
+        <div class="cloze" lang="en" style="margin-top:8px">${dpBlank(r)}</div>
+        <button class="hint-btn" id="dpHint">💡 ดูคำแปลประโยค</button><div class="thx" id="dpTh" hidden>${esc(r.exTh)}</div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" lang="en" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    $('#dpHint').onclick = () => { $('#dpTh').hidden = false; $('#dpHint').remove(); };
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === r.prep;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === r.prep) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ที่ถูกคือ'} <b lang="en">${esc(r.head)} ${esc(r.prep)}</b> = ${esc(r.th)}
+        <div class="example"><div class="en" lang="en">${dpHTML(r)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(r.exTh)}</div></div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('[data-sayex]').onclick = () => speak(r.plain);
+      $('#nextQ').onclick = next;
+      speak(r.plain);
     };
   }
 

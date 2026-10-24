@@ -73,3 +73,64 @@ function irregOpts(r, k, right) {
   for (const c of [...shuffle([other, r.v1, ed, en]), ...fill]) if (c && c !== right && !out.includes(c)) { out.push(c); if (out.length === 3) break; }
   return out;
 }
+
+/* ---------- dependent prepositions ---------- */
+// data/depprep.js rows: [head + preposition, level, thai, example with the preposition in [brackets], thai example, other prepositions that are also fine]
+let DEPPREP = null, DP_OF = null;
+// Prepositions offered as wrong options (never one that is listed, or marked as fine, for the same head).
+const DP_POOL = ['in', 'on', 'at', 'of', 'to', 'for', 'with', 'about', 'from', 'by', 'into'];
+const loadDepPrep = () => loadData('data/depprep.js', 'DEPPREP').then((rows) => {
+  if (!DEPPREP) {
+    DEPPREP = rows.map(([ph, lv, th, ex, exTh, ok]) => {
+      const [head, prep] = ph.split(' ');
+      return { ph, head, prep, lv, th, ex, exTh, ok: ok || [], plain: ex.replace(/[[\]]/g, '') };
+    });
+    DP_OF = new Map();
+    DEPPREP.forEach((r) => { if (!DP_OF.has(r.head)) DP_OF.set(r.head, []); DP_OF.get(r.head).push(r); });
+  }
+  return DEPPREP;
+});
+const dpOf = (word) => (DP_OF && DP_OF.get(word.toLowerCase())) || [];
+const dpHTML = (r) => esc(r.ex).replace(/\[([^\]]+)\]/, '<mark>$1</mark>');
+const dpBlank = (r) => esc(r.ex).replace(/\[([^\]]+)\]/, '<span class="blank">_____</span>');
+// Three prepositions that don't fit: none of those listed (or marked fine) for this head.
+function dpDistractors(r) {
+  const fine = new Set([r.prep, ...r.ok, ...dpOf(r.head).flatMap((x) => [x.prep, ...x.ok])]);
+  return shuffle(DP_POOL.filter((p) => !fine.has(p))).slice(0, 3);
+}
+const dpRows = (list, hi) => list.map((r) => `<button class="col-row${r.ph === hi ? ' on' : ''}" data-col="${esc(r.plain)}"><b>${esc(r.head)} <mark>${esc(r.prep)}</mark></b><span>${esc(r.th)}</span></button>`).join('');
+function dpBox(el, w) {
+  loadDepPrep().then(() => {
+    const box = el.querySelector('#dpBox'), list = dpOf(w.w);
+    if (box && list.length) box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🔗 บุพบทที่ตามหลังคำนี้</b> (แตะเพื่อฟังประโยค)</div>${dpRows(list)}`;
+  });
+}
+
+let dpQuery = '', dpGroup = 'all';
+function renderDepPrep() {
+  if (!DEPPREP) { withLoading(loadDepPrep()).then(renderDepPrep); return; }
+  $('#title').textContent = 'บุพบทที่ตามหลังคำ';
+  view.scrollTop = 0;
+  const preps = [...new Set(DEPPREP.map((r) => r.prep))].sort((a, b) => DEPPREP.filter((r) => r.prep === b).length - DEPPREP.filter((r) => r.prep === a).length);
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="dpBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="dpPlay">🔗 เล่นเกม</button></div>
+    <p class="small muted" style="margin:0 4px 10px">${DEPPREP.length} คู่ที่คำหนึ่งต้องตามด้วยบุพบทตัวเดิมเสมอ เช่น interested <b>in</b>, depend <b>on</b> (บุพบทไม่ตรงกับที่แปลตรงตัวจากไทย จึงต้องจำเป็นคู่) · แตะแถวเพื่อฟังประโยค</p>
+    <input class="search" id="dpq" type="search" placeholder="ค้นหา เช่น depend หรือ เห็นด้วย" value="${esc(dpQuery)}" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="ค้นหาบุพบทที่ตามหลังคำ">
+    <div class="chips" id="dpGroup" style="margin:10px 0"><button class="chip" data-g="all">ทั้งหมด</button>${preps.map((p) => `<button class="chip" data-g="${p}">${p}</button>`).join('')}</div>
+    <div class="pair-list" id="dpList"></div>`;
+  const paint = () => {
+    const q = dpQuery.trim().toLowerCase();
+    view.querySelectorAll('#dpGroup .chip').forEach((c) => { const on = c.dataset.g === dpGroup; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
+    const list = DEPPREP.filter((r) => (dpGroup === 'all' || r.prep === dpGroup) && (!q || r.ph.includes(q) || r.th.includes(q)));
+    const groups = [...new Set(list.map((r) => r.prep))].sort((a, b) => list.filter((r) => r.prep === b).length - list.filter((r) => r.prep === a).length);
+    $('#dpList').innerHTML = groups.length ? groups.map((p) => `<div class="card-box pair-card"><div class="pair-h"><b>… ${esc(p)}</b> <span class="small muted">${list.filter((r) => r.prep === p).length} คำ</span></div>
+      ${list.filter((r) => r.prep === p).map((r) => `<button class="pair-ex" data-say="${esc(r.plain)}"><span><b lang="en">${esc(r.head)} <mark>${esc(r.prep)}</mark></b> <span class="lvl-mini">${r.lv}</span> = ${esc(r.th)}</span><span lang="en">${dpHTML(r)}</span><small class="muted">${esc(r.exTh)}</small></button>`).join('')}</div>`).join('')
+      : '<p class="muted center">ไม่พบคำนี้</p>';
+  };
+  paint();
+  $('#dpq').oninput = (e) => { dpQuery = e.target.value; paint(); };
+  $('#dpGroup').onclick = (e) => { const c = e.target.closest('[data-g]'); if (c) { dpGroup = c.dataset.g; paint(); } };
+  $('#dpBack').onclick = () => go('games');
+  $('#dpPlay').onclick = () => startGame('dprep');
+  $('#dpList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
+}
+const dpItems = () => DEPPREP.map((r) => ({ idx: -1, w: r.ph, t: r.th, p: '', g: '', _dp: r, _q: [r.ex.replace(/\[[^\]]+\]/, '___'), r.prep, '', r.th] }));

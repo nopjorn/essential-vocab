@@ -291,3 +291,25 @@ test('irregular verbs are valid practice data', () => {
   });
   expect(bad).toEqual([]);
 });
+
+test('dependent prepositions are valid practice data', () => {
+  const { DEPPREP } = load('data/depprep.js');
+  expect(DEPPREP.length).toBeGreaterThan(90);
+  const seen = new Set(), bad = [];
+  const fine = {}; // head → every preposition that is listed or marked fine for it
+  DEPPREP.forEach(([ph, lv, th, ex, exTh, ok]) => {
+    const [head, prep, ...rest] = ph.split(' ');
+    if (!head || !prep || rest.length) bad.push(`${ph}: must be "head preposition"`);
+    if (seen.has(ph)) bad.push(`${ph}: duplicate`); seen.add(ph);
+    if (!['A1', 'A2', 'B1', 'B2', 'C1'].includes(lv)) bad.push(`${ph}: level ${lv}`);
+    const groups = ex.match(/\[[^\]]+\]/g) || [];
+    if (groups.length !== 1 || groups[0] !== `[${prep}]`) bad.push(`${ph}: example needs exactly one [${prep}]`);
+    if (!new RegExp('\\b' + head, 'i').test(ex.replace(/[[\]]/g, ''))) bad.push(`${ph}: example must contain the head word`);
+    if (!th || !exTh) bad.push(`${ph}: Thai missing`);
+    (fine[head] = fine[head] || new Set()).add(prep);
+    (ok || []).forEach((p) => fine[head].add(p));
+  });
+  const pool = ['in', 'on', 'at', 'of', 'to', 'for', 'with', 'about', 'from', 'by', 'into'];
+  Object.entries(fine).forEach(([head, set]) => { if (pool.filter((p) => !set.has(p)).length < 3) bad.push(`${head}: fewer than 3 wrong options left`); });
+  expect(bad).toEqual([]);
+});
