@@ -1018,6 +1018,41 @@ test('skill games on a schedule (1.65): wrong items come back first, solid ones 
   expect(errors).toEqual([]);
 });
 
+test('FSRS scheduler (1.67): first reviews, growth with good answers, lapse, retention, old cards, SM-2 switch', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const r = await page.evaluate(() => {
+    const first = [0, 1, 2, 3].map((g) => sched(undefined, g).i);
+    // a card reviewed 3 days ago with stability 3.2: good → longer, again → lapse (due now, lower stability)
+    const card = { b: 1, i: 3, e: 2.5, d: Date.now() - 3600000, s: 2, c: 2, x: 0, st: 3.17, df: 5, lr: Date.now() - 3 * DAY };
+    const good = sched(card, 2), easy = sched(card, 3), hard = sched(card, 1), again = sched(card, 0);
+    // retention 80% → longer gaps than 95%
+    S.settings.retention = 0.8; const lo = sched(undefined, 2).i;
+    S.settings.retention = 0.95; const hi = sched(undefined, 2).i;
+    S.settings.retention = 0.9;
+    // a card from before 1.66 (no st/df): derives its state from i/e
+    const old = { b: 3, i: 7, e: 2.5, d: Date.now() - 2 * DAY, s: 4, c: 4, x: 0 };
+    const og = sched(old, 2);
+    // grade() stores the fields
+    const w = W.find((x) => !S.prog[x.w]); grade(w, 2);
+    const stored = S.prog[w.w];
+    S.settings.scheduler = 'sm2'; const sm = sched(undefined, 2).i, smFields = fsFields(sched(undefined, 2));
+    return { first, goodUp: good.i > 3, order: hard.i <= good.i && good.i <= easy.i, againI: again.i, againLower: again.st < card.st, lo, hi, oldUp: og.i > 7, stored: [stored.i, stored.st > 0, stored.df > 0, stored.lr > 0], sm, smFields };
+  });
+  expect(r.first).toEqual([0, 1, 3, 16]);
+  expect(r.goodUp).toBe(true); expect(r.order).toBe(true); expect(r.againI).toBe(0); expect(r.againLower).toBe(true);
+  expect(r.lo).toBeGreaterThan(3); expect(r.hi).toBeLessThan(3);
+  expect(r.oldUp).toBe(true); expect(r.stored).toEqual([3, true, true, true]);
+  expect(r.sm).toBe(1); expect(r.smFields).toEqual({});
+  // settings: switch + retention
+  await page.evaluate(() => { S.settings.scheduler = 'fsrs'; go('settings'); });
+  await expect(page.locator('#sched')).toHaveValue('fsrs');
+  await page.locator('#ret').selectOption('95');
+  expect(await page.evaluate(() => S.settings.retention)).toBe(0.95);
+  await page.locator('#sched').selectOption('sm2');
+  await expect(page.locator('#ret')).toBeDisabled();
+  expect(errors).toEqual([]);
+});
+
 test('1.66: level test (gate, pass, medal), share card, year in review', async ({ page }) => {
   test.setTimeout(180000);
   const errors = await openApp(page, { settings: { levels: ['A1'] }, placedAt: '2026-01-01' });
