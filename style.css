@@ -1229,3 +1229,9 @@ html.no-ans .streak.bump { animation: none; }
 .g-sec[hidden], .g-group[hidden] { display: none; }
 @media (min-width: 900px) { .guide { max-width: 760px; margin-inline: auto; } .g-hero, .g-search { max-width: 760px; margin-inline: auto; } }
 .empty-box[hidden] { display: none; }
+
+/* stats: share + year buttons side by side, same height, no wrapping */
+.share-row { gap: 8px; align-items: stretch; }
+.share-row .btn { display: flex; align-items: center; justify-content: center; text-align: center; white-space: nowrap; padding-inline: 12px; }
+.share-row .btn.primary { flex: 3 1 0; }
+.share-row .btn:not(.primary) { flex: 2 1 0; }

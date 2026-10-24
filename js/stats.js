@@ -141,7 +141,7 @@ function renderStats(from) {
     <div class="h2">📝 แบบทดสอบประจำเดือน</div>
     <div class="card-box">${mtestSummary()}<button class="btn primary block" data-go="mtest" style="margin-top:10px">${S.mtest[monthKey()] ? 'ทำอีกครั้ง' : 'ทำแบบทดสอบเดือนนี้'}</button></div>
 
-    <div class="card-box row" style="gap:8px"><button class="btn primary grow" id="shareProg">📤 แชร์ความก้าวหน้า</button><button class="btn grow" data-go="year" data-year="${yearToShow() || new Date().getFullYear()}">🎊 สรุปปี</button></div>
+    <div class="card-box row share-row"><button class="btn primary" id="shareProg">📤 แชร์ความก้าวหน้า</button><button class="btn" data-go="year" data-year="${yearToShow() || new Date().getFullYear()}">🎊 สรุปปี</button></div>
     <div class="h2">🎓 ทดสอบจบระดับ</div>
     ${levelTestBox()}
 
