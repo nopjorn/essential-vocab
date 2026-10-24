@@ -8,11 +8,22 @@ const installHidden = () => { try { return !!localStorage.getItem('o3k.installHi
 function homeBlockHtml(B, id) {
   try { return B[id](); } catch (e) { console.error('home block', id, e); return ''; }
 }
+// Gentle comeback card: no blame, just the plan for today (see backlogPlan()).
+function welcomeBack(plan) {
+  if (!plan.on) return '';
+  const away = daysAway(), played = S.daily.reviews > 0, left = plan.due;
+  const msg = played
+    ? `ทวนไปแล้ว ${S.daily.reviews} ใบ เก่งมากเลย 🎉 ${plan.show ? `อีก ${plan.show} ใบก็ครบของวันนี้` : `วันนี้ครบแล้ว พรุ่งนี้ทวนต่ออีก ${Math.min(left, BACKLOG_CAP)} ใบ`}`
+    : away >= 3 ? `หายไป ${away} วันก็ไม่เป็นไรนะคะ 💛 ตอนนี้มีการ์ดรอทวน ${left} ใบ วันนี้ลองแค่ ${BACKLOG_CAP} ใบที่ค้างนานสุดก่อน` : `มีการ์ดค้าง ${left} ใบ วันนี้ทวนแค่ ${BACKLOG_CAP} ใบที่ค้างนานสุดก่อนนะคะ`;
+  return `<div class="card-box welcome-back"><b>${away >= 3 && !played ? '👋 ยินดีต้อนรับกลับมา!' : '🧹 ค่อยๆ เคลียร์การ์ดค้าง'}</b>
+    <div class="small" style="margin-top:4px">${msg}</div>
+    <div class="small muted" style="margin-top:4px">⏸ พักคำใหม่ไว้ชั่วคราวจนกว่าการ์ดค้างจะเหลือไม่เกิน ${BACKLOG_PAUSE} ใบ (ปิดได้ที่ ⚙️ ตั้งค่า → การเรียน)</div></div>`;
+}
 function renderHome() {
   rollDay();
   const p = pool();
-  const due = dueList(p).length;
-  const newLeft = Math.max(0, S.settings.newPerDay - S.daily.fresh);
+  const plan = backlogPlan(), due = plan.show;
+  const newLeft = plan.on ? 0 : Math.max(0, S.settings.newPerDay - S.daily.fresh);
   const unseen = p.filter((w) => !S.prog[w.w]).length;
   const todo = due + Math.min(newLeft, unseen);
   const doneToday = S.daily.fresh + S.daily.reviews;
@@ -40,7 +51,7 @@ function renderHome() {
           <span class="ring-c" aria-hidden="true">${closed ? '✓' : pct + '%'}</span>
         </div>
       </div>
-      <div class="ring-legend small"><span><i class="d1"></i>ทบทวน ${S.daily.reviews}/${revTot}</span><span><i class="d2"></i>คำใหม่ ${S.daily.fresh}/${goal}</span></div>
+      <div class="ring-legend small"><span><i class="d1"></i>ทบทวน ${S.daily.reviews}/${revTot}</span><span><i class="d2"></i>${plan.on ? 'คำใหม่ ⏸ พักไว้' : `คำใหม่ ${S.daily.fresh}/${goal}`}</span></div>
       <div class="stats">
         <div class="stat"><b>${due}</b><span>ต้องทบทวน</span></div>
         <div class="stat"><b>${Math.min(newLeft, unseen)}</b><span>คำใหม่</span></div>
@@ -89,6 +100,7 @@ function renderHome() {
       <div><b>💾 ถึงเวลาสำรองข้อมูลแล้ว</b><div class="small muted">${lastBackup === null ? 'ยังไม่เคยสำรองเลย' : `สำรองล่าสุด ${lastBackup} วันก่อน`} · กันความคืบหน้าหายตอนลบแอปหรือเปลี่ยนเครื่อง</div></div>
       <div class="row" style="margin-top:10px"><button class="btn primary grow" id="bkNow">📤 สำรองเลย</button><button class="btn" id="bkLater">ไว้ทีหลัง</button></div>
     </div>` : ''}
+    ${welcomeBack(plan)}
     ${!S.placedAt && Object.keys(S.prog).length < 50 ? `<div class="card-box place-card slim" id="placeCard">
       <div><b>🎯 รู้ศัพท์อยู่แล้วบ้างไหม?</b><div class="small muted">วัดระดับ 3–5 นาที แล้วข้ามคำที่รู้แล้ว</div></div>
       <button class="btn primary" data-pl="go">วัดระดับ</button><button class="x" data-pl="no" aria-label="ไม่ต้อง">✕</button></div>` : ''}

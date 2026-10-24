@@ -84,7 +84,7 @@ function renderFeed() {
     const p = pool();
     const due = dueList(p).find((w) => !seen.has(w.w));
     if (due) return [due, 'quiz'];
-    if (S.daily.fresh + (newDealt - newDone) < S.settings.newPerDay) {
+    if (!backlogPlan().on && S.daily.fresh + (newDealt - newDone) < S.settings.newPerDay) {
       const fresh = shuffle(p.filter((w) => !S.prog[w.w] && !seen.has(w.w) && inTopic(w)))[0];
       if (fresh) return [fresh, 'learn'];
     }

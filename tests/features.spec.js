@@ -823,3 +823,29 @@ test('topic tint and haptics: tint on card + sheet, switches in settings', async
   await expect(page.locator('#topicTint')).toBeAttached();
   expect(errors).toEqual([]);
 });
+
+test('gentle comeback (1.60): big backlog pauses new words, caps the round at 50, home card, toggle', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'], newPerDay: 10 } });
+  // 90 A1 words overdue by 1..90 days, last activity 5 days ago
+  await page.evaluate(() => {
+    const now = Date.now(), t = (n) => new Date(now - n * DAY).toISOString().slice(0, 10);
+    W.filter((w) => w.g === 'A1').slice(0, 90).forEach((w, i) => { S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: now - (i + 1) * DAY, s: 1, c: 1, x: 0 }; });
+    S.hist = { [t(5)]: 20 }; S.streak = { last: t(5), count: 3 };
+    go('home');
+  });
+  await expect(page.locator('.welcome-back')).toContainText('หายไป 5 วัน');
+  const q = await page.evaluate(() => { const b = buildQueue(); return { n: b.length, fresh: b.filter((w) => !S.prog[w.w]).length, first: b[0].w, oldest: dueList(pool())[0].w }; });
+  expect(q.n).toBe(50); expect(q.fresh).toBe(0); expect(q.first).toBe(q.oldest);
+  expect(await page.evaluate(() => buildQueue('backlog').length)).toBe(50);
+  // ≤ 60 overdue → normal again (new words come back)
+  await page.evaluate(() => { dueList(pool()).slice(0, 40).forEach((w) => { S.prog[w.w].d = Date.now() + 5 * DAY; }); });
+  expect(await page.evaluate(() => backlogPlan().on)).toBe(false);
+  expect(await page.evaluate(() => buildQueue().filter((w) => !S.prog[w.w]).length)).toBe(10);
+  // switch off in settings
+  await page.evaluate(() => { dueList(pool()); W.filter((w) => w.g === 'A1' && !S.prog[w.w]).slice(0, 60).forEach((w) => { S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: Date.now() - DAY, s: 1, c: 1, x: 0 }; }); go('settings'); });
+  await expect(page.locator('#gentle')).toBeChecked();
+  expect(await page.evaluate(() => backlogPlan().on)).toBe(true);
+  await page.locator('label.switch:has(#gentle)').click();
+  expect(await page.evaluate(() => backlogPlan().on)).toBe(false);
+  expect(errors).toEqual([]);
+});

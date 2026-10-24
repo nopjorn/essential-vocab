@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.59.0';
+const APP_VERSION = '1.60.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -154,7 +154,7 @@ function sanitizeDecks(r) {
 }
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -695,6 +695,22 @@ const dueList = (list = pool(), map = S.prog) => {
   const now = Date.now();
   return list.filter((w) => map[w.w] && map[w.w].d <= now).sort((a, b) => map[a.w].d - map[b.w].d);
 };
+
+/* ---------- gentle comeback (1.60) ---------- */
+// A big pile of overdue cards (> BACKLOG_PAUSE) pauses new words and is served BACKLOG_CAP a day, most overdue first,
+// so coming back after a break never starts with a 200-card wall. Off with settings.gentle === false.
+const BACKLOG_CAP = 50, BACKLOG_PAUSE = 60;
+function backlogPlan() {
+  rollDay();
+  const due = dueList().length, on = S.settings.gentle !== false && due > BACKLOG_PAUSE;
+  const capLeft = on ? Math.max(0, BACKLOG_CAP - S.daily.reviews) : due;
+  return { on, due, show: Math.min(due, capLeft) };
+}
+// Whole days since the last day with any activity before today (null = never played).
+function daysAway() {
+  const t = today(), last = Object.keys(S.hist).filter((k) => k < t && S.hist[k] > 0).sort().pop() || S.streak.last;
+  return last ? dayDiff(t, last) : null;
+}
 
 /* ---------- app icon badge (cards due today) ---------- */
 // Needs the Badging API (iOS 16.4+ home-screen app, with notification permission). Re-counted after progress

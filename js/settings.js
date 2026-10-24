@@ -27,6 +27,8 @@ function renderSettings() {
     <details class="set-group" data-g="learn" ${setIsOpen('learn')}><summary>🧠 การเรียน</summary><div class="card-box">
       <div class="set-row"><span>คำใหม่ต่อวัน</span>
         <select class="sel" id="npd">${[5, 10, 15, 20, 30, 50, 100].map((n) => `<option ${n === st.newPerDay ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+      <div class="set-row"><span>กลับมาแบบไม่ท้อ<br><span class="small muted">การ์ดค้างเกิน 60 ใบ: พักคำใหม่ และทวนวันละ 50 ใบที่ค้างนานสุดก่อน</span></span>
+        <label class="switch"><input type="checkbox" id="gentle" aria-label="กลับมาแบบไม่ท้อ" ${st.gentle !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>ลำดับคำใหม่</span>
         <select class="sel" id="ord"><option value="shuffle" ${st.order === 'shuffle' ? 'selected' : ''}>สุ่ม</option><option value="alpha" ${st.order === 'alpha' ? 'selected' : ''}>เรียงตามตัวอักษร</option></select></div>
       <button class="btn block" id="toPlace" style="margin:4px 0 8px">🎯 แบบทดสอบวัดระดับ (ข้ามคำที่รู้แล้ว)</button>
@@ -165,6 +167,7 @@ function renderSettings() {
   $('#sfx').onchange = (e) => { st.sfx = e.target.checked; save(); sfx('ok'); };
   $('#acc').onchange = (e) => { st.accent = e.target.value; save(); speak('Hello! Nice to meet you.'); };
   $('#rate').onchange = (e) => { st.rate = +e.target.value; save(); speak('vocabulary'); };
+  $('#gentle').onchange = (e) => { st.gentle = e.target.checked; save(); };
   $('#slowRep').onchange = (e) => { st.slowRepeat = e.target.checked; save(); };
   $('#test').onclick = () => speak('Hello! Let\'s learn English together.');
   fillVoices();

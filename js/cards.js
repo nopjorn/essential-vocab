@@ -6,12 +6,14 @@
 function buildQueue(extra) {
   rollDay();
   const p = pool();
-  const due = dueList(p).slice(0, 200);
+  if (extra === 'backlog') return dueList(p).slice(0, BACKLOG_CAP);
+  const plan = backlogPlan();
+  const due = dueList(p).slice(0, plan.on ? plan.show : 200);
   let fresh = p.filter((w) => !S.prog[w.w] && inTopic(w));
   if (S.settings.order === 'shuffle') fresh = shuffle(fresh);
   if (extra === 'mastered') return shuffle(masteredWords()).slice(0, 20);
   if (extra === 'ahead') return p.filter((w) => S.prog[w.w]).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d).slice(0, 20);
-  const n = extra ? 10 : Math.max(0, S.settings.newPerDay - S.daily.fresh);
+  const n = extra ? 10 : plan.on ? 0 : Math.max(0, S.settings.newPerDay - S.daily.fresh);
   fresh = fresh.slice(0, n);
   // Mix new cards in among reviews so a session doesn't end with only new words.
   const q = [];
@@ -30,9 +32,11 @@ function buildQueue(extra) {
 function nextSteps(learned) {
   const unseen = pool().filter((w) => !S.prog[w.w]).length;
   const mastered = masteredWords().length;
+  const backlog = backlogPlan().on ? dueList().length : 0;
   const leech = W.filter(isLeech).length, star = W.filter(isStar).length;
   const b = (id, ic, t, d) => `<button class="quick-btn" data-ns="${id}"><span>${ic}</span><b>${t}</b><small>${d}</small></button>`;
   return `<div class="quick next-steps">
+    ${backlog ? b('backlog', '🧹', 'ทวนค้างอีก 50 ใบ', 'ยังเหลือ ' + backlog + ' ใบ ค่อยๆ เคลียร์ได้') : ''}
     ${unseen ? b('more', '➕', 'คำใหม่อีก 10 คำ', 'เรียนล่วงหน้าเกินเป้าวันนี้') : ''}
     ${learned >= 4 ? b('ahead', '🔮', 'ทบทวนล่วงหน้า', '20 ใบที่ใกล้ถึงกำหนดที่สุด') : ''}
     ${b('feed', '📱', 'ไถศัพท์', 'ปัดดูทีละคำ ไม่มีวันจบ')}
@@ -48,6 +52,7 @@ function bindNextSteps() {
       const id = el.dataset.ns;
       if (id === 'more') go('cards', true);
       else if (id === 'ahead') go('cards', 'ahead');
+      else if (id === 'backlog') go('cards', 'backlog');
       else if (id === 'mastered') go('cards', 'mastered');
       else if (id === 'play') quickPlay();
       else if (id === 'leech' || id === 'star') { gameSource = id; startGame('en2th'); }

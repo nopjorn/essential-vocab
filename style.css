@@ -357,6 +357,7 @@ select.sel { background: var(--surface-2); border: 0; border-radius: 10px; paddi
 body { touch-action: manipulation; }
 
 .backup-nag { border: 2px solid var(--warn); }
+.welcome-back { border: 2px solid var(--primary, #7c5cff); }
 
 /* daily quest */
 .quest { border: 2px solid color-mix(in srgb, var(--primary) 35%, transparent); }
