@@ -604,3 +604,30 @@ test('emoji game: shows one emoji, options are emoji words, answer marks progres
   await expect(view.locator('#reveal')).toContainText('✅');
   expect(errors).toEqual([]);
 });
+
+test('endless emoji run: streak resets on a wrong answer, record keeps the longest run, ✕ ends with a summary', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => startGame('emojiRun'));
+  const view = page.locator('#view');
+  const pick = async (right) => {
+    await view.locator('.emoji-big').waitFor();
+    const idx = await page.evaluate((right) => {
+      const e = document.querySelector('.emoji-big').textContent;
+      const opts = [...document.querySelectorAll('.opt')];
+      const i = opts.findIndex((o) => EMOJI[o.textContent] === e);
+      return right ? i : +(i === 0);
+    }, right);
+    await view.locator('.opt').nth(idx).click();
+    await view.locator('#nextQ').click();
+  };
+  for (let n = 0; n < 12; n++) await pick(true);   // more than one 10-question round
+  await expect(view.locator('#runStat')).toContainText('12');
+  await pick(false);
+  await expect(view.locator('#runStat')).toContainText('🔥 0');
+  await pick(true); await pick(true);
+  await view.locator('#quit').click();
+  await expect(view.locator('.result-emoji')).toBeVisible();
+  await expect(view.locator('.h2')).toContainText('12');
+  expect((await readState(page)).best.emojiRun).toBe(12);
+  expect(errors).toEqual([]);
+});

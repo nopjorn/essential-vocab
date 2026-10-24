@@ -47,6 +47,7 @@ const GAMES = {
   idiom: { icon: '🎭', name: 'สำนวน', desc: 'piece of cake = ? เลือกความหมายหรือสำนวนให้ถูก' },
   sit: { icon: '🗨️', name: 'ตอบให้เข้าสถานการณ์', desc: 'เลือกประโยคถัดไปในบทสนทนา' },
   emoji: { icon: '🖼️', name: 'ทายจากภาพอีโมจิ', desc: 'ดูอีโมจิ เลือกคำอังกฤษที่ตรงกับภาพ' },
+  emojiRun: { icon: '♾️', name: 'อีโมจิไม่จำกัด', desc: 'เล่นไปเรื่อยๆ ดูว่าถูกติดต่อกันได้กี่ข้อ' },
   review: { icon: '🔁', name: 'คำที่ผิดบ่อย', desc: 'ฝึกคำที่เคยตอบผิด' },
 };
 // Games whose data is lazy-loaded (stories / collocations) or built from sentences instead of the word pool.
@@ -204,7 +205,7 @@ function gamePool(id) {
   if (id === 'cloze' || id === 'dict') list = list.filter(hasCloze);
   if (id === 'order') list = list.filter((w) => { const n = w.e.split(/\s+/).length; return n >= 4 && n <= 12; });
   if (id === 'colloc') list = list.filter((w) => COLLOC && COLLOC[w.w]);
-  if (id === 'emoji') list = list.filter((w) => EMOJI && EMOJI[w.w]);
+  if (id === 'emoji' || id === 'emojiRun') list = list.filter((w) => EMOJI && EMOJI[w.w]);
   return list;
 }
 
@@ -236,7 +237,7 @@ function startGame(id) {
     return;
   }
   if (STORY_GAMES.includes(id) && !STORIES) { withLoading(loadStories()).then(() => startGame(id)); return; }
-  if (id === 'emoji' && !EMOJI) { withLoading(loadEmoji()).then(() => startGame(id)); return; }
+  if ((id === 'emoji' || id === 'emojiRun') && !EMOJI) { withLoading(loadEmoji()).then(() => startGame(id)); return; }
   if (id === 'colloc' && !COLLOC) { withLoading(loadColloc()).then(() => startGame(id)); return; }
   if (PAIR_GAMES.includes(id) && !CONFUSE) { withLoading(loadPairs()).then(() => startGame(id)); return; }
   if (id === 'wform' && !FAMILIES) { withLoading(loadFamilies()).then(() => startGame(id)); return; }
@@ -249,7 +250,7 @@ function startGame(id) {
   const src = gamePool(id);
   const min = id === 'match' ? 6 : 4;
   if (src.length < min) {
-    toast(id === 'emoji' ? 'คำที่มีภาพอีโมจิยังน้อยไป ลองเลือกแหล่งคำเป็น "ทุกระดับ" ดูนะ'
+    toast(id === 'emoji' || id === 'emojiRun' ? 'คำที่มีภาพอีโมจิยังน้อยไป ลองเลือกแหล่งคำเป็น "ทุกระดับ" ดูนะ'
       : id === 'review' ? 'ยังไม่มีคำที่ตอบผิด เก่งมาก! 👍'
       : gameSource === 'mastered' ? `ต้องมีคำที่จำได้แล้วอย่างน้อย ${min} คำก่อนนะ`
       : gameSource === 'star' ? `ติดดาวคำอย่างน้อย ${min} คำก่อนนะ (กด ☆ บนการ์ดหรือในหน้าคำศัพท์)`
@@ -263,17 +264,26 @@ function startGame(id) {
   current = 'games'; view.classList.remove('feed-mode'); view.dataset.route = 'games'; view.scrollTop = 0;
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === 'games'));
   if (id === 'match') return playMatch(src);
-  playQuiz(id === 'review' ? pick(['en2th', 'th2en', 'listen']) : id, src, id);
+  playQuiz(id === 'review' ? pick(['en2th', 'th2en', 'listen']) : id === 'emojiRun' ? 'emoji' : id, src, id);
 }
 
 function playQuiz(mode, src, gameId) {
   const ROUND = 10;
-  const items = shuffle(src).slice(0, ROUND);
-  let i = 0, score = 0, combo = 0, bestCombo = 0;
+  // Endless run (emojiRun): no round limit, wrong answers only reset the streak; the player ends it themselves.
+  const ENDLESS = gameId === 'emojiRun';
+  const items = shuffle(src).slice(0, ENDLESS ? src.length : ROUND);
+  let i = 0, score = 0, combo = 0, bestCombo = 0, asked = 0;
   const wrong = [];
   $('#title').textContent = GAMES[gameId].name;
 
   function header() {
+    if (ENDLESS) {
+      $('#title').textContent = `${GAMES[gameId].name} · ข้อ ${i + 1}`;
+      return `<div class="session-top">
+      <button class="icon-btn" id="quit" aria-label="จบรอบ">✕</button>
+      <div class="progress"><div style="width:${combo % 10 * 10}%"></div></div>
+      <span class="small" id="runStat">🔥 <b>${combo}</b> · 🏅 ${Math.max(S.best[gameId] || 0, bestCombo)}</span></div>`;
+    }
     if (i < items.length) $('#title').textContent = `${GAMES[gameId].name} · ${i + 1}/${items.length}`;
     return `<div class="session-top">
       <button class="icon-btn" id="quit" aria-label="ออก">✕</button>
@@ -281,7 +291,9 @@ function playQuiz(mode, src, gameId) {
       <span class="small"><b>${score}</b> แต้ม</span></div>`;
   }
 
+  const quit = () => (ENDLESS && asked ? result() : go('games'));
   function q() {
+    if (ENDLESS && i >= items.length) items.push(...shuffle(src).filter((x) => x !== items[items.length - 1]));
     if (i >= items.length) return result();
     const w = items[i];
     const m = gameId === 'review' ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'spell', 'cloze'] : ['en2th', 'th2en', 'listen', 'spell']) : mode;
@@ -748,7 +760,7 @@ function playQuiz(mode, src, gameId) {
         <div class="emoji-big" role="img" aria-label="ภาพอีโมจิ">${EMOJI[w.w]}</div></div>
       <div class="options">${opts.map((o) => `<button class="opt" lang="en" data-i="${o.idx}">${esc(o.w)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = quit;
     let answered = false;
     view.querySelector('.options').onclick = (e) => {
       const b = e.target.closest('.opt'); if (!b || answered) return;
@@ -757,7 +769,8 @@ function playQuiz(mode, src, gameId) {
       view.querySelectorAll('.opt').forEach((o) => { if (+o.dataset.i === w.idx) o.classList.add('correct'); });
       if (!ok) b.classList.add('wrong');
       mark(w, ok);
-      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌'} ${EMOJI[w.w]} <b lang="en">${esc(w.w)}</b> = ${esc(w.t)}`
+      if (ENDLESS) $('#runStat').innerHTML = `🔥 <b>${combo}</b> · 🏅 ${Math.max(S.best[gameId] || 0, bestCombo)}`;
+      $('#reveal').innerHTML = `${ok ? (ENDLESS && combo >= 2 ? `✅ ติดต่อกัน ${combo} ข้อ! 🔥` : '✅ ถูกต้อง!') : (ENDLESS && bestCombo > 0 ? '❌ สตรีคจบที่ ' + bestCombo + ' · เริ่มนับใหม่' : '❌')} ${EMOJI[w.w]} <b lang="en">${esc(w.w)}</b> = ${esc(w.t)}`
         + (ok ? '' : exampleBox(w))
         + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
       bindSayEx(view, w.e);
@@ -869,6 +882,7 @@ function playQuiz(mode, src, gameId) {
     // A missed pronunciation or word order doesn't mean the meaning was forgotten, so it doesn't reset the card.
     const spk = gameId === 'speak' || gameId === 'speakS';
     const soft = spk || gameId === 'order' || gameId === 'sOrder';
+    asked++;
     if (w.idx < 0 || (soft && !ok)) markActive(); else gameResult(w, ok);
     if (spk && ok) S.counts.speak = (S.counts.speak || 0) + 1;
     questEvent('answer', { game: gameId, ok });
@@ -880,20 +894,24 @@ function playQuiz(mode, src, gameId) {
 
   function result() {
     const prev = S.best[gameId];
-    const isBest = prev == null || score > prev;
-    if (isBest) { S.best[gameId] = score; save(); }
-    const correct = items.length - wrong.length;
-    if (correct === items.length && items.length >= 10) S.counts.perfect = (S.counts.perfect || 0) + 1;
+    const mark_ = ENDLESS ? bestCombo : score; // endless: the record is the longest run of right answers
+    const isBest = prev == null || mark_ > prev;
+    if (isBest) { S.best[gameId] = mark_; save(); }
+    const total = ENDLESS ? asked : items.length;
+    const correct = total - wrong.length;
+    if (!ENDLESS && correct === items.length && items.length >= 10) S.counts.perfect = (S.counts.perfect || 0) + 1;
     questEvent('round', { game: gameId, correct, bestCombo });
-    if (correct >= 8) confetti();
-    const emoji = correct === items.length ? '🏆' : correct >= 7 ? '🎉' : correct >= 4 ? '💪' : '📚';
+    if (ENDLESS ? bestCombo >= 10 : correct >= 8) confetti();
+    const emoji = ENDLESS ? (bestCombo >= 20 ? '🏆' : bestCombo >= 10 ? '🎉' : '💪') : correct === items.length ? '🏆' : correct >= 7 ? '🎉' : correct >= 4 ? '💪' : '📚';
     view.innerHTML = `<div class="card-box center pop">
         <div class="result-emoji">${emoji}</div>
-        <div class="h2">${score} แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
-        <p>ถูก ${correct}/${items.length} · คอมโบสูงสุด ${bestCombo}</p>
+        ${ENDLESS ? `<div class="h2">🔥 ถูกติดต่อกันสูงสุด ${bestCombo} ข้อ ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
+        <p>เล่นไป ${total} ข้อ · ถูก ${correct} · ${score} แต้ม${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>`
+        : `<div class="h2">${score} แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
+        <p>ถูก ${correct}/${items.length} · คอมโบสูงสุด ${bestCombo}</p>`}
       </div>
       ${wrong.length ? `<div class="card-box wrong-list"><b>${gameId.startsWith('speak') ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b> <span class="small muted">${gameId.startsWith('speak') ? '(แตะคำเพื่อฟังเสียง)' : SKILL_GAMES.includes(gameId) ? '(แตะเพื่อฟังเสียง)' : '(ใส่ในแฟลชการ์ดให้แล้ว) · กด ☆ เพื่อติดดาว'}</span>
-        ${wrong.map((w) => w.idx < 0 ? `<div class="wl" data-i="-1" data-say="${esc(w._q ? w._q[0].replace('___', w._q[1]) : w._m[0] + ', ' + w._m[2])}"><span><b>${esc(w.w)}</b></span><span class="muted grow" style="text-align:right">${esc(w._q ? w._q[3] : w.t)}</span></div>`
+        ${[...new Set(wrong)].map((w) => w.idx < 0 ? `<div class="wl" data-i="-1" data-say="${esc(w._q ? w._q[0].replace('___', w._q[1]) : w._m[0] + ', ' + w._m[2])}"><span><b>${esc(w.w)}</b></span><span class="muted grow" style="text-align:right">${esc(w._q ? w._q[3] : w.t)}</span></div>`
           : `<div class="wl" data-i="${w.idx}"><span><b>${esc(w.w)}</b> <span class="pos">${esc(w.p)}</span></span><span class="muted grow" style="text-align:right">${esc(w.t)}</span><button class="star-btn" data-star>${starIcon(w)}</button></div>`).join('')}</div>` : ''}
       <button class="btn primary block" id="again">เล่นอีกรอบ</button>
       <div style="height:10px"></div><button class="btn block" id="back">เลือกเกมอื่น</button>`;
