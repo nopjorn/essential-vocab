@@ -311,3 +311,105 @@ function renderAffix() {
   $('#afPlay').onclick = () => startGame('affix');
   $('#afList').onclick = (e) => { const b = e.target.closest('[data-col]'); if (b) speak(b.dataset.col); };
 }
+
+/* ---------- numbers (generated listening practice) ---------- */
+// No data file: each round builds its own numbers, prices, times, dates and phone numbers (so no SRS key, see GEN_GAMES).
+const NUM_ONES = 'zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen'.split(' ');
+const NUM_TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+const NUM_ORD = { one: 'first', two: 'second', three: 'third', five: 'fifth', eight: 'eighth', nine: 'ninth', twelve: 'twelfth' };
+const NUM_MONTHS = 'January February March April May June July August September October November December'.split(' ');
+const NUM_MDAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const NUM_SIM_MONTH = { June: 'July', July: 'June', March: 'May', May: 'March', April: 'August', August: 'April', September: 'November', November: 'September' };
+const NUM_KINDS = { n: 'ตัวเลข', p: 'ราคา', t: 'เวลา', d: 'วันที่', ph: 'เบอร์โทร' };
+const NUM_TIPS = {
+  n: '-teen กับ -ty ฟังคล้ายกัน: thir<b>TEEN</b> (13) เน้นพยางค์หลัง ส่วน <b>THIR</b>ty (30) เน้นพยางค์แรกและเสียง t ท้ายสั้นกว่า',
+  p: 'ราคาอ่านเป็น “ดอลลาร์ + เซนต์” เช่น $12.50 = twelve dollars fifty หรือ twelve fifty (ไม่ต้องพูดคำว่า point)',
+  t: 'quarter past = +15 นาที · half past = 30 นาที · quarter to eight = 7:45 (อีก 15 นาทีจะ 8 โมง) · ten to = ก่อนชั่วโมงถัดไป 10 นาที',
+  d: 'วันที่อ่านเป็นเลขลำดับ (third ไม่ใช่ three) และเรียงได้ 2 แบบ: the third of May / May the third · thirteenth = 13, thirtieth = 30',
+  ph: 'เบอร์โทรอ่านทีละหลัก เลข 0 อ่านว่า oh หรือ zero และตัวซ้ำติดกันอ่านว่า double (55 = double five)',
+};
+function numWords(n) {
+  if (n < 20) return NUM_ONES[n];
+  if (n < 100) return NUM_TENS[Math.floor(n / 10)] + (n % 10 ? '-' + NUM_ONES[n % 10] : '');
+  return NUM_ONES[Math.floor(n / 100)] + ' hundred' + (n % 100 ? ' and ' + numWords(n % 100) : '');
+}
+function ordWords(n) {
+  const parts = numWords(n).split('-'), last = parts.pop();
+  const o = NUM_ORD[last] || (last.endsWith('y') ? last.slice(0, -1) + 'ieth' : last + 'th');
+  return [...parts, o].join('-');
+}
+// thirteen ↔ thirty style twin: 13–19 → 30–90, 30–90 (tens) → 13–19, else 0.
+const numTwin = (t) => (t >= 13 && t <= 19 ? (t - 10) * 10 : t >= 30 && t % 10 === 0 ? t / 10 + 10 : 0);
+const rint = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+// The three wrong options: the likely mix-ups first (`cands`), then `fill` so there are always three distinct ones.
+function numOpts(right, cands, fill) {
+  const out = [];
+  for (const c of cands.concat(fill)) if (c !== right && !out.includes(c)) { out.push(c); if (out.length === 3) break; }
+  return out;
+}
+function numItem(kind) {
+  let say, right, cands = [], fill = [];
+  if (kind === 'n') {
+    const roll = Math.random();
+    const tail = roll < 0.35 ? rint(13, 19) : roll < 0.7 ? rint(3, 9) * 10 : rint(2, 9) * 10 + rint(1, 9);
+    const v = (Math.random() < 0.25 ? rint(1, 9) * 100 : 0) + tail, h = v - tail;
+    right = String(v); say = numWords(v);
+    const add = (x) => x > 0 && cands.push(String(x));
+    if (numTwin(tail)) add(h + numTwin(tail));
+    if (tail >= 10 && tail % 11) add(h + (tail % 10) * 10 + Math.floor(tail / 10));
+    add(v + 10); add(v - 10); add(v + 1); add(v - 1);
+    fill = [2, 3, 4, 5, 6, 7].map((k) => String(v + k * 11));
+  } else if (kind === 'p') {
+    const roll = Math.random();
+    const d = roll < 0.4 ? rint(13, 19) : roll < 0.7 ? rint(3, 9) * 10 : rint(2, 99);
+    const c = pick([0, 15, 50, 25, 75, 45, 95, 60, 30, 99]);
+    const P = (dd, cc) => '$' + dd + (cc ? '.' + String(cc).padStart(2, '0') : '');
+    right = P(d, c);
+    say = numWords(d) + (c ? (Math.random() < 0.5 ? ' dollars ' : ' ') + numWords(c) : ' dollars');
+    if (numTwin(d)) cands.push(P(numTwin(d), c));
+    if (c && numTwin(c)) cands.push(P(d, numTwin(c)));
+    cands.push(P(d + 1, c), P(Math.max(1, d - 1), c), P(d, c === 50 ? 15 : 50));
+    fill = [P(d + 2, c), P(d + 10, c), P(d, 25), P(d, 75), P(d + 3, 0), P(d + 20, c)];
+  } else if (kind === 'd') {
+    const mo = rint(0, 11), md = NUM_MDAYS[mo];
+    const roll = Math.random();
+    const day = roll < 0.4 ? rint(13, 19) : roll < 0.5 && md >= 30 ? 30 : rint(1, md);
+    const M = NUM_MONTHS[mo];
+    const D = (dd, mm) => (dd >= 1 && dd <= NUM_MDAYS[mm] ? `${dd} ${NUM_MONTHS[mm]}` : null);
+    right = D(day, mo);
+    const o = ordWords(day), r = Math.random();
+    say = r < 0.34 ? `the ${o} of ${M}` : r < 0.67 ? `${M} the ${o}` : `${M} ${o}`;
+    const sim = NUM_MONTHS.indexOf(NUM_SIM_MONTH[M]);
+    cands = [day === 13 ? D(30, mo) : day === 30 ? D(13, mo) : null, day >= 13 && day <= 19 ? D(day - 10, mo) : D(day + 10, mo), sim >= 0 ? D(day, sim) : null,
+      D(day + 1, mo), D(day - 1, mo), D(day, (mo + 1) % 12), D(day, (mo + 11) % 12)].filter(Boolean);
+    fill = [D(day + 2, mo), D(day + 3, mo), D(day, (mo + 5) % 12), D(Math.max(1, day - 2), mo), D(1, mo), D(2, mo), D(4, mo)].filter(Boolean);
+  } else if (kind === 't') {
+    const h = rint(1, 12), nx = h % 12 + 1, m = pick([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]), alt = Math.random() < 0.5;
+    const T = (hh, mm) => ((hh + 11) % 12 + 1) + ':' + String(mm).padStart(2, '0');
+    right = T(h, m);
+    say = m === 0 ? `${numWords(h)} o'clock`
+      : m === 30 ? (alt ? `half past ${numWords(h)}` : `${numWords(h)} thirty`)
+      : m === 15 ? (alt ? `quarter past ${numWords(h)}` : `${numWords(h)} fifteen`)
+      : m === 45 ? (alt ? `quarter to ${numWords(nx)}` : `${numWords(h)} forty-five`)
+      : m < 30 ? (alt ? `${numWords(m)} past ${numWords(h)}` : `${numWords(h)} ${m < 10 ? 'oh ' : ''}${numWords(m)}`)
+      : (alt ? `${numWords(60 - m)} to ${numWords(nx)}` : `${numWords(h)} ${numWords(m)}`);
+    if (m === 15) cands.push(T(h, 50)); if (m === 50) cands.push(T(h, 15));
+    if (m === 45) cands.push(T(nx, 45), T(h, 15));
+    if (m === 15) cands.push(T(nx, 15), T(h, 45));
+    cands.push(T(h + 1, m), T(h - 1, m), T(h, (m + 5) % 60), T(h, (m + 55) % 60));
+    fill = [T(h, (m + 10) % 60), T(h + 2, m), T(h, (m + 20) % 60), T(h, (m + 35) % 60), T(h + 3, m)];
+  } else {
+    const dg = Array.from({ length: 6 }, () => rint(0, 9));
+    const fmt = (a) => a.slice(0, 3).join('') + '-' + a.slice(3).join('');
+    const name = (x) => (x === 0 ? (Math.random() < 0.5 ? 'oh' : 'zero') : NUM_ONES[x]);
+    const spell = (a) => { const o = []; for (let k = 0; k < a.length; k++) { if (k + 1 < a.length && a[k] === a[k + 1]) { o.push('double ' + name(a[k])); k++; } else o.push(name(a[k])); } return o.join(' '); };
+    right = fmt(dg);
+    say = spell(dg.slice(0, 3)) + ', ' + spell(dg.slice(3));
+    const swap = (k) => { const a = dg.slice(); [a[k], a[k + 1]] = [a[k + 1], a[k]]; return fmt(a); };
+    const chg = (k, by) => { const a = dg.slice(); a[k] = (a[k] + by) % 10; return fmt(a); };
+    cands = [swap(4), swap(1), swap(2), swap(0), chg(5, 1), chg(4, 1)];
+    fill = [0, 1, 2, 3, 4, 5].map((k) => chg(k, 3));
+  }
+  return { idx: -1, w: right, t: NUM_KINDS[kind], p: '', g: '', _num: { kind, say, right, opts: numOpts(right, cands, fill) }, _q: [say, right, '', say] };
+}
+const numItems = (n = 40) => shuffle(Array.from({ length: n }, (_, k) => numItem(['n', 'p', 't', 'd', 'n', 'ph', 't', 'p', 'd', 'n'][k % 10])));

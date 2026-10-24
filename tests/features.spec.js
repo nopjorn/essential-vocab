@@ -1214,3 +1214,29 @@ test('guide (1.77.3): nothing open by default, every game is in the manual, grou
   expect(stray).toEqual([]);
   expect(errors).toEqual([]);
 });
+
+test('number listening game (1.78): words, ordinals and options are always three distinct wrong answers', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const r = await page.evaluate(() => {
+    const words = [numWords(15), numWords(50), numWords(45), numWords(305), ordWords(3), ordWords(13), ordWords(20), ordWords(22), ordWords(30), ordWords(31), ordWords(12)];
+    const bad = [];
+    for (const rnd of [() => 0, () => 0.3, () => 0.5, () => 0.99, Math.random]) {
+      const orig = Math.random; Math.random = rnd;
+      try {
+        for (const it of numItems(200)) {
+          const n = it._num;
+          if (n.opts.length !== 3 || new Set([n.right, ...n.opts]).size !== 4) bad.push([n.kind, n.say, n.right, n.opts]);
+          if (!n.say || /undefined|NaN/.test(n.say + n.right + n.opts.join())) bad.push(['text', n.kind, n.say, n.right]);
+        }
+      } finally { Math.random = orig; }
+    }
+    return { words, bad: bad.slice(0, 5) };
+  });
+  expect(r.words).toEqual(['fifteen', 'fifty', 'forty-five', 'three hundred and five', 'third', 'thirteenth', 'twentieth', 'twenty-second', 'thirtieth', 'thirty-first', 'twelfth']);
+  expect(r.bad).toEqual([]);
+  // a game round is never scheduled (no S.lex keys) and the wrong list can replay the spoken text
+  await page.evaluate(() => startGame('num'));
+  await expect(page.locator('#view .opt')).toHaveCount(4);
+  expect(await page.evaluate(() => Object.keys(S.lex).filter((k) => k.startsWith('num:')).length)).toBe(0);
+  expect(errors).toEqual([]);
+});
