@@ -328,3 +328,23 @@ test('Thai-learner mistakes are valid practice data', () => {
   cats.forEach((c) => { if (!MISTAKES.some((r) => r[0] === c)) bad.push(`category ${c} is empty`); });
   expect(bad).toEqual([]);
 });
+
+test('grammar tied to words is valid practice data', () => {
+  const { GRAMPAT } = load('data/grampat.js');
+  expect(GRAMPAT.length).toBeGreaterThan(70);
+  const kinds = ['u', 'ing', 'to', 'bare', 'both'], seen = new Set(), bad = [];
+  GRAMPAT.forEach(([kind, head, th, frame, right, wrong, exTh]) => {
+    const id = `${kind}:${head}`;
+    if (!kinds.includes(kind)) bad.push(`${id}: kind`);
+    if (seen.has(id)) bad.push(`${id}: duplicate`); seen.add(id);
+    if (!th || !exTh) bad.push(`${id}: Thai missing`);
+    if (kind === 'both') { if (right !== '' || wrong.length) bad.push(`${id}: reference rows have no options`); return; }
+    if ((frame.match(/___/g) || []).length !== 1) bad.push(`${id}: frame needs exactly one ___`);
+    if (wrong.length !== 2 || new Set([right, ...wrong]).size !== 3) bad.push(`${id}: needs the right form and two different wrong ones`);
+    if (kind === 'u' && !right.toLowerCase().includes(head)) bad.push(`${id}: the right form contains the noun`);
+    const shown = { deny: 'denied', make: 'made' }[head] || head.split(' ').pop().replace("can't", 'help');
+    if (kind !== 'u' && !frame.toLowerCase().includes(shown)) bad.push(`${id}: frame shows the verb`);
+  });
+  ['u', 'ing', 'to', 'bare', 'both'].forEach((k) => { if (!GRAMPAT.some((r) => r[0] === k)) bad.push(`kind ${k} is empty`); });
+  expect(bad).toEqual([]);
+});

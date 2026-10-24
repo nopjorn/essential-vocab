@@ -110,7 +110,7 @@ function openSheet(w, onChange, opt = {}) {
       <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span>${w.tp ? ` · ${TOPIC_LABEL[w.tp]}` : ''}</div>
       ${tagsOf(w).length ? `<div class="small muted sheet-tags">${tagsOf(w).map((id) => `<span class="tag-pill">${TAG_LABEL[id]}</span>`).join('')}</div>` : ''}
       <div class="th" style="font-size:22px;margin:10px 0">${esc(w.t)}</div>
-      ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div><div class="colloc" id="irBox"></div><div class="colloc" id="dpBox"></div><div class="colloc" id="pvBox"></div><div class="colloc" id="idBox"></div><div class="colloc" id="synBox"></div><div class="colloc" id="afBox"></div>
+      ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div><div class="colloc" id="irBox"></div><div class="colloc" id="dpBox"></div><div class="colloc" id="gpBox"></div><div class="colloc" id="pvBox"></div><div class="colloc" id="idBox"></div><div class="colloc" id="synBox"></div><div class="colloc" id="afBox"></div>
       </div>
       <div class="sheet-acts">
         <button class="btn" data-act="star">${isStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาว'}</button>

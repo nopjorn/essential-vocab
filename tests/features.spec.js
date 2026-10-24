@@ -1329,3 +1329,27 @@ test('Thai-learner mistakes (1.86): browser with category filter and search, gam
   await expect(page.locator('#view .opt')).toHaveCount(2);
   expect(errors).toEqual([]);
 });
+
+test('grammar tied to words (1.88): browser, word sheet box, game with right and wrong answers', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => renderGramPat());
+  await expect(page.locator('#gpList .pair-ex').first()).toBeVisible();
+  const all = await page.locator('#gpList .pair-ex').count();
+  await page.locator('#gpq').fill('advice');
+  await expect(page.locator('#gpList .pair-ex')).toHaveCount(1);
+  await page.locator('#gpList .pair-ex').click();
+  expect(await page.evaluate(() => window.__said.at(-1))).toBe('Can you give me some advice about studying abroad?');
+  await page.locator('#gpq').fill('');
+  await page.locator('#gpKind [data-k="both"]').click();
+  expect(await page.locator('#gpList .pair-ex').count()).toBeGreaterThanOrEqual(5);
+  expect(await page.locator('#gpList .pair-ex').count()).toBeLessThan(all);
+  // word sheets: a noun (uncountable) and a verb (+ -ing)
+  await page.evaluate(() => openSheet(W.find((w) => w.w === 'advice')));
+  await expect(page.locator('#gpBox')).toContainText('นับไม่ได้');
+  await page.evaluate(() => { document.querySelectorAll('.sheet-wrap').forEach((e) => e.remove()); openSheet(W.find((w) => w.w === 'enjoy')); });
+  await expect(page.locator('#gpBox')).toContainText('V-ing');
+  // game: three options, wrong list replays the full sentence
+  await page.evaluate(() => startGame('gpat'));
+  await expect(page.locator('#view .opt')).toHaveCount(3);
+  expect(errors).toEqual([]);
+});

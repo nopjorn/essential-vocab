@@ -170,3 +170,67 @@ function renderMistakes() {
   $('#misList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
 }
 const misItems = () => MISTAKES.map((r) => ({ idx: -1, w: r.ok, t: r.th, p: '', g: '', _mis: r, _q: [r.ok, '', '', r.th] }));
+
+/* ---------- grammar tied to words ---------- */
+// data/grampat.js rows: [kind, word, thai, frame with ___, right form, [2 wrong forms], thai sentence, how to count]; kind "both" rows are reference only.
+let GRAMPAT = null, GP_OF = null;
+const GP_KIND = {
+  u: { icon: '🧺', title: 'นามนับไม่ได้ [U]', note: 'ไม่เติม s · ไม่มี a / an · ใช้กับ much / some / a lot of และกริยาเอกพจน์ (is) · จะนับให้ใช้ “a piece of …” คนไทยมักเติม s ผิด' },
+  ing: { icon: '🔁', title: 'ตามด้วยกริยา + ing', note: 'กริยากลุ่มนี้ตามด้วย V-ing เท่านั้น เช่น enjoy swimming (ไม่ใช่ enjoy to swim)' },
+  to: { icon: '➡️', title: 'ตามด้วย to + กริยา', note: 'กริยากลุ่มนี้ตามด้วย to + V เช่น want to go, decide to stay (ไม่ใช่ want going)' },
+  bare: { icon: '✂️', title: 'ตามด้วยกริยาช่อง 1 (ไม่มี to)', note: 'let / make / can / should / must / would rather / had better + กริยาช่อง 1 ไม่มี to เช่น let me go' },
+  both: { icon: '↔️', title: 'ได้ทั้ง -ing และ to แต่ความหมายต่างกัน', note: 'ความหมายเปลี่ยนตามรูปที่ตามหลัง ต้องดูบริบท (ไม่มีในเกม เพราะต้องรู้บริบทเต็มประโยค)' },
+};
+const loadGramPat = () => loadData('data/grampat.js', 'GRAMPAT').then((rows) => {
+  if (!GRAMPAT) {
+    GRAMPAT = rows.map(([kind, head, th, frame, right, wrong, exTh, count]) => ({ kind, head, th, frame, right, wrong, exTh, count: count || '',
+      sheetKey: (['be', "can't", 'had', 'would'].includes(head.split(' ')[0]) ? head.split(' ')[1] : head.split(' ')[0]).toLowerCase() }));
+    GP_OF = new Map();
+    GRAMPAT.forEach((r) => { if (!GP_OF.has(r.sheetKey)) GP_OF.set(r.sheetKey, []); GP_OF.get(r.sheetKey).push(r); });
+  }
+  return GRAMPAT;
+});
+const gpOf = (word) => (GP_OF && GP_OF.get(word.toLowerCase())) || [];
+const gpFilled = (r) => esc(r.frame).replace('___', `<mark>${esc(r.right)}</mark>`);
+const gpPlain = (r) => r.frame.replace('___', r.right);
+function gpRow(r) {
+  if (r.kind === 'both') return `<div class="pair-ex" style="cursor:default"><span><b lang="en">${esc(r.head)}</b> = ${esc(r.th)}</span><span lang="en">${esc(r.frame)}</span><small class="muted">${esc(r.exTh)}</small></div>`;
+  return `<button class="pair-ex" data-say="${esc(gpPlain(r))}"><span><b lang="en">${esc(r.head)}</b> = ${esc(r.th)}${r.count ? ` · นับว่า <i lang="en">${esc(r.count)}</i>` : ''}</span><span lang="en">${gpFilled(r)}</span><small class="muted">${esc(r.exTh)}</small></button>`;
+}
+// The word sheet of a noun / verb with a rule shows it.
+function gpBox(el, w) {
+  loadGramPat().then(() => {
+    const box = el.querySelector('#gpBox'), list = gpOf(w.w).filter((r) => r.kind !== 'both' || r.head === w.w.toLowerCase());
+    if (!box || !list.length) return;
+    const kinds = [...new Set(list.map((r) => r.kind))];
+    box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>📐 ไวยากรณ์ของคำนี้</b> (แตะเพื่อฟังประโยค)</div>`
+      + kinds.map((k) => `<div class="tip-box" style="margin:0 0 6px"><b>${GP_KIND[k].icon} ${GP_KIND[k].title}</b><div class="small muted">${GP_KIND[k].note}</div></div>${list.filter((r) => r.kind === k).map(gpRow).join('')}`).join('');
+  });
+}
+let gpQuery = '', gpKind = 'all';
+function renderGramPat() {
+  if (!GRAMPAT) { withLoading(loadGramPat()).then(renderGramPat); return; }
+  $('#title').textContent = 'ไวยากรณ์ที่ผูกกับคำ';
+  view.scrollTop = 0;
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="gpBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="gpPlay">📐 เล่นเกม</button></div>
+    <p class="small muted" style="margin:0 4px 10px">${GRAMPAT.length} คำที่มีกฎติดตัว: นามที่นับไม่ได้ (advice, news) และกริยาที่ต้องตามด้วย -ing หรือ to หรือกริยาช่อง 1 · รู้กฎก่อนใช้ จะไม่พลาดเรื่อง s กับรูปกริยา · แตะแถวเพื่อฟังประโยค</p>
+    <input class="search" id="gpq" type="search" placeholder="ค้นหา เช่น advice หรือ enjoy หรือ ข่าว" value="${esc(gpQuery)}" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="ค้นหาไวยากรณ์ที่ผูกกับคำ">
+    <div class="chips" id="gpKind" style="margin:10px 0"><button class="chip" data-k="all">ทั้งหมด</button>${Object.entries(GP_KIND).map(([k, g]) => `<button class="chip" data-k="${k}">${g.icon} ${g.title}</button>`).join('')}</div>
+    <div class="pair-list" id="gpList"></div>`;
+  const paint = () => {
+    const q = gpQuery.trim().toLowerCase();
+    view.querySelectorAll('#gpKind .chip').forEach((c) => { const on = c.dataset.k === gpKind; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
+    const list = GRAMPAT.filter((r) => (gpKind === 'all' || r.kind === gpKind) && (!q || r.head.includes(q) || r.th.includes(q) || r.right.toLowerCase().includes(q)));
+    const kinds = Object.keys(GP_KIND).filter((k) => list.some((r) => r.kind === k));
+    $('#gpList').innerHTML = kinds.length ? kinds.map((k) => `<div class="card-box pair-card"><div class="pair-h"><b>${GP_KIND[k].icon} ${GP_KIND[k].title}</b> <span class="small muted">${list.filter((r) => r.kind === k).length} คำ</span></div>
+      <div class="tip-box">${GP_KIND[k].note}</div>${list.filter((r) => r.kind === k).map(gpRow).join('')}</div>`).join('')
+      : '<p class="muted center">ไม่พบคำนี้</p>';
+  };
+  paint();
+  $('#gpq').oninput = (e) => { gpQuery = e.target.value; paint(); };
+  $('#gpKind').onclick = (e) => { const c = e.target.closest('[data-k]'); if (c) { gpKind = c.dataset.k; paint(); } };
+  $('#gpBack').onclick = () => go('games');
+  $('#gpPlay').onclick = () => startGame('gpat');
+  $('#gpList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
+}
+const gpItems = () => GRAMPAT.filter((r) => r.kind !== 'both').map((r) => ({ idx: -1, w: r.head, t: r.th, p: '', g: '', _gp: r, _q: [r.frame, r.right, '', r.th] }));

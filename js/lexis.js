@@ -73,6 +73,7 @@ function renderPhrasal() {
 function lexisBoxes(el, w) {
   if (isVerb(w)) irregBox(el, w);
   dpBox(el, w);
+  gpBox(el, w);
   loadAffix().then(() => {
     const box = el.querySelector('#afBox'), hit = AFFIX_OF.get(w.w.toLowerCase());
     if (box && hit) box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🧱 ส่วนประกอบคำ</b></div>
