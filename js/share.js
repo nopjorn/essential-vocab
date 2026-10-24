@@ -95,8 +95,8 @@ function renderYear(arg) {
     const sl = slides[i];
     view.innerHTML = `<div class="card-box center pop year-slide"><div class="result-emoji" aria-hidden="true">${sl.e}</div>
       <div class="h1 year-big">${esc(String(sl.big))}</div><p>${esc(sl.line)}</p>
-      <div class="small muted">${i + 1}/${slides.length}</div>
-      <div class="row" style="margin-top:14px">${i ? '<button class="btn" id="yPrev">‹ ก่อนหน้า</button>' : ''}
+      <div class="year-dots" aria-label="${i + 1}/${slides.length}">${slides.map((_, k) => `<i${k === i ? ' class="on"' : ''}></i>`).join('')}</div>
+      <div class="row year-nav">${i ? '<button class="btn" id="yPrev">‹ ก่อนหน้า</button>' : ''}
       ${i < slides.length - 1 ? '<button class="btn primary grow" id="yNext">ต่อไป ›</button>' : '<button class="btn primary grow" id="yShare">📤 แชร์สรุปปี</button><button class="btn" id="yDone">เสร็จ</button>'}</div></div>`;
     const on = (id, fn) => { const b = $(id); if (b) b.onclick = fn; };
     on('#yPrev', () => { i--; show(); });
