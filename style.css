@@ -808,6 +808,10 @@ input.sel { color: var(--text); font: inherit; }
 .hb.hw-half .hero .stat { padding: 8px 2px; }
 .hb.hw-half .hero .stat b { font-size: 20px; }
 .hb.hw-half .hero .stat span { font-size: var(--fs-xs); }
+/* a quick button that ends up alone on its row: icon beside the text instead of a tall empty tile */
+.hb.hw-full > .quick-btn { display: grid; grid-template-columns: auto 1fr; column-gap: 14px; align-items: center; width: 100%; padding: 14px 18px; }
+.hb.hw-full > .quick-btn span { grid-row: 1 / 3; }
+.mascot-card { padding-block: 10px; }
 .hb.hw-half .card-box { padding: 14px; overflow-wrap: anywhere; }
 .hb.hw-half .lvl-card { flex-direction: column; align-items: flex-start; }
 .hc-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px 10px; padding: 10px 0; }
