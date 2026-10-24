@@ -647,7 +647,8 @@ test('colour palettes + black theme: settings switch html attributes, persist, n
   const root = page.locator('html');
   const primary = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--primary').trim());
   expect(await primary()).toBe('#6c5ce7');
-  await expect(page.locator('#palette button')).toHaveCount(6);
+  await expect(page.locator('#palette button')).toHaveCount(8); // 6 + gold and galaxy (locked until Lv.10 / Lv.20)
+  await expect(page.locator('#palette [data-p="gold"]')).toBeDisabled();
   await page.locator('#palette [data-p="mint"]').click();
   await expect(root).toHaveAttribute('data-palette', 'mint');
   expect(await primary()).toBe('#007a61');
@@ -1129,7 +1130,7 @@ test('flashcard queue spreads word families (1.70): decide / decision / decisive
   expect(errors).toEqual([]);
 });
 
-test('stats page draws heavy blocks lazily (1.71): not in the first paint, all there shortly after, still interactive', async ({ page }) => {
+test('stats page draws heavy blocks lazily (1.72): not in the first paint, all there shortly after, still interactive', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   const first = await page.evaluate(() => { go('stats'); return { hm: !!document.querySelector('#hm'), stk: !!document.querySelector('#stk'), ach: document.querySelectorAll('#ach .ach').length, hosts: document.querySelectorAll('[data-lz]').length }; });
   expect(first).toEqual({ hm: false, stk: false, ach: 0, hosts: 4 });

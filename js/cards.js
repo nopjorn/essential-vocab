@@ -121,7 +121,7 @@ function renderCards(extra) {
   if (!total) {
     const learned = W.filter((w) => S.prog[w.w]).length;
     view.innerHTML = `<div class="card-box center pop" style="margin-top:20px">
-      <div class="result-emoji">🎉</div><div class="h2">วันนี้ทำครบแล้ว!</div>
+      <div class="result-emoji">${mascotSvg({ mood: 'happy', size: 110 })}</div><div class="h2">วันนี้ทำครบแล้ว!</div>
       <p class="muted">ไม่มีการ์ดค้างสำหรับระดับ ${lvNames(S.settings.levels)} · อยากทำอะไรต่อดี?</p></div>
       ${tomorrowBox()}${nextSteps(learned)}`;
     bindNextSteps();
@@ -177,7 +177,7 @@ function renderCards(extra) {
       <div class="th">${esc(card.t)}</div>`;
     const backExtra = noteBox(card) + exampleBox(card) + `<a class="oxl" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(card.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">📖 ดูใน Oxford ↗</a>`;
     $('#stage').innerHTML = `
-      <div class="fc${tintStyle(card) ? ' tint' : ''}" id="fc"${tintStyle(card)}>
+      <div class="fc${tintStyle(card) ? ' tint' : ''}${S.settings.frame === 'gold' && itemOpen('frame:gold') ? ' gold' : ''}" id="fc"${tintStyle(card)}>
         <div class="swipe-tag l">ลืม</div><div class="swipe-tag r">จำได้</div>
         <div class="fc-inner">
           <div class="face front">${enFront ? enFace : thFace}
@@ -298,7 +298,7 @@ function renderCards(extra) {
       return;
     }
     view.innerHTML = `<div class="card-box center pop" style="margin-top:30px">
-      <div class="result-emoji">🏆</div><div class="h2">จบรอบแล้ว เก่งมาก!</div>
+      <div class="result-emoji">${mascotSvg({ mood: 'happy', size: 110 })}</div><div class="h2">จบรอบแล้ว เก่งมาก!</div>
       <p>ทบทวน ${total} ใบ · กด "ลืม" ${stats.again} ครั้ง</p>
       <p class="muted small">คำที่ลืมจะกลับมาให้ทบทวนอีกเร็วๆ นี้</p></div>
       ${tomorrowBox()}${nextSteps(W.filter((w) => S.prog[w.w]).length)}`;
