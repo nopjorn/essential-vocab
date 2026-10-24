@@ -693,11 +693,44 @@ test('games menu: frequent row, pin + reorder, hide and unhide', async ({ page }
   expect(st.settings.gameHide).toEqual(['spell']);
   // starting a game counts a play
   await page.evaluate(() => startGame('en2th'));
-  expect((await readState(page)).gplay.en2th).toBe(1);
+  expect(await page.evaluate(() => gamePlays('en2th'))).toBe(1);
   // unhide again
   await page.evaluate(() => go('games'));
   await view.locator('#gEdit').click();
   await view.locator('.gedit-row[data-id="spell"] [data-hide]').click();
   await expect(view.locator('.gedit-row[data-id="spell"] [data-hide]')).toHaveAttribute('aria-pressed', 'false');
+  expect(errors).toEqual([]);
+});
+
+test('sync: newest settings win on every device, voice stays per device, game plays add up across devices', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'], voice: 'mine' }, gplay: { syn: 2 } });
+  // boot alone never stamps the settings as changed
+  expect((await readState(page)).settingsAt || 0).toBe(0);
+  await page.reload();
+  expect((await readState(page)).settingsAt || 0).toBe(0);
+  // a change here stamps it
+  await page.evaluate(() => { S.settings.newPerDay = 15; save(); });
+  const at = (await readState(page)).settingsAt;
+  expect(at).toBeGreaterThan(0);
+  // an older copy from another device doesn't override it
+  await page.evaluate((at) => mergeBackup({ prog: {}, settings: { ...S.settings, newPerDay: 40 }, settingsAt: at - 1000 }), at);
+  expect((await readState(page)).settings.newPerDay).toBe(15);
+  // a newer one does (pins, hidden games, theme, home layout), but keeps this device's voice
+  await page.evaluate((at) => mergeBackup({ prog: {}, settings: { ...S.settings, newPerDay: 30, gamePin: ['emoji'], gameHide: ['spell'], theme: 'dark', voice: 'theirs' },
+    homeCfg: [{ id: 'today', on: true, w: 'full' }], settingsAt: at + 1000, gplay: { other: { syn: 3, emoji: 1 } } }), at);
+  const st = await readState(page);
+  expect(st.settings.newPerDay).toBe(30);
+  expect(st.settings.gamePin).toEqual(['emoji']);
+  expect(st.settings.gameHide).toEqual(['spell']);
+  expect(st.settings.voice).toBe('mine');
+  expect(st.homeCfg).toEqual([{ id: 'today', on: true, w: 'full' }]);
+  expect(st.settingsAt).toBe(at + 1000);
+  expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe('dark');
+  // adopting synced settings is not a local change
+  await page.evaluate(() => save());
+  expect((await readState(page)).settingsAt).toBe(at + 1000);
+  // plays: this device 2 + other device 3 (merging the same copy twice doesn't double it)
+  await page.evaluate(() => mergeBackup({ prog: {}, gplay: { other: { syn: 3 } } }));
+  expect(await page.evaluate(() => [gamePlays('syn'), gamePlays('emoji')])).toEqual([5, 1]);
   expect(errors).toEqual([]);
 });

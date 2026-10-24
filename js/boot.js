@@ -40,3 +40,4 @@ document.addEventListener('visibilitychange', () => {
 document.addEventListener('visibilitychange', () => { if (!document.hidden && current === 'home') renderHome(); });
 document.addEventListener('visibilitychange', updateBadge);
 updateBadge();
+setSig = settingsSig(); // after boot-time migrations: only real changes from here on stamp settingsAt

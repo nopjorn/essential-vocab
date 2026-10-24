@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.52.0';
+const APP_VERSION = '1.53.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -56,6 +56,13 @@ const MASTERED = 4;
 
 /* ---------- storage ---------- */
 const KEY = 'oxford3000.v1';
+// Random id for this install (never in backups): per-device counters are kept apart so syncing can add them up.
+const DEV = (() => {
+  try { let id = localStorage.getItem('o3k.dev'); if (!id) { id = Math.random().toString(36).slice(2, 10); localStorage.setItem('o3k.dev', id); } return id; } catch (e) { return 'local'; }
+})();
+// 1.52.0 kept one flat { game: n } map: it becomes this device's bucket.
+const gplayFix = (g) => (g && Object.values(g).some((v) => typeof v === 'number') ? { [DEV]: g } : g || {});
+const gamePlays = (id) => Object.values(S.gplay).reduce((n, dev) => n + ((dev && dev[id]) || 0), 0);
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
   settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
@@ -90,7 +97,8 @@ const defaults = () => ({
   stk: {},             // topic id -> sticker tier reached (1 bronze … 4 diamond)
   wotdPick: null,      // {day, key, w}: today's word of the day (kept steady even as progress changes)
   seenVer: null,       // app version whose "what's new" prompt was shown (device-local, not merged from backups)
-  gplay: {},           // game id -> rounds started (games menu "เล่นบ่อย" row)
+  gplay: {},           // device id -> { game id -> rounds started } (summed for the games menu "เล่นบ่อย" row)
+  settingsAt: 0,       // ms when settings/homeCfg last changed on any device: the newest copy wins when syncing
   homeCfg: null,       // home layout [{id, on, w: 'full'|'half'}] in display order; null = default (see HOME_BLOCKS)
 });
 let S = load();
@@ -103,6 +111,7 @@ function load() {
     if (raw) {
       const d = defaults(), s = JSON.parse(raw);
       const r = { ...d, ...s, settings: { ...d.settings, ...(s.settings || {}) } };
+      r.gplay = gplayFix(r.gplay);
       // A missing/odd riddle record (older backup, sync from another device) must never break the home screen.
       if (!r.riddle || typeof r.riddle !== 'object' || !Array.isArray(r.riddle.g)) r.riddle = d.riddle;
       if (!r.riddleStat || typeof r.riddleStat !== 'object') r.riddleStat = d.riddleStat;
@@ -112,7 +121,14 @@ function load() {
   } catch (e) { /* storage unavailable: start fresh */ }
   return defaults();
 }
+// Settings that are shared across devices: everything in settings + the home layout, except the voice
+// (voice ids differ between devices). save() stamps settingsAt when this changes.
+const settingsSig = () => JSON.stringify([{ ...S.settings, voice: '' }, S.homeCfg]);
+let setSig = null; // baseline taken at the end of boot (boot.js) and after adopting synced settings
 function save() {
+  const sig = settingsSig();
+  if (setSig !== null && sig !== setSig) S.settingsAt = Date.now();
+  setSig = sig;
   if (typeof checkAch === 'function') checkAch();
   if (typeof takeSnap === 'function') takeSnap();
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ }
@@ -156,13 +172,24 @@ function mergeBackup(d) {
   }
   for (const [k, v] of Object.entries(d.hist || {})) S.hist[k] = Math.max(S.hist[k] || 0, v);
   for (const [k, v] of Object.entries(d.best || {})) S.best[k] = Math.max(S.best[k] || 0, v);
-  for (const [k, v] of Object.entries(d.gplay || {})) S.gplay[k] = Math.max(S.gplay[k] || 0, v);
+  for (const [dev, m] of Object.entries(gplayFix(d.gplay))) {
+    const mine = S.gplay[dev] || (S.gplay[dev] = {});
+    for (const [k, v] of Object.entries(m || {})) mine[k] = Math.max(mine[k] || 0, v);
+  }
   if (d.streak && ((d.streak.last || '') > (S.streak.last || '') || (d.streak.last === S.streak.last && d.streak.count > S.streak.count))) S.streak = d.streak;
   if (d.daily && d.daily.date === S.daily.date) {
     S.daily.fresh = Math.max(S.daily.fresh, d.daily.fresh || 0);
     S.daily.reviews = Math.max(S.daily.reviews, d.daily.reviews || 0);
   } else if (d.daily && d.daily.date > S.daily.date) S.daily = d.daily;
-  if (fresh && d.settings) S.settings = { ...defaults().settings, ...d.settings };
+  // Settings: the copy changed most recently wins (a fresh device takes the backup's); the voice stays per device.
+  if (d.settings && ((fresh && !S.settingsAt) || (d.settingsAt || 0) > (S.settingsAt || 0))) {
+    S.settings = { ...defaults().settings, ...d.settings, voice: S.settings.voice || '' };
+    if (Array.isArray(d.homeCfg) || d.homeCfg === null) S.homeCfg = d.homeCfg;
+    S.settingsAt = Math.max(S.settingsAt || 0, d.settingsAt || 0);
+    setSig = settingsSig();
+    if (typeof applyTheme === 'function') { applyTheme(); applyIcon(); }
+    if (typeof current !== 'undefined' && current === 'settings') setTimeout(() => go(current), 0);
+  }
   S.backupAt = Math.max(S.backupAt || 0, d.backupAt || 0);
   Object.assign(S.star, d.star || {});
   for (const [k, v] of Object.entries(d.ach || {})) if (!S.ach[k]) S.ach[k] = v;
@@ -177,7 +204,7 @@ function mergeBackup(d) {
   if (d.placedAt && !S.placedAt) S.placedAt = d.placedAt;
   for (const [k, v] of Object.entries(d.xpWeek || {})) S.xpWeek[k] = Math.max(S.xpWeek[k] || 0, v);
   if (d.nick && !S.nick) S.nick = d.nick;
-  if (Array.isArray(d.homeCfg) && !S.homeCfg) S.homeCfg = d.homeCfg;
+  if (Array.isArray(d.homeCfg) && !S.homeCfg) S.homeCfg = d.homeCfg; // older backups without settingsAt
   for (const [k, v] of Object.entries(d.read || {})) if (!S.read[k]) S.read[k] = v;
   for (const [k, v] of Object.entries(d.stk || {})) S.stk[k] = Math.max(S.stk[k] || 0, v);
   for (const [k, v] of Object.entries(d.readScore || {})) if (!S.readScore[k] || v[0] > S.readScore[k][0]) S.readScore[k] = v;

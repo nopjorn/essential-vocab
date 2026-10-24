@@ -51,6 +51,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
   `[learned3000, mastered3000, learnedAll, masteredAll]`, written by `takeSnap()` in `save()`),
   `note` (memory hooks), `miss` (date → word → wrong count, 21 days), `weekSeen`, `read` (story id → date), `readScore` (story id → [best right, questions]),
   `settings.topic`, `settings.voice` (voiceURI, '' = auto), `settings.theme` (auto/light/dark → `html[data-theme]`, mirrored to localStorage `o3k.theme` for the early script in index.html), `monthSeen`, `stk` (topic → sticker tier 1–4), `placedAt`, `xpWeek` (Monday key → XP), `nick`, `mtest` (month → best monthly-test `{r, n, at}`). Auth tokens live separately in localStorage `o3k.auth` (never in backups).
+- Settings sync (1.53+): `save()` stamps `settingsAt` when `settingsSig()` (settings minus `voice` + `homeCfg`) changes; `mergeBackup()` adopts the copy with the newer `settingsAt`. `gplay` is per device (`DEV`, localStorage `o3k.dev`), summed by `gamePlays(id)`.
 - When adding a field: add it to `defaults()` (load() shallow-merges top-level keys) **and** handle it
   in `mergeBackup()` so importing a backup keeps it.
 - `save()` also runs `checkAch()` (achievements).

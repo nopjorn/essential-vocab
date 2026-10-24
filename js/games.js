@@ -72,8 +72,8 @@ const gameHidden = () => new Set((S.settings.gameHide || []).filter((id) => GAME
 // Most played games that aren't pinned or hidden (at least 2 rounds), for the "เล่นบ่อย" row.
 function frequentGames() {
   const skip = new Set([...gamePins(), ...gameHidden()]);
-  return Object.keys(GAMES).filter((id) => !skip.has(id) && (S.gplay[id] || 0) >= 2)
-    .sort((a, b) => S.gplay[b] - S.gplay[a]).slice(0, 4);
+  return Object.keys(GAMES).filter((id) => !skip.has(id) && gamePlays(id) >= 2)
+    .sort((a, b) => gamePlays(b) - gamePlays(a)).slice(0, 4);
 }
 function gameEditor() {
   const pins = gamePins(), hid = gameHidden();
@@ -312,7 +312,8 @@ function startGame(id) {
   // Games can start from home/stats too: switch the route so the layout (and active tab) match.
   current = 'games'; view.classList.remove('feed-mode'); view.dataset.route = 'games'; view.scrollTop = 0;
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === 'games'));
-  S.gplay[id] = (S.gplay[id] || 0) + 1; save();
+  const mine = S.gplay[DEV] || (S.gplay[DEV] = {});
+  mine[id] = (mine[id] || 0) + 1; save();
   if (id === 'match') return playMatch(src);
   playQuiz(id === 'review' ? pick(['en2th', 'th2en', 'listen']) : id === 'emojiRun' ? 'emoji' : id, src, id);
 }
