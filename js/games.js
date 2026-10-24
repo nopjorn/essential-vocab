@@ -66,6 +66,50 @@ let gameTopic = 'food';
 let gameGoal = 'travel';
 let customWords = [];   // words for a one-off round, e.g. from the weekly summary
 let gameSrcOpen = false;
+let gameEdit = false;   // games menu in "จัดเกม" mode (pin / hide / reorder pins)
+const gamePins = () => (S.settings.gamePin || []).filter((id) => GAMES[id]);
+const gameHidden = () => new Set((S.settings.gameHide || []).filter((id) => GAMES[id]));
+// Most played games that aren't pinned or hidden (at least 2 rounds), for the "เล่นบ่อย" row.
+function frequentGames() {
+  const skip = new Set([...gamePins(), ...gameHidden()]);
+  return Object.keys(GAMES).filter((id) => !skip.has(id) && (S.gplay[id] || 0) >= 2)
+    .sort((a, b) => S.gplay[b] - S.gplay[a]).slice(0, 4);
+}
+function gameEditor() {
+  const pins = gamePins(), hid = gameHidden();
+  const row = (id, extra) => `<div class="gedit-row" data-id="${id}"><span class="grow">${GAMES[id].icon} ${GAMES[id].name}</span>${extra}</div>`;
+  return `<div class="card-box">
+      ${pins.length ? `<div class="small muted" style="margin-bottom:6px"><b>📌 เกมโปรด</b> เรียงลำดับได้</div>
+      ${pins.map((id, k) => row(id, `<button class="icon-btn" data-up ${k ? '' : 'disabled'} aria-label="เลื่อนขึ้น">⬆️</button><button class="icon-btn" data-down ${k < pins.length - 1 ? '' : 'disabled'} aria-label="เลื่อนลง">⬇️</button>`)).join('')}<div style="height:10px"></div>` : ''}
+      <div class="small muted" style="margin-bottom:6px"><b>🎮 เกมทั้งหมด</b> 📌 = ปักไว้ด้านบน · 🙈 = ซ่อน</div>
+      ${Object.keys(GAMES).map((id) => row(id, `<button class="icon-btn${pins.includes(id) ? ' on' : ''}" data-pin aria-pressed="${pins.includes(id)}" aria-label="ปักหมุด ${GAMES[id].name}">📌</button><button class="icon-btn${hid.has(id) ? ' on' : ''}" data-hide aria-pressed="${hid.has(id)}" aria-label="ซ่อน ${GAMES[id].name}">🙈</button>`)).join('')}
+    </div>`;
+}
+function bindGameEditor() {
+  view.querySelectorAll('.gedit-row button').forEach((b) => (b.onclick = () => {
+    const id = b.closest('.gedit-row').dataset.id, st = S.settings;
+    let pins = gamePins(), hide = [...gameHidden()];
+    if (b.hasAttribute('data-pin')) {
+      pins = pins.includes(id) ? pins.filter((x) => x !== id) : [...pins, id];
+      hide = hide.filter((x) => x !== id);
+    } else if (b.hasAttribute('data-hide')) {
+      hide = hide.includes(id) ? hide.filter((x) => x !== id) : [...hide, id];
+      pins = pins.filter((x) => x !== id);
+    } else {
+      const k = pins.indexOf(id), j = k + (b.hasAttribute('data-up') ? -1 : 1);
+      if (j < 0 || j >= pins.length) return;
+      [pins[k], pins[j]] = [pins[j], pins[k]];
+    }
+    st.gamePin = pins; st.gameHide = hide; save();
+    const top = view.scrollTop; renderGames(); view.scrollTop = top;
+  }));
+}
+// Pinned games, then the most played ones, above the rest of the games menu.
+function gameSections() {
+  const pins = gamePins(), freq = frequentGames();
+  const sec = (title, ids) => `<div class="small muted games-sec"><b>${title}</b></div><div class="game-grid">${ids.map(gameTile).join('')}</div>`;
+  return (pins.length ? sec('📌 เกมโปรด', pins) : '') + (freq.length ? sec('🕘 เล่นบ่อย', freq) : '');
+}
 function renderGames() {
   if (gameSource === 'custom') gameSource = 'level';
   const srcName = { level: `ระดับที่เลือก (${lvNames(S.settings.levels)})`, learned: 'คำที่เรียนแล้ว', all: 'ทุกระดับ', mastered: '🟢 คำที่จำได้แล้ว', star: '⭐ คำติดดาว', leech: '🐢 คำดื้อ', topic: '📂 ตามหมวด', goal: '🎯 ตามเป้าหมาย' }[gameSource] || '';
@@ -86,6 +130,7 @@ function renderGames() {
       ${gameSource === 'goal' ? `<select class="sel block-sel" id="gGoal" style="margin-top:10px" aria-label="เป้าหมาย">${TAGS.map((t) => `<option value="${t.id}" ${gameGoal === t.id ? 'selected' : ''}>${TAG_LABEL[t.id]} (${t.w.length})</option>`).join('')}</select>` : ''}
       ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
     </div>
+    ${gameEdit ? '' : gameSections()}
     <button class="card-box guide-link" id="toRiddle"><span>🔤</span><div class="grow"><b>ปริศนาศัพท์ประจำวัน</b><div class="small muted">ทายคำ 5 ตัวอักษรใน 6 ครั้ง · คำใหม่ทุกวัน${riddleToday().over ? ' · ทำแล้ววันนี้ ✅' : ''}</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="toRead"><span>📖</span><div class="grow"><b>อ่านเรื่องสั้น</b><div class="small muted">${STORY_COUNT} เรื่อง · อ่านแล้ว ${Object.keys(S.read).length} · แตะคำเพื่อดูความหมาย</div></div><span class="muted">›</span></button>
     <div class="card-box ref-box"><div class="small muted"><b>📚 คลังความรู้</b> อ่านแล้วกดเล่นเกมของแต่ละหัวข้อได้</div>
@@ -98,7 +143,11 @@ function renderGames() {
         <button class="ref-tile" id="toId"><span>🎭</span>สำนวน</button>
         <button class="ref-tile" id="toSit"><span>🗨️</span>ศัพท์ตามสถานการณ์</button>
       </div></div>
-    <div class="game-grid">${Object.keys(GAMES).map(gameTile).join('')}</div>`;
+    <div class="row games-head"><b class="grow">${gameEdit ? '✏️ จัดหน้าเกม' : '🎮 เกมทั้งหมด'}</b><button class="btn${gameEdit ? ' primary' : ''}" id="gEdit">${gameEdit ? '✓ เสร็จ' : '✏️ จัดเกม'}</button></div>
+    ${gameEdit ? gameEditor() : `<div class="game-grid">${Object.keys(GAMES).filter((id) => !gameHidden().has(id)).map(gameTile).join('')}</div>
+    ${gameHidden().size ? `<details class="card-box hidden-games"><summary class="small muted">🙈 เกมที่ซ่อนไว้ (${gameHidden().size})</summary><div class="game-grid" style="margin-top:10px">${[...gameHidden()].map(gameTile).join('')}</div></details>` : ''}`}`;
+  $('#gEdit').onclick = () => { gameEdit = !gameEdit; renderGames(); if (gameEdit) $('#gEdit').scrollIntoView({ block: 'start' }); };
+  if (gameEdit) bindGameEditor();
   $('#toRead').onclick = () => go('read');
   $('#toRiddle').onclick = () => go('riddle');
   $('#toId').onclick = () => renderIdioms();
@@ -263,6 +312,7 @@ function startGame(id) {
   // Games can start from home/stats too: switch the route so the layout (and active tab) match.
   current = 'games'; view.classList.remove('feed-mode'); view.dataset.route = 'games'; view.scrollTop = 0;
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === 'games'));
+  S.gplay[id] = (S.gplay[id] || 0) + 1; save();
   if (id === 'match') return playMatch(src);
   playQuiz(id === 'review' ? pick(['en2th', 'th2en', 'listen']) : id === 'emojiRun' ? 'emoji' : id, src, id);
 }

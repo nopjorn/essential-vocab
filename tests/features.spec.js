@@ -670,3 +670,34 @@ test('app icon picker: settings swap the touch icon, persist, no overflow', asyn
   expect(await page.locator('link[rel="apple-touch-icon"]').getAttribute('href')).toBe('icons/apple-touch-icon.png');
   expect(errors).toEqual([]);
 });
+
+test('games menu: frequent row, pin + reorder, hide and unhide', async ({ page }) => {
+  const errors = await openApp(page, { gplay: { syn: 5, listen: 3, match: 1 } });
+  await page.evaluate(() => go('games'));
+  const view = page.locator('#view');
+  const sec = (t) => view.locator('.games-sec', { hasText: t }).locator('+ .game-grid [data-game]');
+  await expect(sec('เล่นบ่อย')).toHaveCount(2);                 // match (1 round) is not frequent yet
+  expect(await sec('เล่นบ่อย').evaluateAll((els) => els.map((e) => e.dataset.game))).toEqual(['syn', 'listen']);
+  await view.locator('#gEdit').click();
+  await view.locator('.gedit-row[data-id="emoji"] [data-pin]').click();
+  await view.locator('.gedit-row[data-id="listen"] [data-pin]').click();
+  await view.locator('.gedit-row[data-id="listen"] [data-up]').click();   // listen moves above emoji
+  await view.locator('.gedit-row[data-id="spell"] [data-hide]').click();
+  await view.locator('#gEdit').click();
+  expect(await sec('เกมโปรด').evaluateAll((els) => els.map((e) => e.dataset.game))).toEqual(['listen', 'emoji']);
+  expect(await sec('เล่นบ่อย').evaluateAll((els) => els.map((e) => e.dataset.game))).toEqual(['syn']);
+  await expect(view.locator('.game-grid:not(.hidden-games .game-grid) [data-game="spell"]')).toHaveCount(0);
+  await expect(view.locator('.hidden-games [data-game="spell"]')).toHaveCount(1);
+  const st = await readState(page);
+  expect(st.settings.gamePin).toEqual(['listen', 'emoji']);
+  expect(st.settings.gameHide).toEqual(['spell']);
+  // starting a game counts a play
+  await page.evaluate(() => startGame('en2th'));
+  expect((await readState(page)).gplay.en2th).toBe(1);
+  // unhide again
+  await page.evaluate(() => go('games'));
+  await view.locator('#gEdit').click();
+  await view.locator('.gedit-row[data-id="spell"] [data-hide]').click();
+  await expect(view.locator('.gedit-row[data-id="spell"] [data-hide]')).toHaveAttribute('aria-pressed', 'false');
+  expect(errors).toEqual([]);
+});

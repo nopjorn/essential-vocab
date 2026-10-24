@@ -153,6 +153,15 @@ button { touch-action: manipulation; cursor: pointer; }
 .bar .m { position: absolute; inset: 0 auto 0 0; background: var(--good); }
 
 .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.games-sec { margin: 4px 4px 8px; }
+.games-sec + .game-grid { margin-bottom: 14px; }
+.games-head { align-items: center; margin: 16px 4px 10px; }
+.hidden-games { margin-top: 14px; }
+.hidden-games summary { cursor: pointer; }
+.gedit-row { display: flex; align-items: center; gap: 6px; padding: 6px 4px 6px 12px; margin-bottom: 6px; border-radius: 12px; background: var(--surface-2); }
+.gedit-row .icon-btn { flex: none; }
+.gedit-row .icon-btn:not(.on):not([data-up]):not([data-down]) { filter: grayscale(1); opacity: .45; }
+.gedit-row .icon-btn:disabled { opacity: .25; }
 .game-tile {
   background: var(--surface); border: 0; border-radius: var(--radius); padding: 18px 14px; text-align: left; box-shadow: var(--shadow);
   display: flex; flex-direction: column; gap: 6px; min-height: 120px;

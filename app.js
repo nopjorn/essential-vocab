@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.51.1';
+const APP_VERSION = '1.52.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -58,7 +58,7 @@ const MASTERED = 4;
 const KEY = 'oxford3000.v1';
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, nextGames: [], riddleLv: ['A1', 'A2'] },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -90,6 +90,7 @@ const defaults = () => ({
   stk: {},             // topic id -> sticker tier reached (1 bronze … 4 diamond)
   wotdPick: null,      // {day, key, w}: today's word of the day (kept steady even as progress changes)
   seenVer: null,       // app version whose "what's new" prompt was shown (device-local, not merged from backups)
+  gplay: {},           // game id -> rounds started (games menu "เล่นบ่อย" row)
   homeCfg: null,       // home layout [{id, on, w: 'full'|'half'}] in display order; null = default (see HOME_BLOCKS)
 });
 let S = load();
@@ -155,6 +156,7 @@ function mergeBackup(d) {
   }
   for (const [k, v] of Object.entries(d.hist || {})) S.hist[k] = Math.max(S.hist[k] || 0, v);
   for (const [k, v] of Object.entries(d.best || {})) S.best[k] = Math.max(S.best[k] || 0, v);
+  for (const [k, v] of Object.entries(d.gplay || {})) S.gplay[k] = Math.max(S.gplay[k] || 0, v);
   if (d.streak && ((d.streak.last || '') > (S.streak.last || '') || (d.streak.last === S.streak.last && d.streak.count > S.streak.count))) S.streak = d.streak;
   if (d.daily && d.daily.date === S.daily.date) {
     S.daily.fresh = Math.max(S.daily.fresh, d.daily.fresh || 0);
