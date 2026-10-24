@@ -317,15 +317,47 @@ const GUIDE = [
       <li><b>ไม่เห็นฟีเจอร์ใหม่:</b> ปิดแอปแล้วเปิดใหม่ตอนต่อเน็ต แล้วเช็คเลขเวอร์ชัน</li>
     </ul>`],
 ];
+// Manual sections grouped for the contents page (by title; a section not listed lands in the last group).
+const GUIDE_GROUPS = [
+  ['🌱', 'เริ่มต้น', ['เริ่มต้นใช้งาน', 'ใช้บน iPhone / iPad และแนวนอน', 'จัดหน้าแรกเอง', 'แบบทดสอบวัดระดับ']],
+  ['📚', 'เรียนและฝึก', ['แฟลชการ์ดและ 4 ปุ่ม', 'ไถศัพท์ และเล่นด่วน', 'เล่นหลายรอบในวันเดียว', 'คำดื้อ และวิธีจำของฉัน', 'เกมทั้ง 19 แบบ', 'เรียนตามหมวด', 'เรียนตามเป้าหมาย', 'ศัพท์ตามสถานการณ์', 'อ่านเรื่องสั้น', 'รายการคำศัพท์', 'ปริศนาศัพท์ประจำวัน', 'ชุดของฉัน']],
+  ['🏆', 'ความก้าวหน้าและรางวัล', ['XP และเลเวล', 'สถิติและการคาดการณ์', 'สตรีค ภารกิจ และเหรียญ']],
+  ['⚙️', 'ตั้งค่าและข้อมูล', ['เสียงอ่านและธีม', 'สำรองและกู้คืนข้อมูล', 'ซิงก์ข้อมูลอัตโนมัติ', 'อัปเดตแอป']],
+  ['💡', 'ทริกและช่วยเหลือ', []],
+];
+function guideGroupOf(title) {
+  const k = GUIDE_GROUPS.findIndex((g) => g[2].includes(title));
+  return k < 0 ? GUIDE_GROUPS.length - 1 : k;
+}
 function renderGuide(from) {
   const back = from || 'home';
+  const sec = (icon, title, body, open) => `<details class="card-box g-sec"${open ? ' open' : ''}>
+      <summary><span class="g-ic" aria-hidden="true">${icon}</span><b>${title}</b></summary><div class="g-body">${body}</div></details>`;
+  const groups = GUIDE_GROUPS.map(([ic, name], k) => {
+    const items = GUIDE.filter((g) => guideGroupOf(g[1]) === k);
+    return items.length ? `<section class="g-group"><h2 class="g-h"><span aria-hidden="true">${ic}</span>${name}<small>${items.length} หัวข้อ</small></h2>
+      ${items.map(([icon, title, body]) => sec(icon, title, body, title === 'เริ่มต้นใช้งาน')).join('')}</section>` : '';
+  }).join('');
   view.innerHTML = `
     <div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="gBack">‹ กลับ</button></div>
-    <p class="small muted" style="margin:0 4px 12px">แตะหัวข้อเพื่อเปิดอ่าน</p>
-    <div class="guide">${GUIDE.map(([icon, title, body], i) => `<details class="card-box"${i === GUIDE.length - 2 ? ' open' : ''}>
-      <summary><span>${icon}</span><b>${title}</b></summary><div class="g-body">${body}</div></details>`).join('')}</div>
+    <div class="g-hero"><div class="g-hero-ic" aria-hidden="true">📖</div><div><b>คู่มือการใช้งาน</b><div class="small muted">${GUIDE.length} หัวข้อ · แตะเพื่อเปิดอ่าน</div></div></div>
+    <input class="g-search" id="gSearch" type="search" placeholder="🔍 ค้นหาในคู่มือ เช่น สตรีค, สำรอง, เกม" aria-label="ค้นหาในคู่มือ" autocomplete="off">
+    <div class="guide" id="gList">${groups}</div>
+    <div class="empty-box" id="gNone" hidden><div class="em">🔎</div><div>ไม่พบหัวข้อที่ตรงกัน<div class="small muted">ลองคำสั้นลง หรือคำอื่นที่ใกล้เคียง</div></div></div>
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
   $('#gBack').onclick = () => go(back);
+  const inp = $('#gSearch'), secs = [...view.querySelectorAll('.g-sec')], opened = secs.map((d) => d.open);
+  inp.oninput = () => {
+    const q = inp.value.trim().toLowerCase();
+    let n = 0;
+    secs.forEach((d, i) => {
+      const hit = !q || d.textContent.toLowerCase().includes(q);
+      d.hidden = !hit; if (hit) n++;
+      d.open = q ? hit : opened[i];
+    });
+    view.querySelectorAll('.g-group').forEach((g) => { g.hidden = ![...g.querySelectorAll('.g-sec')].some((d) => !d.hidden); });
+    $('#gNone').hidden = n > 0;
+  };
 }
 
 let CHANGELOG = null;

@@ -1210,3 +1210,22 @@ html.no-ans .streak.bump { animation: none; }
 .mascot-pic { flex: none; padding: 0; background: none; border: 0; line-height: 0; }
 .chip.wd:disabled { opacity: .55; }
 .result-emoji .mascot { margin: 0 auto; }
+
+/* guide page (1.77): hero, search, grouped sections */
+.g-hero { display: flex; align-items: center; gap: 14px; padding: 4px 4px 12px; }
+.g-hero-ic { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px; font-size: 28px; background: linear-gradient(135deg, var(--primary), var(--pink)); }
+.g-hero b { font-size: 20px; }
+.g-search { width: 100%; box-sizing: border-box; padding: 12px 16px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); font: inherit; font-size: var(--fs-md, 16px); }
+.g-search:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+.g-group { margin-top: 18px; }
+.g-h { display: flex; align-items: baseline; gap: 8px; margin: 0 4px 8px; font-size: 15px; letter-spacing: .2px; color: var(--muted); }
+.g-h small { margin-left: auto; font-weight: 400; font-size: var(--fs-xs); }
+.guide .g-sec { margin-bottom: 10px; }
+.g-ic { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 12px; background: color-mix(in srgb, var(--primary) 16%, var(--surface-2)); font-size: 20px; }
+.guide .g-sec[open] { border-color: color-mix(in srgb, var(--primary) 45%, transparent); }
+.guide .g-sec[open] summary { border-bottom: 1px solid var(--surface-2); margin-bottom: 10px; }
+.g-body li::marker { color: var(--primary); font-weight: 700; }
+.g-body b { color: var(--text); }
+.g-sec[hidden], .g-group[hidden] { display: none; }
+@media (min-width: 900px) { .guide { max-width: 760px; margin-inline: auto; } .g-hero, .g-search { max-width: 760px; margin-inline: auto; } }
+.empty-box[hidden] { display: none; }

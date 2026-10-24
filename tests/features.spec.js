@@ -1181,3 +1181,22 @@ test('speed check (1.76): settings button measures boot, home, stats and save an
   await expect(page.locator('#perfBtn')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('guide (1.77): grouped sections, search filters and opens matches, empty state', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => go('guide'));
+  const total = await page.evaluate(() => GUIDE.length);
+  expect(await page.locator('.g-sec').count()).toBe(total);
+  expect(await page.locator('.g-group').count()).toBeGreaterThanOrEqual(4);
+  await page.locator('#gSearch').fill('สำรอง');
+  const shown = await page.locator('.g-sec:not([hidden])').count();
+  expect(shown).toBeGreaterThan(0);
+  expect(shown).toBeLessThan(total);
+  expect(await page.locator('.g-sec:not([hidden]):not([open])').count()).toBe(0);
+  await page.locator('#gSearch').fill('zzzqqq');
+  await expect(page.locator('#gNone')).toBeVisible();
+  await page.locator('#gSearch').fill('');
+  expect(await page.locator('.g-sec:not([hidden])').count()).toBe(total);
+  await expect(page.locator('#gNone')).toBeHidden();
+  expect(errors).toEqual([]);
+});
