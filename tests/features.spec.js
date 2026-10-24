@@ -1200,3 +1200,17 @@ test('guide (1.77): grouped sections, search filters and opens matches, empty st
   await expect(page.locator('#gNone')).toBeHidden();
   expect(errors).toEqual([]);
 });
+
+test('guide (1.77.3): nothing open by default, every game is in the manual, group titles all exist', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => go('guide'));
+  expect(await page.locator('.g-sec[open]').count()).toBe(0);
+  const miss = await page.evaluate(() => {
+    const txt = GUIDE.map((g) => g[2]).join(' ');
+    return Object.values(GAMES).map((g) => g.name).filter((n) => !txt.includes(n));
+  });
+  expect(miss).toEqual([]);
+  const stray = await page.evaluate(() => GUIDE_GROUPS.flatMap((g) => g[2]).filter((t) => !GUIDE.some((s) => s[1] === t)));
+  expect(stray).toEqual([]);
+  expect(errors).toEqual([]);
+});
