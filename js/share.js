@@ -84,6 +84,20 @@ function yearSlides(s) {
   slides.push({ e: '🚀', big: 'ปีหน้าไปต่อ!', line: `Lv.${levelOf(S.xp)} · ${(S.xp || 0).toLocaleString()} XP` });
   return slides;
 }
+// A slide's caption cut into phrases at " · " and "(" (outside brackets): each phrase is an inline-block, so a line break
+// can only fall between phrases and never splits a Thai word or leaves a lone number on the last line.
+function yearLine(line) {
+  const parts = []; let cur = '', depth = 0;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '(' && !depth && cur.trim()) { parts.push(cur.trim()); cur = ''; }
+    if (ch === '(') depth++; else if (ch === ')') depth = Math.max(0, depth - 1);
+    if (!depth && line.startsWith(' · ', i)) { parts.push(cur.trim() + '\u00A0·'); cur = ''; i += 2; continue; }
+    cur += ch;
+  }
+  if (cur.trim()) parts.push(cur.trim());
+  return parts.map((t) => `<span class="yl">${esc(t)}</span>`).join(' ');
+}
 function renderYear(arg) {
   const y = +arg || yearToShow() || new Date().getFullYear(), s = yearStats(y);
   if (!s.days) {
@@ -94,7 +108,7 @@ function renderYear(arg) {
   const show = () => {
     const sl = slides[i];
     view.innerHTML = `<div class="card-box center pop year-slide"><div class="result-emoji" aria-hidden="true">${sl.e}</div>
-      <div class="h1 year-big">${esc(String(sl.big))}</div><p>${esc(sl.line)}</p>
+      <div class="h1 year-big">${esc(String(sl.big))}</div><p>${yearLine(sl.line)}</p>
       <div class="year-dots" aria-label="${i + 1}/${slides.length}">${slides.map((_, k) => `<i${k === i ? ' class="on"' : ''}></i>`).join('')}</div>
       <div class="row year-nav">${i ? '<button class="btn" id="yPrev">‹ ก่อนหน้า</button>' : ''}
       ${i < slides.length - 1 ? '<button class="btn primary grow" id="yNext">ต่อไป ›</button>' : '<button class="btn primary grow" id="yShare">📤 แชร์สรุปปี</button><button class="btn" id="yDone">เสร็จ</button>'}</div></div>`;

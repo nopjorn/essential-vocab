@@ -1240,8 +1240,9 @@ html.no-ans .streak.bump { animation: none; }
 .year-slide { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: min(74dvh, 680px); padding: 28px 22px 22px; background: radial-gradient(circle at 50% 28%, color-mix(in srgb, var(--primary) 22%, var(--surface)), var(--surface) 70%); }
 .year-slide .result-emoji { font-size: 96px; line-height: 1.1; margin-top: auto; }
 .year-slide .year-big { margin: 0; font-size: 44px; line-height: 1.15; }
-.year-slide p { margin: 0; font-size: 18px; line-height: 1.5; max-width: 30ch; }
+.year-slide p { margin: 0; font-size: 18px; line-height: 1.5; max-width: 34ch; text-wrap: balance; }
 .year-dots { display: flex; gap: 6px; margin-top: auto; padding-top: 18px; }
 .year-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--surface-2); }
 .year-dots i.on { width: 20px; border-radius: 99px; background: var(--primary); }
 .year-nav { width: 100%; margin-top: 8px; }
+.year-slide .yl { display: inline-block; max-width: 100%; }
