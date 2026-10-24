@@ -1072,4 +1072,6 @@ details.danger-group > summary { color: var(--bad); }
 .pal button { display: grid; place-items: center; width: 44px; height: 44px; padding: 3px; border-radius: 50%; border: 3px solid transparent; background: none; }
 .pal button i { width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(135deg, var(--sw1), var(--sw2)); font-style: normal; color: #fff; display: grid; place-items: center; font-size: 16px; font-weight: 800; }
 .pal button.on { border-color: var(--text); }
+.pal.ico button { width: 54px; height: 54px; border-radius: 14px; padding: 3px; }
+.pal.ico button img { width: 100%; height: 100%; border-radius: 10px; display: block; }
 .pal button:focus-visible { outline: 2px solid var(--primary-text); outline-offset: 2px; }

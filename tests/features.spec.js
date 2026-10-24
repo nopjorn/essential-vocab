@@ -628,3 +628,18 @@ test('colour palettes + black theme: settings switch html attributes, persist, n
   expect(await root.getAttribute('data-palette')).toBeNull();
   expect(errors).toEqual([]);
 });
+
+test('app icon picker: settings swap the touch icon, persist, no overflow', async ({ page }) => {
+  const errors = await openApp(page, {});
+  await page.evaluate(() => go('settings'));
+  await page.locator('details[data-g="look"] > summary').click();
+  await expect(page.locator('#iconPick button')).toHaveCount(6);
+  await page.locator('#iconPick [data-i="dark"]').click();
+  await expect(page.locator('#iconPick [data-i="dark"]')).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.locator('link[rel="apple-touch-icon"]').getAttribute('href')).toBe('icons/apple-touch-icon-dark.png');
+  const st = await page.evaluate(() => JSON.parse(localStorage['oxford3000.v1']));
+  expect(st.settings.icon).toBe('dark');
+  await page.locator('#iconPick [data-i="purple"]').click();
+  expect(await page.locator('link[rel="apple-touch-icon"]').getAttribute('href')).toBe('icons/apple-touch-icon.png');
+  expect(errors).toEqual([]);
+});

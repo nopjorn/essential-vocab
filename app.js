@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.49.0';
+const APP_VERSION = '1.50.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -58,7 +58,7 @@ const MASTERED = 4;
 const KEY = 'oxford3000.v1';
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', wotd: { lv: [], st: [], tp: [] }, nextGames: [], riddleLv: ['A1', 'A2'] },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, nextGames: [], riddleLv: ['A1', 'A2'] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -508,6 +508,15 @@ function applyTheme() {
   if (meta) meta.content = getComputedStyle(root).getPropertyValue('--primary').trim() || '#6c5ce7';
 }
 applyTheme();
+// App icon: the home-screen icon is copied by iOS when "Add to Home Screen" is used, so this only swaps the
+// <link rel="apple-touch-icon"> (+ settings page preview). A change needs the icon to be re-added (backup first).
+const ICONS = [['purple', 'ม่วง'], ['dark', 'มืด'], ['black', 'ดำสนิท'], ['light', 'ขาว'], ['ocean', 'ฟ้าทะเล'], ['sakura', 'ชมพู']];
+const iconSrc = (id) => id === 'purple' ? 'icons/apple-touch-icon.png' : `icons/apple-touch-icon-${id}.png`;
+function applyIcon() {
+  const id = ICONS.some((x) => x[0] === S.settings.icon) ? S.settings.icon : 'purple';
+  const l = document.querySelector('link[rel="apple-touch-icon"]'); if (l) l.href = iconSrc(id);
+}
+applyIcon();
 // Animation switches (settings → หน้าตา), each on its own: animPage → page slides (html.no-vt),
 // animAnswer → bounce/shake on answers (html.no-ans), confetti. 1.39.1 had one `anim` switch for all three.
 if (S.settings.anim === false) { S.settings.animPage = S.settings.animAnswer = S.settings.confetti = false; }
