@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.63.0';
+const APP_VERSION = '1.66.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -154,7 +154,7 @@ function sanitizeDecks(r) {
 }
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -164,6 +164,8 @@ const defaults = () => ({
   star: {},            // word -> 1 for starred words
   freeze: 0,           // streak freezes in stock (max MAX_FREEZE)
   ach: {},             // achievement id -> date unlocked
+  lex: {},             // skill-game item key -> { b, i, e, d, s, c, x } like prog: wrong items come back on schedule (1.65)
+  spc: { t: 0, n: 0 }, // time spent on graded cards: seconds, count (rolling) → seconds per card (1.63)
   wnew: { key: '', n: 0 }, // new words started this week (1.62)
   readyAt: {},         // story level -> best 'known words' threshold reached (90/95) (1.62)
   repair: null,        // streak repair offer {count, at, base, need, done} (1.61)
@@ -297,6 +299,10 @@ function mergeBackup(d) {
     if (!cur) { S.prog[w] = p; added++; }
     else if (ahead(p, cur) > 0) { S.prog[w] = p; updated++; }
   }
+  for (const [k, p] of Object.entries(d.lex || {})) {
+    if (!p || typeof p.b !== 'number' || typeof p.d !== 'number') continue;
+    if (!S.lex[k] || progAhead(p, S.lex[k]) > 0) S.lex[k] = p;
+  }
   for (const [k, v] of Object.entries(d.hist || {})) S.hist[k] = Math.max(S.hist[k] || 0, v);
   for (const [k, v] of Object.entries(d.best || {})) S.best[k] = Math.max(S.best[k] || 0, v);
   for (const [dev, m] of Object.entries(gplayFix(d.gplay))) {
@@ -334,6 +340,7 @@ function mergeBackup(d) {
   }
   for (const [k, v] of Object.entries(d.counts || {})) S.counts[k] = Math.max(S.counts[k] || 0, v);
   S.freeze = Math.max(S.freeze || 0, d.freeze || 0);
+  if (d.spc && d.spc.n > (S.spc.n || 0)) S.spc = { t: +d.spc.t || 0, n: +d.spc.n || 0 };
   if ((d.weekSeen || '') > (S.weekSeen || '')) S.weekSeen = d.weekSeen;
   if ((d.monthSeen || '') > (S.monthSeen || '')) S.monthSeen = d.monthSeen;
   S.xp = Math.max(S.xp || 0, d.xp || 0);
@@ -406,7 +413,7 @@ function markActive() {
     S.streak.count = 1;
     if (missed >= 30 && missed !== Infinity) S.counts.comeback = 1;
     if (lost >= 3) {
-      S.repair = { count: lost, at: Date.now(), base: S.hist[t], need: Math.max(20, 2 * S.settings.newPerDay), done: false };
+      S.repair = { count: lost, at: Date.now(), base: S.hist[t], need: Math.max(20, 2 * newGoal()), done: false };
       setTimeout(() => toast(`💔 สตรีค ${lost} วันขาดไป แต่ซ่อมได้ภายใน 48 ชม.! ดูที่หน้าแรก`), 1500);
     }
   }
@@ -448,7 +455,7 @@ const QUESTS = [
   { id: 'feed', tier: 0, text: 'ไถศัพท์ ตอบถูก 15 ข้อ', target: 15, go: 'feed', ev: (n, t, d) => (t === 'answer' && d.game === 'feed' && d.ok ? n + 1 : n) },
   { id: 'story', tier: 0, text: 'อ่านเรื่องสั้นให้จบ 1 เรื่อง', target: 1, go: 'read', ev: (n, t) => (t === 'story' ? n + 1 : n) },
   { id: 'cards', tier: 1, text: 'ทำแฟลชการ์ดให้ครบ 30 ใบ', target: 30, ev: (n, t) => (t === 'card' ? n + 1 : n) },
-  { id: 'fresh', tier: 1, text: 'เรียนคำใหม่ให้ครบเป้าวันนี้', target: () => S.settings.newPerDay, ev: (n, t) => (t === 'card' ? S.daily.fresh : n) },
+  { id: 'fresh', tier: 1, text: 'เรียนคำใหม่ให้ครบเป้าวันนี้', target: () => newGoal(), ev: (n, t) => (t === 'card' ? S.daily.fresh : n) },
   { id: 'cloze', tier: 1, text: 'เติมคำในประโยค ถูก 8 ข้อขึ้นไปในรอบเดียว', target: 1, game: 'cloze', ev: (n, t, d) => (t === 'round' && d.game === 'cloze' && d.correct >= 8 ? n + 1 : n) },
   { id: 'listen', tier: 1, text: 'ฟังแล้วตอบ ถูก 8 ข้อขึ้นไปในรอบเดียว', target: 1, game: 'listen', ev: (n, t, d) => (t === 'round' && d.game === 'listen' && d.correct >= 8 ? n + 1 : n) },
   { id: 'th2en', tier: 1, text: 'ทายคำศัพท์ ถูก 8 ข้อขึ้นไปในรอบเดียว', target: 1, game: 'th2en', ev: (n, t, d) => (t === 'round' && d.game === 'th2en' && d.correct >= 8 ? n + 1 : n) },
@@ -821,10 +828,38 @@ function status(w, map = S.prog) {
   return p.b >= MASTERED ? 'mastered' : 'learning';
 }
 const pool = () => W.filter((w) => S.settings.levels.includes(w.g));
-const dueList = (list = pool(), map = S.prog) => {
+// Reviews come from every word already learned (any level); only new words are limited to settings.levels (pool()).
+const dueList = (list = W, map = S.prog) => {
   const now = Date.now();
   return list.filter((w) => map[w.w] && map[w.w].d <= now).sort((a, b) => map[a.w].d - map[b.w].d);
 };
+
+/* ---------- daily goal in minutes (1.63) ---------- */
+// grade() measures the seconds between consecutive graded cards (gaps over a minute = a pause, ignored). With
+// settings.minutes (10/15/20/30) the new-words goal is worked out from that budget: minutes ÷ seconds per card =
+// cards for today, minus the reviews (done + still due), divided by what a new card costs (it comes back 2–3 times).
+const NEW_COST = 2.5, SPC_DEFAULT = 9;
+let gradeAt = 0;
+function timeCard() {
+  const now = Date.now(), dt = (now - gradeAt) / 1000;
+  gradeAt = now;
+  if (dt < 1 || dt > 60) return;
+  S.spc.t += dt; S.spc.n++;
+  if (S.spc.n > 600) { S.spc.t /= 2; S.spc.n = Math.round(S.spc.n / 2); }
+}
+const secPerCard = () => (S.spc.n >= 30 ? Math.min(30, Math.max(3, S.spc.t / S.spc.n)) : SPC_DEFAULT);
+// New words to learn today: the fixed setting, or — with a minutes goal — what fits the time left over from reviews.
+function newGoal() {
+  const m = S.settings.minutes | 0;
+  if (!m) return S.settings.newPerDay;
+  rollDay();
+  // fixed at the first look of the day (per minutes setting) so repeats within a session don't shrink the goal as you go
+  if (!S.daily.ng || S.daily.ng.m !== m) {
+    const cards = m * 60 / secPerCard(), reviews = S.daily.reviews + dueList().length;
+    S.daily.ng = { m, v: Math.max(0, Math.min(100, Math.floor((cards - reviews) / NEW_COST))) };
+  }
+  return S.daily.ng.v;
+}
 
 /* ---------- gentle comeback (1.60) ---------- */
 // A big pile of overdue cards (> BACKLOG_PAUSE) pauses new words and is served BACKLOG_CAP a day, most overdue first,
@@ -989,13 +1024,14 @@ function logMiss(w) {
 // With another table (a word set) the daily new/review counts and the missed-word log are left alone: they belong to the main list.
 function grade(w, g, map = S.prog) {
   const main = map === S.prog;
+  timeCard();
   markActive();
   const p = map[w.w];
   const leechHit = main && p && (p.x || 0) >= LEECH && g >= 2;
   if (!main) { /* a set: only effort counts (XP, streak, history, quests) */ }
   else if (!p) {
     S.daily.fresh++; wnewAdd();
-    if (S.daily.fresh === S.settings.newPerDay) setTimeout(() => { confetti(); toast('🎯 ครบเป้าคำใหม่วันนี้แล้ว เก่งมาก!'); }, 300);
+    if (S.daily.fresh === newGoal()) setTimeout(() => { confetti(); toast('🎯 ครบเป้าคำใหม่วันนี้แล้ว เก่งมาก!'); }, 300);
   } else S.daily.reviews++;
   const n = sched(p, g);
   map[w.w] = {
@@ -1014,6 +1050,34 @@ function grade(w, g, map = S.prog) {
   if (leechHit) questEvent('leech');
   questEvent('card');
 }
+// Skill games (phrasal verbs, idioms, confusable pairs, ...) have no word of their own, so each question gets a key
+// (game + short hash of its text) in S.lex and is scheduled like a word: wrong → back tomorrow-ish, right → longer gaps.
+function lexKey(game, w) {
+  const src = [w.w, w.t, w._q ? w._q[0] : ''].join('|');
+  let h = 5381; for (let k = 0; k < src.length; k++) h = ((h << 5) + h + src.charCodeAt(k)) >>> 0;
+  return game + ':' + h.toString(36);
+}
+function lexGrade(key, ok) {
+  const p = S.lex[key], n = sched(p, ok ? 2 : 0);
+  S.lex[key] = { b: n.b, i: n.i, e: n.e, d: dueAt(n.i), s: (p ? p.s : 0) + 1, c: (p ? p.c : 0) + (ok ? 1 : 0), x: (p ? p.x : 0) + (ok ? 0 : 1) };
+}
+// Pick `n` questions: those due for review first (at most 7, oldest first), then ones never asked, then the rest.
+function lexPick(game, src, n) {
+  const now = Date.now(), at = (w) => S.lex[lexKey(game, w)];
+  const due = src.filter((w) => at(w) && at(w).d <= now).sort((a, b) => at(a).d - at(b).d).slice(0, 7);
+  const rest = shuffle(src.filter((w) => !due.includes(w)));
+  const fresh = rest.filter((w) => !at(w)), seen = rest.filter((w) => at(w));
+  return shuffle(due.concat(fresh, seen).slice(0, n));
+}
+function lexStats(game) {
+  const now = Date.now(); let seen = 0, solid = 0, due = 0;
+  for (const [k, p] of Object.entries(S.lex)) {
+    if (!k.startsWith(game + ':')) continue;
+    seen++; if (p.i >= 7) solid++; if (p.d <= now) due++;
+  }
+  return { seen, solid, due };
+}
+
 // Lighter update from games: a right answer seeds/advances a little, a wrong one sends it back for review.
 function gameResult(w, ok, map = S.prog) {
   markActive();

@@ -350,7 +350,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
   const ROUND = 10;
   // Endless run (emojiRun): no round limit, wrong answers only reset the streak; the player ends it themselves.
   const ENDLESS = gameId === 'emojiRun';
-  const items = shuffle(src).slice(0, ENDLESS ? src.length : ROUND);
+  const items = SKILL_GAMES.includes(gameId) ? lexPick(gameId, src, ROUND) : shuffle(src).slice(0, ENDLESS ? src.length : ROUND);
   let i = 0, score = 0, combo = 0, bestCombo = 0, asked = 0;
   const wrong = [];
   $('#title').textContent = GAMES[gameId].name;
@@ -421,7 +421,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
       if (!ok) b.classList.add('wrong');
       mark(w, ok);
       $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! <b>${esc(w.w)}</b> = ${esc(w.t)}` : `❌ <b>${esc(w.w)}</b> = ${esc(w.t)}`)
-        + (m === 'cloze' || !ok ? exampleBox(w) : '')
+        + (m === 'cloze' || !ok ? hookBox(w) + exampleBox(w) : '')
         + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
       bindSayEx(view, w.e); // buttons only present when the example is shown
       $('#nextQ').onclick = next;
@@ -455,7 +455,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
       mark(w, ok);
       inp.blur(); inp.value = w.w; inp.classList.add(ok ? 'ok' : 'no');
       $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! ${esc(w.i)}` : `❌ คำตอบคือ <b>${esc(w.w)}</b> ${esc(w.i)}`)
-        + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+        + hookBox(w) + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
       bindSayEx(view, w.e);
       $('#nextQ').onclick = next;
       speak(w.w);
@@ -496,7 +496,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
       mic.disabled = true;
       $('#skip').remove();
       $('#reveal').innerHTML = (ok ? `✅ ออกเสียงถูกแล้ว! <b>${esc(w.w)}</b>` : `👂 ลองฟังแล้วพูดตามอีกครั้งนะ <b>${esc(w.w)}</b> ${esc(w.i)}`)
-        + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+        + hookBox(w) + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
       bindSayEx(view, w.e);
       $('#nextQ').onclick = () => { cleanup = null; next(); };
       if (!ok) speak(target);
@@ -558,7 +558,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
       mark(w, ok);
       inp.blur(); inp.value = answerWord; inp.classList.add(ok ? 'ok' : 'no');
       $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! <b>${esc(w.w)}</b> = ${esc(w.t)}` : `❌ คำตอบคือ <b>${esc(answerWord)}</b> (${esc(w.t)})`)
-        + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+        + hookBox(w) + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
       bindSayEx(view, w.e);
       $('#nextQ').onclick = next;
       if (ok) setTimeout(() => { if (items[i] === w) next(); }, 1500);
@@ -850,7 +850,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
       mark(w, ok);
       if (ENDLESS) $('#runStat').innerHTML = `🔥 <b>${combo}</b> · 🏅 ${Math.max(S.best[gameId] || 0, bestCombo)}`;
       $('#reveal').innerHTML = `${ok ? (ENDLESS && combo >= 2 ? `✅ ติดต่อกัน ${combo} ข้อ! 🔥` : '✅ ถูกต้อง!') : (ENDLESS && bestCombo > 0 ? '❌ สตรีคจบที่ ' + bestCombo + ' · เริ่มนับใหม่' : '❌')} ${EMOJI[w.w]} <b lang="en">${esc(w.w)}</b> = ${esc(w.t)}`
-        + (ok ? '' : exampleBox(w))
+        + (ok ? '' : hookBox(w) + exampleBox(w))
         + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
       bindSayEx(view, w.e);
       $('#nextQ').onclick = next;
@@ -962,6 +962,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
     const spk = gameId === 'speak' || gameId === 'speakS';
     const soft = spk || gameId === 'order' || gameId === 'sOrder';
     asked++;
+    if (w.idx < 0 && SKILL_GAMES.includes(gameId)) lexGrade(lexKey(gameId, w), ok);
     if (w.idx < 0 || (soft && !ok) || deckRun.practice) markActive(); else gameResult(w, ok, deckRun.map);
     if (spk && ok) S.counts.speak = (S.counts.speak || 0) + 1;
     questEvent('answer', { game: gameId, ok });

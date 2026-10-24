@@ -44,7 +44,7 @@ function learnRate(h) {
     const r = (S.snap[today()][2] - S.snap[old][2]) / dayDiff(today(), old);
     if (r > 0) return { rate: r, measured: true };
   }
-  return { rate: S.settings.newPerDay * h.ratio, measured: false };
+  return { rate: newGoal() * h.ratio, measured: false };
 }
 
 // Days until every word in a set is "จำได้แล้ว": time to meet the remaining words, plus the time the
@@ -55,6 +55,15 @@ function etaDays(total, learned, rate, h) {
   if (rate <= 0) return null;
   const lag = 11 / Math.max(0.5, h.acc || 0.8) / Math.max(0.2, h.ratio || 1);
   return (total - learned) / rate + lag;
+}
+
+// Skill games on a review schedule (S.lex): per game how many questions were asked, how many are solid (gap ≥ 7 days) and due now.
+function skillCard() {
+  const rows = SKILL_GAMES.map((g) => ({ g, ...lexStats(g) })).filter((r) => r.seen);
+  if (!rows.length) return '';
+  return `<div class="h2">🧩 เกมฝึกทักษะ — ข้อที่ต้องทวน</div><div class="card-box">
+    <table class="g-table"><tr><th>เกม</th><th>เคยเจอ</th><th>แม่นแล้ว</th><th>ถึงกำหนด</th></tr>${rows.map((r) => `<tr><td>${GAMES[r.g].icon} ${esc(GAMES[r.g].name)}</td><td>${r.seen}</td><td>${r.solid}</td><td>${r.due ? `<b>${r.due}</b>` : '–'}</td></tr>`).join('')}</table>
+    <div class="small muted" style="margin-top:8px">ข้อที่ตอบผิดจะกลับมาให้ทวนในรอบถัดไปของเกมนั้นเอง ข้อที่ตอบถูกจะห่างออกไปเรื่อยๆ</div></div>`;
 }
 
 function renderStats(from) {
@@ -80,13 +89,13 @@ function renderStats(from) {
       <div style="margin-top:10px">${when}</div></div>`;
   };
   const opts = [10, 20, 30, 50];
-  if (!opts.includes(S.settings.newPerDay)) opts.push(S.settings.newPerDay), opts.sort((a, b) => a - b);
+  if (!opts.includes(newGoal())) opts.push(newGoal()), opts.sort((a, b) => a - b);
   const ratio = h.ratio || 1;
   const whatIf = opts.map((n) => {
-    const r = n === S.settings.newPerDay && rate > 0 ? rate : n * ratio; // current setting: same rate as the cards above
+    const r = n === newGoal() && rate > 0 ? rate : n * ratio; // current setting: same rate as the cards above
     const e3 = etaDays(in3000().size, snap[0], r, { ...h, ratio }), e5 = etaDays(W.length, snap[2], r, { ...h, ratio });
     const cell = (e, m, t) => (m >= t ? '✓ ครบแล้ว' : `${durTxt(e)}`);
-    return `<tr class="${n === S.settings.newPerDay ? 'cur' : ''}"><td>${n}${n === S.settings.newPerDay ? ' (ตอนนี้)' : ''}</td><td>${cell(e3, snap[1], in3000().size)}</td><td>${cell(e5, snap[3], W.length)}</td><td>~${n * 5}</td></tr>`;
+    return `<tr class="${n === newGoal() ? 'cur' : ''}"><td>${n}${n === newGoal() ? ' (ตอนนี้)' : ''}</td><td>${cell(e3, snap[1], in3000().size)}</td><td>${cell(e5, snap[3], W.length)}</td><td>~${n * 5}</td></tr>`;
   }).join('');
 
   const lvRow = (l) => {
@@ -109,6 +118,7 @@ function renderStats(from) {
       <div class="small muted" style="margin-top:8px"><span class="key bl"></span>เรียนแล้ว &nbsp; <span class="key bm"></span>จำได้แล้ว (ทบทวนผ่านหลายรอบ)</div></div>
     <div class="h2">📅 การ์ดที่ต้องทบทวน 7 วันข้างหน้า</div>
     <div class="card-box">${forecastChart()}</div>
+    ${skillCard()}
     <div class="h2">นิสัยการเล่น <span class="small muted">${h.span} วันล่าสุด</span></div>
     <div class="tiles">
       <div class="tile-s"><b>${h.active}<small>/${h.span}</small></b><span>วันที่เล่น</span></div>
@@ -139,7 +149,7 @@ function renderStats(from) {
     <div class="card-box">${trendChart(W_)}</div>
 
     <div class="h2">คาดการณ์ว่าจะจำได้ครบเมื่อไร</div>
-    ${rate > 0 ? `<p class="small muted" style="margin:-4px 4px 10px">คิดจากที่เรียนคำใหม่ได้ราว <b>${rate.toFixed(1)} คำ/วัน</b>${measured ? ' (วัดจากความคืบหน้าจริง)' : ` (ประมาณจากเป้า ${S.settings.newPerDay} คำ × เล่น ${h.active}/${h.span} วัน)`} และความแม่นยำ ${Math.round(h.acc * 100)}%</p>` : ''}
+    ${rate > 0 ? `<p class="small muted" style="margin:-4px 4px 10px">คิดจากที่เรียนคำใหม่ได้ราว <b>${rate.toFixed(1)} คำ/วัน</b>${measured ? ' (วัดจากความคืบหน้าจริง)' : ` (ประมาณจากเป้า ${newGoal()} คำ × เล่น ${h.active}/${h.span} วัน)`} และความแม่นยำ ${Math.round(h.acc * 100)}%</p>` : ''}
     ${sets.map(etaCard).join('')}
 
     <div class="h2">ถ้าปรับจำนวนคำใหม่ต่อวัน</div>

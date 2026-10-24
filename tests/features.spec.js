@@ -900,6 +900,17 @@ test('streak repair (1.61): broken 5-day streak is restored after 2x goal; expir
   expect(errors).toEqual([]);
 });
 
+test('reviews come from every learned level (1.62.1): A1 due cards stay in the queue when only A2 is selected', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A2'], newPerDay: 5 } });
+  await page.evaluate(() => {
+    W.filter((w) => w.g === 'A1').slice(0, 12).forEach((w, i) => { S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: Date.now() - (i + 1) * 3600000, s: 1, c: 1, x: 0 }; });
+  });
+  const r = await page.evaluate(() => { const q = buildQueue(); return { due: q.filter((w) => w.g === 'A1').length, fresh: q.filter((w) => !S.prog[w.w]).every((w) => w.g === 'A2'), n: dueList().length }; });
+  expect(r.due).toBe(12); expect(r.fresh).toBe(true); expect(r.n).toBe(12);
+  expect(await page.evaluate(() => buildQueue('ahead').length)).toBe(12);
+  expect(errors).toEqual([]);
+});
+
 test('1.62: 3-minute session, tomorrow box, weekly new-word goal, ready-to-read box', async ({ page }) => {
   const errors = await openApp(page, { settings: { levels: ['A1'], newPerDay: 10, weekGoal: 5 }, placedAt: '2026-01-01' });
   // home block + short queue
@@ -921,7 +932,92 @@ test('1.62: 3-minute session, tomorrow box, weekly new-word goal, ready-to-read 
   expect(errors).toEqual([]);
 });
 
-test('1.63: level test (gate, pass, medal), share card, year in review', async ({ page }) => {
+test('minutes goal (1.63): new words are worked out from time per card and the reviews due; fixed for the day', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'], newPerDay: 20, minutes: 0 } });
+  expect(await page.evaluate(() => newGoal())).toBe(20);
+  const r = await page.evaluate(() => {
+    S.spc = { t: 600, n: 60 }; // 10 s per card
+    S.settings.minutes = 10;   // 60 cards, none due -> floor(60 / 2.5) = 24
+    const none = newGoal();
+    // due reviews appear later in the day but the goal stays fixed
+    W.filter((w) => w.g === 'A1').slice(0, 20).forEach((w) => { S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: Date.now() - 1000, s: 1, c: 1, x: 0 }; });
+    const same = newGoal();
+    S.settings.minutes = 20;   // 120 cards - 20 due = 100 / 2.5 = 40
+    const twenty = newGoal();
+    S.settings.minutes = 10; delete S.daily.ng; // 60 - 20 = 40 / 2.5 = 16
+    return { none, same, twenty, ten: newGoal(), spc: secPerCard() };
+  });
+  expect(r).toEqual({ none: 24, same: 24, twenty: 40, ten: 16, spc: 10 });
+  // timing: two grades 5 s apart add to the average, a long pause is ignored
+  const t = await page.evaluate(() => {
+    S.spc = { t: 0, n: 0 }; const w = W.find((x) => x.g === 'A1' && !S.prog[x.w]);
+    gradeAt = Date.now() - 5000; grade(w, 2);
+    const a = { ...S.spc };
+    gradeAt = Date.now() - 120000; grade(W.find((x) => x.g === 'A1' && !S.prog[x.w]), 2);
+    return { a, b: { ...S.spc } };
+  });
+  expect(t.a.n).toBe(1); expect(t.a.t).toBeGreaterThan(4.9); expect(t.b.n).toBe(1);
+  await page.evaluate(() => { S.settings.minutes = 15; go('settings'); });
+  await expect(page.locator('#minInfo')).toContainText('คำใหม่/วัน');
+  await expect(page.locator('#npd')).toBeDisabled();
+  expect(errors).toEqual([]);
+});
+
+test('leech session (1.64): 15 stubborn words as flashcards with the memory hook; hook shown in game feedback', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const names = await page.evaluate(() => {
+    const ws = W.filter((w) => w.g === 'A1').slice(0, 20);
+    ws.forEach((w) => { S.prog[w.w] = { b: 0, i: 1, e: 2, d: Date.now() + 5 * DAY, s: 6, c: 1, x: 5 }; });
+    ws.forEach((w) => { S.note[w.w] = 'ท่องเป็นเพลง'; }); save();
+    return { n: buildQueue('leech').length, all: buildQueue('leech').every(isLeech), hook: hookBox(ws[0]), none: hookBox(W.find((w) => !S.note[w.w])) };
+  });
+  expect(names.n).toBe(15); expect(names.all).toBe(true);
+  expect(names.hook).toContain('ท่องเป็นเพลง'); expect(names.none).toBe('');
+  // flashcards: leech button on the done screen opens the session, back of card shows the hook
+  await page.evaluate(() => go('cards', 'leech'));
+  await expect(page.locator('#fc')).toBeVisible();
+  // game: a wrong answer shows the hook of that word (every leech word has one)
+  let hooked = false;
+  for (let k = 0; k < 8 && !hooked; k++) {
+    await page.evaluate(() => { gameSource = 'leech'; startGame('en2th'); });
+    await page.locator('#view .opt').nth(k % 4).click();
+    if ((await page.locator('#reveal').innerText()).includes('❌')) { await expect(page.locator('#reveal .note-box.hook')).toContainText('ท่องเป็นเพลง'); hooked = true; }
+  }
+  expect(hooked).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('skill games on a schedule (1.65): wrong items come back first, solid ones go later, stats table, backup merge', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => loadPhrasal());
+  const r = await page.evaluate(() => {
+    const src = gamePool('phrasal');
+    const a = src[0], b = src[1], c = src[2];
+    lexGrade(lexKey('phrasal', a), false); // wrong → due now
+    lexGrade(lexKey('phrasal', b), true); lexGrade(lexKey('phrasal', b), true); // right twice → later
+    const pickA = lexPick('phrasal', src, 10);
+    const keys = new Set(src.map((x) => lexKey('phrasal', x)));
+    return { first: pickA.includes(a), hasB: S.lex[lexKey('phrasal', b)].i > 1, dueA: S.lex[lexKey('phrasal', a)].d <= Date.now(), unique: keys.size === src.length, n: pickA.length, st: lexStats('phrasal'), c: !!c };
+  });
+  expect(r.first).toBe(true); expect(r.hasB).toBe(true); expect(r.dueA).toBe(true); expect(r.unique).toBe(true); expect(r.n).toBe(10);
+  expect(r.st).toEqual({ seen: 2, solid: 0, due: 1 });
+  // a played round writes S.lex
+  await page.evaluate(() => { S.lex = {}; startGame('phrasal'); });
+  await page.locator('#view .opt').first().click();
+  expect(await page.evaluate(() => Object.keys(S.lex).length)).toBe(1);
+  // stats table + backup merge keeps the further-along copy
+  await page.evaluate(() => go('stats'));
+  await expect(page.locator('.g-table', { hasText: 'ถึงกำหนด' })).toContainText('Phrasal');
+  const m = await page.evaluate(() => {
+    const k = Object.keys(S.lex)[0], mine = S.lex[k];
+    mergeBackup({ prog: {}, lex: { [k]: { ...mine, b: 3, i: 20, s: mine.s + 5 }, bad: { b: 'x' } } });
+    return { i: S.lex[k].i, bad: !!S.lex.bad };
+  });
+  expect(m).toEqual({ i: 20, bad: false });
+  expect(errors).toEqual([]);
+});
+
+test('1.66: level test (gate, pass, medal), share card, year in review', async ({ page }) => {
   test.setTimeout(180000);
   const errors = await openApp(page, { settings: { levels: ['A1'] }, placedAt: '2026-01-01' });
   // gate: nothing learned → test locked; learn 80% of A1 → opens

@@ -27,6 +27,8 @@ function renderSettings() {
     <details class="set-group" data-g="learn" ${setIsOpen('learn')}><summary>🧠 การเรียน</summary><div class="card-box">
       <div class="set-row"><span>คำใหม่ต่อวัน</span>
         <select class="sel" id="npd">${[5, 10, 15, 20, 30, 50, 100].map((n) => `<option ${n === st.newPerDay ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+      <div class="set-row"><span>ตั้งเป้าเป็นเวลาต่อวัน<br><span class="small muted" id="minInfo"></span></span>
+        <select class="sel" id="mins">${[0, 10, 15, 20, 30].map((n) => `<option value="${n}" ${n === (st.minutes | 0) ? 'selected' : ''}>${n ? n + ' นาที' : 'ปิด'}</option>`).join('')}</select></div>
       <div class="set-row"><span>เป้าคำใหม่ต่อสัปดาห์<br><span class="small muted">โชว์แถบความคืบหน้าบนหน้าแรก (ปิด = ไม่แสดง)</span></span>
         <select class="sel" id="wgoal">${[0, 20, 35, 50, 70, 100].map((n) => `<option value="${n}" ${n === (st.weekGoal | 0) ? 'selected' : ''}>${n ? n + ' คำ' : 'ปิด'}</option>`).join('')}</select></div>
       <div class="set-row"><span>กลับมาแบบไม่ท้อ<br><span class="small muted">การ์ดค้างเกิน 60 ใบ: พักคำใหม่ และทวนวันละ 50 ใบที่ค้างนานสุดก่อน</span></span>
@@ -146,7 +148,14 @@ function renderSettings() {
   };
   $('#guideBtn').onclick = () => go('guide', 'settings');
   $('#clBtn').onclick = () => go('changelog', 'settings');
+  const minInfo = () => {
+    const el = $('#minInfo'); if (!el) return;
+    el.textContent = st.minutes ? `ตอนนี้ราว ${newGoal()} คำใหม่/วัน · ใช้เวลา ~${Math.round(secPerCard())} วินาทีต่อใบ${S.spc.n < 30 ? ' (ค่าประมาณ จนกว่าจะเรียนครบ 30 ใบ)' : ''}` : 'เลือกแล้วแอปคำนวณจำนวนคำใหม่ให้เอง (แทน “คำใหม่ต่อวัน”)';
+    $('#npd').disabled = !!st.minutes;
+  };
   $('#npd').onchange = (e) => { st.newPerDay = +e.target.value; save(); };
+  $('#mins').onchange = (e) => { st.minutes = +e.target.value; save(); minInfo(); newCnt(); };
+  minInfo();
   $('#ord').onchange = (e) => { st.order = e.target.value; save(); };
   $('#toPlace').onclick = () => go('placement');
   // How many new words the level + topic + goal choice still leaves (0 = nothing new would come).

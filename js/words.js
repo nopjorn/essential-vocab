@@ -69,6 +69,8 @@ function noteBox(w) {
   return isLeech(w) ? '<button class="note-box empty" data-note>🐢 คำนี้ลืมบ่อย แตะเพื่อเขียนวิธีจำของตัวเอง</button>'
     : '<button class="note-add" data-note>✏️ เขียนวิธีจำ</button>';
 }
+// Read-only memory hook shown in game feedback (1.64); '' for words without one and for skill-game items (idx < 0).
+const hookBox = (w) => (w.idx >= 0 && S.note[w.w] ? `<div class="note-box hook">💡 <b>วิธีจำของฉัน:</b> ${esc(S.note[w.w])}</div>` : '');
 function editNote(w, onDone) {
   const el = document.createElement('div');
   el.className = 'sheet-wrap';
