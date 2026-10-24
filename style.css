@@ -368,8 +368,10 @@ body { touch-action: manipulation; }
 .quest { border: 2px solid color-mix(in srgb, var(--primary) 35%, transparent); }
 .qbar { display: block; height: 10px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
 .qbar > div, .qbar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--primary), var(--pink)); border-radius: 99px; transition: width .4s; }
-.qrow { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 0; border-top: 1px solid var(--surface-2); }
+.qrow { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 0; border: 0; border-top: 1px solid var(--surface-2); border-radius: 0; background: none; color: inherit; font: inherit; }
+.qrow:not(:disabled):active { opacity: .7; }
 .qrow:first-of-type { border-top: 0; }
+.qrow .qic { flex: none; width: 26px; text-align: center; }
 .qrow.done { opacity: .6; }
 .qrow .qtx { display: block; margin-bottom: 6px; }
 .qrow .qn { min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
