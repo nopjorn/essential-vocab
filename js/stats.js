@@ -128,7 +128,7 @@ function renderStats(from) {
     </div>
     <div class="card-box"><div class="small muted" style="margin-bottom:6px">กิจกรรมต่อวัน (แตะแท่งเพื่อดูตัวเลข)</div>${activityChart(W_)}</div>
     <div class="h2">🗓️ ปฏิทินการเล่น 12 เดือน</div>
-    <div class="card-box">${yearHeatmap()}</div>
+    <div class="card-box" data-lz="heat" style="min-height:200px"></div>
 
     ${boardSection()}
     <div class="h2">สรุปรายสัปดาห์</div>
@@ -146,7 +146,7 @@ function renderStats(from) {
     ${levelTestBox()}
 
     <div class="h2">แนวโน้มคำศัพท์</div>
-    <div class="card-box">${trendChart(W_)}</div>
+    <div class="card-box" data-lz="trend" style="min-height:190px"></div>
 
     <div class="h2">คาดการณ์ว่าจะจำได้ครบเมื่อไร</div>
     ${rate > 0 ? `<p class="small muted" style="margin:-4px 4px 10px">คิดจากที่เรียนคำใหม่ได้ราว <b>${rate.toFixed(1)} คำ/วัน</b>${measured ? ' (วัดจากความคืบหน้าจริง)' : ` (ประมาณจากเป้า ${newGoal()} คำ × เล่น ${h.active}/${h.span} วัน)`} และความแม่นยำ ${Math.round(h.acc * 100)}%</p>` : ''}
@@ -158,21 +158,47 @@ function renderStats(from) {
       <div class="small muted" style="margin-top:8px">คิดจากความถี่ที่เล่นตอนนี้ (${h.active}/${h.span} วัน)${h.ratio < 1 && h.since ? ' ถ้าเล่นทุกวันจะเร็วขึ้นอีก' : ''} · การ์ดทบทวนต่อวันเป็นค่าประมาณเมื่อเรียนไปได้สักระยะ</div>
     </div>
     <p class="small muted center">เป็นการคาดการณ์คร่าวๆ จะแม่นขึ้นเรื่อยๆ เมื่อเล่นไปนานขึ้น</p>
-    ${stickerBook()}
+    <div data-lz="stk" style="min-height:260px"></div>
     <div class="h2">🏅 เหรียญรางวัล <span class="small muted">${ACH.filter((a) => S.ach[a.id]).length}/${ACH.length}</span></div>
-    <div class="card-box ach-grid" id="ach">${ACH.map((a) => { const hid = a.secret && !S.ach[a.id]; return `<button class="ach ${S.ach[a.id] ? 'on' : ''}" data-ach="${a.id}"><span>${hid ? '❓' : a.icon}</span><small>${hid ? 'เหรียญลับ' : a.name}</small></button>`; }).join('')}</div>`;
+    <div class="card-box ach-grid" id="ach" data-lz="ach" style="min-height:200px"></div>`;
   loadStories().then(() => { const h = $('#readyHost'); if (h) h.innerHTML = readyBox(); });
   $('#shareProg').onclick = shareProgress;
   view.querySelectorAll('[data-lt]').forEach((b) => { b.onclick = () => go('ltest', b.dataset.lt); });
   $('#sBack').onclick = () => go(from || 'home');
-  bindStickers();
-  bindHeatmap();
+  startLazy({
+    heat: [yearHeatmap, bindHeatmap],
+    trend: [() => trendChart(W_), (el) => bindChartTips(el)],
+    stk: [stickerBook, bindStickers],
+    ach: [() => ACH.map((a) => { const hid = a.secret && !S.ach[a.id]; return `<button class="ach ${S.ach[a.id] ? 'on' : ''}" data-ach="${a.id}"><span>${hid ? '❓' : a.icon}</span><small>${hid ? 'เหรียญลับ' : a.name}</small></button>`; }).join('')],
+  });
   $('#ach').onclick = (e) => {
     const b = e.target.closest('[data-ach]'); if (!b) return;
     const a = ACH.find((x) => x.id === b.dataset.ach);
     toast(a.secret && !S.ach[a.id] ? '❓ เหรียญลับ: ไม่บอกเงื่อนไข ลองเรียนไปเรื่อยๆ แล้วจะเจอเอง' : `${a.icon} ${a.name}: ${a.desc}${S.ach[a.id] ? ' ✅' : ' 🔒'}`);
   };
   bindChartTips();
+}
+
+// Heavy blocks below the fold (calendar, trend chart, stickers, medals) are drawn when they come within 300px of the
+// screen, or a moment after the page is up, one block per tick, so the stats page opens fast (1.71).
+let lazyIO = null, lazyTimer = 0;
+function startLazy(defs) {
+  if (lazyIO) lazyIO.disconnect();
+  clearTimeout(lazyTimer);
+  const els = [...view.querySelectorAll('[data-lz]')];
+  const fill = (el) => {
+    const d = defs[el.dataset.lz];
+    if (!d || el.dataset.done || !el.isConnected) return;
+    el.dataset.done = '1'; el.style.minHeight = '';
+    el.innerHTML = d[0]();
+    if (d[1]) d[1](el);
+  };
+  if ('IntersectionObserver' in window) {
+    lazyIO = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { lazyIO.unobserve(e.target); fill(e.target); } }), { root: view, rootMargin: '300px 0px' });
+    els.forEach((el) => lazyIO.observe(el));
+  }
+  const rest = () => { const el = els.find((x) => !x.dataset.done && x.isConnected); if (el) { fill(el); lazyTimer = setTimeout(rest, 120); } };
+  lazyTimer = setTimeout(rest, 400);
 }
 
 // Stacked bars: flashcards (bottom) + game/feed answers (top); days before 1.9.0 have no split.
@@ -236,8 +262,8 @@ function trendChart(Wd) {
 }
 
 // Tap/hover on a chart shows the hovered mark's numbers in a small tooltip.
-function bindChartTips() {
-  view.querySelectorAll('.chart').forEach((ch) => {
+function bindChartTips(root = view) {
+  root.querySelectorAll('.chart').forEach((ch) => {
     const tip = ch.querySelector('.tip'), xh = ch.querySelector('.xhair'), svg = ch.querySelector('svg');
     const show = (e) => {
       const r = e.target.closest('.hit'); if (!r) return;
