@@ -33,11 +33,11 @@ function renderHome() {
   rollDay();
   const p = pool();
   const plan = backlogPlan(), due = plan.show;
-  const newLeft = plan.on ? 0 : Math.max(0, S.settings.newPerDay - S.daily.fresh);
+  const newLeft = plan.on ? 0 : Math.max(0, newGoal() - S.daily.fresh);
   const unseen = p.filter((w) => !S.prog[w.w]).length;
   const todo = due + Math.min(newLeft, unseen);
   const doneToday = S.daily.fresh + S.daily.reviews;
-  const goal = S.settings.newPerDay;
+  const goal = newGoal();
   const standalone = window.navigator.standalone || matchMedia('(display-mode: standalone)').matches;
 
   const lastBackup = S.backupAt ? Math.floor((Date.now() - S.backupAt) / DAY) : null;
@@ -352,7 +352,7 @@ function forecastChart() {
   if (!total) return `<div class="empty-box"><div class="em">🌱</div><div>ยังไม่มีการ์ดที่ต้องทบทวน<div class="small muted">เรียนคำแรกแล้วตารางนี้จะเริ่มขึ้นเอง</div></div><button class="btn primary" data-go="cards">▶︎ เริ่มเรียน</button></div>`;
   const tip = total / 7 > 80 ? '<div class="small" style="margin-top:8px">⚠️ งานทบทวนเยอะแล้ว ลองลดจำนวนคำใหม่ต่อวันในตั้งค่า</div>' : '';
   return `<div class="week">${days.map((d) => `<div class="wk"><div class="wk-n">${d.n || ''}</div><div class="wk-bar fc-bar"><div style="height:${d.n / max * 100}%"></div></div><div class="wk-l">${d.label}</div></div>`).join('')}</div>
-    <div class="small muted" style="margin-top:8px">รวม ${total} ใบ · ยังไม่รวมคำใหม่วันละ ${S.settings.newPerDay} คำ</div>${tip}`;
+    <div class="small muted" style="margin-top:8px">รวม ${total} ใบ · ยังไม่รวมคำใหม่วันละ ${newGoal()} คำ</div>${tip}`;
 }
 function greeting() {
   const h = new Date().getHours();

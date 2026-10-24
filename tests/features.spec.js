@@ -931,3 +931,34 @@ test('1.62: 3-minute session, tomorrow box, weekly new-word goal, ready-to-read 
   await expect(page.locator('#readyHost .ready-box')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('minutes goal (1.63): new words are worked out from time per card and the reviews due; fixed for the day', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'], newPerDay: 20, minutes: 0 } });
+  expect(await page.evaluate(() => newGoal())).toBe(20);
+  const r = await page.evaluate(() => {
+    S.spc = { t: 600, n: 60 }; // 10 s per card
+    S.settings.minutes = 10;   // 60 cards, none due -> floor(60 / 2.5) = 24
+    const none = newGoal();
+    // due reviews appear later in the day but the goal stays fixed
+    W.filter((w) => w.g === 'A1').slice(0, 20).forEach((w) => { S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: Date.now() - 1000, s: 1, c: 1, x: 0 }; });
+    const same = newGoal();
+    S.settings.minutes = 20;   // 120 cards - 20 due = 100 / 2.5 = 40
+    const twenty = newGoal();
+    S.settings.minutes = 10; delete S.daily.ng; // 60 - 20 = 40 / 2.5 = 16
+    return { none, same, twenty, ten: newGoal(), spc: secPerCard() };
+  });
+  expect(r).toEqual({ none: 24, same: 24, twenty: 40, ten: 16, spc: 10 });
+  // timing: two grades 5 s apart add to the average, a long pause is ignored
+  const t = await page.evaluate(() => {
+    S.spc = { t: 0, n: 0 }; const w = W.find((x) => x.g === 'A1' && !S.prog[x.w]);
+    gradeAt = Date.now() - 5000; grade(w, 2);
+    const a = { ...S.spc };
+    gradeAt = Date.now() - 120000; grade(W.find((x) => x.g === 'A1' && !S.prog[x.w]), 2);
+    return { a, b: { ...S.spc } };
+  });
+  expect(t.a.n).toBe(1); expect(t.a.t).toBeGreaterThan(4.9); expect(t.b.n).toBe(1);
+  await page.evaluate(() => { S.settings.minutes = 15; go('settings'); });
+  await expect(page.locator('#minInfo')).toContainText('คำใหม่/วัน');
+  await expect(page.locator('#npd')).toBeDisabled();
+  expect(errors).toEqual([]);
+});

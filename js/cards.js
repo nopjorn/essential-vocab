@@ -12,7 +12,7 @@ function tomorrowBox() {
   const plan = backlogPlan();
   const rev = plan.on ? Math.min(due.length, BACKLOG_CAP) : due.length;
   const unseen = p.filter((w) => !S.prog[w.w] && inTopic(w)).length;
-  const nw = plan.on || due.length > BACKLOG_PAUSE ? 0 : Math.min(S.settings.newPerDay, unseen);
+  const nw = plan.on || due.length > BACKLOG_PAUSE ? 0 : Math.min(newGoal(), unseen);
   if (!rev && !nw) return '';
   const leech = due.filter(isLeech).length, mins = Math.max(1, Math.ceil((rev + nw) / 4));
   return `<div class="card-box center tomorrow"><b>🌙 พรุ่งนี้รอคุณอยู่</b>
@@ -36,7 +36,7 @@ function buildQueue(extra) {
   }
   if (extra === 'mastered') return shuffle(masteredWords()).slice(0, 20);
   if (extra === 'ahead') return W.filter((w) => S.prog[w.w]).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d).slice(0, 20);
-  const n = extra ? 10 : plan.on ? 0 : Math.max(0, S.settings.newPerDay - S.daily.fresh);
+  const n = extra ? 10 : plan.on ? 0 : Math.max(0, newGoal() - S.daily.fresh);
   fresh = fresh.slice(0, n);
   // Mix new cards in among reviews so a session doesn't end with only new words.
   const q = [];

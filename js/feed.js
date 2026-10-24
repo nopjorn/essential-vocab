@@ -66,7 +66,7 @@ function renderFeed() {
     $('#fCombo').textContent = fever() ? `🔥 ไฟลุก x${combo} · XP x2` : combo >= 2 ? `🔥 คอมโบ x${combo}` : '';
     $('#fCombo').classList.toggle('fever', fever());
     feed.classList.toggle('fever', fever());
-    const fresh = S.daily.date === today() ? S.daily.fresh : 0, goal = S.settings.newPerDay;
+    const fresh = S.daily.date === today() ? S.daily.fresh : 0, goal = newGoal();
     $('#fGoal').textContent = fresh >= goal ? '🎯 ครบเป้าคำใหม่' : `✨ คำใหม่ ${fresh}/${goal}`;
   };
   hud();
@@ -84,7 +84,7 @@ function renderFeed() {
     const p = pool();
     const due = dueList().find((w) => !seen.has(w.w));
     if (due) return [due, 'quiz'];
-    if (!backlogPlan().on && S.daily.fresh + (newDealt - newDone) < S.settings.newPerDay) {
+    if (!backlogPlan().on && S.daily.fresh + (newDealt - newDone) < newGoal()) {
       const fresh = shuffle(p.filter((w) => !S.prog[w.w] && !seen.has(w.w) && inTopic(w)))[0];
       if (fresh) return [fresh, 'learn'];
     }
