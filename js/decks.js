@@ -21,6 +21,66 @@ function deckWords(d) {
   return d.words.map((x) => DECK_BY.get(x.toLowerCase())).filter(Boolean);
 }
 const DECK_BY = new Map();
+// Progress of one set (S.dprog[id], same shape as S.prog). Always pass it on as a parameter, never swap S.prog.
+const deckMap = (id) => S.dprog[id] || (S.dprog[id] = {});
+// Set status of a word: new / learning (interval < 7 days) / solid (7+ days). The main list's "จำได้แล้ว" (16+ days) is too far for weekly sets.
+const deckStatus = (p) => (!p ? 'new' : ivlOf(p) >= 7 ? 'solid' : 'learning');
+const DECK_DOT = { new: 'new', learning: 'learning', solid: 'mastered' }; // existing .dot colours
+function deckStats(d) {
+  const map = S.dprog[d.id] || {}, ws = deckWords(d), now = Date.now();
+  const r = { n: ws.length, fresh: 0, learning: 0, solid: 0, due: 0, leech: 0, acc: null, last: d.used || 0 };
+  let s = 0, c = 0;
+  for (const w of ws) {
+    const p = map[w.w];
+    if (!p) { r.fresh++; continue; }
+    r[deckStatus(p)]++;
+    if (p.d <= now) r.due++;
+    if (leechIn(w, map)) r.leech++;
+    s += p.s || 0; c += p.c || 0;
+  }
+  if (s) r.acc = c / s;
+  return r;
+}
+const DECK_ROUND = 20; // new cards per round
+// Cards of one round: everything due, with up to 20 new words mixed in. { ahead } = the 20 learned words closest to due.
+function buildDeckQueue(d, extra) {
+  const map = deckMap(d.id), ws = deckWords(d);
+  if (extra && extra.ahead) return ws.filter((w) => map[w.w]).sort((a, b) => map[a.w].d - map[b.w].d).slice(0, DECK_ROUND);
+  const due = dueList(ws, map).slice(0, 200);
+  let fresh = ws.filter((w) => !map[w.w]);
+  if (S.settings.order === 'shuffle') fresh = shuffle(fresh);
+  fresh = fresh.slice(0, DECK_ROUND);
+  const q = [], step = fresh.length ? Math.max(1, Math.floor(due.length / fresh.length)) : 0;
+  let di = 0;
+  fresh.forEach((w) => { q.push(...due.slice(di, di + step)); di += step; q.push(w); });
+  q.push(...due.slice(di));
+  return q;
+}
+// "What next?" after a round (or when nothing is left) for a set.
+function deckStepsHtml(d) {
+  const st = deckStats(d), b = (id, ic, t, x) => `<button class="quick-btn" data-dk="${id}"><span>${ic}</span><b>${t}</b><small>${x}</small></button>`;
+  return `<div class="quick next-steps">
+    ${st.fresh ? b('more', '➕', 'เรียนต่อ', `คำใหม่อีก ${Math.min(DECK_ROUND, st.fresh)} คำ (เหลือ ${st.fresh})`) : st.due ? b('more', '➕', 'เรียนต่อ', `ครบกำหนดอีก ${st.due} ใบ`) : ''}
+    ${st.learning + st.solid ? b('ahead', '🔮', 'ทบทวนล่วงหน้า', `${DECK_ROUND} ใบที่ใกล้ถึงกำหนดที่สุด`) : ''}
+    ${b('back', '📚', 'กลับไปชุด', esc(d.name || 'ชุดไม่มีชื่อ'))}</div>`;
+}
+function deckEmptyHtml(d) {
+  const st = deckStats(d);
+  return `<div class="card-box center pop" style="margin-top:20px"><div class="result-emoji">${st.n ? '🎉' : '📭'}</div>
+    <div class="h2">${st.n ? 'ชุดนี้ไม่มีอะไรค้างแล้ว!' : 'ชุดนี้ยังไม่มีคำ'}</div>
+    <p class="muted">${st.n ? 'ไม่มีการ์ดครบกำหนดและไม่มีคำใหม่ในชุด' : 'เพิ่มคำเข้าชุดก่อนนะคะ'}</p></div>${deckStepsHtml(d)}`;
+}
+function bindDeckSteps(d) {
+  view.querySelectorAll('[data-dk]').forEach((el) => {
+    el.onclick = () => {
+      const id = el.dataset.dk;
+      if (id === 'more') go('cards', { deck: d.id });
+      else if (id === 'ahead') go('cards', { deck: d.id, ahead: true });
+      else go('decks', d.id);
+    };
+  });
+}
+const deckBar = (st) => `<div class="dk-bar" role="img" aria-label="แม่นแล้ว ${st.solid} กำลังจำ ${st.learning} ใหม่ ${st.fresh}"><i class="s" style="flex:${st.solid}"></i><i class="l" style="flex:${st.learning}"></i><i class="n" style="flex:${st.fresh}"></i></div>`;
 // Default name = this week (Monday–Sunday), e.g. "ศัพท์สัปดาห์ 20–26 ต.ค."
 function weekDeckName() {
   const mon = new Date(mondayKey() + 'T12:00:00'), sun = new Date(mon.getTime() + 6 * DAY);
@@ -59,26 +119,27 @@ function matchWords(text) {
 }
 
 /* ---------- list of sets ---------- */
-function renderDecks() {
+function renderDecks(openId) {
+  if (openId) return renderDeck(openId);
   const ds = liveDecks();
   const goals = [...TAGS.map((t) => [t.id, t.icon, t.th]), ['star', '⭐', 'คำติดดาว']].filter(([id]) => tagWords(id).length);
   view.innerHTML = `
     ${libSwitch('decks')}
-    ${ds.length ? `<div class="deck-grid">${ds.map((d) => `<button class="card-box guide-link deck-card" data-id="${d.id}">
-        <span>${esc(d.icon)}</span><div class="grow"><b>${esc(d.name || 'ชุดไม่มีชื่อ')}</b><div class="small muted">${deckWords(d).length} คำ</div></div><span class="muted">›</span></button>`).join('')}</div>`
+    ${ds.length ? `<div class="deck-grid">${ds.map((d) => { const st = deckStats(d); return `<button class="card-box guide-link deck-card" data-id="${d.id}">
+        <span>${esc(d.icon)}</span><div class="grow"><b>${esc(d.name || 'ชุดไม่มีชื่อ')}</b><div class="small muted">${st.n} คำ${st.due ? ` · ⏰ ครบกำหนด ${st.due}` : ''}${st.solid === st.n && st.n ? ' · ✅ แม่นทั้งชุด' : ''}</div>${st.n ? deckBar(st) : ''}</div><span class="muted">›</span></button>`; }).join('')}</div>`
     : `<div class="card-box center"><div style="font-size:44px">📚</div><b>ยังไม่มีชุดคำ</b>
         <p class="small muted">สร้างชุดจากคำในแอป เช่น ศัพท์ประจำสัปดาห์ที่ครูสั่ง คำที่ใช้บ่อยที่ทำงาน หรือคำสำหรับไปเที่ยว</p></div>`}
     <button class="btn primary block" id="dkNew">＋ สร้างชุด</button>
     ${ds.length ? '' : `<div class="small muted" style="margin:16px 4px 6px">หรือเริ่มจากชุดสำเร็จรูป (แก้ไขเพิ่ม–ลดคำได้ภายหลัง)</div>
       <div class="chips">${goals.map(([id, ic, th]) => `<button class="chip" data-from="${id}">${ic} ${esc(th)} · ${tagWords(id).length}</button>`).join('')}</div>`}
-    <p class="small muted" style="margin:16px 4px">เลือกคำได้จากคลังคำในแอปเท่านั้น · ชุดซิงก์ข้ามเครื่องผ่านบัญชีเดียวกัน (ต้องอัปเดตแอปทุกเครื่อง) · ตอนนี้สร้างและจัดการชุดได้ก่อน ส่วนเรียนและเล่นเกมจากชุดจะตามมา</p>`;
-  view.querySelectorAll('.deck-card').forEach((b) => { b.onclick = () => renderDeckEdit(b.dataset.id); });
+    <p class="small muted" style="margin:16px 4px">เลือกคำได้จากคลังคำในแอปเท่านั้น · ชุดซิงก์ข้ามเครื่องผ่านบัญชีเดียวกัน (ต้องอัปเดตแอปทุกเครื่อง) · แตะชุดเพื่อเรียนและดูสถิติของชุด · เล่นเกมจากชุดจะตามมา</p>`;
+  view.querySelectorAll('.deck-card').forEach((b) => { b.onclick = () => renderDeck(b.dataset.id); });
   $('#dkNew').onclick = () => renderDeckEdit();
   view.querySelectorAll('[data-from]').forEach((b) => {
     b.onclick = () => {
       const id = b.dataset.from, t = TAGS.find((x) => x.id === id);
       const d = addDeck(t ? t.th : 'คำติดดาว', t ? t.icon : '⭐', tagWords(id));
-      if (d) renderDeckEdit(d.id);
+      if (d) renderDeck(d.id);
     };
   });
 }
@@ -90,6 +151,44 @@ function addDeck(name, icon, words) {
   return d;
 }
 
+/* ---------- one set: study + statistics ---------- */
+function renderDeck(id) {
+  const d = deckById(id);
+  if (!d) return go('decks');
+  const st = deckStats(d), ws = deckWords(d), map = S.dprog[id] || {};
+  const pct = st.acc == null ? '–' : Math.round(st.acc * 100) + '%';
+  view.innerHTML = `
+    <div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="dkBack">‹ กลับ</button></div>
+    <div class="card-box">
+      <div class="row dk-head"><span class="dk-ic">${esc(d.icon)}</span>
+        <div class="grow"><b class="h2">${esc(d.name || 'ชุดไม่มีชื่อ')}</b><div class="small muted">${st.n} คำ · ${st.last ? 'ใช้ล่าสุด ' + thDate(st.last) : 'ยังไม่เคยเรียน'}</div></div>
+        <button class="btn ghost" id="dkEdit" aria-label="แก้ไขชุด">✏️ แก้ไข</button></div>
+      ${st.n ? `${deckBar(st)}<div class="dk-legend small"><span>🟢 แม่นแล้ว ${st.solid}</span><span>🟡 กำลังจำ ${st.learning}</span><span>⚪ ใหม่ ${st.fresh}</span></div>
+      <div class="dk-nums"><div><b>${st.due}</b><small>ครบกำหนด</small></div><div><b>${pct}</b><small>ความแม่น</small></div><div><b>${st.leech}</b><small>🐢 คำดื้อ</small></div></div>` : '<p class="center muted small">ยังไม่มีคำในชุดนี้ กด ✏️ แก้ไข เพื่อเพิ่มคำค่ะ</p>'}
+    </div>
+    <button class="btn primary block" id="dkStudy" ${st.n ? '' : 'disabled'}>▶︎ เรียนชุดนี้ <small>(ครบกำหนด ${st.due} · คำใหม่ ${Math.min(DECK_ROUND, st.fresh)})</small></button>
+    <p class="small muted" style="margin:8px 4px 14px">ความคืบหน้าของชุดแยกจากสถิติหลัก (คำที่เรียน / จำได้แล้ว ในหน้าหลักไม่เปลี่ยน) แต่สตรีค XP และปฏิทินความขยันนับรวม · "แม่นแล้ว" = ทบทวนห่างตั้งแต่ 7 วันขึ้นไป</p>
+    ${st.n ? '<button class="btn ghost block" id="dkRestart">🔄 เริ่มชุดนี้ใหม่</button>' : ''}
+    <div class="card-box" style="padding:4px 14px;margin-top:14px" id="dkList">${ws.map((w) => `<div class="wrow" data-i="${w.idx}"><span class="dot ${DECK_DOT[deckStatus(map[w.w])]}"></span>
+      <div class="grow dk-w"><div><span class="w" lang="en">${esc(w.w)}</span> <span class="pos">${esc(w.p)}</span></div><div class="t">${esc(w.t)}</div></div>
+      <span class="star-mark">${leechIn(w, map) ? '🐢' : ''}${isStar(w) ? '⭐' : ''}</span></div>`).join('')}</div>`;
+  $('#dkBack').onclick = () => go('decks');
+  $('#dkEdit').onclick = () => renderDeckEdit(id);
+  $('#dkStudy').onclick = () => go('cards', { deck: id });
+  if ($('#dkRestart')) $('#dkRestart').onclick = () => {
+    if (!confirm(`เริ่มชุด "${d.name}" ใหม่ทั้งหมดใช่ไหม? ความคืบหน้าของชุดนี้จะถูกล้าง (สถิติหลักไม่เปลี่ยน)`)) return;
+    const m = deckMap(id);
+    for (const k of Object.keys(m)) delete m[k];
+    d.rst = Date.now(); touchDeck(d); // rst keeps older progress on other devices from flowing back in
+    toast('เริ่มชุดใหม่แล้ว 🔄'); renderDeck(id);
+  };
+  $('#dkList').onclick = (e) => {
+    const r = e.target.closest('.wrow'); if (!r) return;
+    const w = W[+r.dataset.i]; speak(w.w);
+    openSheet(w, () => { r.querySelector('.star-mark').textContent = (leechIn(w, map) ? '🐢' : '') + (isStar(w) ? '⭐' : ''); }, { deck: id });
+  };
+}
+
 /* ---------- edit one set ---------- */
 function renderDeckEdit(id) {
   let d = id ? deckById(id) : null;
@@ -98,15 +197,21 @@ function renderDeckEdit(id) {
   const cur = () => d || draft;
   const store = () => { if (!d) { if (liveDecks().length >= DECK_MAX.decks) { toast(`มีชุดครบ ${DECK_MAX.decks} ชุดแล้ว`); return false; } d = draft; S.decks.push(d); } touchDeck(d); return true; };
   const persist = () => { if (d || cur().words.length) store(); }; // an empty new set is only kept once it gets a word
-  let panel = 'paste', preview = null, defName = cur().name;
+  let panel = 'paste', preview = null, defName = cur().name, seed = false; // seed: copy main progress once, only while creating
   const addWords = (list) => {
     const c = cur(), have = new Set(c.words), fresh = [...new Set(list)].filter((w) => !have.has(w));
     const room = DECK_MAX.words - c.words.length;
     if (!fresh.length) { toast('คำเหล่านี้อยู่ในชุดแล้ว'); return 0; }
     if (room <= 0) { toast(`ชุดเต็มแล้ว (สูงสุด ${DECK_MAX.words} คำ)`); return 0; }
     const take = fresh.slice(0, room);
+    const creating = !d;
     if (!store()) return 0;
-    c.words.push(...take); touchDeck(c);
+    c.words.push(...take);
+    if (creating) {
+      if (seed) { const m = deckMap(c.id); take.forEach((w) => { if (S.prog[w]) m[w] = { ...S.prog[w] }; }); }
+      const sb = $('#dkSeedBox'); if (sb) sb.remove();
+    }
+    touchDeck(c);
     if (take.length < fresh.length) toast(`เพิ่ม ${take.length} คำ (ชุดเต็ม ${DECK_MAX.words} คำ ที่เหลือไม่ได้ใส่)`);
     else toast(`เพิ่ม ${take.length} คำแล้ว ✅`);
     return take.length;
@@ -121,6 +226,7 @@ function renderDeckEdit(id) {
       </div>
       <div class="card-box">
         <b>เพิ่มคำ</b>
+        ${d ? '' : '<label class="dk-g" id="dkSeedBox"><input type="checkbox" id="dkSeed"> เริ่มจากความคืบหน้าในหลัก (คัดลอกครั้งเดียว ไม่ผูกต่อ)</label>'}
         <div class="seg" id="dkTabs" style="margin:8px 0">${[['paste', '📋 วางลิสต์'], ['find', '🔍 ค้นหา'], ['quick', '🎯 ทางลัด']].map(([v, t]) => `<button class="${panel === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div>
         <div id="dkPanel"></div>
       </div>
@@ -130,12 +236,13 @@ function renderDeckEdit(id) {
       </div>
       <div class="row" style="gap:10px"><button class="btn ghost grow" id="dkCopy">ทำสำเนา</button><button class="btn danger grow" id="dkDel">ลบชุด</button></div>`;
     paintPanel(); paintWords();
-    $('#dkBack').onclick = () => go('decks');
+    $('#dkBack').onclick = () => (d ? go('decks', d.id) : go('decks'));
+    if ($('#dkSeed')) $('#dkSeed').onchange = (e) => { seed = e.target.checked; };
     $('#dkWords').onclick = (e) => {
       const x = e.target.closest('[data-rm]');
       if (x) { const c = cur(); c.words = c.words.filter((w) => w.toLowerCase() !== x.dataset.rm.toLowerCase()); touchDeck(c); paintWords(); return; }
       const r = e.target.closest('.wrow'); if (!r) return;
-      const w = W[+r.dataset.i]; speak(w.w); openSheet(w);
+      const w = W[+r.dataset.i]; speak(w.w); openSheet(w, null, { deck: cur().id });
     };
     $('#dkIcons').onclick = (e) => {
       const b = e.target.closest('[data-ic]'); if (!b) return;

@@ -60,10 +60,17 @@ function bindNextSteps() {
   });
 }
 
+// extra: undefined (today's cards), true (10 more new), 'ahead', 'mastered', or { deck: id, ahead? } = study one of my word sets.
+// A set uses its own progress table `map` (S.dprog[id]); the main S.prog and the daily counts stay untouched.
 function renderCards(extra) {
-  const queue = buildQueue(extra);
+  const deck = extra && typeof extra === 'object' ? deckById(extra.deck) : null;
+  if (extra && typeof extra === 'object' && !deck) return go('decks');
+  const map = deck ? deckMap(deck.id) : S.prog;
+  const queue = deck ? buildDeckQueue(deck, extra) : buildQueue(extra);
   const total = queue.length;
   let done = 0, stats = { again: 0, ok: 0 };
+  if (deck) { deck.used = Date.now(); save(); }
+  if (deck && !total) { view.innerHTML = deckEmptyHtml(deck); bindDeckSteps(deck); return; }
   if (!total) {
     const learned = W.filter((w) => S.prog[w.w]).length;
     view.innerHTML = `<div class="card-box center pop" style="margin-top:20px">
@@ -83,7 +90,7 @@ function renderCards(extra) {
     </div>
     <div class="stage" id="stage"></div>
     <div class="grade" id="grade"></div>`;
-  $('#quit').onclick = () => go('home');
+  $('#quit').onclick = () => (deck ? go('decks', deck.id) : go('home'));
 
   let card = null, flipped = false;
   const gradeBox = $('#grade');
@@ -99,8 +106,9 @@ function renderCards(extra) {
   };
   $('#undo').onclick = () => {
     const h = history.pop(); if (!h) return;
-    if (h.prev) S.prog[h.w] = h.prev; else delete S.prog[h.w];
-    S.daily = h.daily; relearn = new Set(h.relearn); save();
+    if (h.prev) map[h.w] = h.prev; else delete map[h.w];
+    if (!deck) S.daily = h.daily;
+    relearn = new Set(h.relearn); save();
     queue.splice(0, queue.length, ...h.queue);
     done = h.done; stats = h.stats;
     show();
@@ -111,7 +119,7 @@ function renderCards(extra) {
     card = queue[0]; flipped = false;
     $('#pbar').style.width = (done / total * 100) + '%';
     $('#pcount').textContent = `${done}/${total}`;
-    const p = S.prog[card.w];
+    const p = map[card.w];
     const isNew = !p;
     const enFront = S.settings.front === 'en';
     const star = `<button class="star-btn" data-star aria-label="ติดดาว">${starIcon(card)}</button>`;
@@ -127,7 +135,7 @@ function renderCards(extra) {
         <div class="fc-inner">
           <div class="face front">${enFront ? enFace : thFace}
             ${isNew ? '<button class="know-btn" data-know>✓ รู้คำนี้แล้ว ข้ามเลย</button>' : ''}
-            <div class="hint">${isNew ? '✨ คำใหม่ · ' : ''}${isLeech(card) ? '🐢 คำดื้อ · ' : ''}แตะเพื่อพลิก · ปัดซ้าย/ขวา</div></div>
+            <div class="hint">${isNew ? '✨ คำใหม่ · ' : ''}${leechIn(card, map) ? '🐢 คำดื้อ · ' : ''}แตะเพื่อพลิก · ปัดซ้าย/ขวา</div></div>
           <div class="face back">${enFront ? `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
             <div class="th">${esc(card.t)}</div><div class="ipa" style="margin-top:8px">${esc(card.w)} ${esc(card.i)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>${backExtra}`
             : enFace + backExtra}</div>
@@ -152,24 +160,24 @@ function renderCards(extra) {
   }
 
   function snapshot() {
-    history.push({ w: card.w, prev: S.prog[card.w] && { ...S.prog[card.w] }, daily: { ...S.daily }, queue: queue.slice(), done, stats: { ...stats }, relearn: [...relearn] });
+    history.push({ w: card.w, prev: map[card.w] && { ...map[card.w] }, daily: { ...S.daily }, queue: queue.slice(), done, stats: { ...stats }, relearn: [...relearn] });
     if (history.length > 30) history.shift();
   }
   const requeue = (min) => queue.splice(Math.min(queue.length, min + (Math.random() * 3 | 0)), 0, card);
   function answer(g) {
     snapshot();
-    const isNew = !S.prog[card.w], re = relearn.has(card.w);
+    const isNew = !map[card.w], re = relearn.has(card.w);
     queue.shift();
     if (re && g >= 2) {
       // Second look at a "hard" new word: keep it at 1 day, or 3 days if it now feels easy.
       relearn.delete(card.w);
-      markActive(); S.daily.reviews++;
+      markActive(); if (!deck) S.daily.reviews++;
       const i = g === 3 ? 3 : 1;
-      S.prog[card.w] = { ...S.prog[card.w], b: boxOf(i), i, d: dueAt(i), s: S.prog[card.w].s + 1, c: S.prog[card.w].c + 1 };
+      map[card.w] = { ...map[card.w], b: boxOf(i), i, d: dueAt(i), s: map[card.w].s + 1, c: map[card.w].c + 1 };
       questEvent('card');
       stats.ok++; done++;
     } else {
-      grade(card, g);
+      grade(card, g, map);
       if (g === 0) { relearn.delete(card.w); stats.again++; requeue(3); }
       else if (g === 1 && (isNew || re)) { relearn.add(card.w); requeue(4); }
       else { stats.ok++; done++; }
@@ -195,7 +203,7 @@ function renderCards(extra) {
         return;
       }
       if (e.target.closest('[data-know]')) {
-        e.stopPropagation(); snapshot(); markKnown(card);
+        e.stopPropagation(); snapshot(); markKnown(card, map);
         queue.shift(); stats.ok++; done++; toast('ข้าม "' + card.w + '" แล้ว 👍'); show(); return;
       }
       if (e.target.closest('a')) return;
@@ -234,6 +242,14 @@ function renderCards(extra) {
   function finish() {
     updateStreak();
     confetti();
+    if (deck) {
+      view.innerHTML = `<div class="card-box center pop" style="margin-top:30px">
+        <div class="result-emoji">🏆</div><div class="h2">จบรอบแล้ว เก่งมาก!</div>
+        <p>ทบทวน ${total} ใบ · กด "ลืม" ${stats.again} ครั้ง</p>
+        <p class="muted small">คำที่ลืมจะกลับมาให้ทบทวนอีกเร็วๆ นี้</p></div>${deckStepsHtml(deck)}`;
+      bindDeckSteps(deck);
+      return;
+    }
     view.innerHTML = `<div class="card-box center pop" style="margin-top:30px">
       <div class="result-emoji">🏆</div><div class="h2">จบรอบแล้ว เก่งมาก!</div>
       <p>ทบทวน ${total} ใบ · กด "ลืม" ${stats.again} ครั้ง</p>

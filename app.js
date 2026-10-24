@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.54.0';
+const APP_VERSION = '1.55.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -77,6 +77,7 @@ function cleanDecks(a) {
     const d = { id: x.id, name: typeof x.name === 'string' ? x.name.slice(0, DECK_MAX.name) : '', icon: typeof x.icon === 'string' && x.icon ? x.icon.slice(0, DECK_MAX.icon) : '📚',
       words, at: isNum(x.at) ? x.at : 0, used: isNum(x.used) ? x.used : 0 };
     if (del) d.del = true;
+    if (isNum(x.rst) && x.rst > 0) d.rst = x.rst; // when the set's progress was last restarted
     const o = byId.get(d.id);
     if (!o || d.at > o.at) byId.set(d.id, d);
   }
@@ -208,21 +209,30 @@ const progAhead = (a, b) => (a.b - b.b) || ((a.s || 0) - (b.s || 0)) || ((a.d ||
 // other devices and old backups; progress is merged per word like prog, and only for sets that still exist.
 function mergeDecks(d) {
   const before = JSON.stringify([S.decks, S.dprog]), now = Date.now();
+  const theirDecks = cleanDecks(d.decks);
+  const loc = new Map(S.decks.map((x) => [x.id, x.rst || 0])), inc = new Map(theirDecks.map((x) => [x.id, x.rst || 0]));
   const map = new Map(S.decks.map((x) => [x.id, x]));
-  for (const t of cleanDecks(d.decks)) {
+  for (const t of theirDecks) {
     const m = map.get(t.id);
     if (!m) map.set(t.id, t);
     else if (t.at > m.at) map.set(t.id, { ...t, used: Math.max(t.used, m.used) });
     else if (t.used > m.used) m.used = t.used;
   }
+  for (const [id, x] of map) { const r = Math.max(loc.get(id) || 0, inc.get(id) || 0); if (r) x.rst = r; }
   S.decks = cleanDecks([...map.values()]).filter((x) => !x.del || now - x.at <= DECK_MAX.tomb);
-  const theirs = cleanDprog(d.dprog, new Set(S.decks.filter((x) => !x.del).map((x) => x.id)));
-  const mine = cleanDprog(S.dprog, new Set(S.decks.filter((x) => !x.del).map((x) => x.id)));
-  for (const [id, m] of Object.entries(theirs)) {
-    const cur = mine[id] || (mine[id] = {});
-    for (const [w, p] of Object.entries(m)) if (!cur[w] || progAhead(p, cur[w]) > 0) cur[w] = p;
+  // In place: a study session in progress keeps its reference to S.dprog[id].
+  const live = new Set(S.decks.filter((x) => !x.del).map((x) => x.id));
+  for (const id of Object.keys(S.dprog)) if (!live.has(id)) delete S.dprog[id];
+  // "Start this set again" bumps rst: progress from an older start (cloud copy, old backup) must not flow back in,
+  // and a device still on the older start is wiped when the newer one arrives.
+  const theirs = cleanDprog(d.dprog, live);
+  for (const id of live) {
+    const lr = loc.get(id) || 0, ir = inc.get(id) || 0;
+    if (ir > lr && S.dprog[id]) for (const k of Object.keys(S.dprog[id])) delete S.dprog[id][k];
+    if (ir < lr || !theirs[id]) continue;
+    const cur = S.dprog[id] || (S.dprog[id] = {});
+    for (const [w, p] of Object.entries(theirs[id])) if (!cur[w] || progAhead(p, cur[w]) > 0) cur[w] = p;
   }
-  S.dprog = mine;
   if (typeof current !== 'undefined' && current === 'decks' && before !== JSON.stringify([S.decks, S.dprog]) && !view.querySelector('#dkBack')) setTimeout(() => go('decks'), 0);
 }
 function mergeBackup(d) {
@@ -545,15 +555,17 @@ function toast(msg) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
 }
 
-function status(w) {
-  const p = S.prog[w.w];
+// SRS functions take the progress table as the last parameter (default = the main S.prog). My word sets pass their own
+// S.dprog[id] table; never swap S.prog or keep a "current set" global.
+function status(w, map = S.prog) {
+  const p = map[w.w];
   if (!p) return 'new';
   return p.b >= MASTERED ? 'mastered' : 'learning';
 }
 const pool = () => W.filter((w) => S.settings.levels.includes(w.g));
-const dueList = (list = pool()) => {
+const dueList = (list = pool(), map = S.prog) => {
   const now = Date.now();
-  return list.filter((w) => S.prog[w.w] && S.prog[w.w].d <= now).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d);
+  return list.filter((w) => map[w.w] && map[w.w].d <= now).sort((a, b) => map[a.w].d - map[b.w].d);
 };
 
 /* ---------- app icon badge (cards due today) ---------- */
@@ -684,21 +696,25 @@ function daysLabel(i) {
 }
 // Leeches ("คำดื้อ"): forgotten again and again.
 const LEECH = 4;
-const isLeech = (w) => !!(S.prog[w.w] && (S.prog[w.w].x || 0) >= LEECH);
+const leechIn = (w, map) => !!(map[w.w] && (map[w.w].x || 0) >= LEECH);
+const isLeech = (w) => leechIn(w, S.prog); // one argument on purpose: W.filter(isLeech) passes the index as a 2nd argument
 function logMiss(w) {
   const t = today();
   (S.miss[t] = S.miss[t] || {})[w.w] = (S.miss[t][w.w] || 0) + 1;
   for (const k of Object.keys(S.miss)) if (dayDiff(t, k) > 21) delete S.miss[k];
 }
-function grade(w, g) {
+// With another table (a word set) the daily new/review counts and the missed-word log are left alone: they belong to the main list.
+function grade(w, g, map = S.prog) {
+  const main = map === S.prog;
   markActive();
-  const p = S.prog[w.w];
-  if (!p) {
+  const p = map[w.w];
+  if (!main) { /* a set: only effort counts (XP, streak, history, quests) */ }
+  else if (!p) {
     S.daily.fresh++;
     if (S.daily.fresh === S.settings.newPerDay) setTimeout(() => { confetti(); toast('🎯 ครบเป้าคำใหม่วันนี้แล้ว เก่งมาก!'); }, 300);
   } else S.daily.reviews++;
   const n = sched(p, g);
-  S.prog[w.w] = {
+  map[w.w] = {
     b: n.b, i: n.i, e: n.e,
     d: dueAt(n.i),
     s: (p ? p.s : 0) + 1,
@@ -706,36 +722,36 @@ function grade(w, g) {
     x: (p ? p.x || 0 : 0) + (g === 0 ? 1 : 0),
   };
   if (g === 0) {
-    logMiss(w);
-    if (S.prog[w.w].x === LEECH && !S.note[w.w]) setTimeout(() => toast(`🐢 "${w.w}" ลืมบ่อยแล้ว ลองเขียนวิธีจำดูนะ`), 600);
+    if (main) logMiss(w);
+    if (map[w.w].x === LEECH && !S.note[w.w]) setTimeout(() => toast(`🐢 "${w.w}" ลืมบ่อยแล้ว ลองเขียนวิธีจำดูนะ`), 600);
   }
   addXP(g === 0 ? 1 : 2);
   S.chist[today()] = (S.chist[today()] || 0) + 1;
   questEvent('card');
 }
 // Lighter update from games: a right answer seeds/advances a little, a wrong one sends it back for review.
-function gameResult(w, ok) {
+function gameResult(w, ok, map = S.prog) {
   markActive();
-  const p = S.prog[w.w];
+  const p = map[w.w];
   if (ok) {
-    if (!p) S.prog[w.w] = { b: 1, i: 1, e: EASE0, d: dueAt(1), s: 1, c: 1, x: 0 };
+    if (!p) map[w.w] = { b: 1, i: 1, e: EASE0, d: dueAt(1), s: 1, c: 1, x: 0 };
     else { p.c++; p.s++; }
   } else {
-    S.prog[w.w] = { ...(p || {}), b: 0, i: 0, e: Math.max(EASE_MIN, ((p && p.e) || EASE0) - 0.2), d: Date.now(), s: (p ? p.s : 0) + 1, c: p ? p.c : 0, x: (p ? p.x || 0 : 0) + 1 };
-    logMiss(w);
+    map[w.w] = { ...(p || {}), b: 0, i: 0, e: Math.max(EASE_MIN, ((p && p.e) || EASE0) - 0.2), d: Date.now(), s: (p ? p.s : 0) + 1, c: p ? p.c : 0, x: (p ? p.x || 0 : 0) + 1 };
+    if (map === S.prog) logMiss(w);
   }
   save();
 }
 
 // "I already know this": jump straight to a long interval so it stops appearing as new.
-function markKnown(w) {
+function markKnown(w, map = S.prog) {
   markActive();
-  S.prog[w.w] = { b: MASTERED, i: INTERVALS[MASTERED], e: EASE0 + 0.2, d: dueAt(INTERVALS[MASTERED]), s: 1, c: 1, x: 0 };
+  map[w.w] = { b: MASTERED, i: INTERVALS[MASTERED], e: EASE0 + 0.2, d: dueAt(INTERVALS[MASTERED]), s: 1, c: 1, x: 0 };
   save();
 }
-function markForReview(w) {
-  const p = S.prog[w.w];
-  S.prog[w.w] = { ...(p || {}), b: 0, i: 0, d: Date.now(), s: p ? p.s : 0, c: p ? p.c : 0, x: p ? p.x || 0 : 0 };
+function markForReview(w, map = S.prog) {
+  const p = map[w.w];
+  map[w.w] = { ...(p || {}), b: 0, i: 0, d: Date.now(), s: p ? p.s : 0, c: p ? p.c : 0, x: p ? p.x || 0 : 0 };
   save();
 }
 

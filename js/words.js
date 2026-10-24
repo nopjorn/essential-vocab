@@ -93,9 +93,11 @@ function editNote(w, onDone) {
 }
 
 /* ---------- word detail sheet ---------- */
-function openSheet(w, onChange) {
-  const st = status(w);
-  const stLabel = { new: 'ยังไม่เรียน', learning: '🟡 กำลังเรียน', mastered: '🟢 จำได้แล้ว' }[st] + (isLeech(w) ? ' · 🐢 คำดื้อ' : '');
+// opt.deck = id of a word set: show that set's progress and hide the buttons that change the main progress.
+function openSheet(w, onChange, opt = {}) {
+  const dm = opt.deck ? S.dprog[opt.deck] || {} : null;
+  const st = dm ? DECK_DOT[deckStatus(dm[w.w])] : status(w);
+  const stLabel = { new: 'ยังไม่เรียน', learning: '🟡 กำลังเรียน', mastered: dm ? '🟢 แม่นแล้ว' : '🟢 จำได้แล้ว' }[st] + ((dm ? leechIn(w, dm) : isLeech(w)) ? ' · 🐢 คำดื้อ' : '');
   const el = document.createElement('div');
   el.className = 'sheet-wrap';
   el.innerHTML = `<div class="sheet wsheet" role="dialog" aria-label="${esc(w.w)}">
@@ -110,8 +112,7 @@ function openSheet(w, onChange) {
       </div>
       <div class="sheet-acts">
         <button class="btn" data-act="star">${isStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาว'}</button>
-        <button class="btn" data-act="review" aria-label="ทบทวนวันนี้">🔁 ทบทวน</button>
-        <button class="btn" data-act="known">✓ รู้แล้ว</button>
+        ${dm ? '' : '<button class="btn" data-act="review" aria-label="ทบทวนวันนี้">🔁 ทบทวน</button><button class="btn" data-act="known">✓ รู้แล้ว</button>'}
       </div>
     </div>`;
   document.body.appendChild(el);

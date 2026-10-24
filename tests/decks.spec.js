@@ -57,6 +57,7 @@ test('create a set from a pasted list, edit it, copy it and delete it', async ({
   await expect(page.locator('.deck-card')).toContainText('ศัพท์ครู 1');
   await expect(page.locator('.deck-card')).toContainText('3 คำ');
   await page.locator('.deck-card').click();
+  await page.locator('#dkEdit').click();
   // remove a word, then add by search and by shortcut
   await page.locator('[data-rm="ticket"]').click();
   await expect(page.locator('#dkCount')).toHaveText('คำในชุด (2)');
@@ -228,4 +229,126 @@ test('sync: tombstones older than 90 days are dropped, newer ones kept', async (
   expect(ids).toEqual(['live', 'new']);
   expect(A.errors).toEqual([]);
   await A.ctx.close();
+});
+
+// ---- 1.55: studying a set ----
+const WORDS5 = ['airport', 'hotel', 'ticket', 'passport', 'taxi', 'apple'];
+const DONE = { b: 2, i: 3, e: 2.5, d: 1, s: 2, c: 2, x: 0 };
+const fingerprint = (page) => page.evaluate(() => JSON.stringify([S.prog, S.daily, S.snap, S.miss, S.stk]));
+
+test('studying a set leaves the main statistics untouched but counts effort (independence lock)', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] }, prog: { apple: { b: 5, i: 20, e: 2.5, d: Date.now() + 9 * DAYS, s: 4, c: 4, x: 0 } }, decks: [deck('d1', { words: WORDS5 })] });
+  await page.evaluate(() => save()); // takes today's snapshot of the main progress first (it is derived from prog, not from sets)
+  const before = await fingerprint(page);
+  const hist0 = await page.evaluate(() => [S.xp, S.hist[today()] || 0, S.chist[today()] || 0, S.counts.cards]);
+  await page.evaluate(() => go('decks', 'd1'));
+  await expect(page.locator('#view')).toContainText('ใหม่ 6');
+  await page.locator('#dkStudy').click();
+  await expect(page.locator('#pcount')).toHaveText('0/6');
+  const grades = [2, 0, 1, 3, 2]; // good, forgot (comes back), hard (new → once more), easy, good …
+  for (let n = 0; n < 40 && await page.locator('#fc').count(); n++) {
+    await page.locator('#fc').click();
+    const g = n === 4 ? null : grades[n % grades.length];
+    if (g === null) { await page.locator('#undo').click(); continue; } // an undo in the middle
+    await page.locator(`[data-g="${g === 1 && n > 8 ? 2 : g}"]`).click();
+  }
+  await expect(page.locator('#view')).toContainText('จบรอบแล้ว');
+  expect(await fingerprint(page)).toBe(before); // prog, daily, snap, miss, stk byte for byte
+  const st = await readState(page);
+  expect(Object.keys(st.dprog.d1).length).toBe(6);
+  expect(st.xp).toBeGreaterThan(hist0[0]);
+  expect(st.hist[st.daily.date || (await page.evaluate(() => today()))]).toBeGreaterThan(hist0[1]);
+  expect(st.chist[await page.evaluate(() => today())]).toBeGreaterThan(hist0[2]);
+  expect(st.decks[0].used).toBeGreaterThan(1000);
+  // "รู้คำนี้แล้ว ข้ามเลย" on a new card goes to the set table too
+  await page.evaluate(() => { for (const k of Object.keys(S.dprog.d1)) delete S.dprog.d1[k]; go('cards', { deck: 'd1' }); });
+  await page.locator('[data-know]').click();
+  expect(await fingerprint(page)).toBe(before);
+  expect(await page.evaluate(() => Object.values(S.dprog.d1)[0].b)).toBe(4);
+  await page.locator('#quit').click();
+  await expect(page.locator('#dkStudy')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('set rounds hold at most 20 new cards, keep going on request; set status and restart', async ({ page }) => {
+  const errors = await openApp(page, { decks: [deck('big', { words: [] })] });
+  await page.evaluate(() => { S.decks[0].words = W.slice(0, 45).map((w) => w.w); save(); });
+  expect(await page.evaluate(() => buildDeckQueue(S.decks[0]).length)).toBe(20);
+  await page.evaluate(() => go('cards', { deck: 'big' }));
+  await expect(page.locator('#pcount')).toHaveText('0/20');
+  // status thresholds: interval 6 = learning, 7 = solid; leech at x 4
+  const sts = await page.evaluate(() => [deckStatus(null), deckStatus({ b: 2, i: 6 }), deckStatus({ b: 3, i: 7 }), deckStatus({ b: 1 })]);
+  expect(sts).toEqual(['new', 'learning', 'solid', 'learning']);
+  await page.evaluate(() => {
+    const [a, b, c] = S.decks[0].words;
+    S.dprog.big = { [a]: { b: 3, i: 8, e: 2.5, d: Date.now() + DAY, s: 3, c: 3, x: 0 }, [b]: { b: 2, i: 3, e: 2.5, d: Date.now() - 1000, s: 4, c: 1, x: 4 }, [c]: { b: 1, i: 1, e: 2.5, d: Date.now() + DAY, s: 1, c: 1, x: 0 } };
+    go('decks', 'big');
+  });
+  await expect(page.locator('.dk-nums')).toContainText('1'); // due
+  const stt = await page.evaluate(() => deckStats(S.decks[0]));
+  expect(stt).toMatchObject({ n: 45, fresh: 42, learning: 2, solid: 1, due: 1, leech: 1 });
+  expect(Math.round(stt.acc * 100)).toBe(63); // correct 3+1+1 of seen 3+4+1
+  // finishing a round offers to continue
+  await page.evaluate(() => go('cards', { deck: 'big' }));
+  await expect(page.locator('#pcount')).toHaveText('0/21'); // 1 due + 20 new
+  // restart clears only this set's progress; the main list keeps its own
+  await page.evaluate(() => { S.prog.apple = { b: 5, i: 20, e: 2.5, d: 5, s: 1, c: 1, x: 0 }; go('decks', 'big'); });
+  page.once('dialog', (d) => d.accept());
+  await page.locator('#dkRestart').click();
+  const st = await readState(page);
+  expect(st.dprog.big).toEqual({}); expect(st.prog.apple.b).toBe(5); expect(st.decks[0].rst).toBeGreaterThan(0);
+  // a finished set shows its own empty screen and next steps
+  await page.evaluate(() => { S.dprog.big = Object.fromEntries(S.decks[0].words.map((w) => [w, { b: 3, i: 8, e: 2.5, d: Date.now() + 5 * DAY, s: 3, c: 3, x: 0 }])); go('cards', { deck: 'big' }); });
+  await expect(page.locator('#view')).toContainText('ชุดนี้ไม่มีอะไรค้างแล้ว');
+  await page.locator('[data-dk="ahead"]').click();
+  await expect(page.locator('#pcount')).toHaveText('0/20');
+  expect(errors).toEqual([]);
+});
+
+test('"start from main progress" copies once; the set sheet hides main-progress buttons', async ({ page }) => {
+  const errors = await openApp(page, { prog: { airport: { b: 4, i: 16, e: 2.5, d: 5, s: 3, c: 3, x: 0 } } });
+  await page.evaluate(() => renderDeckEdit());
+  await page.locator('#dkSeed').check();
+  await page.locator('#dkTabs [data-v="paste"]').click();
+  await page.locator('#dkText').fill('airport\nhotel');
+  await page.locator('#dkCheck').click();
+  await page.locator('#dkAdd').click();
+  await expect(page.locator('#dkSeedBox')).toHaveCount(0);
+  const id = await page.evaluate(() => S.decks[0].id);
+  expect(await page.evaluate((id) => S.dprog[id], id)).toEqual({ airport: { b: 4, i: 16, e: 2.5, d: 5, s: 3, c: 3, x: 0 } });
+  await page.evaluate(() => { S.prog.airport.b = 6; save(); }); // later main progress does not follow
+  expect(await page.evaluate((id) => S.dprog[id].airport.b, id)).toBe(4);
+  await page.evaluate((id) => renderDeck(id), id);
+  await page.locator('#dkList .wrow').first().click();
+  await expect(page.locator('.sheet [data-act="star"]')).toBeVisible();
+  await expect(page.locator('.sheet [data-act="known"]')).toHaveCount(0);
+  await expect(page.locator('.sheet [data-act="review"]')).toHaveCount(0);
+  // a set made without the option starts empty
+  await page.evaluate(() => { addDeck('plain', '📚', ['airport']); });
+  expect(await page.evaluate(() => Object.keys(S.dprog).length)).toBe(1);
+  expect(errors).toEqual([]);
+});
+
+test('sync: two devices study different words of one set and the progress combines; a restart is not undone by the old copy', async ({ browser }) => {
+  const store = { data: null };
+  const A = await device(browser, store), B = await device(browser, store);
+  const pa = A.page, pb = B.page;
+  await pa.evaluate(() => addDeck('Wk', '🎓', ['airport', 'hotel', 'ticket']));
+  await syncOnce(pa); await syncOnce(pb);
+  const id = await pa.evaluate(() => S.decks[0].id);
+  await pa.evaluate((id) => { gameResult(W.find((w) => w.w === 'airport'), true, deckMap(id)); }, id);
+  await pb.evaluate((id) => { gameResult(W.find((w) => w.w === 'hotel'), true, deckMap(id)); }, id);
+  await syncOnce(pa); await syncOnce(pb); await syncOnce(pa);
+  for (const p of [pa, pb]) expect(await p.evaluate((id) => Object.keys(S.dprog[id]).sort(), id)).toEqual(['airport', 'hotel']);
+  expect(await pa.evaluate(() => Object.keys(S.prog).length)).toBe(0); // the main progress never got them
+  // restart on A: B's old progress must not bring it back, and B is cleared when it syncs
+  await pa.evaluate((id) => { const m = deckMap(id); for (const k of Object.keys(m)) delete m[k]; const d = deckById(id); d.rst = Date.now() + 1000; d.at = Date.now() + 1000; save(); }, id);
+  await syncOnce(pa); await syncOnce(pb); await syncOnce(pa);
+  for (const p of [pa, pb]) expect(await p.evaluate((id) => Object.keys(S.dprog[id] || {}), id)).toEqual([]);
+  // progress made after the restart merges normally
+  await pb.evaluate((id) => { gameResult(W.find((w) => w.w === 'ticket'), true, deckMap(id)); }, id);
+  await syncOnce(pb); await syncOnce(pa);
+  expect(await pa.evaluate((id) => Object.keys(S.dprog[id]), id)).toEqual(['ticket']);
+  expect(A.errors).toEqual([]); expect(B.errors).toEqual([]);
+  await A.ctx.close(); await B.ctx.close();
 });

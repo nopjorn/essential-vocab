@@ -1102,3 +1102,15 @@ details.danger-group > summary { color: var(--bad); }
 .dk-g { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
 .dk-g input { width: 22px; height: 22px; flex: none; }
 textarea.search { font: inherit; line-height: 1.5; }
+.dk-head { gap: 12px; align-items: center; margin-bottom: 12px; }
+.dk-ic { font-size: 36px; }
+.dk-bar { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: var(--surface-2); margin: 6px 0; }
+.dk-bar i { display: block; min-width: 0; }
+.dk-bar .s { background: var(--good); }
+.dk-bar .l { background: var(--warn); }
+.dk-bar .n { background: var(--border); }
+.dk-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--muted); margin-bottom: 12px; }
+.dk-nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+.dk-nums b { display: block; font-size: 22px; }
+.dk-nums small { color: var(--muted); }
+#dkStudy small { font-weight: 400; opacity: .85; }
