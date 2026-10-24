@@ -1246,3 +1246,4 @@ html.no-ans .streak.bump { animation: none; }
 .year-dots i.on { width: 20px; border-radius: 99px; background: var(--primary); }
 .year-nav { width: 100%; margin-top: 8px; }
 .year-slide .yl { display: inline-block; max-width: 100%; }
+.mt-star { font-size: 44px; line-height: 1.2; text-align: center; }

@@ -387,7 +387,10 @@ function runMonthTest(items, lv) {
     view.innerHTML = `<div class="card-box center pop"><div class="result-emoji">${p >= 90 ? '🏆' : p >= 70 ? '🎉' : p >= 50 ? '💪' : '📚'}</div>
       <div class="h2" style="margin:4px 0">${right}/${items.length} · ${p}%</div>
       <p class="small muted">${note}${best ? '' : ' · คะแนนดีที่สุดยังเป็นครั้งก่อน'}</p>
+      <div class="tiles mo-tiles" style="margin:12px 0"><div class="tile-s"><b>✅ ${right}</b><span>ตอบถูก</span></div><div class="tile-s"><b>❌ ${wrong.length}</b><span>ตอบผิด</span></div><div class="tile-s"><b>${pct(book[key])}%</b><span>${lv ? 'ดีที่สุดของระดับนี้' : 'ดีที่สุดเดือนนี้'}</span></div></div>
       <button class="btn primary block" id="mtAgain">ทำอีกครั้ง</button><button class="btn ghost block" style="margin-top:8px" data-go="stats">ดูสถิติ</button></div>
+      ${wrong.length ? '' : `<div class="card-box center"><div class="mt-star" aria-hidden="true">🌟</div><b>ไม่มีคำผิดเลย!</b><div class="small muted">คำทั้ง ${items.length} คำนี้ยังจำได้แม่น ไม่ต้องกลับไปทบทวนเพิ่ม</div></div>`}
+      ${lv ? '' : `<div class="card-box"><b>พัฒนาการรายเดือน</b><div style="margin-top:8px">${mtestSummary()}</div></div>`}
       ${wrong.length ? `<div class="card-box wrong-list"><b>คำที่ตอบผิด</b> <span class="small muted">(กลับไปอยู่ในแฟลชการ์ดแล้ว · แตะเพื่อดู)</span>
         ${wrong.map((w) => `<div class="wl" data-i="${w.idx}"><span><b>${esc(w.w)}</b></span><span class="muted grow" style="text-align:right">${esc(w.t)}</span></div>`).join('')}</div>` : ''}`;
     $('#mtAgain').onclick = () => (lv ? renderLevelTest(lv) : renderMonthTest());
