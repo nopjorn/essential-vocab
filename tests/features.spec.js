@@ -1128,3 +1128,21 @@ test('flashcard queue spreads word families (1.70): decide / decision / decisive
   await expect(page.locator('#fc')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('stats page draws heavy blocks lazily (1.71): not in the first paint, all there shortly after, still interactive', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const first = await page.evaluate(() => { go('stats'); return { hm: !!document.querySelector('#hm'), stk: !!document.querySelector('#stk'), ach: document.querySelectorAll('#ach .ach').length, hosts: document.querySelectorAll('[data-lz]').length }; });
+  expect(first).toEqual({ hm: false, stk: false, ach: 0, hosts: 4 });
+  await expect(page.locator('#hm')).toBeAttached();
+  await expect(page.locator('#stk .stk').first()).toBeAttached();
+  await expect(page.locator('#ach .ach').first()).toBeAttached();
+  await expect(page.locator('[data-lz="trend"]')).toContainText('เรียนแล้ว');
+  // interactive after lazy fill: sticker info + heatmap cell toast
+  await page.locator('#stk .stk').first().click({ force: true });
+  await expect(page.locator('#stkInfo .stk-info')).toBeVisible();
+  // leaving the page and coming back resets cleanly
+  await page.evaluate(() => { go('home'); go('stats'); });
+  await expect(page.locator('#hm')).toBeAttached();
+  expect(await page.locator('#hm').count()).toBe(1);
+  expect(errors).toEqual([]);
+});
