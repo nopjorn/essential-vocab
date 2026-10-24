@@ -336,10 +336,104 @@ test('level map (1.83): stages mix every question type and reach the stars scree
   expect(errors).toEqual([]);
 });
 
-test('guide (1.84): the duel and level map sections sit in the practice group', async ({ page }) => {
+test('guide (1.84): the duel, level map and word search sections sit in the practice group', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   await page.evaluate(() => go('guide'));
-  const grp = await page.evaluate(() => ['ท้าดวลเพื่อน', 'แผนที่ด่าน'].map((t) => GUIDE_GROUPS[guideGroupOf(t)][1]));
-  expect(grp).toEqual(['เรียนและฝึก', 'เรียนและฝึก']);
+  const grp = await page.evaluate(() => ['ท้าดวลเพื่อน', 'แผนที่ด่าน', 'ค้นหาคำในตาราง'].map((t) => GUIDE_GROUPS[guideGroupOf(t)][1]));
+  expect(grp).toEqual(['เรียนและฝึก', 'เรียนและฝึก', 'เรียนและฝึก']);
+  expect(errors).toEqual([]);
+});
+
+test('word search (1.85): grid invariants for every difficulty', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const res = await page.evaluate(() => {
+    const out = {};
+    for (const diff of ['easy', 'normal', 'hard']) {
+      let builds = 0, bad = 0, minWords = 99; const dirs = new Set();
+      for (let k = 0; k < 60; k++) {
+        const words = wsPick(['', 'animal', 'food', 'job'][k % 4] || '');
+        const b = wsBuild(words, diff, duelRng(diff + k));
+        if (!b) continue;
+        builds++; minWords = Math.min(minWords, b.words.length);
+        for (const p of b.words) {
+          const s = p.w.w.toLowerCase();
+          dirs.add(p.dr + ',' + p.dc);
+          const read = [...s].map((_, i) => b.grid[p.r + p.dr * i] && b.grid[p.r + p.dr * i][p.c + p.dc * i]).join('');
+          if (read !== s) bad++;
+        }
+        if (b.grid.length !== 10 || b.grid.some((r) => r.length !== 10 || r.some((c) => !/^[a-z]$/.test(c)))) bad++;
+      }
+      out[diff] = { builds, bad, minWords, dirs: [...dirs].sort().join(' ') };
+    }
+    // the picked words: single, 4–9 letters, none inside another
+    const w = wsPick('animal');
+    out.pick = { n: w.length, ok: w.every((x) => /^[a-z]{4,9}$/i.test(x.w) && x.tp === 'animal'), nested: w.some((a, i) => w.some((b, j) => i !== j && a.w.toLowerCase().includes(b.w.toLowerCase()))) };
+    return out;
+  });
+  for (const d of ['easy', 'normal', 'hard']) { expect(res[d].builds).toBeGreaterThan(40); expect(res[d].bad).toBe(0); expect(res[d].minWords).toBeGreaterThanOrEqual(6); }
+  expect(res.easy.dirs).toBe('0,1 1,0');
+  expect(res.normal.dirs.split(' ').every((d) => ['0,1', '1,0', '1,1', '-1,1'].includes(d))).toBe(true);
+  expect(res.hard.dirs.split(' ').length).toBeGreaterThan(5);
+  expect(res.pick.n).toBe(8); expect(res.pick.ok).toBe(true); expect(res.pick.nested).toBe(false);
+  expect(errors).toEqual([]);
+});
+
+test('word search (1.85): tap-tap, drag, reverse, wrong line, hint, finish and give up update progress', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => go('games'));
+  await page.locator('#toWs').click();
+  await page.locator('#wsTopic').selectOption('animal');
+  await page.locator('#wsDiff [data-d="hard"]').click();
+  await page.locator('#wsGo').click();
+  const view = page.locator('#view');
+  await expect(view.locator('.ws-c')).toHaveCount(100);
+  await expect(view.locator('#wsList li')).toHaveCount(await page.evaluate(() => wsGame.words.length));
+  const cell = (r, c) => view.locator(`.ws-c[data-r="${r}"][data-c="${c}"]`);
+  const ends = (k) => page.evaluate((k) => { const p = wsGame.words[k], n = p.w.w.length; return { a: [p.r, p.c], b: [p.r + p.dr * (n - 1), p.c + p.dc * (n - 1)] }; }, k);
+  const total = await page.evaluate(() => wsGame.words.length);
+  // wrong: two letters that are not in line do nothing; a line that spells nothing shakes and clears
+  await cell(0, 0).click(); await cell(1, 2).click();
+  expect(await view.locator('#wsList li.found').count()).toBe(0);
+  await expect(view.locator('.ws-c.anchor')).toHaveCount(1); // the second tap started a new first letter
+  await cell(1, 2).click(); // same letter again: cancel
+  await expect(view.locator('.ws-c.anchor')).toHaveCount(0);
+  // tap first and last letter
+  let e = await ends(0);
+  await cell(...e.a).click(); await expect(view.locator('.ws-c.anchor')).toHaveCount(1); await cell(...e.b).click();
+  await expect(view.locator('#wsList li.found')).toHaveCount(1);
+  await expect(view.locator('#wsLeft')).toContainText(`เหลือ ${total - 1} คำ`);
+  // drag across the letters
+  e = await ends(1);
+  const box = async (c) => (await cell(...c).boundingBox());
+  const a = await box(e.a), b = await box(e.b);
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await page.mouse.down();
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 8 }); await page.mouse.up();
+  await expect(view.locator('#wsList li.found')).toHaveCount(2);
+  // reverse direction (from the last letter back to the first)
+  e = await ends(2);
+  await cell(...e.b).click(); await cell(...e.a).click();
+  await expect(view.locator('#wsList li.found')).toHaveCount(3);
+  // hint shows the first letter of an unfound word
+  await view.locator('#wsHint').click();
+  await expect(view.locator('.ws-c.hint')).toHaveCount(1);
+  expect(await page.evaluate(() => wsGame.words.filter((p) => p.hint).length)).toBe(1);
+  // find the rest by tapping
+  for (let k = 3; k < total; k++) { e = await ends(k); await cell(...e.a).click(); await cell(...e.b).click(); }
+  await expect(view.locator('.result-emoji')).toBeVisible({ timeout: 5000 });
+  await expect(view.locator('.h2').first()).toContainText(`เจอครบ ${total} คำ`);
+  const st = await readState(page);
+  expect(st.counts.wsearch).toBe(1);
+  expect(await page.evaluate(() => W.filter((w) => S.prog[w.w] && S.prog[w.w].c >= 1).length)).toBeGreaterThanOrEqual(total);
+  // another table: give up shows the missing words and counts them as missed
+  await view.locator('#wsAgain').click();
+  await expect(view.locator('.ws-c')).toHaveCount(100);
+  e = await ends(0); await cell(...e.a).click(); await cell(...e.b).click();
+  const missed = await page.evaluate(() => wsGame.words.slice(1).map((p) => p.w.w));
+  await view.locator('#wsGive').click();
+  await expect(view.locator('.h2').first()).toContainText(`เจอ 1/${total} คำ`);
+  expect(await view.locator('.ws-c.rev').count()).toBeGreaterThan(0);
+  expect(await page.evaluate((m) => m.every((w) => S.prog[w] && S.prog[w].x >= 1), missed)).toBe(true);
+  await view.locator('#wsMenu').click();
+  await expect(view.locator('#wsGo')).toBeVisible();
   expect(errors).toEqual([]);
 });
