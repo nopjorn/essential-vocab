@@ -3,14 +3,14 @@ const { test, expect } = require('@playwright/test');
 const { openApp } = require('./helpers');
 
 const SIZES = [[440, 956], [956, 440], [834, 1210], [1210, 834], [1032, 1376], [1376, 1032]];
-const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read'];
+const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read', 'decks'];
 
 for (const [w, h] of SIZES) {
   test(`no horizontal overflow at ${w}×${h}`, async ({ page }) => {
     await page.setViewportSize({ width: w, height: h });
     const errors = await openApp(page, { placedAt: '2026-01-01' });
     const screens = [...ROUTES.map((r) => [r, `go('${r}')`]), ['families', 'renderFamilies()'], ['pairs', 'renderPairs()'], ['wform', "startGame('wform')"],
-      ['idioms', 'renderIdioms()'], ['situations', 'renderSit()'], ['situation', "renderSit('restaurant')"], ['sit game', "startGame('sit')"]];
+      ['deck edit', 'renderDeckEdit()'], ['idioms', 'renderIdioms()'], ['situations', 'renderSit()'], ['situation', "renderSit('restaurant')"], ['sit game', "startGame('sit')"]];
     for (const [name, js] of screens) {
       await page.evaluate(js);
       await page.waitForTimeout(150);

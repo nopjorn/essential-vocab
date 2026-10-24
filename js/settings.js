@@ -230,9 +230,9 @@ function renderSettings() {
   };
   $('#reset').onclick = async () => {
     const cloud = syncOn() && auth;
-    if (!confirm('ล้างความคืบหน้าทั้งหมดใช่ไหม? (ย้อนกลับไม่ได้)' + (cloud ? '\nข้อมูลบนคลาวด์จะถูกล้างด้วย ถ้ามีเครื่องอื่นที่ซิงก์อยู่ ให้ล้างที่เครื่องนั้นด้วย ไม่อย่างนั้นข้อมูลจะซิงก์กลับมา' : ''))) return;
-    const settings = S.settings;
-    S = defaults(); S.settings = settings; save();
+    if (!confirm('ล้างความคืบหน้าทั้งหมดใช่ไหม? (ย้อนกลับไม่ได้)\nชุดของฉันไม่ถูกลบ (แต่ความคืบหน้าในชุดไม่ถูกล้างด้วย)' + (cloud ? '\nข้อมูลบนคลาวด์จะถูกล้างด้วย ถ้ามีเครื่องอื่นที่ซิงก์อยู่ ให้ล้างที่เครื่องนั้นด้วย ไม่อย่างนั้นข้อมูลจะซิงก์กลับมา' : ''))) return;
+    const { settings, decks, dprog } = S; // my word sets and their progress survive a reset
+    S = defaults(); S.settings = settings; S.decks = decks; S.dprog = dprog; save();
     // overwrite the cloud row, otherwise the next sync would merge the old progress back in
     if (cloud && !(await syncNow(false, true))) toast('⚠️ ล้างในเครื่องแล้ว แต่ล้างบนคลาวด์ไม่สำเร็จ ลองใหม่อีกครั้ง');
     else toast('ล้างข้อมูลแล้ว');

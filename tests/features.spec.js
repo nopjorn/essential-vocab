@@ -238,10 +238,12 @@ test('accessibility: every visible control has a name; English text is marked la
     const txt = (e.textContent || '').replace(/[\p{Extended_Pictographic}\p{S}\p{P}\s‍️\d]/gu, '');
     return !lab.trim() && !txt;
   }).map((e) => e.id || e.className);
-  for (const r of ['home', 'cards', 'games', 'list', 'stats', 'settings', 'read', 'mtest']) {
+  for (const r of ['home', 'cards', 'games', 'list', 'stats', 'settings', 'read', 'mtest', 'decks']) {
     await page.evaluate((r) => go(r), r);
     expect(await page.evaluate(unnamed), r).toEqual([]);
   }
+  await page.evaluate(() => { addDeck('ทดสอบ', '📚', ['airport', 'hotel']); renderDeckEdit(S.decks[0].id); });
+  expect(await page.evaluate(unnamed), 'deck edit').toEqual([]);
   await expect(page.locator('#toast')).toHaveAttribute('aria-live', 'polite');
   await page.evaluate(() => startGame('en2th'));
   await expect(page.locator('.q-prompt .word')).toHaveAttribute('lang', 'en');

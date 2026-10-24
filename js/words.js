@@ -6,7 +6,7 @@
 let listFilter = { q: '', lv: 'all', st: 'all', tp: '', gl: '' };
 function renderList() {
   view.innerHTML = `
-    <div class="list-head"><input class="search" id="q" type="search" placeholder="🔍 ค้นหาคำอังกฤษหรือคำแปลไทย" value="${esc(listFilter.q)}" autocapitalize="none" autocorrect="off"></div>
+    <div class="list-head">${libSwitch('list')}<input class="search" id="q" type="search" placeholder="🔍 ค้นหาคำอังกฤษหรือคำแปลไทย" value="${esc(listFilter.q)}" autocapitalize="none" autocorrect="off"></div>
     <div class="chips scroll" id="lv" style="margin-bottom:8px">
       ${['all', ...LEVELS].map((l) => `<button class="chip" data-v="${l}">${l === 'all' ? 'ทุกระดับ' : LV_LABEL[l]}</button>`).join('')}
     </div>

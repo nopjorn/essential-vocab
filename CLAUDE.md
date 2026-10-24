@@ -23,6 +23,7 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
 | `js/*.js` | The rest of the logic, one classic script per area (`home cards games feed reading words placement stats sync guide settings boot`), sections marked `/* ---------- name ---------- */`. They share globals (no modules, no build); `index.html` loads them after `app.js` and `boot.js` must stay last. A new file goes in `index.html` **and** `sw.js` (a test checks) |
 | `style.css` | Mobile-first styles; colour tokens on `:root` with dark mode |
 | `data/words/<level>.js` | `a1 a2 b1 b2 b2plus c1` (Oxford 5000-only rows in `b2plus`/`c1`), one row per line, each pushes onto `window.WORDS`: `[word, pos, level, ipa, thai, example, thaiExample, topicId, 5?, [[ex, thaiEx], …]?]` (4,957 rows total; app.js sorts them A–Z, topic id → `w.tp`; the optional trailing array → `w.xe` = extra examples for other meanings, shown as extra `exampleBox()` boxes, never used by games — A1 since 1.40, A2 1.41, B1 1.42, B2/B2+/C1 1.43) |
+| `js/decks.js` | "ชุดของฉัน" (route `decks`, 1.54): create/edit/copy/delete word sets picked from the built-in list; `matchWords(text)` (paste matcher: ok / guess / miss), `renderDecks`, `renderDeckEdit`, `libSwitch()` (the คลังคำ ⇄ ชุดของฉัน switch on the word list) |
 | `sw.js` | Network-first service worker with versioned cache |
 | `data/families.js` | `window.FAMILIES = [{f: [[word, pos, thai], ...], q: [[sentence ___, answer, thai], ...]}]` original word families (a word is in one family only), lazy-loaded by `loadFamilies()`; `familyOf(word)` → family (word sheet box, `wform` game, `renderFamilies()` browser) |
 | `tests/*.spec.js`, `playwright.config.js` | Playwright test suite (`npm test`), run by `.github/workflows/test.yml` on every push to `master` |
@@ -51,6 +52,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
   `[learned3000, mastered3000, learnedAll, masteredAll]`, written by `takeSnap()` in `save()`),
   `note` (memory hooks), `miss` (date → word → wrong count, 21 days), `weekSeen`, `read` (story id → date), `readScore` (story id → [best right, questions]),
   `settings.topic`, `settings.voice` (voiceURI, '' = auto), `settings.theme` (auto/light/dark → `html[data-theme]`, mirrored to localStorage `o3k.theme` for the early script in index.html), `monthSeen`, `stk` (topic → sticker tier 1–4), `placedAt`, `xpWeek` (Monday key → XP), `nick`, `mtest` (month → best monthly-test `{r, n, at}`). Auth tokens live separately in localStorage `o3k.auth` (never in backups).
+- My word sets (1.54+): `decks` = `[{id, name, icon, words: [list spellings], at, used, del?}]` and `dprog` (deck id → word → progress, same shape as `prog`, written from 1.55). Everything read from storage/backup/cloud goes through `cleanDecks()`/`cleanDprog()` (`sanitizeDecks` in `load()`); `mergeDecks(d)` (called by `mergeBackup`) keeps the newer `at` per id, deleted sets stay as `del` tombstones for 90 days, `dprog` merges per word with `progAhead`. The reset button keeps both fields.
 - Settings sync (1.53+): `save()` stamps `settingsAt` when `settingsSig()` (settings minus `voice` + `homeCfg`) changes; `mergeBackup()` adopts the copy with the newer `settingsAt`. `gplay` is per device (`DEV`, localStorage `o3k.dev`), summed by `gamePlays(id)`.
 - When adding a field: add it to `defaults()` (load() shallow-merges top-level keys) **and** handle it
   in `mergeBackup()` so importing a backup keeps it.
@@ -93,7 +95,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
   `sw.js` push/notificationclick) only appear when sync is configured and signed in.
 - Sync: `syncNow()` = GET row → `mergeBackup()` → upsert; `save()` debounces a push (4 s); also on
   start/visibility. Email OTP code login (`create_user:false` = invite-only). `requireLogin` locks the UI.
-  Tests mock Supabase with `page.route` and override `config.js`.
+  Tests: `fakeSupabase(page, store)` in `tests/helpers.js` mocks the `progress` table with `page.route` (see `tests/decks.spec.js`; before 1.54 there were no sync tests).
 - Streak freezes: +1 per 7-day streak, max 2, auto-used for missed days.
 
 ## Content / copyright

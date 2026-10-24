@@ -1089,3 +1089,16 @@ details.danger-group > summary { color: var(--bad); }
 :root[data-palette="mint"] { --bar-l: #6fa8dc; }
 @media (prefers-color-scheme: dark) { :root[data-palette="mint"]:not([data-theme="light"]) { --bar-l: #5b8fd0; } }
 :root[data-palette="mint"][data-theme="dark"], :root[data-palette="mint"][data-theme="black"] { --bar-l: #5b8fd0; }
+
+/* ---------- my word sets (js/decks.js) ---------- */
+.lib-sw { display: flex; margin-bottom: 10px; }
+.lib-sw button { flex: 1; }
+.list-head .lib-sw { margin-bottom: 8px; }
+.deck-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.deck-card { margin-bottom: 10px; }
+.dk-w { min-width: 0; }
+.dk-x { flex: none; min-width: 40px; min-height: 40px; padding: 0; }
+.dk-sec { margin-bottom: 12px; }
+.dk-g { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.dk-g input { width: 22px; height: 22px; flex: none; }
+textarea.search { font: inherit; line-height: 1.5; }

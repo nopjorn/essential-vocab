@@ -36,4 +36,22 @@ async function openApp(page, state) {
 
 const readState = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) || '{}'), KEY);
 
-module.exports = { openApp, readState, KEY };
+// Fake Supabase for sync tests. `store` is shared by every page that uses it (one cloud, several devices):
+// { data: null | the saved state, writes: number }. The app talks to the same origin as the test server, so no CORS preflight.
+// Sign-in is faked with a saved token (same user id on every device); `syncNow(true)` then runs one sync round.
+async function fakeSupabase(page, store, uid = 'user-1') {
+  await page.route('**/config.js*', (r) => r.fulfill({ contentType: 'text/javascript', body: "window.SYNC_CONFIG = { url: 'http://localhost:8765', anonKey: 'x', requireLogin: false, leaderboard: false };" }));
+  await page.route('**/rest/v1/progress*', (r) => {
+    const req = r.request();
+    if (req.method() === 'GET') return r.fulfill({ contentType: 'application/json', body: JSON.stringify(store.data ? [{ data: store.data }] : []) });
+    store.data = JSON.parse(req.postData()).data; store.writes = (store.writes || 0) + 1;
+    return r.fulfill({ status: 201, body: '' });
+  });
+  await page.addInitScript((id) => localStorage.setItem('o3k.auth', JSON.stringify({ access_token: 't', refresh_token: 'r', user: { id, email: 'a@b.c' } })), uid);
+}
+const syncOnce = async (page) => { // wait for the sync the app starts by itself at boot, then run one round
+  await page.waitForFunction(() => !syncState.busy);
+  return page.evaluate(() => syncNow(true));
+};
+
+module.exports = { openApp, readState, KEY, fakeSupabase, syncOnce };

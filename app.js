@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.53.1';
+const APP_VERSION = '1.54.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -63,6 +63,47 @@ const DEV = (() => {
 // 1.52.0 kept one flat { game: n } map: it becomes this device's bucket.
 const gplayFix = (g) => (g && Object.values(g).some((v) => typeof v === 'number') ? { [DEV]: g } : g || {});
 const gamePlays = (id) => Object.values(S.gplay).reduce((n, dev) => n + ((dev && dev[id]) || 0), 0);
+// My word sets (js/decks.js). Everything read from storage, a backup or the cloud goes through cleanDecks()/cleanDprog().
+const DECK_MAX = { decks: 200, words: 500, name: 40, word: 40, icon: 8, tomb: 90 * 86400000 };
+const isNum = (n) => typeof n === 'number' && isFinite(n);
+function cleanDecks(a) {
+  const byId = new Map();
+  for (const x of Array.isArray(a) ? a : []) {
+    if (!x || typeof x !== 'object' || typeof x.id !== 'string' || !/^[a-z0-9]{1,24}$/.test(x.id)) continue;
+    const del = x.del === true, seen = new Set(), words = [];
+    if (!del) for (const w of Array.isArray(x.words) ? x.words : []) {
+      if (typeof w === 'string' && w && w.length <= DECK_MAX.word && !seen.has(w) && words.length < DECK_MAX.words) { seen.add(w); words.push(w); }
+    }
+    const d = { id: x.id, name: typeof x.name === 'string' ? x.name.slice(0, DECK_MAX.name) : '', icon: typeof x.icon === 'string' && x.icon ? x.icon.slice(0, DECK_MAX.icon) : '📚',
+      words, at: isNum(x.at) ? x.at : 0, used: isNum(x.used) ? x.used : 0 };
+    if (del) d.del = true;
+    const o = byId.get(d.id);
+    if (!o || d.at > o.at) byId.set(d.id, d);
+  }
+  const all = [...byId.values()].sort((p, q) => q.at - p.at), live = all.filter((d) => !d.del).slice(0, DECK_MAX.decks);
+  return all.filter((d) => d.del).slice(0, DECK_MAX.decks).concat(live);
+}
+function cleanDprog(o, live) {
+  const out = {};
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return out;
+  for (const [id, m] of Object.entries(o)) {
+    if (!live.has(id) || !m || typeof m !== 'object' || Array.isArray(m)) continue;
+    const mm = {};
+    for (const [w, p] of Object.entries(m)) {
+      if (!p || typeof p !== 'object' || !isNum(p.b)) continue;
+      const e = { b: p.b };
+      for (const k of ['i', 'e', 'd', 's', 'c', 'x']) if (isNum(p[k])) e[k] = p[k];
+      mm[w] = e;
+    }
+    out[id] = mm;
+  }
+  return out;
+}
+function sanitizeDecks(r) {
+  r.decks = cleanDecks(r.decks).filter((d) => !d.del || Date.now() - d.at <= DECK_MAX.tomb);
+  r.dprog = cleanDprog(r.dprog, new Set(r.decks.filter((d) => !d.del).map((d) => d.id)));
+  return r;
+}
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
   settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
@@ -100,6 +141,8 @@ const defaults = () => ({
   gplay: {},           // device id -> { game id -> rounds started } (summed for the games menu "เล่นบ่อย" row)
   settingsAt: 0,       // ms when settings/homeCfg last changed on any device: the newest copy wins when syncing
   homeCfg: null,       // home layout [{id, on, w: 'full'|'half'}] in display order; null = default (see HOME_BLOCKS)
+  decks: [],           // my word sets [{id, name, icon, words: [list words], at: last edit ms, used: last used ms, del: true = deleted}]
+  dprog: {},           // deck id -> { word -> { b, i, e, d, s, c, x } } progress of each set (same shape as prog; kept apart from prog)
 });
 let S = load();
 // Users from before 1.8.0 get XP for the work they already did.
@@ -116,7 +159,7 @@ function load() {
       if (!r.riddle || typeof r.riddle !== 'object' || !Array.isArray(r.riddle.g)) r.riddle = d.riddle;
       if (!r.riddleStat || typeof r.riddleStat !== 'object') r.riddleStat = d.riddleStat;
       else r.riddleStat = { ...d.riddleStat, ...r.riddleStat, dist: (Array.isArray(r.riddleStat.dist) ? r.riddleStat.dist : []).concat([0, 0, 0, 0, 0, 0]).slice(0, 6) };
-      return r;
+      return sanitizeDecks(r);
     }
   } catch (e) { /* storage unavailable: start fresh */ }
   return defaults();
@@ -160,8 +203,30 @@ const needsBackup = () => Object.keys(S.prog).length >= 10
   && !(typeof syncOn === 'function' && syncOn() && auth); // signed-in cloud sync is the backup
 
 // Merge a backup into the current state, keeping whichever side is further along for each word.
+const progAhead = (a, b) => (a.b - b.b) || ((a.s || 0) - (b.s || 0)) || ((a.d || 0) - (b.d || 0));
+// My word sets: per set the newer edit (`at`) wins, deleted sets stay as tombstones for 90 days so a deletion also reaches
+// other devices and old backups; progress is merged per word like prog, and only for sets that still exist.
+function mergeDecks(d) {
+  const before = JSON.stringify([S.decks, S.dprog]), now = Date.now();
+  const map = new Map(S.decks.map((x) => [x.id, x]));
+  for (const t of cleanDecks(d.decks)) {
+    const m = map.get(t.id);
+    if (!m) map.set(t.id, t);
+    else if (t.at > m.at) map.set(t.id, { ...t, used: Math.max(t.used, m.used) });
+    else if (t.used > m.used) m.used = t.used;
+  }
+  S.decks = cleanDecks([...map.values()]).filter((x) => !x.del || now - x.at <= DECK_MAX.tomb);
+  const theirs = cleanDprog(d.dprog, new Set(S.decks.filter((x) => !x.del).map((x) => x.id)));
+  const mine = cleanDprog(S.dprog, new Set(S.decks.filter((x) => !x.del).map((x) => x.id)));
+  for (const [id, m] of Object.entries(theirs)) {
+    const cur = mine[id] || (mine[id] = {});
+    for (const [w, p] of Object.entries(m)) if (!cur[w] || progAhead(p, cur[w]) > 0) cur[w] = p;
+  }
+  S.dprog = mine;
+  if (typeof current !== 'undefined' && current === 'decks' && before !== JSON.stringify([S.decks, S.dprog]) && !view.querySelector('#dkBack')) setTimeout(() => go('decks'), 0);
+}
 function mergeBackup(d) {
-  const ahead = (a, b) => (a.b - b.b) || ((a.s || 0) - (b.s || 0)) || ((a.d || 0) - (b.d || 0));
+  const ahead = progAhead;
   let added = 0, updated = 0;
   const fresh = Object.keys(S.prog).length === 0;
   for (const [w, p] of Object.entries(d.prog || {})) {
@@ -213,6 +278,7 @@ function mergeBackup(d) {
   for (const [k, v] of Object.entries(d.mtest || {})) if (!S.mtest[k] || v.r / v.n > S.mtest[k].r / S.mtest[k].n) S.mtest[k] = v;
   for (const [k, v] of Object.entries(d.chist || {})) S.chist[k] = Math.max(S.chist[k] || 0, v);
   for (const [k, v] of Object.entries(d.snap || {})) S.snap[k] = (S.snap[k] || [0, 0, 0, 0]).map((x, i) => Math.max(x, v[i] || 0));
+  mergeDecks(d);
   save();
   return { added, updated };
 }
@@ -676,7 +742,7 @@ function markForReview(w) {
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์' };
+const TITLES = { mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
 function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
@@ -685,10 +751,12 @@ function go(tab, ...args) {
   current = tab;
   view.classList.remove('feed-mode');
   view.dataset.route = tab; // CSS uses this for wide (iPad/landscape) layouts
-  document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+  // the sets page sits under the word list: on a phone the "คำศัพท์" tab stays lit, on the iPad rail its own item does
+  const wide = matchMedia('(min-width: 700px)').matches;
+  document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab || (tab === 'decks' && !wide && b.dataset.tab === 'list')));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, riddle: renderRiddle }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, riddle: renderRiddle, decks: renderDecks }[tab])(...args);
   updateStreak();
   const a = TAB_ORDER.indexOf(prev), b = TAB_ORDER.indexOf(tab);
   animView(a < 0 || b < 0 || a === b ? 'vin' : b > a ? 'vin-l' : 'vin-r');
