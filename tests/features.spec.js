@@ -1435,3 +1435,37 @@ test('dictation of a word and of a sentence (1.92): right, wrong-then-hint, skip
   await page.locator('#nextQ').click();
   expect(errors).toEqual([]);
 });
+
+test('mixed card side (1.93): new words English first, solid words asked the other way about half the time', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1'], order: 'alpha', front: 'mix', autoSpeak: true } });
+  const ws = await page.evaluate(() => {
+    const a = W.filter((w) => w.g === 'A1').slice(0, 3).map((w) => w.w);
+    S.prog[a[0]] = { b: 5, i: 30, e: 2.5, d: Date.now() - 1000, s: 5, c: 5, x: 0 };   // solid and due
+    S.prog[a[1]] = { b: 1, i: 1, e: 2.5, d: Date.now() - 1000, s: 1, c: 1, x: 0 };    // still learning, due
+    save(); return a;
+  });
+  const view = page.locator('#view');
+  // Plays cards until all three words were seen; returns word → whether the Thai side came first.
+  const play = async (rnd) => {
+    await page.evaluate((r) => { Math.random = () => r; go('cards'); }, rnd);
+    const seen = {};
+    for (let n = 0; n < 10 && Object.keys(seen).length < 3; n++) {
+      await view.locator('#fc').waitFor();
+      const word = await view.locator('.fc-inner .word').first().textContent();
+      const thaiFirst = (await view.locator('.face.front .th').count()) > 0;
+      seen[word] = thaiFirst;
+      await view.locator('#fc').click();
+      await view.locator('[data-g="2"]').click();
+      await page.waitForTimeout(120);
+    }
+    return seen;
+  };
+  const high = await play(0.9);
+  expect(high[ws[0]]).toBe(true);    // solid word: Thai side first
+  expect(high[ws[1]]).toBe(false);   // still learning: English first
+  expect(high[ws[2]]).toBe(false);   // new: English first
+  await page.evaluate((w) => { S.prog[w] = { b: 5, i: 30, e: 2.5, d: Date.now() - 1000, s: 5, c: 5, x: 0 }; save(); }, ws[0]);
+  const low = await play(0.1);
+  expect(low[ws[0]]).toBe(false);    // the coin came up English first
+  expect(errors).toEqual([]);
+});

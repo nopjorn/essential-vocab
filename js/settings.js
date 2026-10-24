@@ -57,7 +57,7 @@ function renderSettings() {
       <div class="set-row"><span>เปิดแอปแล้วไปที่</span>
         <select class="sel" id="start"><option value="home" ${st.start === 'home' ? 'selected' : ''}>🏠 หน้าแรก</option><option value="feed" ${st.start === 'feed' ? 'selected' : ''}>📱 ไถศัพท์</option><option value="cards" ${st.start === 'cards' ? 'selected' : ''}>🃏 แฟลชการ์ด</option></select></div>
       <div class="set-row"><span>ด้านหน้าการ์ด</span>
-        <select class="sel" id="front"><option value="en" ${st.front === 'en' ? 'selected' : ''}>อังกฤษ → ไทย</option><option value="th" ${st.front === 'th' ? 'selected' : ''}>ไทย → อังกฤษ</option></select></div>
+        <select class="sel" id="front"><option value="en" ${st.front === 'en' ? 'selected' : ''}>อังกฤษ → ไทย</option><option value="th" ${st.front === 'th' ? 'selected' : ''}>ไทย → อังกฤษ</option><option value="mix" ${st.front === 'mix' ? 'selected' : ''}>สลับกัน (คำที่แม่นแล้วถามกลับด้านบ้าง)</option></select></div>
       <div class="set-row stack"><span>เกมเพิ่มเติมหลังทำแฟลชการ์ดครบ<br><span class="small muted">แตะเลือกได้หลายเกม จะขึ้นเป็นปุ่มต่อจาก "เล่นด่วน" ในหน้าจบรอบ</span></span>
         <div class="chips" id="nextGames">${Object.keys(GAMES).map((g) => `<button class="chip ${(st.nextGames || []).includes(g) ? 'on' : ''}" data-v="${g}">${GAMES[g].icon} ${GAMES[g].name}</button>`).join('')}</div></div>
       <button class="set-row set-link" id="wotdSetBtn"><span>✨ ตั้งค่าคำประจำวัน<br><span class="small muted">เลือกระดับ สถานะคำ และหมวดที่อยากให้ขึ้นในกล่องหน้าแรก</span></span><span class="muted">›</span></button>

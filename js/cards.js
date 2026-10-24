@@ -161,6 +161,7 @@ function renderCards(extra) {
     show();
   };
 
+  let frontEn = true; // side shown first for the current card (settings.front: en, th or mix)
   function show() {
     if (!queue.length) return finish();
     card = queue[0]; flipped = false;
@@ -168,7 +169,8 @@ function renderCards(extra) {
     $('#pcount').textContent = `${done}/${total}`;
     const p = map[card.w];
     const isNew = !p;
-    const enFront = S.settings.front === 'en';
+    // "mix": new and still-learning words are shown English-first; words that are already solid are asked the other way round half of the time.
+    const enFront = frontEn = S.settings.front === 'en' || (S.settings.front === 'mix' && (isNew || p.b < MASTERED || Math.random() < 0.5));
     const star = `<button class="star-btn" data-star aria-label="ติดดาว">${starIcon(card)}</button>`;
     const enFace = `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
       <div class="word" lang="en">${esc(card.w)}</div><div class="ipa">${esc(card.i)}</div>
@@ -202,7 +204,7 @@ function renderCards(extra) {
     $('#fc').classList.toggle('flip', flipped);
     if (flipped) {
       gradeBox.style.visibility = 'visible';
-      if (S.settings.front !== 'en' && S.settings.autoSpeak) speak(card.w);
+      if (!frontEn && S.settings.autoSpeak) speak(card.w);
     }
   }
 
