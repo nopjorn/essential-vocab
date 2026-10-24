@@ -1111,3 +1111,20 @@ test('due-date fuzz (1.69): short gaps exact, longer gaps spread within ±5/8/10
   expect(r.hours).toBeGreaterThan(5); expect(r.label).toBe(16);
   expect(errors).toEqual([]);
 });
+
+test('flashcard queue spreads word families (1.70): decide / decision / decisive are not neighbours', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => loadFamilies());
+  const r = await page.evaluate(() => {
+    const fams = FAMILIES.map((f) => f.f.map(([w]) => WORD_BY[w]).filter(Boolean)).filter((l) => l.length >= 3).slice(0, 3);
+    const fw = fams.flat(), others = W.filter((w) => !familyOf(w.w)).slice(0, 12);
+    const q = [...fw, ...others], out = spreadFamilies(q);
+    const near = (a) => a.some((w, k) => familyOf(w.w) && a.slice(Math.max(0, k - 4), k).some((x) => familyOf(x.w) === familyOf(w.w)));
+    return { n: out.length, same: out.length === q.length && new Set(out).size === q.length, before: near(q), after: near(out), fams: fams.length };
+  });
+  expect(r.fams).toBe(3); expect(r.same).toBe(true); expect(r.before).toBe(true); expect(r.after).toBe(false);
+  // the cards screen waits for the family data instead of failing, and still queues everything
+  await page.evaluate(() => { W.filter((w) => w.g === 'A1').slice(0, 30).forEach((w) => { S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: Date.now() - DAY, s: 1, c: 1, x: 0 }; }); go('cards'); });
+  await expect(page.locator('#fc')).toBeVisible();
+  expect(errors).toEqual([]);
+});

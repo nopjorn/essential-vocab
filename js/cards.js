@@ -19,7 +19,23 @@ function tomorrowBox() {
     <div style="margin-top:4px">ทบทวน ${rev} ใบ${nw ? ` + คำใหม่ ${nw} คำ` : ''}${leech ? ` · 🐢 คำดื้อ ${leech} คำกลับมาให้ฝึก` : ''}</div>
     <div class="small muted">ใช้เวลาประมาณ ${mins} นาที</div></div>`;
 }
+// Words of one family (decide / decision / decisive) shouldn't follow each other: the card before would give the answer
+// away. Take the earliest card that doesn't share a family with the last `gap` placed ones (needs data/families.js loaded).
+function spreadFamilies(q, gap = 4) {
+  if (!FAMILIES || q.length < 2 || q.length > 400) return q;
+  const fam = (w) => familyOf(w.w), pool = q.slice(), out = [];
+  while (pool.length) {
+    const recent = new Set(out.slice(-gap).map(fam).filter(Boolean));
+    let k = pool.findIndex((w) => { const f = fam(w); return !f || !recent.has(f); });
+    if (k < 0) k = 0;
+    out.push(pool.splice(k, 1)[0]);
+  }
+  return out;
+}
 function buildQueue(extra) {
+  return spreadFamilies(buildQueueRaw(extra));
+}
+function buildQueueRaw(extra) {
   rollDay();
   const p = pool();
   if (extra === 'backlog') return dueList().slice(0, BACKLOG_CAP);
@@ -93,6 +109,7 @@ function bindNextSteps() {
 // extra: undefined (today's cards), true (10 more new), 'ahead', 'mastered', 'leech' (stubborn words, 15), or { deck: id, ahead? } = study one of my word sets.
 // A set uses its own progress table `map` (S.dprog[id]); the main S.prog and the daily counts stay untouched.
 function renderCards(extra) {
+  if (!FAMILIES) { withLoading(loadFamilies()).then(() => renderCards(extra)); return; } // spreadFamilies() needs the family data
   const deck = extra && typeof extra === 'object' ? deckById(extra.deck) : null;
   if (extra && typeof extra === 'object' && !deck) return go('decks');
   const map = deck ? deckMap(deck.id) : S.prog;
