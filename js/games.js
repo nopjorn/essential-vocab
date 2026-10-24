@@ -47,6 +47,8 @@ const GAMES = {
   idiom: { icon: '🎭', name: 'สำนวน', desc: 'piece of cake = ? เลือกความหมายหรือสำนวนให้ถูก' },
   sit: { icon: '🗨️', name: 'ตอบให้เข้าสถานการณ์', desc: 'เลือกประโยคถัดไปในบทสนทนา' },
   guess: { icon: '🕵️', name: 'เดาความหมายจากบริบท', desc: 'อ่านประโยคจริง เดาความหมายของคำใหม่ก่อนดูเฉลย' },
+  dictW: { icon: '🔠', name: 'พิมพ์คำที่ได้ยิน', desc: 'ฟังคำเดี่ยวแล้วพิมพ์ทั้งคำ ไม่มีคำแปลช่วย' },
+  dictS: { icon: '📜', name: 'พิมพ์ประโยคที่ได้ยิน', desc: 'ฟังประโยคแล้วพิมพ์ให้ครบ ตรวจทีละคำ' },
   ipa: { icon: '🔡', name: 'อ่าน IPA', desc: 'ดูวิธีออกเสียง /ˈæpl/ แล้วเลือกคำที่ถูก' },
   gpat: { icon: '📐', name: 'เลือกรูปที่ถูก (ไวยากรณ์ผูกกับคำ)', desc: 'some advice / enjoy swimming / let me go เลือกรูปให้ถูก' },
   thaierr: { icon: '🩹', name: 'ประโยคไหนถูก', desc: 'ข้อผิดที่คนไทยพบบ่อย เช่น discuss about, advices' },
@@ -318,6 +320,8 @@ function gamePool(id) {
   if (id === 'colloc') list = list.filter((w) => COLLOC && COLLOC[w.w]);
   if (id === 'emoji' || id === 'emojiRun') list = list.filter((w) => EMOJI && EMOJI[w.w]);
   if (id === 'guess') { list = list.filter(hasCloze); const fresh = list.filter((w) => !S.prog[w.w]); if (fresh.length >= 10) list = fresh; } // words you haven't met yet
+  if (id === 'dictW') list = list.filter((w) => !/\s/.test(w.w) && w.w.length >= 3);
+  if (id === 'dictS') list = list.filter((w) => { const n = dictTokens(w.e).length; return n >= 3 && n <= 12; });
   if (id === 'ipa') list = list.filter((w) => w.i && w.i.length >= 4 && !/\s/.test(w.w));
   if (id === 'hangman' || id === 'anagram') list = list.filter((w) => /^[a-z]{4,12}$/i.test(w.w)); // single words: letters only
   return list;
@@ -357,6 +361,21 @@ function hardDistractors(w, n, field) {
     if (out.length >= n) break;
   }
   return out;
+}
+
+// Dictation checking: sentence → lowercase words without punctuation (’ counts as '), and a word-by-word alignment (longest common subsequence).
+const dictTokens = (s) => s.toLowerCase().replace(/[’]/g, "'").replace(/[^a-z0-9' ]+/g, ' ').split(/\s+/).filter(Boolean);
+function dictDiff(target, typed) {
+  const n = target.length, m = typed.length, L = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let a = n - 1; a >= 0; a--) for (let b = m - 1; b >= 0; b--) L[a][b] = target[a] === typed[b] ? L[a + 1][b + 1] + 1 : Math.max(L[a + 1][b], L[a][b + 1]);
+  const marks = target.map((t) => ({ t, ok: false })), used = new Set();
+  let a = 0, b = 0;
+  while (a < n && b < m) {
+    if (target[a] === typed[b]) { marks[a].ok = true; used.add(b); a++; b++; }
+    else if (L[a + 1][b] >= L[a][b + 1]) a++;
+    else b++;
+  }
+  return { marks, hit: marks.filter((x) => x.ok).length, extra: typed.filter((_, k) => !used.has(k)) };
 }
 
 function distractors(w, n, field, hard) {
@@ -515,6 +534,8 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'speak') return qSpeak(w);
     if (m === 'speakS') return qSpeak(w, true);
     if (m === 'dict') return qDict(w);
+    if (m === 'dictW') return qDictW(w);
+    if (m === 'dictS') return qDictS(w);
     if (m === 'order') return qOrder(w, w.e, w.et);
     if (m === 'sOrder') return qOrder(w, w._s, '', w._st);
     if (m === 'sCloze') return qSCloze(w);
@@ -583,6 +604,99 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       tm = setTimeout(() => { if (current === 'games') choose(null); }, limit * 1000);
       cleanup = () => clearTimeout(tm);
     }
+  }
+
+  // Dictation of one word: hear it, type all of it (no meaning shown, so it tests ear and spelling together).
+  function qDictW(w) {
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+        <button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:96px;height:96px;font-size:44px;margin:0">🔊</button>
+        <div class="muted small" style="margin-top:10px">ฟังแล้วพิมพ์คำที่ได้ยินให้ครบทั้งคำ</div>${slowBtn(w.w)}
+        <div style="margin-top:12px;font-size:22px;letter-spacing:4px;font-weight:700" id="hint" aria-live="polite"></div></div>
+      <form id="sf" autocomplete="off">
+        <input class="spell-input" id="si" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="พิมพ์คำที่ได้ยิน" aria-label="พิมพ์คำที่ได้ยิน">
+        <div class="row" style="margin-top:10px">
+          <button type="button" class="btn grow" id="skip">ไม่รู้ / เฉลย</button>
+          <button type="submit" class="btn primary grow">ตรวจคำตอบ</button>
+        </div>
+      </form>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = leave;
+    view.querySelector('[data-say]').onclick = () => speak(w.w);
+    const inp = $('#si');
+    let tries = 0, answered = false;
+    const norm = (x) => x.trim().toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, ' ');
+    const done = (ok) => {
+      answered = true;
+      mark(w, ok);
+      inp.blur(); inp.value = w.w; inp.classList.add(ok ? 'ok' : 'no');
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ คำตอบคือ'} <b lang="en">${esc(w.w)}</b> <span class="muted">${esc(w.i)}</span> = ${esc(w.t)}`
+        + hookBox(w) + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      bindSayEx(view, w.e);
+      $('#nextQ').onclick = next;
+      speak(w.w);
+      if (ok) setTimeout(() => { if (items[i] === w) next(); }, 1500);
+    };
+    $('#sf').onsubmit = (e) => {
+      e.preventDefault(); if (answered) return;
+      if (norm(inp.value) === norm(w.w)) return done(tries === 0);
+      tries++;
+      inp.classList.remove('no'); void inp.offsetWidth; inp.classList.add('no');
+      if (tries >= 2) return done(false);
+      $('#reveal').textContent = 'ยังไม่ถูก ฟังอีกครั้งนะ 💪';
+      $('#hint').textContent = w.w[0] + w.w.slice(1).replace(/[a-zA-Z]/g, '_');
+      speak(w.w);
+    };
+    $('#skip').onclick = () => { if (!answered) done(false); };
+    setTimeout(() => { if (items[i] === w && !answered) speak(w.w); }, 200);
+  }
+
+  // Dictation of a whole sentence: hear it, type it, then every word is checked (the sentence is lined up with what was typed).
+  function qDictS(w) {
+    const target = dictTokens(w.e);
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+        <button class="speak" data-say aria-label="ฟังประโยค" style="width:76px;height:76px;font-size:34px;margin:0">🔊</button>
+        <div>${slowBtn(w.e)}</div>
+        <div class="muted small" style="margin-top:10px">ฟังแล้วพิมพ์ประโยคให้ครบ (${target.length} คำ) · ไม่ต้องใส่เครื่องหมายวรรคตอน</div>
+        <button class="hint-btn" id="dHint">💡 ดูคำแปลประโยค</button><div class="thx" id="dTh" hidden>${esc(w.et)}</div></div>
+      <form id="sf" autocomplete="off">
+        <textarea class="spell-input" id="si" rows="2" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="พิมพ์ประโยคที่ได้ยิน" aria-label="พิมพ์ประโยคที่ได้ยิน"></textarea>
+        <div class="row" style="margin-top:10px">
+          <button type="button" class="btn grow" id="skip">ไม่รู้ / เฉลย</button>
+          <button type="submit" class="btn primary grow">ตรวจคำตอบ</button>
+        </div>
+      </form>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = leave;
+    view.querySelector('[data-say]').onclick = () => speak(w.e);
+    $('#dHint').onclick = () => { $('#dTh').hidden = false; $('#dHint').remove(); };
+    const inp = $('#si');
+    let tries = 0, answered = false;
+    const done = (ok, diff) => {
+      answered = true;
+      mark(w, ok);
+      inp.blur(); inp.classList.add(ok ? 'ok' : 'no');
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ลองดูคำที่พลาด'} <span class="muted small">ถูก ${diff.hit}/${target.length} คำ</span>
+        <div class="example"><div class="en dict-res" lang="en">${diff.marks.map((m) => `<span class="dw ${m.ok ? 'ok' : 'no'}">${esc(m.t)}</span>`).join(' ')}</div>
+        ${diff.extra.length ? `<div class="small muted">คำที่พิมพ์เกินมา: ${esc(diff.extra.join(' '))}</div>` : ''}
+        <div class="en" lang="en" style="margin-top:6px">${esc(w.e)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(w.et)}</div></div>`
+        + hookBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      bindSayEx(view, w.e);
+      $('#nextQ').onclick = next;
+    };
+    $('#sf').onsubmit = (e) => {
+      e.preventDefault(); if (answered) return;
+      const diff = dictDiff(target, dictTokens(inp.value));
+      if (diff.hit / target.length >= 0.85 && diff.extra.length <= 1) return done(tries === 0, diff);
+      tries++;
+      inp.classList.remove('no'); void inp.offsetWidth; inp.classList.add('no');
+      if (tries >= 2) return done(false, diff);
+      $('#reveal').textContent = `ถูก ${diff.hit}/${target.length} คำ ฟังอีกครั้งแล้วแก้ดูนะ 💪`;
+      speak(w.e);
+    };
+    $('#skip').onclick = () => { if (!answered) done(false, dictDiff(target, dictTokens(inp.value))); };
+    setTimeout(() => { if (items[i] === w && !answered) speak(w.e); }, 200);
   }
 
   function qSpell(w) {
@@ -1357,7 +1471,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   function mark(w, ok) {
     // A missed pronunciation or word order doesn't mean the meaning was forgotten, so it doesn't reset the card.
     const spk = gameId === 'speak' || gameId === 'speakS';
-    const soft = spk || gameId === 'order' || gameId === 'sOrder';
+    const soft = spk || gameId === 'order' || gameId === 'sOrder' || gameId === 'dictS';
     asked++;
     if (w.idx < 0 && SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId)) lexGrade(lexKey(gameId, w), ok);
     if (w.idx < 0 || (soft && !ok) || deckRun.practice) markActive(); else gameResult(w, ok, deckRun.map);

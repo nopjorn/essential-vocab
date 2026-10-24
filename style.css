@@ -788,6 +788,10 @@ input.sel { color: var(--text); font: inherit; }
 .ipa-row:first-of-type { border-top: 0; }
 .ipa-sym { flex: 0 0 64px; font-size: 24px; font-weight: 700; color: var(--accent, var(--text)); text-align: center; align-self: flex-start; padding-top: 2px; }
 .ipa-ex { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.dict-res { line-height: 1.9; }
+.dw { padding: 1px 6px; border-radius: 8px; }
+.dw.ok { background: color-mix(in srgb, var(--good) 20%, transparent); }
+.dw.no { background: color-mix(in srgb, var(--bad) 22%, transparent); text-decoration: underline wavy var(--bad); }
 .ipa-w { border: 0; border-radius: 10px; padding: 6px 10px; background: var(--surface-2); color: var(--text); font: inherit; font-size: var(--fs-sm, 14px); }
 
 /* word families (1.17) */

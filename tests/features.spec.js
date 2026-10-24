@@ -1390,7 +1390,48 @@ test('guess from context (1.91): new words only, sentence shows the word highlig
   await page.evaluate(() => startGame('guess'));
   await expect(page.locator('.q-prompt .cloze mark')).toHaveCount(1);
   await page.locator('#view .opt').first().click();
-  await expect(page.locator('#reveal .example .thx')).toBeVisible();
+  await expect(page.locator('#reveal .example .thx').first()).toBeVisible();
   await expect(page.locator('#nextQ')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('dictation of a word and of a sentence (1.92): right, wrong-then-hint, skip; sentences are checked word by word', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const diff = await page.evaluate(() => {
+    const t = dictTokens('She didn’t go to the shop.');
+    return { t, same: dictDiff(t, dictTokens('she didnt go to shop')).hit, exact: dictDiff(t, dictTokens("She didn't go to the shop")).hit, extra: dictDiff(dictTokens('a b c'), dictTokens('a x b c y')).extra,
+      order: dictDiff(dictTokens('one two three'), dictTokens('three two one')).hit };
+  });
+  expect(diff.t).toEqual(['she', "didn't", 'go', 'to', 'the', 'shop']);
+  expect(diff.exact).toBe(6);
+  expect(diff.same).toBe(4); // didnt and the are missing
+  expect(diff.extra).toEqual(['x', 'y']);
+  expect(diff.order).toBe(1); // order matters
+  // word dictation
+  await page.evaluate(() => startGame('dictW'));
+  const said = async () => { await page.locator('.q-prompt [data-say]').click(); return page.evaluate(() => window.__said.at(-1)); };
+  await expect(page.locator('#si')).toBeVisible();
+  await expect(page.locator('.q-prompt .th')).toHaveCount(0); // no meaning shown
+  await page.locator('#si').fill(await said());
+  await page.locator('#sf button[type=submit]').click();
+  await expect(page.locator('#reveal')).toContainText('ถูกต้อง');
+  await page.locator('#nextQ').click();
+  await page.locator('#si').fill('zzz'); await page.locator('#sf button[type=submit]').click();
+  await expect(page.locator('#hint')).not.toBeEmpty(); // first miss gives the first letter
+  await page.locator('#skip').click();
+  await expect(page.locator('#reveal')).toContainText('คำตอบคือ');
+  // sentence dictation: typing the spoken sentence passes; a bad answer shows the word marks
+  await page.evaluate(() => startGame('dictS'));
+  await expect(page.locator('#si')).toBeVisible();
+  await page.locator('#si').fill((await said()).toUpperCase());
+  await page.locator('#sf button[type=submit]').click();
+  await expect(page.locator('#reveal')).toContainText('ถูกต้อง');
+  expect(await page.locator('.dw.ok').count()).toBeGreaterThan(2);
+  await page.locator('#nextQ').click();
+  await page.locator('#si').fill('zzz'); await page.locator('#sf button[type=submit]').click();
+  await expect(page.locator('#reveal')).toContainText('ฟังอีกครั้ง');
+  await page.locator('#si').fill('zzz'); await page.locator('#sf button[type=submit]').click();
+  await expect(page.locator('.dw.no').first()).toBeVisible();
+  await page.locator('#nextQ').click();
   expect(errors).toEqual([]);
 });
