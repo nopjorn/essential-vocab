@@ -659,7 +659,10 @@ function levelUpScreen(L) {
     <button class="btn primary block" data-close>ไปต่อ</button></div>`;
   const close = () => { clearTimeout(t); el.classList.add('out'); setTimeout(() => el.remove(), 250); document.removeEventListener('keydown', esc_); };
   const esc_ = (e) => { if (e.key === 'Escape') close(); };
-  const t = setTimeout(close, 5000);
+  // Mid-session (cards, games, feed) it must not swallow taps: it floats, ignores pointers and leaves by itself sooner.
+  const soft = ['cards', 'games', 'feed'].includes(view.dataset.route);
+  if (soft) el.classList.add('soft');
+  const t = setTimeout(close, soft ? 2800 : 5000);
   el.onclick = close;
   document.addEventListener('keydown', esc_);
   document.body.appendChild(el);

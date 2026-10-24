@@ -1175,3 +1175,5 @@ html.no-ans .streak.bump { animation: none; }
 .hb.hw-half .ring-c { font-size: 15px; }
 .hb.hw-half .hero.ring-closed .ring-c { font-size: 26px; }
 @media (max-height: 520px) { .ring { width: 84px; height: 84px; } .ring-c { font-size: 16px; } }
+.lvlup.soft { pointer-events: none; background: rgba(0,0,0,.3); }
+.lvlup.soft [data-close] { display: none; }
