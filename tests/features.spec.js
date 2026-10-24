@@ -1092,3 +1092,22 @@ test('1.66: level test (gate, pass, medal), share card, year in review', async (
   await expect(page.locator('#yShare')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('due-date fuzz (1.68): short gaps exact, longer gaps spread within ±5/8/10%, labels unchanged', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const r = await page.evaluate(() => {
+    const spread = (i) => { const v = Array.from({ length: 400 }, () => (dueAt(i) - Date.now() + 3600000) / (i * DAY)); return [Math.min(...v), Math.max(...v)]; };
+    const one = Array.from({ length: 50 }, () => Math.round((dueAt(1) - Date.now() + 3600000) / DAY));
+    const [a3, b3] = spread(3), [a10, b10] = spread(10), [a40, b40] = spread(40);
+    // 60 words graded Good the same moment don't all share one due time any more
+    const ws = W.filter((x) => x.g === 'A1').slice(0, 60); ws.forEach((w) => grade(w, 3));
+    const days = new Set(ws.map((w) => Math.round((S.prog[w.w].d - Date.now()) / (DAY / 24)))); // distinct hours
+    return { one: new Set(one).size, a3, b3, a10, b10, a40, b40, hours: days.size, label: sched(undefined, 3).i };
+  });
+  expect(r.one).toBe(1);
+  expect(r.a3).toBeGreaterThanOrEqual(0.949); expect(r.b3).toBeLessThanOrEqual(1.051); expect(r.b3 - r.a3).toBeGreaterThan(0.05);
+  expect(r.a10).toBeGreaterThanOrEqual(0.919); expect(r.b10).toBeLessThanOrEqual(1.081); expect(r.b10 - r.a10).toBeGreaterThan(0.1);
+  expect(r.a40).toBeGreaterThanOrEqual(0.899); expect(r.b40).toBeLessThanOrEqual(1.101); expect(r.b40 - r.a40).toBeGreaterThan(0.15);
+  expect(r.hours).toBeGreaterThan(5); expect(r.label).toBe(16);
+  expect(errors).toEqual([]);
+});

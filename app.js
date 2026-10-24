@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.67.0';
+const APP_VERSION = '1.68.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1048,7 +1048,10 @@ function schedFSRS(p, g) {
 const sched = (p, g) => (fsOn() ? schedFSRS(p, g) : schedSM2(p, g));
 // The FSRS fields of a sched() result, to store next to b/i/e/d (empty with the old scheduler).
 const fsFields = (n) => (n.st != null ? { st: n.st, df: n.df, lr: n.lr } : {});
-const dueAt = (i) => (i === 0 ? Date.now() : Date.now() + i * DAY - 3600000);
+// Due time for an interval of `i` days. From 3 days up the gap is shifted by a random ±5% (3–6 days), ±8% (7–20) or
+// ±10% (21+) so words learned together don't all come due on the same day (1.68). `i` itself stays exact (button labels).
+const fuzzOf = (i) => (i < 3 ? 0 : i < 7 ? 0.05 : i < 21 ? 0.08 : 0.1);
+const dueAt = (i) => (i === 0 ? Date.now() : Date.now() + i * DAY * (1 + (Math.random() * 2 - 1) * fuzzOf(i)) - 3600000);
 function daysLabel(i) {
   if (i === 0) return '< 1 นาที';
   if (i < 30) return i + ' วัน';
