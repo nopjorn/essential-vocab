@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.64.0';
+const APP_VERSION = '1.65.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -164,6 +164,7 @@ const defaults = () => ({
   star: {},            // word -> 1 for starred words
   freeze: 0,           // streak freezes in stock (max MAX_FREEZE)
   ach: {},             // achievement id -> date unlocked
+  lex: {},             // skill-game item key -> { b, i, e, d, s, c, x } like prog: wrong items come back on schedule (1.65)
   spc: { t: 0, n: 0 }, // time spent on graded cards: seconds, count (rolling) → seconds per card (1.63)
   wnew: { key: '', n: 0 }, // new words started this week (1.62)
   readyAt: {},         // story level -> best 'known words' threshold reached (90/95) (1.62)
@@ -296,6 +297,10 @@ function mergeBackup(d) {
     const cur = S.prog[w];
     if (!cur) { S.prog[w] = p; added++; }
     else if (ahead(p, cur) > 0) { S.prog[w] = p; updated++; }
+  }
+  for (const [k, p] of Object.entries(d.lex || {})) {
+    if (!p || typeof p.b !== 'number' || typeof p.d !== 'number') continue;
+    if (!S.lex[k] || progAhead(p, S.lex[k]) > 0) S.lex[k] = p;
   }
   for (const [k, v] of Object.entries(d.hist || {})) S.hist[k] = Math.max(S.hist[k] || 0, v);
   for (const [k, v] of Object.entries(d.best || {})) S.best[k] = Math.max(S.best[k] || 0, v);
@@ -1041,6 +1046,34 @@ function grade(w, g, map = S.prog) {
   if (leechHit) questEvent('leech');
   questEvent('card');
 }
+// Skill games (phrasal verbs, idioms, confusable pairs, ...) have no word of their own, so each question gets a key
+// (game + short hash of its text) in S.lex and is scheduled like a word: wrong → back tomorrow-ish, right → longer gaps.
+function lexKey(game, w) {
+  const src = [w.w, w.t, w._q ? w._q[0] : ''].join('|');
+  let h = 5381; for (let k = 0; k < src.length; k++) h = ((h << 5) + h + src.charCodeAt(k)) >>> 0;
+  return game + ':' + h.toString(36);
+}
+function lexGrade(key, ok) {
+  const p = S.lex[key], n = sched(p, ok ? 2 : 0);
+  S.lex[key] = { b: n.b, i: n.i, e: n.e, d: dueAt(n.i), s: (p ? p.s : 0) + 1, c: (p ? p.c : 0) + (ok ? 1 : 0), x: (p ? p.x : 0) + (ok ? 0 : 1) };
+}
+// Pick `n` questions: those due for review first (at most 7, oldest first), then ones never asked, then the rest.
+function lexPick(game, src, n) {
+  const now = Date.now(), at = (w) => S.lex[lexKey(game, w)];
+  const due = src.filter((w) => at(w) && at(w).d <= now).sort((a, b) => at(a).d - at(b).d).slice(0, 7);
+  const rest = shuffle(src.filter((w) => !due.includes(w)));
+  const fresh = rest.filter((w) => !at(w)), seen = rest.filter((w) => at(w));
+  return shuffle(due.concat(fresh, seen).slice(0, n));
+}
+function lexStats(game) {
+  const now = Date.now(); let seen = 0, solid = 0, due = 0;
+  for (const [k, p] of Object.entries(S.lex)) {
+    if (!k.startsWith(game + ':')) continue;
+    seen++; if (p.i >= 7) solid++; if (p.d <= now) due++;
+  }
+  return { seen, solid, due };
+}
+
 // Lighter update from games: a right answer seeds/advances a little, a wrong one sends it back for review.
 function gameResult(w, ok, map = S.prog) {
   markActive();

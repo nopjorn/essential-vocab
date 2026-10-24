@@ -57,6 +57,15 @@ function etaDays(total, learned, rate, h) {
   return (total - learned) / rate + lag;
 }
 
+// Skill games on a review schedule (S.lex): per game how many questions were asked, how many are solid (gap ≥ 7 days) and due now.
+function skillCard() {
+  const rows = SKILL_GAMES.map((g) => ({ g, ...lexStats(g) })).filter((r) => r.seen);
+  if (!rows.length) return '';
+  return `<div class="h2">🧩 เกมฝึกทักษะ — ข้อที่ต้องทวน</div><div class="card-box">
+    <table class="g-table"><tr><th>เกม</th><th>เคยเจอ</th><th>แม่นแล้ว</th><th>ถึงกำหนด</th></tr>${rows.map((r) => `<tr><td>${GAMES[r.g].icon} ${esc(GAMES[r.g].name)}</td><td>${r.seen}</td><td>${r.solid}</td><td>${r.due ? `<b>${r.due}</b>` : '–'}</td></tr>`).join('')}</table>
+    <div class="small muted" style="margin-top:8px">ข้อที่ตอบผิดจะกลับมาให้ทวนในรอบถัดไปของเกมนั้นเอง ข้อที่ตอบถูกจะห่างออกไปเรื่อยๆ</div></div>`;
+}
+
 function renderStats(from) {
   takeSnap();
   const h = habits();
@@ -109,6 +118,7 @@ function renderStats(from) {
       <div class="small muted" style="margin-top:8px"><span class="key bl"></span>เรียนแล้ว &nbsp; <span class="key bm"></span>จำได้แล้ว (ทบทวนผ่านหลายรอบ)</div></div>
     <div class="h2">📅 การ์ดที่ต้องทบทวน 7 วันข้างหน้า</div>
     <div class="card-box">${forecastChart()}</div>
+    ${skillCard()}
     <div class="h2">นิสัยการเล่น <span class="small muted">${h.span} วันล่าสุด</span></div>
     <div class="tiles">
       <div class="tile-s"><b>${h.active}<small>/${h.span}</small></b><span>วันที่เล่น</span></div>

@@ -986,3 +986,33 @@ test('leech session (1.64): 15 stubborn words as flashcards with the memory hook
   expect(hooked).toBe(true);
   expect(errors).toEqual([]);
 });
+
+test('skill games on a schedule (1.65): wrong items come back first, solid ones go later, stats table, backup merge', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => loadPhrasal());
+  const r = await page.evaluate(() => {
+    const src = gamePool('phrasal');
+    const a = src[0], b = src[1], c = src[2];
+    lexGrade(lexKey('phrasal', a), false); // wrong → due now
+    lexGrade(lexKey('phrasal', b), true); lexGrade(lexKey('phrasal', b), true); // right twice → later
+    const pickA = lexPick('phrasal', src, 10);
+    const keys = new Set(src.map((x) => lexKey('phrasal', x)));
+    return { first: pickA.includes(a), hasB: S.lex[lexKey('phrasal', b)].i > 1, dueA: S.lex[lexKey('phrasal', a)].d <= Date.now(), unique: keys.size === src.length, n: pickA.length, st: lexStats('phrasal'), c: !!c };
+  });
+  expect(r.first).toBe(true); expect(r.hasB).toBe(true); expect(r.dueA).toBe(true); expect(r.unique).toBe(true); expect(r.n).toBe(10);
+  expect(r.st).toEqual({ seen: 2, solid: 0, due: 1 });
+  // a played round writes S.lex
+  await page.evaluate(() => { S.lex = {}; startGame('phrasal'); });
+  await page.locator('#view .opt').first().click();
+  expect(await page.evaluate(() => Object.keys(S.lex).length)).toBe(1);
+  // stats table + backup merge keeps the further-along copy
+  await page.evaluate(() => go('stats'));
+  await expect(page.locator('.g-table', { hasText: 'ถึงกำหนด' })).toContainText('Phrasal');
+  const m = await page.evaluate(() => {
+    const k = Object.keys(S.lex)[0], mine = S.lex[k];
+    mergeBackup({ prog: {}, lex: { [k]: { ...mine, b: 3, i: 20, s: mine.s + 5 }, bad: { b: 'x' } } });
+    return { i: S.lex[k].i, bad: !!S.lex.bad };
+  });
+  expect(m).toEqual({ i: 20, bad: false });
+  expect(errors).toEqual([]);
+});

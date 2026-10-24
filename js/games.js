@@ -350,7 +350,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
   const ROUND = 10;
   // Endless run (emojiRun): no round limit, wrong answers only reset the streak; the player ends it themselves.
   const ENDLESS = gameId === 'emojiRun';
-  const items = shuffle(src).slice(0, ENDLESS ? src.length : ROUND);
+  const items = SKILL_GAMES.includes(gameId) ? lexPick(gameId, src, ROUND) : shuffle(src).slice(0, ENDLESS ? src.length : ROUND);
   let i = 0, score = 0, combo = 0, bestCombo = 0, asked = 0;
   const wrong = [];
   $('#title').textContent = GAMES[gameId].name;
@@ -962,6 +962,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
     const spk = gameId === 'speak' || gameId === 'speakS';
     const soft = spk || gameId === 'order' || gameId === 'sOrder';
     asked++;
+    if (w.idx < 0 && SKILL_GAMES.includes(gameId)) lexGrade(lexKey(gameId, w), ok);
     if (w.idx < 0 || (soft && !ok) || deckRun.practice) markActive(); else gameResult(w, ok, deckRun.map);
     if (spk && ok) S.counts.speak = (S.counts.speak || 0) + 1;
     questEvent('answer', { game: gameId, ok });
