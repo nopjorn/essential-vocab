@@ -744,3 +744,12 @@ test('sync: newest settings win on every device, voice stays per device, game pl
   expect(await page.evaluate(() => [gamePlays('syn'), gamePlays('emoji')])).toEqual([5, 1]);
   expect(errors).toEqual([]);
 });
+
+test('1.57: retired topic ids migrate (setting, word of the day topics, stickers)', async ({ page }) => {
+  const errors = await openApp(page, { settings: { topic: 'study', wotd: { lv: [], st: [], tp: ['media', 'food'] } }, stk: { work: 3, food: 2 } });
+  const r = await page.evaluate(() => ({ topic: S.settings.topic, tp: S.settings.wotd.tp, stk: S.stk }));
+  expect(r.topic).toBe('');
+  expect(r.tp).toEqual(['comm', 'arts', 'sport', 'food']);
+  expect(r.stk).toEqual({ food: 2, job: 3, money: 3 });
+  expect(errors).toEqual([]);
+});

@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.56.0';
+const APP_VERSION = '1.57.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -27,11 +27,30 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) fixA
 const TOPICS = [
   ['people', '👪', 'คนและครอบครัว'], ['body', '💪', 'ร่างกายและสุขภาพ'], ['food', '🍜', 'อาหารและเครื่องดื่ม'],
   ['home', '🏠', 'บ้านและของใช้'], ['clothes', '👕', 'เสื้อผ้าและการแต่งตัว'], ['nature', '🌿', 'ธรรมชาติ สัตว์ อากาศ'],
-  ['travel', '✈️', 'สถานที่และการเดินทาง'], ['work', '💼', 'งาน เงิน การซื้อขาย'], ['study', '🔬', 'การศึกษา วิทยาศาสตร์ เทคโนโลยี'],
-  ['media', '🎬', 'สื่อสาร ศิลปะ กีฬา งานอดิเรก'], ['society', '🏛️', 'สังคม การเมือง กฎหมาย'], ['time', '⏰', 'เวลา ตัวเลข ปริมาณ'],
-  ['feelings', '💭', 'อารมณ์ ความคิด นิสัย'], ['actions', '🏃', 'คำกริยาทั่วไป'], ['describe', '🎨', 'คำบรรยายลักษณะ'],
+  ['travel', '✈️', 'สถานที่และการเดินทาง'], ['job', '💼', 'งานและอาชีพ'], ['money', '💰', 'เงิน ธุรกิจ การซื้อขาย'],
+  ['edu', '🎓', 'การศึกษา'], ['sci', '🔬', 'วิทยาศาสตร์'], ['tech', '💻', 'เทคโนโลยี'],
+  ['comm', '💬', 'สื่อสารและภาษา'], ['arts', '🎭', 'ศิลปะและบันเทิง'], ['sport', '⚽', 'กีฬาและงานอดิเรก'],
+  ['gov', '🏛️', 'การเมือง การปกครอง การทหาร'], ['law', '⚖️', 'กฎหมายและอาชญากรรม'], ['social', '🌏', 'สังคม วัฒนธรรม ศาสนา'],
+  ['time', '⏰', 'เวลา ตัวเลข ปริมาณ'],
+  ['emo', '😊', 'อารมณ์และความรู้สึก'], ['mind', '🧠', 'ความคิดและการรับรู้'], ['char', '🌟', 'นิสัยและบุคลิก'],
+  ['actions', '🏃', 'คำกริยาทั่วไป'], ['describe', '🎨', 'คำบรรยายลักษณะ'],
   ['grammar', '🔗', 'คำไวยากรณ์ (the, of, and…)'],
 ];
+// 1.57: five big topics were split (work, study, media, society, feelings). Old id -> new ids.
+const TOPIC_SPLIT = { work: ['job', 'money'], study: ['edu', 'sci', 'tech'], media: ['comm', 'arts', 'sport'], society: ['gov', 'law', 'social'], feelings: ['emo', 'mind', 'char'] };
+// Moves a retired topic id in saved data to its new topics: the new-word filter falls back to "all", the word-of-the-day
+// topics become all the new ones, and earned stickers carry over to every new topic. Safe to run again on any data.
+function topicMigrate(r) {
+  const st = r.settings || {};
+  if (TOPIC_SPLIT[st.topic]) st.topic = '';
+  if (st.wotd && Array.isArray(st.wotd.tp)) st.wotd.tp = [...new Set(st.wotd.tp.flatMap((t) => TOPIC_SPLIT[t] || [t]))];
+  for (const [old, ids] of Object.entries(TOPIC_SPLIT)) {
+    if (!r.stk || !(old in r.stk)) continue;
+    ids.forEach((id) => { r.stk[id] = Math.max(r.stk[id] || 0, r.stk[old] || 0); });
+    delete r.stk[old];
+  }
+  return r;
+}
 const TOPIC_LABEL = Object.fromEntries(TOPICS.map(([id, ic, th]) => [id, `${ic} ${th}`]));
 const W = window.WORDS.slice().sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
   .map(([w, p, l, i, t, e, et, tp, ...more], idx) => ({ idx, w, p, l, i, t, e, et, g: more.includes(5) ? (l === 'B2' ? 'B2x' : 'C1') : l, tp: tp || '', xe: more.find(Array.isArray) || [] }));
@@ -160,7 +179,7 @@ function load() {
       if (!r.riddle || typeof r.riddle !== 'object' || !Array.isArray(r.riddle.g)) r.riddle = d.riddle;
       if (!r.riddleStat || typeof r.riddleStat !== 'object') r.riddleStat = d.riddleStat;
       else r.riddleStat = { ...d.riddleStat, ...r.riddleStat, dist: (Array.isArray(r.riddleStat.dist) ? r.riddleStat.dist : []).concat([0, 0, 0, 0, 0, 0]).slice(0, 6) };
-      return sanitizeDecks(r);
+      return topicMigrate(sanitizeDecks(r));
     }
   } catch (e) { /* storage unavailable: start fresh */ }
   return defaults();
@@ -289,6 +308,7 @@ function mergeBackup(d) {
   for (const [k, v] of Object.entries(d.chist || {})) S.chist[k] = Math.max(S.chist[k] || 0, v);
   for (const [k, v] of Object.entries(d.snap || {})) S.snap[k] = (S.snap[k] || [0, 0, 0, 0]).map((x, i) => Math.max(x, v[i] || 0));
   mergeDecks(d);
+  topicMigrate(S);
   save();
   return { added, updated };
 }
