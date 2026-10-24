@@ -58,7 +58,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 - Settings sync (1.53+): `save()` stamps `settingsAt` when `settingsSig()` (settings minus `voice` + `homeCfg`) changes; `mergeBackup()` adopts the copy with the newer `settingsAt`. `gplay` is per device (`DEV`, localStorage `o3k.dev`), summed by `gamePlays(id)`.
 - When adding a field: add it to `defaults()` (load() shallow-merges top-level keys) **and** handle it
   in `mergeBackup()` so importing a backup keeps it.
-- `save()` also runs `checkAch()` (achievements).
+- `save()` (1.73+) is batched: it stamps `settingsAt`, schedules the cloud push and badge, and marks dirty; `flushSave()` (≈300 ms later, on `visibilitychange` hidden, on `pagehide`, in `exportBackup`) runs `checkAch()` (achievements), `takeSnap()` and the localStorage write. Tests call `flushSave()` before reading localStorage (`readState` does).
 
 ## Learning logic
 - Scheduling (1.66+): `sched(p, g)` = FSRS-5 (`schedFSRS`, default weights; card fields `st` stability, `df` difficulty, `lr` last review; cards without them derive state from `i`/`e` via `fsState()`; `settings.retention` default 0.9, `settings.scheduler = 'sm2'` switches back to `schedSM2`); `fsFields(n)` spreads the new fields into a stored card. Before 1.66 it was SM-2 style `sched(p, g)` → `{i, e, b}`; `b = boxOf(i)` against

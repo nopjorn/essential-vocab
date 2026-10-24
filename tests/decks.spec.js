@@ -234,7 +234,7 @@ test('sync: tombstones older than 90 days are dropped, newer ones kept', async (
 // ---- 1.55: studying a set ----
 const WORDS5 = ['airport', 'hotel', 'ticket', 'passport', 'taxi', 'apple'];
 const DONE = { b: 2, i: 3, e: 2.5, d: 1, s: 2, c: 2, x: 0 };
-const fingerprint = (page) => page.evaluate(() => JSON.stringify([S.prog, S.daily, S.snap, S.miss, S.stk]));
+const fingerprint = (page) => page.evaluate(() => { flushSave(); return JSON.stringify([S.prog, S.daily, S.snap, S.miss, S.stk]); });
 
 test('studying a set leaves the main statistics untouched but counts effort (independence lock)', async ({ page }) => {
   const errors = await openApp(page, { settings: { levels: ['A1'] }, prog: { apple: { b: 5, i: 20, e: 2.5, d: Date.now() + 9 * DAYS, s: 4, c: 4, x: 0 } }, decks: [deck('d1', { words: WORDS5 })] });

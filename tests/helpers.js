@@ -34,7 +34,8 @@ async function openApp(page, state) {
   return errors;
 }
 
-const readState = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) || '{}'), KEY);
+// save() batches its write (flushSave), so flush first to see what the app has so far.
+const readState = (page) => page.evaluate((k) => { if (typeof flushSave === 'function') flushSave(); return JSON.parse(localStorage.getItem(k) || '{}'); }, KEY);
 
 // Fake Supabase for sync tests. `store` is shared by every page that uses it (one cloud, several devices):
 // { data: null | the saved state, writes: number }. The app talks to the same origin as the test server, so no CORS preflight.

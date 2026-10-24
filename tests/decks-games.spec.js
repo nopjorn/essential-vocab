@@ -14,7 +14,7 @@ async function setup(page, extra = {}) {
   });
   return errors;
 }
-const lock = (page) => page.evaluate(() => JSON.stringify([S.prog, S.daily, S.snap, S.miss, S.stk]));
+const lock = (page) => page.evaluate(() => { flushSave(); return JSON.stringify([S.prog, S.daily, S.snap, S.miss, S.stk]); });
 
 for (const id of ['en2th', 'th2en', 'listen', 'cloze', 'colloc', 'emoji', 'spell', 'dict', 'order', 'speak']) {
   test(`set game ${id}: one set, right and wrong answers; its progress changes, the main statistics do not`, async ({ page }) => {

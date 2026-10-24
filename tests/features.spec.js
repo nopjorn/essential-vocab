@@ -673,7 +673,7 @@ test('app icon picker: settings swap the touch icon, persist, no overflow', asyn
   await page.locator('#iconPick [data-i="dark"]').click();
   await expect(page.locator('#iconPick [data-i="dark"]')).toHaveAttribute('aria-pressed', 'true');
   expect(await page.locator('link[rel="apple-touch-icon"]').getAttribute('href')).toBe('icons/apple-touch-icon-dark.png');
-  const st = await page.evaluate(() => JSON.parse(localStorage['oxford3000.v1']));
+  const st = await page.evaluate(() => { flushSave(); return JSON.parse(localStorage['oxford3000.v1']); });
   expect(st.settings.icon).toBe('dark');
   await page.locator('#iconPick [data-i="purple"]').click();
   expect(await page.locator('link[rel="apple-touch-icon"]').getAttribute('href')).toBe('icons/apple-touch-icon.png');
@@ -1081,7 +1081,7 @@ test('1.66: level test (gate, pass, medal), share card, year in review', async (
   }
   await expect(page.locator('.result-emoji')).toBeVisible();
   expect(await page.evaluate(() => pct(S.ltest.A1))).toBeGreaterThanOrEqual(80);
-  expect(await page.evaluate(() => !!S.ach.ltA1)).toBe(true);
+  await expect.poll(() => page.evaluate(() => !!S.ach.ltA1)).toBe(true); // medals are checked in the batched save
   // share card downloads a PNG
   await page.evaluate(() => go('stats'));
   const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('#shareProg').click()]);
@@ -1145,5 +1145,28 @@ test('stats page draws heavy blocks lazily (1.72): not in the first paint, all t
   await page.evaluate(() => { go('home'); go('stats'); });
   await expect(page.locator('#hm')).toBeAttached();
   expect(await page.locator('#hm').count()).toBe(1);
+  expect(errors).toEqual([]);
+});
+
+test('save() is batched (1.73): one write after a burst, flushed on hide, medals still unlock', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const r = await page.evaluate(async () => {
+    save(); flushSave();
+    const orig = Storage.prototype.setItem; let writes = 0;
+    Storage.prototype.setItem = function (k, v) { if (k === KEY) writes++; return orig.call(this, k, v); };
+    const ws = W.filter((x) => x.g === 'A1').slice(0, 10);
+    ws.forEach((w) => grade(w, 2)); // 10 saves in a row
+    const during = writes, stored = JSON.parse(localStorage.getItem(KEY)).prog;
+    await new Promise((r) => setTimeout(r, 500));
+    const after = writes, medal = !!S.ach.first || Object.keys(S.ach).length > 0;
+    // hide → immediate flush
+    S.xp += 5; save();
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    const hidden = JSON.parse(localStorage.getItem(KEY)).xp === S.xp;
+    Storage.prototype.setItem = orig;
+    return { during, stored: Object.keys(stored).length, after, medal, hidden, snap: !!S.snap[today()] };
+  });
+  expect(r.during).toBe(0); expect(r.after).toBe(1); expect(r.hidden).toBe(true); expect(r.snap).toBe(true); expect(r.medal).toBe(true);
   expect(errors).toEqual([]);
 });

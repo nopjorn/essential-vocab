@@ -229,16 +229,29 @@ function load() {
 // (voice ids differ between devices). save() stamps settingsAt when this changes.
 const settingsSig = () => JSON.stringify([{ ...S.settings, voice: '' }, S.homeCfg]);
 let setSig = null; // baseline taken at the end of boot (boot.js) and after adopting synced settings
+// save() is called after every answer, so the heavy part (medal / sticker / snapshot checks and stringifying all of S)
+// is batched: it runs once ~300 ms after the last save(), and right away when the app is hidden or closed (1.73).
+// flushSave() does it now (backup export, tests).
+let saveTimer = 0, saveDirty = false;
 function save() {
   const sig = settingsSig();
   if (setSig !== null && sig !== setSig) S.settingsAt = Date.now();
   setSig = sig;
-  if (typeof checkAch === 'function') checkAch();
-  if (typeof takeSnap === 'function') takeSnap();
-  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ }
+  saveDirty = true;
+  if (!saveTimer) saveTimer = setTimeout(flushSave, 300);
   if (typeof schedulePush === 'function') schedulePush();
   if (typeof updateBadge === 'function') updateBadge();
 }
+function flushSave() {
+  clearTimeout(saveTimer); saveTimer = 0;
+  if (!saveDirty) return;
+  saveDirty = false;
+  if (typeof checkAch === 'function') checkAch(); // may call save() again (new medal): that one flushes in another 300 ms
+  if (typeof takeSnap === 'function') takeSnap();
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ }
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushSave(); });
+addEventListener('pagehide', flushSave);
 
 /* ---------- backup ---------- */
 const BACKUP_EVERY = 7; // days before the home screen nags about a backup
@@ -254,6 +267,7 @@ async function saveFile(file, title) {
   return true;
 }
 async function exportBackup() {
+  flushSave();
   const name = `essential-vocab-backup-${today()}.json`;
   const file = new File([JSON.stringify({ ...S, backupAt: Date.now() })], name, { type: 'application/json' });
   if (await saveFile(file, 'ศัพท์ต้องรู้ backup')) { S.backupAt = Date.now(); save(); toast('สำรองข้อมูลแล้ว ✅'); }
