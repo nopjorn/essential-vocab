@@ -1185,3 +1185,19 @@ html.no-ans .streak.bump { animation: none; }
 @media (max-height: 520px) { .ring { width: 84px; height: 84px; } .ring-c { font-size: 16px; } }
 .lvlup.soft { pointer-events: none; background: rgba(0,0,0,.3); }
 .lvlup.soft [data-close] { display: none; }
+
+/* ---------- 1.67: unlockable palettes (gold Lv.10, galaxy Lv.20), gold card frame, mascot ---------- */
+:root[data-palette="gold"] { --primary: #9a6b00; --primary-2: #f0c24a; --pink: #c0662a; --pink-2: #f0a868; --primary-text: #7d5600; --glow: 154, 107, 0; --bg: #fff9ea; --surface-2: #fbf0cf; --border: #efe0b0; }
+@media (prefers-color-scheme: dark) { :root[data-palette="gold"]:not([data-theme="light"]) { --primary: #9a6b00; --glow: 154, 107, 0; --primary-text: #f3cd62; } :root[data-palette="gold"]:not([data-theme="light"]):not([data-theme="black"]) { --bg: #17140a; --surface: #241f10; --surface-2: #382f17; --border: #4a3f20; } }
+:root[data-palette="gold"][data-theme="dark"], :root[data-palette="gold"][data-theme="black"] { --primary: #9a6b00; --glow: 154, 107, 0; --primary-text: #f3cd62; }
+:root[data-palette="gold"][data-theme="dark"] { --bg: #17140a; --surface: #241f10; --surface-2: #382f17; --border: #4a3f20; }
+:root[data-palette="galaxy"] { --primary: #4b2fa5; --primary-2: #8f7be0; --pink: #a2379f; --pink-2: #d78bd4; --primary-text: #3d2590; --glow: 75, 47, 165; --bg: #f4f1fc; --surface-2: #e8e2f8; --border: #d8cff0; }
+@media (prefers-color-scheme: dark) { :root[data-palette="galaxy"]:not([data-theme="light"]) { --primary: #6a4fd0; --glow: 106, 79, 208; --primary-text: #b9a8ff; } :root[data-palette="galaxy"]:not([data-theme="light"]):not([data-theme="black"]) { --bg: #0f0c1c; --surface: #1a1530; --surface-2: #2a2250; --border: #382e66; } }
+:root[data-palette="galaxy"][data-theme="dark"], :root[data-palette="galaxy"][data-theme="black"] { --primary: #6a4fd0; --glow: 106, 79, 208; --primary-text: #b9a8ff; }
+:root[data-palette="galaxy"][data-theme="dark"] { --bg: #0f0c1c; --surface: #1a1530; --surface-2: #2a2250; --border: #382e66; }
+.fc.gold .face { box-shadow: var(--shadow), 0 0 0 3px #e0a82e inset, 0 0 18px rgba(224, 168, 46, .45); }
+.mascot { display: block; }
+.mascot-card { display: flex; align-items: center; gap: 12px; }
+.mascot-pic { flex: none; padding: 0; background: none; border: 0; line-height: 0; }
+.chip.wd:disabled { opacity: .55; }
+.result-emoji .mascot { margin: 0 auto; }

@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.66.0';
+const APP_VERSION = '1.67.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -154,7 +154,7 @@ function sanitizeDecks(r) {
 }
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -166,6 +166,9 @@ const defaults = () => ({
   ach: {},             // achievement id -> date unlocked
   lex: {},             // skill-game item key -> { b, i, e, d, s, c, x } like prog: wrong items come back on schedule (1.65)
   spc: { t: 0, n: 0 }, // time spent on graded cards: seconds, count (rolling) → seconds per card (1.63)
+  mascot: { equip: { head: '', face: '', body: '' }, at: 0 }, // น้องคำ outfit (1.67)
+  owned: [],           // item ids won early from the daily box (1.67)
+  box: { date: '', got: '' }, // today's mystery box
   wnew: { key: '', n: 0 }, // new words started this week (1.62)
   readyAt: {},         // story level -> best 'known words' threshold reached (90/95) (1.62)
   repair: null,        // streak repair offer {count, at, base, need, done} (1.61)
@@ -211,6 +214,9 @@ function load() {
       const r = { ...d, ...s, settings: { ...d.settings, ...(s.settings || {}) } };
       r.gplay = gplayFix(r.gplay);
       // A missing/odd riddle record (older backup, sync from another device) must never break the home screen.
+      if (!r.mascot || typeof r.mascot !== 'object' || !r.mascot.equip || typeof r.mascot.equip !== 'object') r.mascot = d.mascot;
+      if (!Array.isArray(r.owned)) r.owned = [];
+      if (!r.box || typeof r.box !== 'object') r.box = d.box;
       if (!r.riddle || typeof r.riddle !== 'object' || !Array.isArray(r.riddle.g)) r.riddle = d.riddle;
       if (!r.riddleStat || typeof r.riddleStat !== 'object') r.riddleStat = d.riddleStat;
       else r.riddleStat = { ...d.riddleStat, ...r.riddleStat, dist: (Array.isArray(r.riddleStat.dist) ? r.riddleStat.dist : []).concat([0, 0, 0, 0, 0, 0]).slice(0, 6) };
@@ -326,6 +332,9 @@ function mergeBackup(d) {
   S.backupAt = Math.max(S.backupAt || 0, d.backupAt || 0);
   Object.assign(S.star, d.star || {});
   for (const [k, v] of Object.entries(d.ach || {})) if (!S.ach[k]) S.ach[k] = v;
+  if (d.mascot && d.mascot.equip && (d.mascot.at || 0) > (S.mascot.at || 0)) S.mascot = d.mascot;
+  if (Array.isArray(d.owned)) S.owned = [...new Set([...S.owned, ...d.owned.filter((x) => typeof x === 'string')])];
+  if (d.box && d.box.date && d.box.date > (S.box.date || '')) S.box = d.box;
   if (d.wnew && d.wnew.key) {
     if (d.wnew.key > (S.wnew.key || '')) S.wnew = d.wnew; else if (d.wnew.key === S.wnew.key) S.wnew.n = Math.max(S.wnew.n, d.wnew.n || 0);
   }
@@ -546,7 +555,7 @@ function addXP(n) {
   S.xp = (S.xp || 0) + n;
   if (typeof mondayKey === 'function') { const k = mondayKey(); S.xpWeek[k] = (S.xpWeek[k] || 0) + n; }
   const after = levelOf(S.xp);
-  if (after > before) setTimeout(() => levelUpScreen(after), 400);
+  if (after > before) setTimeout(() => levelUpScreen(after, before), 400);
   updateStreak();
   if (n > 0) xpFly(n);
 }
@@ -782,16 +791,18 @@ function streakFlash(count) {
   setTimeout(() => el.remove(), 2400);
 }
 // Level-up: full screen with what was unlocked (level medals) and the XP to the next level. Tap or the button closes it.
-function levelUpScreen(L) {
+function levelUpScreen(L, before = L - 1) {
   confetti();
   if (confettiOff()) { toast(`⬆️ เลเวลอัป! ตอนนี้ Lv.${L}`); return; }
   document.querySelectorAll('.lvlup').forEach((x) => x.remove());
   const medals = ACH.filter((a) => /^lvl/.test(a.id)).filter((a) => { try { return a.ok({ level: L }) && !a.ok({ level: L - 1 }); } catch (e) { return false; } });
+  const newItems = typeof ITEMS !== 'undefined' ? ITEMS.filter((x) => x.lv > before && x.lv <= L) : [];
   const el = document.createElement('div');
   el.className = 'celebrate lvlup'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'เลเวลอัป');
   el.innerHTML = `<div class="cel-card"><div class="cel-badge" aria-hidden="true">Lv.<b>${L}</b></div><div class="h2">เลเวลอัป!</div>
     <p>เก่งมาก! ตอนนี้ถึง Lv.${L} แล้ว</p>
     ${medals.length ? `<div class="cel-unlock">🏅 ปลดล็อกเหรียญ ${medals.map((a) => `${a.icon} ${esc(a.name)}`).join(' · ')}</div>` : ''}
+    ${newItems.length ? `<div class="cel-unlock">🎁 ปลดล็อกของใหม่ ${newItems.map((x) => `${x.ic} ${esc(x.name)}`).join(' · ')} (ดูที่ น้องคำ)</div>` : ''}
     <p class="small muted">อีก ${(levelStart(L + 1) - S.xp).toLocaleString()} XP ถึง Lv.${L + 1}</p>
     <button class="btn primary block" data-close>ไปต่อ</button></div>`;
   const close = () => { clearTimeout(t); el.classList.add('out'); setTimeout(() => el.remove(), 250); document.removeEventListener('keydown', esc_); };
@@ -922,10 +933,11 @@ function fillVoices() {
 // Theme: 'auto' follows the system; 'light'/'dark'/'black' (pure-black OLED) override it. Palette = accent colours (violet is the :root default).
 // Both are mirrored to localStorage (o3k.theme / o3k.palette) for the early script in index.html.
 const PALETTES = [['violet', 'ม่วง', '#6c5ce7', '#fd79a8'], ['ocean', 'ฟ้าทะเล', '#0a6fc2', '#5bc8e0'], ['mint', 'มิ้นต์', '#007a61', '#5fd0cf'],
-  ['orange', 'ส้ม', '#c0540a', '#f58a8f'], ['sakura', 'ชมพูซากุระ', '#c03a78', '#f7b3cc'], ['mono', 'โมโนโครม', '#3d3d46', '#a0a0ac']];
+  ['orange', 'ส้ม', '#c0540a', '#f58a8f'], ['sakura', 'ชมพูซากุระ', '#c03a78', '#f7b3cc'], ['mono', 'โมโนโครม', '#3d3d46', '#a0a0ac'],
+  ['gold', 'ทอง (ปลดล็อก Lv.10)', '#9a6b00', '#f0c24a'], ['galaxy', 'กาแล็กซี (ปลดล็อก Lv.20)', '#4b2fa5', '#c07fd8']];
 function applyTheme() {
   const root = document.documentElement, t = S.settings.theme || 'auto';
-  let pal = S.settings.palette || 'violet'; if (!PALETTES.some((p) => p[0] === pal)) pal = 'violet';
+  let pal = S.settings.palette || 'violet'; if (!PALETTES.some((p) => p[0] === pal) || (typeof paletteOpen === 'function' && !paletteOpen(pal))) pal = 'violet';
   if (t === 'auto') delete root.dataset.theme; else root.dataset.theme = t;
   if (pal === 'violet') delete root.dataset.palette; else root.dataset.palette = pal;
   try { localStorage.setItem('o3k.theme', t); localStorage.setItem('o3k.palette', pal); } catch (e) { /* ignore */ }
@@ -1109,7 +1121,7 @@ function markForReview(w, map = S.prog) {
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
+const TITLES = { mascot: 'น้องคำ', year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
 function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
@@ -1123,7 +1135,7 @@ function go(tab, ...args) {
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab || (tab === 'decks' && !wide && b.dataset.tab === 'list')));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, riddle: renderRiddle, decks: renderDecks }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, mascot: renderMascot, riddle: renderRiddle, decks: renderDecks }[tab])(...args);
   updateStreak();
   const a = TAB_ORDER.indexOf(prev), b = TAB_ORDER.indexOf(tab);
   animView(a < 0 || b < 0 || a === b ? 'vin' : b > a ? 'vin-l' : 'vin-r');
