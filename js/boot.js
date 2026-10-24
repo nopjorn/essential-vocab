@@ -40,4 +40,5 @@ document.addEventListener('visibilitychange', () => {
 document.addEventListener('visibilitychange', () => { if (!document.hidden && current === 'home') renderHome(); });
 document.addEventListener('visibilitychange', updateBadge);
 updateBadge();
+window.BOOT_MS = Math.round(performance.now()); // time from navigation start to the first screen (settings → ⏱ วัดความเร็ว)
 setSig = settingsSig(); // after boot-time migrations: only real changes from here on stamp settingsAt

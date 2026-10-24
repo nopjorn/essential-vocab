@@ -3,6 +3,18 @@
 // Classic script sharing globals with app.js (load order: index.html).
 
 /* ---------- settings ---------- */
+// ⏱ Speed check (1.76): numbers to read off a real iPhone / iPad (milliseconds, smaller = faster): first screen after launch,
+// home, stats page (drawn to the next frame, average of 3) and one batched save. Ends on settings showing the result.
+let perfLast = '';
+async function perfCheck() {
+  const frame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const avg = async (f, n = 3) => { let t = 0; for (let k = 0; k < n; k++) { const a = performance.now(); f(); await frame(); t += performance.now() - a; } return Math.round(t / n); };
+  const stats = await avg(() => go('stats')), home = await avg(() => go('home'));
+  const a = performance.now(); for (let k = 0; k < 5; k++) { saveDirty = true; flushSave(); }
+  const save = Math.round((performance.now() - a) / 5 * 10) / 10;
+  return `เปิดแอป ${window.BOOT_MS || '?'} ms · หน้าแรก ${home} ms · หน้าสถิติ ${stats} ms · บันทึก ${save} ms · เรียนแล้ว ${Object.keys(S.prog).length} คำ`;
+}
+
 // Pre-built calendar files in reminders/ (see README): one per time.
 const REMIND_TIMES = ['0600', '0700', '0800', '0900', '1200', '1700', '1800', '1900', '2000', '2100', '2200'];
 const setOpen = {}; // which settings groups are expanded (kept while the app is open)
@@ -124,6 +136,7 @@ function renderSettings() {
     </div></details>
 
     <button class="card-box guide-link" id="guideBtn" style="margin-top:24px"><span>📘</span><div class="grow"><b>คู่มือการใช้งาน & ทริก</b><div class="small muted">วิธีใช้ทุกส่วนของแอป และวิธีจำศัพท์ให้ได้ผลที่สุด</div></div><span class="muted">›</span></button>
+    <button class="card-box guide-link" id="perfBtn"><span>⏱</span><div class="grow"><b>วัดความเร็วเครื่องนี้</b><div class="small muted" id="perfOut">${esc(perfLast || 'วัดเวลาเปิดหน้าแรก หน้าสถิติ และการบันทึกข้อมูลบนเครื่องของคุณ')}</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="clBtn"><span>🆕</span><div class="grow"><b>ประวัติการอัปเดต</b><div class="small muted">ดูว่าแต่ละเวอร์ชันเพิ่มหรือแก้อะไรบ้าง (ตอนนี้ ${APP_VERSION})</div></div><span class="muted">›</span></button>
 
     <details class="set-group danger-group" data-g="danger" ${setIsOpen('danger')}><summary>⚠️ โซนอันตราย</summary><div class="card-box danger-zone">
@@ -152,6 +165,7 @@ function renderSettings() {
   };
   $('#guideBtn').onclick = () => go('guide', 'settings');
   $('#clBtn').onclick = () => go('changelog', 'settings');
+  $('#perfBtn').onclick = async () => { $('#perfOut').textContent = 'กำลังวัด…'; perfLast = await perfCheck(); renderSettings(); };
   const minInfo = () => {
     const el = $('#minInfo'); if (!el) return;
     el.textContent = st.minutes ? `ตอนนี้ราว ${newGoal()} คำใหม่/วัน · ใช้เวลา ~${Math.round(secPerCard())} วินาทีต่อใบ${S.spc.n < 30 ? ' (ค่าประมาณ จนกว่าจะเรียนครบ 30 ใบ)' : ''}` : 'เลือกแล้วแอปคำนวณจำนวนคำใหม่ให้เอง (แทน “คำใหม่ต่อวัน”)';
