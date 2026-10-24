@@ -1377,3 +1377,20 @@ test('IPA chart and game (1.90): every example word has its symbol, chart speaks
   await expect(page.locator('.q-prompt .word')).toContainText('/');
   expect(errors).toEqual([]);
 });
+
+test('guess from context (1.91): new words only, sentence shows the word highlighted, answer reveals the translation', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => {
+    W.filter((w) => w.g === 'A1').slice(0, 50).forEach((w) => (S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: Date.now(), s: 1, c: 1, x: 0 }));
+    S.settings.levels = ['A1']; save();
+    window.__pool = gamePool('guess').map((w) => w.idx);
+  });
+  const learned = await page.evaluate(() => window.__pool.filter((i) => S.prog[W[i].w]).length);
+  expect(learned).toBe(0); // enough unseen A1 words, so the round only uses those
+  await page.evaluate(() => startGame('guess'));
+  await expect(page.locator('.q-prompt .cloze mark')).toHaveCount(1);
+  await page.locator('#view .opt').first().click();
+  await expect(page.locator('#reveal .example .thx')).toBeVisible();
+  await expect(page.locator('#nextQ')).toBeVisible();
+  expect(errors).toEqual([]);
+});
