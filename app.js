@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.65.0';
+const APP_VERSION = '1.66.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -154,7 +154,7 @@ function sanitizeDecks(r) {
 }
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -988,7 +988,7 @@ function speak(text, opt) {
 const EASE0 = 2.5, EASE_MIN = 1.3, EASE_MAX = 2.8, MAX_IVL = 365;
 const boxOf = (i) => { let b = 0; while (b + 1 < INTERVALS.length && INTERVALS[b + 1] <= i) b++; return b; };
 const ivlOf = (p) => (p ? (p.i != null ? p.i : INTERVALS[p.b]) : 0);
-function sched(p, g) {
+function schedSM2(p, g) {
   const i0 = ivlOf(p), e0 = p && p.e ? p.e : EASE0;
   // Remembered after a long gap: credit part of the extra time.
   const late = p && p.d ? Math.max(0, (Date.now() - p.d) / DAY) : 0;
@@ -1001,6 +1001,49 @@ function sched(p, g) {
   i = Math.min(MAX_IVL, i);
   return { i, e: Math.round(e * 100) / 100, b: boxOf(i) };
 }
+
+/* ---------- FSRS-5 scheduler (1.66) ---------- */
+// The open-source FSRS algorithm (default parameters): each card keeps stability `st` (days until recall drops to 90%),
+// difficulty `df` (1–10) and the time of the last review `lr`. The next interval is the day when recall falls to the
+// retention the learner wants (settings.retention, default 90%). Cards saved before have no st/df: fsState() derives
+// them from the old interval `i` and ease `e`, so backups and sync from older versions keep working.
+// Switch back to the old SM-2 style with settings.scheduler = 'sm2'. Grades: 0 again, 1 hard, 2 good, 3 easy.
+const FSRS_W = [0.40255, 1.18385, 3.173, 15.69105, 7.1949, 0.5345, 1.4604, 0.0046, 1.54575, 0.1192, 1.01925, 1.9395, 0.11, 0.29605, 2.2698, 0.2315, 2.9898, 0.51655, 0.6621];
+const FS_FACTOR = 19 / 81, FS_DECAY = -0.5;
+const fsClamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const fsRetr = (t, s) => Math.pow(1 + FS_FACTOR * t / s, FS_DECAY);
+const fsIvl = (s, r) => s / FS_FACTOR * (Math.pow(r, 1 / FS_DECAY) - 1);
+const fsD0 = (G) => fsClamp(FSRS_W[4] - Math.exp(FSRS_W[5] * (G - 1)) + 1, 1, 10);
+const fsOn = () => S.settings.scheduler !== 'sm2';
+const retention = () => fsClamp(+S.settings.retention || 0.9, 0.7, 0.97);
+// Current memory state of a stored card: { s, d, t } (t = days since the last review).
+function fsState(p) {
+  const i0 = ivlOf(p), now = Date.now();
+  const s = p.st || Math.max(0.4, i0 || 1);
+  const d = p.df || fsClamp(5 + (EASE0 - (p.e || EASE0)) * 3.75, 1, 10);
+  const last = p.lr || (p.d ? p.d - i0 * DAY + 3600000 : now);
+  return { s, d, t: Math.max(0, (now - last) / DAY) };
+}
+function schedFSRS(p, g) {
+  const w = FSRS_W, G = g + 1, e = p && p.e ? p.e : EASE0;
+  let s, d;
+  if (!p || (p.s || 0) === 0) { s = w[G - 1]; d = fsD0(G); }
+  else {
+    const o = fsState(p), r = fsRetr(o.t, o.s);
+    d = o.d + (-w[6] * (G - 3)) * (10 - o.d) / 9;
+    d = fsClamp(w[7] * fsD0(4) + (1 - w[7]) * d, 1, 10);
+    if (o.t < 1) s = o.s * Math.exp(w[17] * (G - 3 + w[18])); // another look on the same day
+    else if (G === 1) s = Math.min(o.s, w[11] * Math.pow(o.d, -w[12]) * (Math.pow(o.s + 1, w[13]) - 1) * Math.exp(w[14] * (1 - r)));
+    else s = o.s * (1 + Math.exp(w[8]) * (11 - o.d) * Math.pow(o.s, -w[9]) * (Math.exp(w[10] * (1 - r)) - 1) * (G === 2 ? w[15] : 1) * (G === 4 ? w[16] : 1));
+    if (G >= 3) s = Math.max(s, o.s);
+  }
+  s = fsClamp(s, 0.1, MAX_IVL * 2);
+  const i = g === 0 ? 0 : fsClamp(Math.round(fsIvl(s, retention())), 1, MAX_IVL);
+  return { i, e, b: boxOf(i), st: Math.round(s * 100) / 100, df: Math.round(d * 100) / 100, lr: Date.now() };
+}
+const sched = (p, g) => (fsOn() ? schedFSRS(p, g) : schedSM2(p, g));
+// The FSRS fields of a sched() result, to store next to b/i/e/d (empty with the old scheduler).
+const fsFields = (n) => (n.st != null ? { st: n.st, df: n.df, lr: n.lr } : {});
 const dueAt = (i) => (i === 0 ? Date.now() : Date.now() + i * DAY - 3600000);
 function daysLabel(i) {
   if (i === 0) return '< 1 นาที';
@@ -1033,6 +1076,7 @@ function grade(w, g, map = S.prog) {
   map[w.w] = {
     b: n.b, i: n.i, e: n.e,
     d: dueAt(n.i),
+    ...fsFields(n),
     s: (p ? p.s : 0) + 1,
     c: (p ? p.c : 0) + (g > 0 ? 1 : 0),
     x: (p ? p.x || 0 : 0) + (g === 0 ? 1 : 0),
@@ -1055,7 +1099,7 @@ function lexKey(game, w) {
 }
 function lexGrade(key, ok) {
   const p = S.lex[key], n = sched(p, ok ? 2 : 0);
-  S.lex[key] = { b: n.b, i: n.i, e: n.e, d: dueAt(n.i), s: (p ? p.s : 0) + 1, c: (p ? p.c : 0) + (ok ? 1 : 0), x: (p ? p.x : 0) + (ok ? 0 : 1) };
+  S.lex[key] = { b: n.b, i: n.i, e: n.e, d: dueAt(n.i), ...fsFields(n), s: (p ? p.s : 0) + 1, c: (p ? p.c : 0) + (ok ? 1 : 0), x: (p ? p.x : 0) + (ok ? 0 : 1) };
 }
 // Pick `n` questions: those due for review first (at most 7, oldest first), then ones never asked, then the rest.
 function lexPick(game, src, n) {
@@ -1084,7 +1128,7 @@ function gameResult(w, ok, map = S.prog) {
     if (!p) map[w.w] = { b: 1, i: 1, e: EASE0, d: dueAt(1), s: 1, c: 1, x: 0 };
     else { p.c++; p.s++; }
   } else {
-    map[w.w] = { ...(p || {}), b: 0, i: 0, e: Math.max(EASE_MIN, ((p && p.e) || EASE0) - 0.2), d: Date.now(), s: (p ? p.s : 0) + 1, c: p ? p.c : 0, x: (p ? p.x || 0 : 0) + 1 };
+    map[w.w] = { ...(p || {}), ...fsFields(sched(p, 0)), b: 0, i: 0, e: Math.max(EASE_MIN, ((p && p.e) || EASE0) - 0.2), d: Date.now(), s: (p ? p.s : 0) + 1, c: p ? p.c : 0, x: (p ? p.x || 0 : 0) + 1 };
     if (map === S.prog) logMiss(w);
   }
   if (leechHit) questEvent('leech'); else save();
