@@ -49,6 +49,8 @@ const GAMES = {
   num: { icon: '🔢', name: 'ฟังตัวเลข ราคา เวลา', desc: 'ฟัง fifteen / fifty, $12.50, 7:45, 3 May แล้วเลือกให้ถูก' },
   emoji: { icon: '🖼️', name: 'ทายจากภาพอีโมจิ', desc: 'ดูอีโมจิ เลือกคำอังกฤษที่ตรงกับภาพ' },
   emojiRun: { icon: '♾️', name: 'อีโมจิไม่จำกัด', desc: 'เล่นไปเรื่อยๆ ดูว่าถูกติดต่อกันได้กี่ข้อ' },
+  hangman: { icon: '🔡', name: 'ทายตัวอักษร (แฮงแมน)', desc: 'ดูคำแปล แตะเดาตัวอักษรของคำ พลาดได้ 6 ครั้ง' },
+  anagram: { icon: '🔠', name: 'เรียงตัวอักษร', desc: 'แตะตัวอักษรที่สลับไว้ให้เป็นคำอังกฤษ' },
   survival: { icon: '❤️', name: 'โหมดเอาตัวรอด', desc: 'หัวใจ 3 ดวง คำยากขึ้นเรื่อยๆ ตอบผิดเสียหัวใจ' },
   timeAttack: { icon: '⏱️', name: 'จับเวลา 60 วินาที', desc: 'ตอบให้ได้มากที่สุดใน 1 นาที เล่นซ้ำทำสถิติใหม่' },
   review: { icon: '🔁', name: 'คำที่ผิดบ่อย', desc: 'ฝึกคำที่เคยตอบผิด' },
@@ -282,6 +284,7 @@ function gamePool(id) {
   if (id === 'order') list = list.filter((w) => { const n = w.e.split(/\s+/).length; return n >= 4 && n <= 12; });
   if (id === 'colloc') list = list.filter((w) => COLLOC && COLLOC[w.w]);
   if (id === 'emoji' || id === 'emojiRun') list = list.filter((w) => EMOJI && EMOJI[w.w]);
+  if (id === 'hangman' || id === 'anagram') list = list.filter((w) => /^[a-z]{4,12}$/i.test(w.w)); // single words: letters only
   return list;
 }
 
@@ -420,6 +423,8 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
       : TIMED ? pick(['en2th', 'th2en'])
       : gameId === 'review' ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'spell', 'cloze'] : ['en2th', 'th2en', 'listen', 'spell']) : mode;
     if (m === 'spell') return qSpell(w);
+    if (m === 'hangman') return qHangman(w);
+    if (m === 'anagram') return qAnagram(w);
     if (m === 'speak') return qSpeak(w);
     if (m === 'speakS') return qSpeak(w, true);
     if (m === 'dict') return qDict(w);
@@ -519,6 +524,109 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
       $('#hint').textContent = w.w.slice(0, 2) + w.w.slice(2).replace(/[a-zA-Z]/g, '_');
     };
     $('#skip').onclick = () => { if (!answered) done(false); };
+  }
+
+  // Hangman: Thai meaning + blanks (first letter shown), tap letters; 6 misses lose. Right = solved with at most 3 misses.
+  function qHangman(w) {
+    const word = w.w.toLowerCase(), LIVES = 6;
+    const guessed = new Set([word[0]]), misses = [];
+    let answered = false;
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+        <div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>
+        <div class="hg-word" id="hgWord" lang="en" role="img"></div>
+        <div class="hg-lives" id="hgLives"></div></div>
+      <div class="hg-kb" id="hgKb">${['qwertyuiop', 'asdfghjkl', 'zxcvbnm'].map((r) => `<div class="hg-kr">${[...r].map((c) => `<button class="hg-k" data-l="${c}" lang="en">${c}</button>`).join('')}</div>`).join('')}</div>
+      <button class="btn block" id="hgGive" style="margin-top:12px">ไม่รู้ / เฉลย</button>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    const solved = () => [...word].every((c) => guessed.has(c));
+    const paint = (reveal) => {
+      $('#hgWord').innerHTML = [...word].map((c) => `<span class="hg-c${reveal && !guessed.has(c) ? ' miss' : ''}">${guessed.has(c) || reveal ? c : ''}</span>`).join('');
+      $('#hgWord').setAttribute('aria-label', [...word].map((c) => (guessed.has(c) || reveal ? c : 'ว่าง')).join(' '));
+      $('#hgLives').innerHTML = '❤️'.repeat(LIVES - misses.length) + '🖤'.repeat(misses.length)
+        + (misses.length ? ` <span class="small muted" lang="en">${misses.join(' ').toUpperCase()}</span>` : '');
+      view.querySelectorAll('.hg-k').forEach((b) => {
+        const l = b.dataset.l;
+        b.disabled = answered || guessed.has(l) || misses.includes(l);
+        b.classList.toggle('hit', guessed.has(l)); b.classList.toggle('miss', misses.includes(l));
+      });
+    };
+    const stop = () => document.removeEventListener('keydown', onKey);
+    const done = (win) => {
+      answered = true; stop(); cleanup = null;
+      const ok = win && misses.length <= 3;
+      mark(w, ok);
+      paint(true);
+      $('#reveal').innerHTML = (win ? (ok ? '✅ เก่งมาก!' : '👍 แก้ได้ แต่พลาดหลายครั้ง ยังไม่นับว่าแม่น') : '❌ คำตอบคือ') + ` <b lang="en">${esc(w.w)}</b> ${esc(w.i)}`
+        + (ok ? '' : hookBox(w)) + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      bindSayEx(view, w.e);
+      $('#nextQ').onclick = next;
+      $('#hgGive').remove();
+      speak(w.w);
+      if (ok) setTimeout(() => { if (items[i] === w) next(); }, 1500);
+    };
+    const press = (l) => {
+      if (answered || guessed.has(l) || misses.includes(l)) return;
+      if (word.includes(l)) { guessed.add(l); sfx('ok'); } else { misses.push(l); sfx('bad'); }
+      paint();
+      if (solved()) done(true); else if (misses.length >= LIVES) done(false);
+    };
+    function onKey(e) { if (!e.ctrlKey && !e.metaKey && !e.altKey && /^[a-zA-Z]$/.test(e.key) && current === 'games') press(e.key.toLowerCase()); }
+    document.addEventListener('keydown', onKey);
+    cleanup = stop;
+    $('#hgKb').onclick = (e) => { const b = e.target.closest('.hg-k'); if (b) press(b.dataset.l); };
+    $('#hgGive').onclick = () => { if (!answered) done(false); };
+    paint();
+  }
+
+  // Anagram: tap the shuffled letters in order to spell the word; one wrong try is forgiven.
+  function qAnagram(w) {
+    const letters = [...w.w.toLowerCase()];
+    let order = shuffle(letters.map((_, k) => k));
+    for (let n = 0; n < 8 && (order.every((x, k) => x === k) || order.map((k) => letters[k]).join('') === w.w.toLowerCase()); n++) order = shuffle(order);
+    const picked = [];
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+        <div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)} · ${letters.length} ตัวอักษร</div></div>
+      <div class="ord-ans" id="oAns" lang="en"></div>
+      <div class="ord-pool" id="oPool" lang="en">${order.map((k) => `<button class="ord-chip" data-k="${k}">${esc(letters[k])}</button>`).join('')}</div>
+      <div class="row" style="margin-top:10px"><button class="btn grow" id="oClear">↺ เริ่มใหม่</button><button class="btn grow" id="oGive">ไม่รู้ / เฉลย</button></div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    let answered = false, tries = 0;
+    const paint = () => {
+      $('#oAns').innerHTML = picked.length ? picked.map((k, j) => `<button class="ord-chip on" data-j="${j}">${esc(letters[k])}</button>`).join('') : '<span class="muted small">แตะตัวอักษรด้านล่างเรียงเป็นคำ</span>';
+      view.querySelectorAll('#oPool .ord-chip').forEach((b) => (b.disabled = picked.includes(+b.dataset.k)));
+    };
+    const done = (ok, solvedLate) => {
+      answered = true;
+      mark(w, ok);
+      $('#oAns').classList.add(ok || solvedLate ? 'ok' : 'no');
+      $('#oAns').innerHTML = `<span class="ord-full">${esc(w.w)}</span>`;
+      $('#oPool').innerHTML = '';
+      $('#reveal').innerHTML = (ok ? '✅ ถูกต้อง!' : solvedLate ? '👍 เรียงได้แล้ว แต่ต้องลองสองครั้ง ยังไม่นับว่าแม่น' : '❌ คำตอบคือด้านบน') + ` ${esc(w.i)}` + (ok ? '' : hookBox(w)) + exampleBox(w)
+        + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      bindSayEx(view, w.e);
+      $('#nextQ').onclick = next;
+      speak(w.w);
+      if (ok) setTimeout(() => { if (items[i] === w) next(); }, 1500);
+    };
+    $('#oPool').onclick = (e) => {
+      const b = e.target.closest('.ord-chip'); if (!b || answered || b.disabled) return;
+      picked.push(+b.dataset.k); paint();
+      if (picked.length < letters.length) return;
+      if (picked.map((k) => letters[k]).join('') === letters.join('')) return done(tries === 0, tries > 0);
+      tries++;
+      if (tries >= 2) return done(false);
+      $('#oAns').classList.remove('no'); void $('#oAns').offsetWidth; $('#oAns').classList.add('no');
+      $('#reveal').textContent = 'ยังไม่ถูก ลองเรียงใหม่อีกครั้ง 💪';
+      setTimeout(() => { if (!answered) { picked.length = 0; $('#oAns').classList.remove('no'); paint(); } }, 600);
+    };
+    $('#oAns').onclick = (e) => { const b = e.target.closest('[data-j]'); if (!b || answered) return; picked.splice(+b.dataset.j, 1); paint(); };
+    $('#oClear').onclick = () => { if (!answered) { picked.length = 0; paint(); } };
+    $('#oGive').onclick = () => { if (!answered) done(false); };
+    paint();
   }
 
   function qSpeak(w, sentence) {

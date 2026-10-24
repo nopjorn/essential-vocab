@@ -30,7 +30,7 @@ for (const id of CHOICE) {
   });
 }
 
-for (const id of ['spell', 'dict', 'speak', 'speakS', 'order', 'sOrder', 'review']) {
+for (const id of ['spell', 'dict', 'speak', 'speakS', 'order', 'sOrder', 'review', 'hangman', 'anagram']) {
   test(`game ${id}: a full round with right and wrong answers`, async ({ page }) => {
     const errors = await setup(page);
     await page.evaluate((id) => startGame(id), id);

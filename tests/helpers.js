@@ -64,6 +64,19 @@ async function answer(page, ok, round) {
     const at = round.at == null ? 0 : ok ? round.at : +!round.at;
     await view.locator('.opt').nth(at).click();
     round.at = await view.locator('.opt').evaluateAll((els) => els.findIndex((e) => e.classList.contains('correct')));
+  } else if (await view.locator('.hg-kb').count()) { // hangman
+    if (!ok) await view.locator('#hgGive').click();
+    else {
+      const word = await page.evaluate(() => {
+        const th = document.querySelector('.q-prompt .th').textContent;
+        const hint = new RegExp('^' + [...document.querySelectorAll('.hg-c')].map((c) => c.textContent.trim() || '[a-zA-Z]').join('') + '$', 'i');
+        return W.find((w) => w.t === th && hint.test(w.w)).w.toLowerCase();
+      });
+      for (const c of new Set(word)) {
+        const key = view.locator(`.hg-k[data-l="${c}"]`);
+        if (await key.count() && await key.isEnabled()) await key.click();
+      }
+    }
   } else if (await view.locator('#oPool').count()) {
     if (ok) {
       const k = await view.locator('#oPool .ord-chip').count();

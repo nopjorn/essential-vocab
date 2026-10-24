@@ -1254,3 +1254,15 @@ html.no-ans .streak.bump { animation: none; }
 .duel-vs b { font-size: 34px; line-height: 1.2; }
 .duel-vs small, .duel-vs span { color: var(--muted); font-size: var(--fs-sm); }
 .duel-vs .vs { font-weight: 800; color: var(--muted); min-width: 0; }
+
+/* hangman */
+.hg-word { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 16px 0 6px; }
+.hg-c { min-width: 28px; padding: 0 2px 2px; border-bottom: 3px solid var(--border); font-size: 28px; font-weight: 800; line-height: 1.3; text-align: center; min-height: 1.3em; }
+.hg-c.miss { color: var(--bad); }
+.hg-lives { font-size: var(--fs-md, 18px); min-height: 1.6em; }
+.hg-kb { display: grid; gap: 6px; margin-top: 10px; }
+.hg-kr { display: flex; justify-content: center; gap: 5px; }
+.hg-k { flex: 1 1 0; max-width: 46px; height: 46px; padding: 0; border-radius: 10px; border: 2px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 17px; font-weight: 700; text-transform: uppercase; box-shadow: 0 2px 0 var(--border); }
+.hg-k.hit { border-color: var(--good); background: var(--surface-2); }
+.hg-k.miss { opacity: .35; box-shadow: none; }
+.hg-k:disabled { cursor: default; }

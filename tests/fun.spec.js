@@ -139,3 +139,54 @@ test('challenge a friend (1.79): same code = same 10 questions on any device, pa
   await expect(view.locator('.session-top')).toContainText(/3[2-9A-HJKMN-Z]{4}/);
   expect(errors).toEqual([]);
 });
+
+test('hangman (1.81): letters only words, misses cost lives, 4+ misses solved is not "right", keyboard works, give up reveals', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => { gameSource = 'all'; });
+  // the pool only holds single words of 4–12 letters
+  expect(await page.evaluate(() => gamePool('hangman').every((w) => /^[a-z]{4,12}$/i.test(w.w)) && gamePool('anagram').length > 100)).toBe(true);
+  await page.evaluate(() => startGame('hangman'));
+  const view = page.locator('#view');
+  const word = () => page.evaluate(() => W.find((w) => w.t === document.querySelector('.q-prompt .th').textContent && new RegExp('^' + [...document.querySelectorAll('.hg-c')].map((c) => c.textContent.trim() || '[a-zA-Z]').join('') + '$', 'i').test(w.w)).w.toLowerCase());
+  let w = await word();
+  await expect(view.locator('.hg-c').first()).toHaveText(w[0]); // first letter is free
+  // 4 wrong letters, then solve: counts as solved but not right
+  const wrongs = [...'zxqjvkw'].filter((c) => !w.includes(c)).slice(0, 4);
+  for (const c of wrongs) await view.locator(`.hg-k[data-l="${c}"]`).click();
+  await expect(view.locator('#hgLives')).toContainText('🖤🖤🖤🖤');
+  for (const c of new Set(w)) { const k = view.locator(`.hg-k[data-l="${c}"]`); if (await k.isEnabled()) await k.click(); }
+  await expect(view.locator('#reveal')).toContainText('พลาดหลายครั้ง');
+  await view.locator('#nextQ').click();
+  // physical keyboard + clean solve with no misses = right
+  w = await word();
+  for (const c of new Set(w)) await page.keyboard.press(c);
+  await expect(view.locator('#reveal')).toContainText('เก่งมาก');
+  await view.locator('#nextQ').click().catch(() => {});
+  await expect(view.locator('.hg-k').first()).toBeVisible();
+  // running out of lives loses and shows the word
+  w = await word();
+  for (const c of [...'zxqjvkwyfbp'].filter((c) => !w.includes(c)).slice(0, 6)) await view.locator(`.hg-k[data-l="${c}"]`).click();
+  await expect(view.locator('#reveal')).toContainText(`คำตอบคือ ${w}`);
+  expect(errors).toEqual([]);
+});
+
+test('anagram (1.81): tap letters to spell the word, one wrong try is forgiven, second ends the question', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => { gameSource = 'all'; startGame('anagram'); });
+  const view = page.locator('#view');
+  const info = () => page.evaluate(() => ({ th: document.querySelector('.q-prompt .th').textContent, n: document.querySelectorAll('#oPool .ord-chip').length }));
+  const { th, n } = await info();
+  // several words can share one Thai meaning: the right one is the candidate made of exactly the letters on screen
+  const shown = await view.locator('#oPool .ord-chip').allTextContents();
+  const w = await page.evaluate(([th, letters]) => W.find((w) => w.t === th && /^[a-z]{4,12}$/i.test(w.w) && [...w.w.toLowerCase()].sort().join('') === letters).w.toLowerCase(), [th, [...shown].sort().join('')]);
+  expect(w.length).toBe(n);
+  // wrong order first: shortest way is to click chips in reverse index order
+  for (let k = n - 1; k >= 0; k--) await view.locator(`#oPool [data-k="${k}"]`).click();
+  const rev = [...w].reverse().join('') !== w;
+  if (rev) await expect(view.locator('#reveal')).toContainText('ลองเรียงใหม่');
+  await expect(view.locator('#oAns .ord-chip')).toHaveCount(0, { timeout: 3000 });
+  for (let k = 0; k < n; k++) await view.locator(`#oPool [data-k="${k}"]`).click();
+  await expect(view.locator('#oAns')).toContainText(w);
+  await expect(view.locator('#reveal')).toContainText(rev ? 'ต้องลองสองครั้ง' : '✅');
+  expect(errors).toEqual([]);
+});
