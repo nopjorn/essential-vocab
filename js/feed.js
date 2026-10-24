@@ -82,7 +82,7 @@ function renderFeed() {
   function chooseWord() {
     if (later.length && later[0].at <= n) return [later.shift().w, 'quiz'];
     const p = pool();
-    const due = dueList(p).find((w) => !seen.has(w.w));
+    const due = dueList().find((w) => !seen.has(w.w));
     if (due) return [due, 'quiz'];
     if (!backlogPlan().on && S.daily.fresh + (newDealt - newDone) < S.settings.newPerDay) {
       const fresh = shuffle(p.filter((w) => !S.prog[w.w] && !seen.has(w.w) && inTopic(w)))[0];

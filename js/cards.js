@@ -6,13 +6,13 @@
 function buildQueue(extra) {
   rollDay();
   const p = pool();
-  if (extra === 'backlog') return dueList(p).slice(0, BACKLOG_CAP);
+  if (extra === 'backlog') return dueList().slice(0, BACKLOG_CAP);
   const plan = backlogPlan();
-  const due = dueList(p).slice(0, plan.on ? plan.show : 200);
+  const due = dueList().slice(0, plan.on ? plan.show : 200);
   let fresh = p.filter((w) => !S.prog[w.w] && inTopic(w));
   if (S.settings.order === 'shuffle') fresh = shuffle(fresh);
   if (extra === 'mastered') return shuffle(masteredWords()).slice(0, 20);
-  if (extra === 'ahead') return p.filter((w) => S.prog[w.w]).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d).slice(0, 20);
+  if (extra === 'ahead') return W.filter((w) => S.prog[w.w]).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d).slice(0, 20);
   const n = extra ? 10 : plan.on ? 0 : Math.max(0, S.settings.newPerDay - S.daily.fresh);
   fresh = fresh.slice(0, n);
   // Mix new cards in among reviews so a session doesn't end with only new words.
@@ -23,7 +23,7 @@ function buildQueue(extra) {
   q.push(...due.slice(di));
   if (!q.length && extra) {
     // Nothing new left: practise learned words that are closest to being due.
-    return p.filter((w) => S.prog[w.w]).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d).slice(0, 20);
+    return W.filter((w) => S.prog[w.w]).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d).slice(0, 20);
   }
   return q;
 }

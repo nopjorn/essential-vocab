@@ -332,7 +332,7 @@ function forecastChart() {
   const names = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
   const start = new Date(); start.setHours(0, 0, 0, 0);
   const days = Array.from({ length: 7 }, (_, k) => ({ n: 0, label: k === 0 ? 'วันนี้' : k === 1 ? 'พรุ่งนี้' : names[(start.getDay() + k) % 7] }));
-  for (const w of pool()) {
+  for (const w of W) {
     const pr = S.prog[w.w]; if (!pr) continue;
     const k = Math.max(0, Math.floor((pr.d - start.getTime()) / DAY));
     if (k < 7) days[k].n++;

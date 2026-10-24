@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.61.0';
+const APP_VERSION = '1.62.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -811,7 +811,8 @@ function status(w, map = S.prog) {
   return p.b >= MASTERED ? 'mastered' : 'learning';
 }
 const pool = () => W.filter((w) => S.settings.levels.includes(w.g));
-const dueList = (list = pool(), map = S.prog) => {
+// Reviews come from every word already learned (any level); only new words are limited to settings.levels (pool()).
+const dueList = (list = W, map = S.prog) => {
   const now = Date.now();
   return list.filter((w) => map[w.w] && map[w.w].d <= now).sort((a, b) => map[a.w].d - map[b.w].d);
 };
