@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.49.0';
+const APP_VERSION = '1.51.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -58,7 +58,7 @@ const MASTERED = 4;
 const KEY = 'oxford3000.v1';
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', wotd: { lv: [], st: [], tp: [] }, nextGames: [], riddleLv: ['A1', 'A2'] },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, nextGames: [], riddleLv: ['A1', 'A2'] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -494,13 +494,29 @@ function fillVoices() {
     `<option value="${esc(v.voiceURI)}" ${v.voiceURI === S.settings.voice ? 'selected' : ''}>${FLAG[lang] || '🌐'} ${esc(v.name)}${voiceRank(v) < 2 ? ' ⭐' : ''}</option>`).join('');
   const n = document.getElementById('voiceN'); if (n) n.textContent = list.length ? `มี ${list.length} เสียง · ⭐ = เสียงคุณภาพสูง` : 'ยังโหลดรายชื่อเสียงไม่ได้ ลองเปิดหน้านี้ใหม่';
 }
-// Theme: 'auto' follows the system; 'light'/'dark' override it (also mirrored to o3k.theme for the early script in index.html).
+// Theme: 'auto' follows the system; 'light'/'dark'/'black' (pure-black OLED) override it. Palette = accent colours (violet is the :root default).
+// Both are mirrored to localStorage (o3k.theme / o3k.palette) for the early script in index.html.
+const PALETTES = [['violet', 'ม่วง', '#6c5ce7', '#fd79a8'], ['ocean', 'ฟ้าทะเล', '#0a6fc2', '#5bc8e0'], ['mint', 'มิ้นต์', '#007a61', '#5fd0cf'],
+  ['orange', 'ส้ม', '#c0540a', '#f58a8f'], ['sakura', 'ชมพูซากุระ', '#c03a78', '#f7b3cc'], ['mono', 'โมโนโครม', '#3d3d46', '#a0a0ac']];
 function applyTheme() {
-  const t = S.settings.theme || 'auto';
-  if (t === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
-  try { localStorage.setItem('o3k.theme', t); } catch (e) { /* ignore */ }
+  const root = document.documentElement, t = S.settings.theme || 'auto';
+  let pal = S.settings.palette || 'violet'; if (!PALETTES.some((p) => p[0] === pal)) pal = 'violet';
+  if (t === 'auto') delete root.dataset.theme; else root.dataset.theme = t;
+  if (pal === 'violet') delete root.dataset.palette; else root.dataset.palette = pal;
+  try { localStorage.setItem('o3k.theme', t); localStorage.setItem('o3k.palette', pal); } catch (e) { /* ignore */ }
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = getComputedStyle(root).getPropertyValue('--primary').trim() || '#6c5ce7';
 }
 applyTheme();
+// App icon: the home-screen icon is copied by iOS when "Add to Home Screen" is used, so this only swaps the
+// <link rel="apple-touch-icon"> (+ settings page preview). A change needs the icon to be re-added (backup first).
+const ICONS = [['purple', 'ม่วง'], ['dark', 'มืด'], ['black', 'ดำสนิท'], ['light', 'ขาว'], ['ocean', 'ฟ้าทะเล'], ['sakura', 'ชมพู']];
+const iconSrc = (id) => id === 'purple' ? 'icons/apple-touch-icon.png' : `icons/apple-touch-icon-${id}.png`;
+function applyIcon() {
+  const id = ICONS.some((x) => x[0] === S.settings.icon) ? S.settings.icon : 'purple';
+  const l = document.querySelector('link[rel="apple-touch-icon"]'); if (l) l.href = iconSrc(id);
+}
+applyIcon();
 // Animation switches (settings → หน้าตา), each on its own: animPage → page slides (html.no-vt),
 // animAnswer → bounce/shake on answers (html.no-ans), confetti. 1.39.1 had one `anim` switch for all three.
 if (S.settings.anim === false) { S.settings.animPage = S.settings.animAnswer = S.settings.confetti = false; }

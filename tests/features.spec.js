@@ -631,3 +631,42 @@ test('endless emoji run: streak resets on a wrong answer, record keeps the longe
   expect((await readState(page)).best.emojiRun).toBe(12);
   expect(errors).toEqual([]);
 });
+
+test('colour palettes + black theme: settings switch html attributes, persist, no overflow', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => go('settings'));
+  await page.locator('details[data-g="look"] > summary').click();
+  const root = page.locator('html');
+  const primary = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--primary').trim());
+  expect(await primary()).toBe('#6c5ce7');
+  await expect(page.locator('#palette button')).toHaveCount(6);
+  await page.locator('#palette [data-p="mint"]').click();
+  await expect(root).toHaveAttribute('data-palette', 'mint');
+  expect(await primary()).toBe('#007a61');
+  await expect(page.locator('#palette [data-p="mint"]')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#theme [data-v="black"]').click();
+  await expect(root).toHaveAttribute('data-theme', 'black');
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(0, 0, 0)');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const st = await readState(page);
+  expect(st.settings.palette).toBe('mint');
+  expect(st.settings.theme).toBe('black');
+  await page.locator('#palette [data-p="violet"]').click();
+  expect(await root.getAttribute('data-palette')).toBeNull();
+  expect(errors).toEqual([]);
+});
+
+test('app icon picker: settings swap the touch icon, persist, no overflow', async ({ page }) => {
+  const errors = await openApp(page, {});
+  await page.evaluate(() => go('settings'));
+  await page.locator('details[data-g="look"] > summary').click();
+  await expect(page.locator('#iconPick button')).toHaveCount(6);
+  await page.locator('#iconPick [data-i="dark"]').click();
+  await expect(page.locator('#iconPick [data-i="dark"]')).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.locator('link[rel="apple-touch-icon"]').getAttribute('href')).toBe('icons/apple-touch-icon-dark.png');
+  const st = await page.evaluate(() => JSON.parse(localStorage['oxford3000.v1']));
+  expect(st.settings.icon).toBe('dark');
+  await page.locator('#iconPick [data-i="purple"]').click();
+  expect(await page.locator('link[rel="apple-touch-icon"]').getAttribute('href')).toBe('icons/apple-touch-icon.png');
+  expect(errors).toEqual([]);
+});
