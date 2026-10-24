@@ -607,6 +607,7 @@ code { background: var(--surface-2); border-radius: 6px; padding: 1px 5px; font-
 .st-para { margin: 0 -10px; padding: 8px 10px 6px; border-radius: 14px; border-left: 4px solid transparent; transition: background .2s, border-color .2s; }
 .st-para + .st-para { margin-top: 4px; }
 .st-para.playing { background: var(--surface-2); border-left-color: var(--primary); }
+::highlight(speaking) { background-color: color-mix(in srgb, var(--primary) 32%, transparent); color: inherit; }
 .story .st-p { margin: 6px 0 4px; font-family: "New York", "Iowan Old Style", Georgia, "Noto Serif", serif; font-size: var(--st-font, 18px); line-height: 1.75; }
 .st-row { display: flex; gap: 8px; }
 .st-say, .st-thbtn { padding: 4px 10px; border: 0; border-radius: 99px; background: var(--surface-2); color: var(--muted); font: inherit; font-size: var(--fs-xs); font-weight: 600; }

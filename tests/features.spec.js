@@ -1469,3 +1469,28 @@ test('mixed card side (1.93): new words English first, solid words asked the oth
   expect(low[ws[0]]).toBe(false);    // the coin came up English first
   expect(errors).toEqual([]);
 });
+
+test('story reader (1.94): the word being spoken is highlighted, and the highlight clears when the paragraph ends', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(async () => { const st = await loadStories(); go('read', st[0].id); });
+  await expect(page.locator('.st-say').first()).toBeVisible();
+  // a synthesizer that never ends by itself, so the test controls the speech events
+  await page.evaluate(() => { speechSynthesis.speak = (u) => { window.__u = u; }; });
+  await page.locator('.st-say').first().click();
+  const got = await page.evaluate(() => {
+    const para = document.querySelector('.st-p').textContent, first = para.split(' ')[0], second = para.split(' ')[1].replace(/[^A-Za-z’']/g, '');
+    window.__u.onboundary({ name: 'word', charIndex: 0, charLength: first.length });
+    const a = [...CSS.highlights.get('speaking')][0].toString();
+    window.__u.onboundary({ name: 'word', charIndex: para.indexOf(second, first.length), charLength: second.length });
+    const b = [...CSS.highlights.get('speaking')][0].toString();
+    window.__u.onboundary({ name: 'sentence', charIndex: 0, charLength: 5 });   // not a word boundary: ignored
+    const c = [...CSS.highlights.get('speaking')][0].toString();
+    window.__u.onend({});
+    return { a, b, c, first, second, left: CSS.highlights.has('speaking') };
+  });
+  expect(got.a).toBe(got.first);
+  expect(got.b).toBe(got.second);
+  expect(got.c).toBe(got.second);
+  expect(got.left).toBe(false);
+  expect(errors).toEqual([]);
+});

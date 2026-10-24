@@ -93,6 +93,26 @@ function lookupWord(tok) {
   for (const x of tries) if (WORD_INDEX.has(x)) return WORD_INDEX.get(x);
   return null;
 }
+// Highlights the spoken word of a story paragraph with the CSS Custom Highlight API (el = the paragraph, start/len = the speech boundary); hlWord(null) clears it.
+function hlWord(el, start, len) {
+  if (!(window.CSS && CSS.highlights && window.Highlight)) return;
+  CSS.highlights.delete('speaking');
+  if (!el || start == null) return;
+  const text = el.textContent;
+  const end = start + (len || (text.slice(start).match(/^[A-Za-z0-9’']+/) || [''])[0].length || 1);
+  const tw = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let pos = 0, n, sNode, sOff = 0, eNode, eOff = 0;
+  while ((n = tw.nextNode())) {
+    const L = n.nodeValue.length;
+    if (!sNode && start < pos + L) { sNode = n; sOff = start - pos; }
+    if (sNode && end <= pos + L) { eNode = n; eOff = end - pos; break; }
+    pos += L;
+  }
+  if (!sNode || !eNode) return;
+  const range = document.createRange();
+  range.setStart(sNode, sOff); range.setEnd(eNode, eOff);
+  CSS.highlights.set('speaking', new Highlight(range));
+}
 function storyHTML(text) {
   return esc(text).replace(/[A-Za-z][A-Za-z’']*/g, (tok) => {
     const w = lookupWord(tok);
@@ -170,7 +190,7 @@ function renderRead(id) {
       <div class="options" style="margin-top:10px" data-q="${k}">${q.o.map((o, j) => `<button class="opt" data-j="${j}">${esc(o)}</button>`).join('')}</div></div>`).join('')}
     <div id="rDone"></div>`;
   const paras = [...view.querySelectorAll('.st-para')];
-  const stop = () => { token++; playing = -1; paras.forEach((p) => p.classList.remove('playing')); $('#rAll').innerHTML = '<span>▶️</span>ฟังทั้งเรื่อง'; if (window.speechSynthesis) speechSynthesis.cancel(); };
+  const stop = () => { token++; playing = -1; hlWord(null); paras.forEach((p) => p.classList.remove('playing')); $('#rAll').innerHTML = '<span>▶️</span>ฟังทั้งเรื่อง'; if (window.speechSynthesis) speechSynthesis.cancel(); };
   // Read paragraph k, highlight it, then continue with the next one when `chain` is set.
   const play = (k, chain) => {
     const my = ++token;
@@ -179,7 +199,9 @@ function renderRead(id) {
     $('#rAll').innerHTML = chain ? '<span>⏸</span>หยุดฟัง' : '<span>▶️</span>ฟังทั้งเรื่อง';
     if (chain) paras[k].scrollIntoView({ behavior: 'smooth', block: 'center' });
     const u = speak(st.en[k], { slow });
-    const next = () => { if (my !== token || current !== 'read') return; if (chain && k + 1 < paras.length) play(k + 1, true); else stop(); };
+    // Word-by-word highlight while a paragraph is read (voices that send no word boundaries keep the whole-paragraph highlight)
+    if (u) u.onboundary = (ev) => { if (my === token && (!ev.name || ev.name === 'word')) hlWord(paras[k].querySelector('.st-p'), ev.charIndex, ev.charLength); };
+    const next = () => { if (my !== token || current !== 'read') return; hlWord(null); if (chain && k + 1 < paras.length) play(k + 1, true); else stop(); };
     if (u) { u.onend = next; u.onerror = () => { if (my === token) stop(); }; } else stop();
   };
   $('#rBack').onclick = () => go('read');
