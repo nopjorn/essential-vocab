@@ -1148,7 +1148,7 @@ test('stats page draws heavy blocks lazily (1.72): not in the first paint, all t
   expect(errors).toEqual([]);
 });
 
-test('save() is batched (1.73): one write after a burst, flushed on hide, medals still unlock', async ({ page }) => {
+test('save() is batched (1.74): one write after a burst, flushed on hide, medals still unlock', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   const r = await page.evaluate(async () => {
     save(); flushSave();
