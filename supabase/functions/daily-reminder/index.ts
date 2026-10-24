@@ -1,10 +1,12 @@
 // Supabase Edge Function: sends the daily study reminder as a Web Push notification.
 // Runs every hour (pg_cron, see SYNC-SETUP.md). For each subscription whose chosen reminder hour
 // (push_subs.remind, e.g. '2000') matches the current hour in its time zone, and whose owner has not
-// studied yet today, it sends "วันนี้มีการ์ดรอ N ใบ". Dead subscriptions (404/410) are deleted.
+// studied yet today, it sends a rotating reminder (card count, time needed, a due word, a gentle note when a big backlog
+// is waiting). At 21:00 local a second reminder goes only to people with a 3+ day streak and no 🧊 who have not studied (message.mjs). Dead subscriptions (404/410) are deleted.
 // Secrets: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:you@example.com).
 import webpush from 'npm:web-push@3.6.7';
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
+import { buildMessage } from './message.mjs';
 
 const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 webpush.setVapidDetails(Deno.env.get('VAPID_SUBJECT')!, Deno.env.get('VAPID_PUBLIC_KEY')!, Deno.env.get('VAPID_PRIVATE_KEY')!);
@@ -22,16 +24,15 @@ Deno.serve(async () => {
   let sent = 0;
   for (const s of subs ?? []) {
     const { date, hour } = localParts(s.tz || 'Asia/Bangkok');
-    if ((s.remind || '2000').slice(0, 2) !== hour) continue;
+    const remindHour = (s.remind || '2000').slice(0, 2);
+    // main reminder at the chosen hour; a second, late one at 21:00 when the chosen hour is earlier
+    const kind = remindHour === hour ? 'main' : hour === '21' && remindHour < '21' ? 'late' : null;
+    if (!kind) continue;
     const { data: row } = await sb.from('progress').select('data').eq('user_id', s.user_id).maybeSingle();
-    const d = row?.data ?? {};
-    if (d.hist?.[date]) continue; // already studied today
-    const now = Date.now();
-    const due = Object.values(d.prog ?? {}).filter((p: any) => p && p.d <= now).length;
-    const streak = d.streak?.count ?? 0;
-    const body = due ? `วันนี้มีการ์ดรอทบทวน ${due} ใบ${streak ? ` · รักษาสตรีค 🔥 ${streak} วันไว้นะ` : ''}` : 'มาเรียนคำใหม่วันละนิดกัน 📚';
+    const msg = buildMessage(row?.data, date, kind);
+    if (!msg) continue; // already studied today, or nothing worth sending
     try {
-      await webpush.sendNotification(s.sub, JSON.stringify({ title: 'ศัพท์ต้องรู้ 📚', body, url: APP_URL, due }));
+      await webpush.sendNotification(s.sub, JSON.stringify({ title: msg.title, body: msg.body, url: APP_URL + msg.url, due: msg.due }));
       sent++;
     } catch (e: any) {
       if (e?.statusCode === 404 || e?.statusCode === 410) await sb.from('push_subs').delete().eq('endpoint', s.endpoint);
