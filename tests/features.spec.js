@@ -745,11 +745,22 @@ test('sync: newest settings win on every device, voice stays per device, game pl
   expect(errors).toEqual([]);
 });
 
-test('1.57: retired topic ids migrate (setting, word of the day topics, stickers)', async ({ page }) => {
-  const errors = await openApp(page, { settings: { topic: 'study', wotd: { lv: [], st: [], tp: ['media', 'food'] } }, stk: { work: 3, food: 2 } });
-  const r = await page.evaluate(() => ({ topic: S.settings.topic, tp: S.settings.wotd.tp, stk: S.stk }));
-  expect(r.topic).toBe('');
-  expect(r.tp).toEqual(['comm', 'arts', 'sport', 'food']);
-  expect(r.stk).toEqual({ food: 2, job: 3, money: 3 });
+test('1.58: grouped topic picks (whole group or one topic), stickers of retired topics carry over', async ({ page }) => {
+  const errors = await openApp(page, { settings: { topic: 'study', wotd: { lv: [], st: [], tp: ['media', 'food'] } }, stk: { work: 3, food: 2, nature: 1 } });
+  const r = await page.evaluate(() => ({ topic: S.settings.topic, tp: S.settings.wotd.tp, stk: S.stk, group: W.filter((w) => topicMatch('study', w.tp)).length, leaf: W.filter((w) => topicMatch('tech', w.tp)).length, all: W.filter((w) => w.tp === 'edu' || w.tp === 'sci' || w.tp === 'tech').length }));
+  expect(r.topic).toBe('study'); // a group id is a valid choice
+  expect(r.tp).toEqual(['media', 'food']);
+  expect(r.stk).toEqual({ food: 2, job: 3, money: 3, animal: 1, plant: 1, weather: 1 });
+  expect(r.group).toBe(r.all);
+  expect(r.leaf).toBeGreaterThan(0);
+  expect(r.leaf).toBeLessThan(r.group);
+  // the word list: pick a whole group, then one topic inside it
+  await page.evaluate(() => go('list'));
+  await page.selectOption('#tpSel', 'nature');
+  const n1 = await page.evaluate(() => W.filter((w) => topicMatch('nature', w.tp)).length);
+  await page.selectOption('#tpSel', 'animal');
+  const n2 = await page.evaluate(() => W.filter((w) => w.tp === 'animal').length);
+  expect(n1).toBeGreaterThan(n2);
+  expect(n2).toBeGreaterThan(0);
   expect(errors).toEqual([]);
 });

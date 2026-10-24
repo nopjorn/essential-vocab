@@ -14,7 +14,7 @@ function renderList() {
       ${[['all', 'ทั้งหมด'], ['new', 'ยังไม่เรียน'], ['learning', '🟡 กำลังเรียน'], ['mastered', '🟢 จำได้แล้ว'], ['star', '⭐ ติดดาว'], ['leech', '🐢 คำดื้อ'], ['note', '💡 มีวิธีจำ']].map(([v, t]) => `<button class="chip" data-v="${v}">${t}</button>`).join('')}
     </div>
     <div class="sel-pair">
-      <select class="sel block-sel" id="tpSel" aria-label="หมวด"><option value="">📂 ทุกหมวด</option>${TOPICS.map(([id]) => `<option value="${id}" ${listFilter.tp === id ? 'selected' : ''}>${TOPIC_LABEL[id]}</option>`).join('')}</select>
+      <select class="sel block-sel" id="tpSel" aria-label="หมวด"><option value="">📂 ทุกหมวด</option>${topicOptions(listFilter.tp)}</select>
       <select class="sel block-sel" id="glSel" aria-label="เป้าหมาย"><option value="">🎯 ทุกเป้าหมาย</option>${TAGS.map((t) => `<option value="${t.id}" ${listFilter.gl === t.id ? 'selected' : ''}>${TAG_LABEL[t.id]}</option>`).join('')}</select>
     </div>
     <div class="small muted" id="cnt" style="margin:6px 4px"></div>
@@ -36,7 +36,7 @@ function renderList() {
   };
   const apply = () => {
     const q = listFilter.q.trim().toLowerCase();
-    items = W.filter((w) => (listFilter.lv === 'all' || w.g === listFilter.lv) && (!listFilter.tp || w.tp === listFilter.tp) && (!listFilter.gl || hasTag(w, listFilter.gl))
+    items = W.filter((w) => (listFilter.lv === 'all' || w.g === listFilter.lv) && (!listFilter.tp || topicMatch(listFilter.tp, w.tp)) && (!listFilter.gl || hasTag(w, listFilter.gl))
       && (listFilter.st === 'all' || (listFilter.st === 'star' ? isStar(w) : listFilter.st === 'leech' ? isLeech(w) : listFilter.st === 'note' ? !!S.note[w.w] : status(w) === listFilter.st))
       && (!q || w.w.toLowerCase().includes(q) || w.t.includes(q)));
     if (q) items.sort((a, b) => (b.w.toLowerCase().startsWith(q)) - (a.w.toLowerCase().startsWith(q)));

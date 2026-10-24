@@ -162,7 +162,7 @@ function wotdCfg() {
 function wotdPool() {
   const c = wotdCfg();
   const base = c.lv.length ? W.filter((w) => c.lv.includes(w.g)) : pool();
-  return base.filter((w) => (!c.st.length || c.st.includes(wordStatus(w))) && (c.tp.length ? c.tp.includes(w.tp) : inTopic(w)));
+  return base.filter((w) => (!c.st.length || c.st.includes(wordStatus(w))) && (c.tp.length ? c.tp.some((t) => topicMatch(t, w.tp)) : inTopic(w)));
 }
 // The pick is stored for the day (and per setting) so it doesn't flip when you learn the word; 🎲 overwrites it.
 function wotd() {

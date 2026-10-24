@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.57.1';
+const APP_VERSION = '1.58.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -24,26 +24,54 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) fixA
 /* ---------- data ---------- */
 // WORDS rows (data/words/<level>.js): [word, pos, level, ipa, thai, example, thai example, topic id, 5 if Oxford 5000-only]
 // g = study group: A1–B2 are Oxford 3000; B2x and C1 are the extra Oxford 5000 words.
+// Topics (what a word row's topic id means). Pick lists show them grouped: a group id (TOPIC_GROUPS) selects every topic inside it.
 const TOPICS = [
-  ['people', '👪', 'คนและครอบครัว'], ['body', '💪', 'ร่างกายและสุขภาพ'], ['food', '🍜', 'อาหารและเครื่องดื่ม'],
-  ['home', '🏠', 'บ้านและของใช้'], ['clothes', '👕', 'เสื้อผ้าและการแต่งตัว'], ['nature', '🌿', 'ธรรมชาติ สัตว์ อากาศ'],
-  ['travel', '✈️', 'สถานที่และการเดินทาง'], ['job', '💼', 'งานและอาชีพ'], ['money', '💰', 'เงิน ธุรกิจ การซื้อขาย'],
+  ['people', '👪', 'คนและครอบครัว'], ['anatomy', '🫀', 'ร่างกายและอวัยวะ'], ['health', '🏥', 'สุขภาพและการแพทย์'], ['food', '🍜', 'อาหารและเครื่องดื่ม'],
+  ['home', '🏠', 'บ้านและของใช้'], ['clothes', '👕', 'เสื้อผ้าและการแต่งตัว'],
+  ['animal', '🐾', 'สัตว์'], ['plant', '🌳', 'พืชและการเกษตร'], ['weather', '⛅', 'อากาศ ภูมิประเทศ สิ่งแวดล้อม'],
+  ['places', '📍', 'สถานที่และทิศทาง'], ['transport', '🚗', 'การเดินทางและยานพาหนะ'],
+  ['job', '💼', 'งานและอาชีพ'], ['money', '💰', 'เงิน ธุรกิจ การซื้อขาย'],
   ['edu', '🎓', 'การศึกษา'], ['sci', '🔬', 'วิทยาศาสตร์'], ['tech', '💻', 'เทคโนโลยี'],
   ['comm', '💬', 'สื่อสารและภาษา'], ['arts', '🎭', 'ศิลปะและบันเทิง'], ['sport', '⚽', 'กีฬาและงานอดิเรก'],
   ['gov', '🏛️', 'การเมือง การปกครอง การทหาร'], ['law', '⚖️', 'กฎหมายและอาชญากรรม'], ['social', '🌏', 'สังคม วัฒนธรรม ศาสนา'],
-  ['time', '⏰', 'เวลา ตัวเลข ปริมาณ'],
+  ['clock', '⏰', 'เวลาและความถี่'], ['num', '🔢', 'ตัวเลข'], ['qty', '📏', 'ปริมาณ ขนาด การวัด'],
   ['emo', '😊', 'อารมณ์และความรู้สึก'], ['mind', '🧠', 'ความคิดและการรับรู้'], ['char', '🌟', 'นิสัยและบุคลิก'],
-  ['actions', '🏃', 'คำกริยาทั่วไป'], ['describe', '🎨', 'คำบรรยายลักษณะ'],
+  ['move', '🤸', 'การเคลื่อนไหวและการสัมผัส'], ['make', '🛠️', 'การสร้าง เปลี่ยนแปลง ทำลาย'], ['act', '🏃', 'การกระทำและกระบวนการ'],
+  ['look', '👀', 'ลักษณะภายนอก สี เสียง'], ['value', '⭐', 'คุณภาพ คุณค่า ความสำคัญ'], ['degree', '📊', 'ระดับ ความแน่นอน คำขยาย'],
   ['grammar', '🔗', 'คำไวยากรณ์ (the, of, and…)'],
 ];
-// 1.57: five big topics were split (work, study, media, society, feelings). Old id -> new ids.
-const TOPIC_SPLIT = { work: ['job', 'money'], study: ['edu', 'sci', 'tech'], media: ['comm', 'arts', 'sport'], society: ['gov', 'law', 'social'], feelings: ['emo', 'mind', 'char'] };
-// Moves a retired topic id in saved data to its new topics: the new-word filter falls back to "all", the word-of-the-day
-// topics become all the new ones, and earned stickers carry over to every new topic. Safe to run again on any data.
+const TOPIC_GROUPS = [
+  ['body', '💪', 'ร่างกายและสุขภาพ', ['anatomy', 'health']], ['nature', '🌿', 'ธรรมชาติ สัตว์ อากาศ', ['animal', 'plant', 'weather']],
+  ['travel', '✈️', 'สถานที่และการเดินทาง', ['places', 'transport']], ['work', '💼', 'งาน เงิน การซื้อขาย', ['job', 'money']],
+  ['study', '🔬', 'การศึกษา วิทยาศาสตร์ เทคโนโลยี', ['edu', 'sci', 'tech']], ['media', '🎬', 'สื่อสาร ศิลปะ กีฬา', ['comm', 'arts', 'sport']],
+  ['society', '🏛️', 'สังคม การเมือง กฎหมาย', ['gov', 'law', 'social']], ['time', '⏰', 'เวลา ตัวเลข ปริมาณ', ['clock', 'num', 'qty']],
+  ['feelings', '💭', 'อารมณ์ ความคิด นิสัย', ['emo', 'mind', 'char']], ['actions', '🏃', 'คำกริยาทั่วไป', ['move', 'make', 'act']],
+  ['describe', '🎨', 'คำบรรยายลักษณะ', ['look', 'value', 'degree']],
+];
+const TOPIC_PARENT = {};
+TOPIC_GROUPS.forEach(([g, , , kids]) => kids.forEach((k) => { TOPIC_PARENT[k] = g; }));
+// A saved/selected topic (a topic or a whole group) matches a word's topic id.
+const topicMatch = (sel, tp) => sel === tp || TOPIC_PARENT[tp] === sel;
+// <option>s for a topic <select>: ungrouped topics as they are, big groups as an <optgroup> with a "whole group" row first.
+// count(sel) adds the number of words in brackets.
+function topicOptions(sel, count) {
+  const n = (id) => (count ? ` (${count(id)})` : '');
+  const opt = (id, label) => `<option value="${id}" ${sel === id ? 'selected' : ''}>${label}${n(id)}</option>`;
+  const seen = new Set(), out = [];
+  TOPICS.forEach(([id]) => {
+    const g = TOPIC_PARENT[id];
+    if (!g) { out.push(opt(id, TOPIC_LABEL[id])); return; }
+    if (seen.has(g)) return;
+    seen.add(g);
+    const [, ic, th, kids] = TOPIC_GROUPS.find((x) => x[0] === g);
+    out.push(`<optgroup label="${ic} ${th}">${opt(g, `${ic} ทั้งหมวด ${th}`)}${kids.map((k) => opt(k, `\u00a0\u00a0${TOPIC_LABEL[k]}`)).join('')}</optgroup>`);
+  });
+  return out.join('');
+}
+// Topics that were split in 1.57 / 1.58 (old id -> new ids): stickers already earned carry over to every new topic.
+const TOPIC_SPLIT = Object.fromEntries(TOPIC_GROUPS.map(([g, , , kids]) => [g, kids]));
+// Moves stickers earned on a retired topic id to its new topics (the group ids are not topics any more). Safe to run again.
 function topicMigrate(r) {
-  const st = r.settings || {};
-  if (TOPIC_SPLIT[st.topic]) st.topic = '';
-  if (st.wotd && Array.isArray(st.wotd.tp)) st.wotd.tp = [...new Set(st.wotd.tp.flatMap((t) => TOPIC_SPLIT[t] || [t]))];
   for (const [old, ids] of Object.entries(TOPIC_SPLIT)) {
     if (!r.stk || !(old in r.stk)) continue;
     ids.forEach((id) => { r.stk[id] = Math.max(r.stk[id] || 0, r.stk[old] || 0); });
@@ -51,7 +79,7 @@ function topicMigrate(r) {
   }
   return r;
 }
-const TOPIC_LABEL = Object.fromEntries(TOPICS.map(([id, ic, th]) => [id, `${ic} ${th}`]));
+const TOPIC_LABEL = Object.fromEntries([...TOPICS, ...TOPIC_GROUPS].map(([id, ic, th]) => [id, `${ic} ${th}`]));
 const W = window.WORDS.slice().sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
   .map(([w, p, l, i, t, e, et, tp, ...more], idx) => ({ idx, w, p, l, i, t, e, et, g: more.includes(5) ? (l === 'B2' ? 'B2x' : 'C1') : l, tp: tp || '', xe: more.find(Array.isArray) || [] }));
 // Goal tags (data/tags.js): hand-picked words for travel, work, exams …; a word may have several.
@@ -62,7 +90,7 @@ TAGS.forEach((t) => t.w.forEach((x) => { if (!TAGS_OF.has(x)) TAGS_OF.set(x, [])
 const tagsOf = (w) => TAGS_OF.get(w.w) || [];
 const hasTag = (w, id) => tagsOf(w).includes(id);
 // New words follow the chosen topic (settings.topic) and goal tag (settings.goal); empty = any.
-const inTopic = (w) => (!S.settings.topic || w.tp === S.settings.topic) && (!S.settings.goal || hasTag(w, S.settings.goal));
+const inTopic = (w) => (!S.settings.topic || topicMatch(S.settings.topic, w.tp)) && (!S.settings.goal || hasTag(w, S.settings.goal));
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1'];
 const LEVELS_3000 = ['A1', 'A2', 'B1', 'B2'];
 const LEVELS_5000 = ['B2x', 'C1'];

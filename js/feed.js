@@ -9,7 +9,7 @@
 // Extras: a special card every FEED_SP_EVERY cards (word family / collocation / confusable pair /
 // story sentence; no SRS), a "boss" leech word that needs BOSS_HP right answers, timed cards, combo
 // milestones with a x2-XP fever from combo FEVER_AT, and a summary card after every FEED_SUM_EVERY cards.
-const FEED_HUE = { people: 340, body: 0, food: 25, home: 35, clothes: 290, nature: 120, travel: 200, job: 45, money: 55, edu: 230, sci: 215, tech: 245, comm: 270, arts: 285, sport: 95, gov: 210, law: 190, social: 170, time: 180, emo: 320, mind: 300, char: 335, actions: 150, describe: 260, grammar: 220 };
+const FEED_HUE = { people: 340, anatomy: 0, health: 355, food: 25, home: 35, clothes: 290, animal: 100, plant: 130, weather: 165, places: 200, transport: 185, job: 45, money: 55, edu: 230, sci: 215, tech: 245, comm: 270, arts: 285, sport: 95, gov: 210, law: 190, social: 170, clock: 180, num: 195, qty: 150, emo: 320, mind: 300, char: 335, move: 150, make: 20, act: 120, look: 260, value: 50, degree: 240, grammar: 220 };
 const FEED_LOOK = { fam: ['🧬', 160], colloc: ['🤝', 190], conf: ['⚖️', 30], story: ['📖', 250], sum: ['🏆', 48], boss: ['👾', 0] };
 const TOPIC_ICON = Object.fromEntries(TOPICS.map(([id, ic]) => [id, ic]));
 const FEED_SPECIALS = ['fam', 'colloc', 'conf', 'story'];

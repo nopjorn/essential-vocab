@@ -255,7 +255,7 @@ test('every word row uses a topic id from TOPICS (and no retired id)', () => {
   const src = read('app.js');
   const block = src.slice(src.indexOf('const TOPICS = ['), src.indexOf('];', src.indexOf('const TOPICS = [')));
   const topics = [...block.matchAll(/\['(\w+)', '[^']+', '[^']+'\]/g)].map((m) => m[1]);
-  expect(topics.length).toBe(25);
+  expect(topics.length).toBe(35);
   const w = load(...WORD_FILES).WORDS;
   const bad = w.filter((r) => !topics.includes(r[7])).map((r) => `${r[0]}:${r[7]}`);
   expect(bad).toEqual([]);

@@ -133,7 +133,7 @@ function renderGames() {
       </div>
       ${gameSource === 'deck' ? `<div class="chips" id="gDecks" style="margin-top:10px">${decks.map((d) => `<button class="chip ${gameDecks.includes(d.id) ? 'on' : ''}" data-d="${d.id}" aria-pressed="${gameDecks.includes(d.id)}">${esc(d.icon)} ${esc(d.name || 'ชุดไม่มีชื่อ')} · ${deckWords(d).length}</button>`).join('')}</div>
         <div class="small muted" style="margin-top:8px">${gameDecks.length === 1 ? 'เล่นชุดเดียว: ผลของเกมอัปเดตความคืบหน้าของชุดนั้น (สถิติหลักไม่เปลี่ยน)' : '🏋️ โหมดซ้อม (เลือกหลายชุด): ไม่นับความคืบหน้าของชุด แต่ยังได้ XP และสตรีค'}</div>` : ''}
-      ${gameSource === 'topic' ? `<select class="sel block-sel" id="gTopic" style="margin-top:10px">${TOPICS.map(([id]) => `<option value="${id}" ${gameTopic === id ? 'selected' : ''}>${TOPIC_LABEL[id]} (${W.filter((w) => w.tp === id).length})</option>`).join('')}</select>` : ''}
+      ${gameSource === 'topic' ? `<select class="sel block-sel" id="gTopic" style="margin-top:10px">${topicOptions(gameTopic, (id) => W.filter((w) => topicMatch(id, w.tp)).length)}</select>` : ''}
       ${gameSource === 'goal' ? `<select class="sel block-sel" id="gGoal" style="margin-top:10px" aria-label="เป้าหมาย">${TAGS.map((t) => `<option value="${t.id}" ${gameGoal === t.id ? 'selected' : ''}>${TAG_LABEL[t.id]} (${t.w.length})</option>`).join('')}</select>` : ''}
       ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
     </div>
@@ -266,7 +266,7 @@ function gamePool(id) {
     : gameSource === 'star' ? W.filter(isStar)
     : gameSource === 'leech' ? W.filter(isLeech)
     : gameSource === 'custom' ? customWords
-    : gameSource === 'topic' ? W.filter((w) => w.tp === gameTopic)
+    : gameSource === 'topic' ? W.filter((w) => topicMatch(gameTopic, w.tp))
     : gameSource === 'goal' ? W.filter((w) => hasTag(w, gameGoal))
     : gameSource === 'deck' ? [...new Map(gameDecks.map(deckById).filter(Boolean).flatMap((d) => deckWords(d)).map((w) => [w.idx, w])).values()]
     : gameSource === 'all' ? W : pool();

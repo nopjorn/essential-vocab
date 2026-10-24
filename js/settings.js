@@ -18,7 +18,7 @@ function renderSettings() {
       <div class="chips grid" id="lvls5">${LEVELS_5000.map(lvChip).join('')}</div>
       <p class="small muted">A1–A2 = พื้นฐาน, B1–B2 = ระดับกลาง, B2+ และ C1 = ระดับสูง (เลือกได้หลายระดับ)</p>
       <div class="set-row stack" style="border-top:1px solid var(--border);padding-top:12px"><span>คำใหม่จากหมวด</span>
-        <select class="sel" id="topic"><option value="">📚 ทุกหมวด</option>${TOPICS.map(([id]) => `<option value="${id}" ${st.topic === id ? 'selected' : ''}>${TOPIC_LABEL[id]}</option>`).join('')}</select></div>
+        <select class="sel" id="topic"><option value="">📚 ทุกหมวด</option>${topicOptions(st.topic)}</select></div>
       <div class="set-row stack"><span>คำใหม่ตามเป้าหมาย</span>
         <select class="sel" id="goal"><option value="">🎯 ทุกเป้าหมาย</option>${TAGS.map((t) => `<option value="${t.id}" ${st.goal === t.id ? 'selected' : ''}>${TAG_LABEL[t.id]}</option>`).join('')}</select></div>
       <p class="small muted" style="margin-bottom:0">เลือกหมวดหรือเป้าหมายแล้ว คำใหม่ในแฟลชการ์ดและไถศัพท์จะมาจากหมวด/เป้าหมายนั้น (เลือกทั้งสองอย่าง = ต้องตรงทั้งคู่) ส่วนคำที่ถึงวันทบทวนยังมาตามปกติ <span id="goalCnt"></span></p>
