@@ -1247,3 +1247,10 @@ html.no-ans .streak.bump { animation: none; }
 .year-nav { width: 100%; margin-top: 8px; }
 .year-slide .yl { display: inline-block; max-width: 100%; }
 .mt-star { font-size: 44px; line-height: 1.2; text-align: center; }
+
+/* challenge a friend (duel) */
+.duel-vs { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 10px 0 6px; }
+.duel-vs > div { display: flex; flex-direction: column; align-items: center; min-width: 96px; }
+.duel-vs b { font-size: 34px; line-height: 1.2; }
+.duel-vs small, .duel-vs span { color: var(--muted); font-size: var(--fs-sm); }
+.duel-vs .vs { font-weight: 800; color: var(--muted); min-width: 0; }

@@ -141,6 +141,7 @@ function renderGames() {
     </div>
     ${gameEdit ? '' : gameSections()}
     <button class="card-box guide-link" id="toRiddle"><span>🔤</span><div class="grow"><b>ปริศนาศัพท์ประจำวัน</b><div class="small muted">ทายคำ 5 ตัวอักษรใน 6 ครั้ง · คำใหม่ทุกวัน${riddleToday().over ? ' · ทำแล้ววันนี้ ✅' : ''}</div></div><span class="muted">›</span></button>
+    <button class="card-box guide-link" id="toDuel"><span>⚔️</span><div class="grow"><b>ท้าดวลเพื่อน</b><div class="small muted">ข้อสอบ ${DUEL_N} ข้อจากรหัสสั้นๆ ส่งรหัสให้เพื่อนเล่นชุดเดียวกันแล้วเทียบคะแนน</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="toRead"><span>📖</span><div class="grow"><b>อ่านเรื่องสั้น</b><div class="small muted">${STORY_COUNT} เรื่อง · อ่านแล้ว ${Object.keys(S.read).length} · แตะคำเพื่อดูความหมาย</div></div><span class="muted">›</span></button>
     <div class="card-box ref-box"><div class="small muted"><b>📚 คลังความรู้</b> อ่านแล้วกดเล่นเกมของแต่ละหัวข้อได้</div>
       <div class="ref-grid">
@@ -159,6 +160,7 @@ function renderGames() {
   if (gameEdit) bindGameEditor();
   $('#toRead').onclick = () => go('read');
   $('#toRiddle').onclick = () => go('riddle');
+  $('#toDuel').onclick = () => go('duel');
   $('#toId').onclick = () => renderIdioms();
   $('#toSit').onclick = () => renderSit();
   $('#toPairs').onclick = () => renderPairs();

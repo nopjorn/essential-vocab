@@ -80,3 +80,62 @@ test('time attack: 60 s countdown ends the round, score = right answers, record 
   await expect(view.locator('#tLeft')).toHaveText('60');
   expect(errors).toEqual([]);
 });
+
+test('challenge a friend (1.79): same code = same 10 questions on any device, parse pasted result, compare, share, saved', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  // codes: parse a pasted message, ignore junk
+  const parsed = await page.evaluate(() => [
+    duelParse('ท้าดวล! รหัส 2k7q2 · ฉันได้ 8/10 ใน 45 วินาที\n2K7Q2·8/10·45s https://x'),
+    duelParse('1abcd'), duelParse('hello world'), duelParse('9K7Q2'), duelParse('2K7Q'),
+  ]);
+  expect(parsed[0]).toEqual({ code: '2K7Q2', friend: { r: 8, n: 10, t: 45 } });
+  expect(parsed[1]).toEqual({ code: '1ABCD', friend: null });
+  expect(parsed.slice(2)).toEqual([null, null, null]);
+  // determinism: the same code always makes the same questions, another code makes others; options are real, distinct and include the answer
+  const info = await page.evaluate(() => {
+    const sig = (c) => JSON.stringify(duelQuestions(c).map((q) => [q.w.w, q.kind, q.opts.map((o) => o.w)]));
+    const a = duelQuestions('2K7Q2');
+    return {
+      same: sig('2K7Q2') === sig('2K7Q2'), other: sig('2K7Q2') !== sig('2K7Q3'),
+      n: a.length, uniq: new Set(a.map((q) => q.w.w)).size,
+      okOpts: a.every((q) => q.opts.length === 4 && new Set(q.opts.map((o) => o.w)).size === 4 && new Set(q.opts.map((o) => thFirst(o.t))).size === 4 && q.opts.includes(q.w)),
+      pool: a.every((q) => ['B1', 'B2'].includes(q.w.g)),
+      newCode: /^[1-4][2-9A-HJKMN-Z]{4}$/.test(duelNewCode(2)),
+    };
+  });
+  expect(info).toEqual({ same: true, other: true, n: 10, uniq: 10, okOpts: true, pool: true, newCode: true });
+  // play the friend's set: the first answer is right, the rest wrong; result compares with the friend's
+  await page.evaluate(() => go('games'));
+  await page.locator('#toDuel').click();
+  await page.locator('#duCode').fill('2K7Q2·1/10·30s');
+  await page.locator('#duForm button[type=submit]').click();
+  const view = page.locator('#view');
+  for (let n = 0; n < 10; n++) {
+    await expect(view.locator('.opt').first()).toBeVisible();
+    const correct = await page.evaluate((n) => duelQuestions('2K7Q2')[n].w.idx, n);
+    const sel = n === 0 ? `.opt[data-i="${correct}"]` : `.opt:not([data-i="${correct}"])`;
+    await view.locator(sel).first().click();
+    await view.locator('#nextQ').click();
+  }
+  await expect(view.locator('.result-emoji')).toBeVisible();
+  await expect(view.locator('.duel-vs')).toContainText('1/10');
+  await expect(view.locator('.h2').first()).toContainText(/ชนะ|เสมอ/);
+  await expect(view.locator('.wrong-list .wl')).toHaveCount(9);
+  const st = await readState(page);
+  expect(st.duel['2K7Q2'].slice(0, 2)).toEqual([1, 10]);
+  // share text carries the code and the result
+  await page.evaluate(() => { window.__shared = null; navigator.share = async (d) => { window.__shared = d.text; }; });
+  await view.locator('#duShare').click();
+  await expect.poll(() => page.evaluate(() => window.__shared)).toMatch(/2K7Q2·1\/10·\d+s/);
+  // menu lists the played code and can replay it
+  await view.locator('#duMenu').click();
+  await expect(view.locator('[data-code="2K7Q2"]')).toBeVisible();
+  await view.locator('[data-code="2K7Q2"] [data-again]').click();
+  await expect(view.locator('.opt').first()).toBeVisible();
+  await view.locator('#quit').click();
+  // a new code from the pool chips
+  await view.locator('#duPool [data-p="3"]').click();
+  await view.locator('#duNew').click();
+  await expect(view.locator('.session-top')).toContainText(/3[2-9A-HJKMN-Z]{4}/);
+  expect(errors).toEqual([]);
+});
