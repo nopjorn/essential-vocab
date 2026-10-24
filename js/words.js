@@ -106,7 +106,7 @@ function openSheet(w, onChange, opt = {}) {
       <div class="grab"></div>
       <div class="sheet-body">
       <div class="row" style="justify-content:space-between">${lvBadge(w.g)}<a class="oxl" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(w.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener" aria-label="ดูใน Oxford Learner's Dictionaries">📖 Oxford ↗</a><span class="st-pill ${st}">${stLabel}</span></div>
-      <div class="sheet-word" lang="en">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>
+      <div class="sheet-word" lang="en">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button><span class="sheet-emoji" id="emBox" aria-hidden="true">${emojiOf(w)}</span></div>
       <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span>${w.tp ? ` · ${TOPIC_LABEL[w.tp]}` : ''}</div>
       ${tagsOf(w).length ? `<div class="small muted sheet-tags">${tagsOf(w).map((id) => `<span class="tag-pill">${TAG_LABEL[id]}</span>`).join('')}</div>` : ''}
       <div class="th" style="font-size:22px;margin:10px 0">${esc(w.t)}</div>
@@ -119,6 +119,7 @@ function openSheet(w, onChange, opt = {}) {
     </div>`;
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('open'));
+  if (!EMOJI) loadEmoji().then(() => { const b = el.querySelector('#emBox'); if (b) b.textContent = emojiOf(w); }).catch(() => {});
   loadColloc().then((c) => {
     const box = el.querySelector('#colBox'), list = c[w.w];
     if (box && list) box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🔗 คำที่มักใช้คู่กัน</b> (แตะเพื่อฟัง)</div>

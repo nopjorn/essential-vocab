@@ -93,6 +93,8 @@ function renderSettings() {
         <label class="switch"><input type="checkbox" id="confetti" aria-label="พลุฉลอง" ${st.confetti !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🌈 สีตามหมวดบนการ์ด<br><span class="small muted">แฟลชการ์ดและหน้าคำมีสีอ่อนตามหมวด ช่วยจำด้วยสี</span></span>
         <label class="switch"><input type="checkbox" id="topicTint" aria-label="สีตามหมวดบนการ์ด" ${st.topicTint !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>🖼️ ภาพอีโมจิบนการ์ด<br><span class="small muted">คำที่เป็นรูปธรรม (🍎 🌧️ 🚲 …) โชว์ภาพที่ด้านหลังการ์ด การ์ดไถศัพท์ และหน้าคำ ช่วยจำด้วยภาพ</span></span>
+        <label class="switch"><input type="checkbox" id="cardEmoji" aria-label="ภาพอีโมจิบนการ์ด" ${st.cardEmoji !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>📳 สั่นตอบรับ<br><span class="small muted">สั่นเบาๆ ตอนตอบถูก/ผิด (iPhone ต้อง iOS 18 ขึ้นไป · Android สั่นได้เลย)</span></span>
         <label class="switch"><input type="checkbox" id="haptic" aria-label="สั่นตอบรับ" ${st.haptic !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🎯 แสดงการ์ดภารกิจต่อ แม้ทำครบแล้ว</span>
@@ -229,7 +231,7 @@ function renderSettings() {
       const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); x.firstElementChild.textContent = on ? '✓' : '';
     });
   };
-  ['animPage', 'animAnswer', 'confetti', 'topicTint'].forEach((k) => { $('#' + k).onchange = (e) => { st[k] = e.target.checked; save(); applyAnim(); }; });
+  ['animPage', 'animAnswer', 'confetti', 'topicTint', 'cardEmoji'].forEach((k) => { $('#' + k).onchange = (e) => { st[k] = e.target.checked; save(); applyAnim(); }; });
   $('#homeSetBtn').onclick = () => go('homeset');
   $('#remind').onchange = (e) => {
     S.remind = e.target.value; save(); $('#remindAdd').href = `reminders/${S.remind}.ics`;

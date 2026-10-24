@@ -31,6 +31,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadSW) showUpdate(); });
 }
 setTimeout(whatsNew, 600);
+setTimeout(() => loadEmoji().catch(() => {}), 900); // so the picture is ready on the first flashcard / word sheet
 if (syncOn() && auth) syncNow().then((ok) => { if (ok && current === 'home') renderHome(); });
 document.addEventListener('visibilitychange', () => {
   if (!syncOn() || !auth) return;

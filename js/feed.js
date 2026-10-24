@@ -209,7 +209,7 @@ function renderFeed() {
         later.push({ at: k + 3, w });
         c = { w, type: 'learn', done: true, body: `<div class="f-tag">✨ คำใหม่</div>
           <div class="f-word" lang="en">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
-          <div class="f-th">${esc(w.t)}</div>${S.note[w.w] ? noteBox(w) : ''}${exampleBox(w)}
+          <div class="f-th">${esc(w.t)}</div>${emojiBox(w)}${S.note[w.w] ? noteBox(w) : ''}${exampleBox(w)}
           <div class="small muted" style="margin-top:14px">จำไว้นะ อีกเดี๋ยวจะมีคำถามคำนี้ 😉</div>` };
       } else c = { w, ...wordQuiz(w, k, false) };
     }

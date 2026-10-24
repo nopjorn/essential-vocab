@@ -99,6 +99,9 @@ function lexisBoxes(el, w) {
 // data/emoji.js: window.EMOJI = { headword: emoji } for concrete words (picture-guess game, emoji shown on the word sheet).
 let EMOJI = null;
 const loadEmoji = () => loadData('data/emoji.js', 'EMOJI').then((m) => { EMOJI = Array.isArray(m) ? {} : m; return EMOJI; });
+// The word's picture on the back of flashcards, the learn card in the feed and the word sheet (settings.cardEmoji, on by default); '' when there is none or it isn't loaded yet.
+const emojiOf = (w) => (S.settings.cardEmoji !== false && EMOJI && EMOJI[w.w]) || '';
+const emojiBox = (w) => (emojiOf(w) ? `<div class="card-emoji" role="img" aria-label="ภาพอีโมจิของคำนี้">${emojiOf(w)}</div>` : '');
 
 /* ---------- idioms ---------- */
 // data/idioms.js rows: [idiom, level, thai, example with the idiom as used in [brackets], thai example, meaning group?]

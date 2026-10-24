@@ -437,3 +437,36 @@ test('word search (1.85): tap-tap, drag, reverse, wrong line, hint, finish and g
   await expect(view.locator('#wsGo')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('emoji on cards and the word sheet (1.87): back of the flashcard, feed learn card, sheet, setting turns it off', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1'], order: 'alpha' } });
+  await page.evaluate(() => loadEmoji());
+  const w0 = await page.evaluate(() => W.find((w) => w.g === 'A1').w);
+  expect(await page.evaluate(() => emojiOf({ w: 'apple' }))).not.toBe('');
+  expect(await page.evaluate(() => emojiOf({ w: 'about' }))).toBe('');
+  // flashcard: the picture is on the back only
+  await page.evaluate((w0) => { EMOJI[w0] = '🧪'; go('cards'); }, w0);
+  const view = page.locator('#view');
+  await expect(view.locator('.face.front .word')).toHaveText(w0);
+  await expect(view.locator('.face.front .card-emoji')).toHaveCount(0);
+  await expect(view.locator('.face.back .card-emoji')).toHaveText('🧪');
+  // word sheet: the picture sits next to the word (added once the data is loaded)
+  await page.evaluate(() => openSheet(W.find((w) => w.w === 'apple')));
+  await expect(page.locator('.sheet-emoji')).toHaveText(await page.evaluate(() => EMOJI.apple));
+  await page.evaluate(() => document.querySelector('.sheet-wrap').remove());
+  await page.evaluate(() => openSheet(W.find((w) => w.w === 'about')));
+  await expect(page.locator('.sheet-emoji')).toHaveText('');
+  await page.evaluate(() => document.querySelector('.sheet-wrap').remove());
+  // feed learn card
+  await page.evaluate((w0) => { S.settings.start = 'feed'; renderFeed(); }, w0);
+  await expect(page.locator('.f-tag', { hasText: 'คำใหม่' }).first()).toBeVisible();
+  // the setting
+  await page.evaluate(() => go('settings'));
+  await page.locator('details[data-g="look"] > summary').click();
+  await page.locator('label.switch:has(#cardEmoji)').click();
+  expect((await readState(page)).settings.cardEmoji).toBe(false);
+  expect(await page.evaluate(() => emojiOf({ w: 'apple' }))).toBe('');
+  await page.evaluate((w0) => { go('cards'); }, w0);
+  await expect(view.locator('.face.back .card-emoji')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

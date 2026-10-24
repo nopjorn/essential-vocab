@@ -1308,3 +1308,8 @@ html.no-ans .streak.bump { animation: none; }
 .ws-en { font-weight: 700; letter-spacing: 2px; }
 @media (min-width: 700px) and (orientation: landscape) { .ws-wrap { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; } }
 @media (max-height: 520px) and (orientation: landscape) { .ws-wrap { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } .ws-grid { max-width: 360px; } }
+
+/* emoji picture of a word (flashcard back, feed learn card, word sheet) */
+.card-emoji { font-size: 46px; line-height: 1.1; margin: 10px 0 2px; text-align: center; }
+.sheet-emoji { margin-left: 6px; }
+@media (max-height: 520px) { .fc .card-emoji { position: absolute; left: 16px; top: 44px; margin: 0; font-size: 30px; } .fcard .card-emoji { font-size: 32px; margin: 2px 0 0; } }

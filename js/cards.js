@@ -175,7 +175,7 @@ function renderCards(extra) {
       <button class="speak" data-say aria-label="ฟังเสียง">🔊</button>`;
     const thFace = `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
       <div class="th">${esc(card.t)}</div>`;
-    const backExtra = noteBox(card) + exampleBox(card) + `<a class="oxl" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(card.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">📖 ดูใน Oxford ↗</a>`;
+    const backExtra = emojiBox(card) + noteBox(card) + exampleBox(card) + `<a class="oxl" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(card.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">📖 ดูใน Oxford ↗</a>`;
     $('#stage').innerHTML = `
       <div class="fc${tintStyle(card) ? ' tint' : ''}${S.settings.frame === 'gold' && itemOpen('frame:gold') ? ' gold' : ''}" id="fc"${tintStyle(card)}>
         <div class="swipe-tag l">ลืม</div><div class="swipe-tag r">จำได้</div>
