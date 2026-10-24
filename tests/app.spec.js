@@ -276,6 +276,7 @@ test('home layout: hide, reorder and resize blocks from settings', async ({ page
   await expect(page.locator('#hcfg')).toBeVisible();
   await page.locator('.hc-row[data-id="wotd"] [data-act="tog"]').evaluate((el) => el.click());
   await page.locator('.hc-row[data-id="riddle"] [data-act="tog"]').evaluate((el) => el.click());
+  await page.locator('.hc-row[data-id="mascot"] [data-act="tog"]').evaluate((el) => el.click()); // 1.76.3: the mascot sits right before level, so hide it to let quest + level share a row
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click();
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click();
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click(); // hidden blocks still take a slot
