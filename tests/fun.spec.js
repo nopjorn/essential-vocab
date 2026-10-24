@@ -241,3 +241,105 @@ test('automatic difficulty (1.82): level from rolling accuracy, look-alike optio
   expect(await view.locator('.q-timer').count()).toBe(0);
   expect(errors).toEqual([]);
 });
+
+test('level map (1.83): stages cover every topic word once, easy first; stars thresholds; unlocking; replay keeps best stars; backup merge', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const info = await page.evaluate(() => {
+    let covered = 0, okSizes = true, okOrder = true, total = 0;
+    for (const [id] of TOPICS) {
+      const st = topicStages(id), words = W.filter((w) => w.tp === id);
+      total += words.length; covered += st.flat().length;
+      if (new Set(st.flat()).size !== words.length) okSizes = false;
+      if (st.length && !st.every((s, k) => s.length >= (k === st.length - 1 && st.length > 1 ? 4 : Math.min(8, words.length)) && s.length <= 11)) okSizes = false;
+      const lv = st.flat().map((w) => LEVELS.indexOf(w.g));
+      if (lv.some((x, k) => k && x < lv[k - 1])) okOrder = false;
+    }
+    return { covered, total, okSizes, okOrder, stars: [8, 7, 6, 5, 4].map((r) => starsFor(r, 8)), n11: [11, 10, 8, 7, 6].map((r) => starsFor(r, 11)) };
+  });
+  expect(info.covered).toBe(info.total); expect(info.okSizes).toBe(true); expect(info.okOrder).toBe(true);
+  expect(info.stars).toEqual([3, 2, 1, 1, 0]); expect(info.n11).toEqual([3, 2, 1, 1, 0]);
+  // backup merge keeps the better star of every stage and the longer path
+  const merged = await page.evaluate(() => { S.lvmap = { animal: '12' }; mergeBackup({ lvmap: { animal: '3', food: '21x' } }); return S.lvmap; });
+  expect(merged).toEqual({ animal: '32', food: '21' });
+  await page.evaluate(() => { S.lvmap = {}; Math.random = () => 0; go('map'); }); // random 0: en2th / th2en only, same option order
+  const view = page.locator('#view');
+  await expect(view.locator('.map-topic')).toHaveCount(await page.evaluate(() => TOPICS.length));
+  await view.locator('.map-topic[data-t="animal"]').click();
+  const stages = await page.evaluate(() => topicStages('animal').length);
+  await expect(view.locator('.map-node')).toHaveCount(stages);
+  await expect(view.locator('.map-node.lock')).toHaveCount(stages - 1);
+  await expect(view.locator('.map-node.sel')).toHaveClass(/cur/);
+  await view.locator('.map-node button[data-k="1"]').click();
+  await expect(view.locator('#mpSel')).toContainText('🔒');
+  expect(await view.locator('#mpGo').count()).toBe(0);
+  await view.locator('.map-node button[data-k="0"]').click();
+  await expect(view.locator('#mpSel .map-words span')).toHaveCount(await page.evaluate(() => topicStages('animal')[0].length));
+  const play = async (right) => {
+    const n = await page.evaluate(() => document.querySelectorAll('.progress').length && 0);
+    for (let q = 0; q < 8; q++) {
+      await expect(view.locator('.opt').first()).toBeVisible();
+      const rightIdx = await page.evaluate(() => {
+        const pos = document.querySelector('.q-prompt .pos').textContent, word = document.querySelector('.q-prompt .word'), th = document.querySelector('.q-prompt .th');
+        return (word ? W.find((x) => x.w === word.textContent && x.p === pos) : W.find((x) => x.t === th.textContent && x.p === pos)).idx;
+      });
+      const opt = right ? view.locator(`.opt[data-i="${rightIdx}"]`) : view.locator(`.opt:not([data-i="${rightIdx}"])`).first();
+      await opt.click();
+      if (await view.locator('#nextQ').count()) await view.locator('#nextQ').click().catch(() => {});
+      await expect.poll(async () => (await view.locator('.result-emoji').count()) || (await view.locator('#nextQ').count()) === 0).toBeTruthy();
+    }
+  };
+  await view.locator('#mpGo').click();
+  await expect(page.locator('#title')).toContainText('ด่าน 1');
+  await play(true);
+  await expect(view.locator('.result-emoji')).toBeVisible();
+  await expect(view.locator('.h2')).toContainText('★★★');
+  await expect(view.locator('#stNext')).toBeVisible();
+  expect((await readState(page)).lvmap.animal).toBe('3');
+  // next stage opens; ✕ goes back to the path of this topic
+  await view.locator('#stNext').click();
+  await expect(page.locator('#title')).toContainText('ด่าน 2');
+  await view.locator('#quit').click();
+  await expect(view.locator('.map-path')).toBeVisible();
+  await expect(view.locator('.map-node.sel')).toHaveClass(/cur/); // points at stage 2 now
+  expect(await view.locator('.map-node.lock').count()).toBe(stages - 2);
+  // replaying stage 1 badly: not passed, but the 3 stars stay
+  await view.locator('.map-node button[data-k="0"]').click();
+  await view.locator('#mpGo').click();
+  await play(false);
+  await expect(view.locator('.h2')).toContainText('☆☆☆');
+  await expect(view.locator('#reveal, .card-box').first()).toContainText('ยังไม่ผ่าน');
+  expect((await readState(page)).lvmap.animal).toBe('3');
+  await view.locator('#back').click();
+  await expect(view.locator('.map-path')).toBeVisible();
+  // map list shows progress; the games menu card too
+  await page.locator('#topBack').click(); // the in-page back button is mirrored in the top bar
+  await expect(view.locator('.map-topic[data-t="animal"]')).toContainText('★ 3/');
+  await page.evaluate(() => go('games'));
+  await expect(page.locator('#toMap')).toContainText('ผ่าน 1/');
+  expect(errors).toEqual([]);
+});
+
+test('level map (1.83): stages mix every question type and reach the stars screen', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => { Math.random = () => 0.5; startStage('food', 0); });
+  const view = page.locator('#view'), seen = new Set();
+  for (let q = 0; q < 12 && !(await view.locator('.result-emoji').count()); q++) {
+    await expect(view.locator('.opt, #oPool, .result-emoji').first()).toBeVisible();
+    if (await view.locator('.result-emoji').count()) break;
+    seen.add((await view.locator('#oPool').count()) ? 'anagram' : (await view.locator('.cloze').count()) ? 'cloze' : (await view.locator('.speak').count()) ? 'listen' : 'mc');
+    if (await view.locator('#oPool').count()) await view.locator('#oGive').click();
+    else await view.locator('.opt').first().click();
+    if (await view.locator('#nextQ').count()) await view.locator('#nextQ').click().catch(() => {});
+  }
+  await expect(view.locator('.result-emoji')).toBeVisible();
+  expect(seen.size).toBeGreaterThan(1);
+  expect(errors).toEqual([]);
+});
+
+test('guide (1.84): the duel and level map sections sit in the practice group', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => go('guide'));
+  const grp = await page.evaluate(() => ['ท้าดวลเพื่อน', 'แผนที่ด่าน'].map((t) => GUIDE_GROUPS[guideGroupOf(t)][1]));
+  expect(grp).toEqual(['เรียนและฝึก', 'เรียนและฝึก']);
+  expect(errors).toEqual([]);
+});

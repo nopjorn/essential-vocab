@@ -56,6 +56,8 @@ const GAMES = {
   timeAttack: { icon: '⏱️', name: 'จับเวลา 60 วินาที', desc: 'ตอบให้ได้มากที่สุดใน 1 นาที เล่นซ้ำทำสถิติใหม่' },
   review: { icon: '🔁', name: 'คำที่ผิดบ่อย', desc: 'ฝึกคำที่เคยตอบผิด' },
 };
+// The level-map stage round (js/map.js) is a game too but not a menu tile: non-enumerable, so every GAMES listing skips it.
+Object.defineProperty(GAMES, 'stage', { value: { icon: '🗺️', name: 'แผนที่ด่าน', desc: '' }, enumerable: false });
 // Games whose data is lazy-loaded (stories / collocations) or built from sentences instead of the word pool.
 const STORY_GAMES = ['sCloze', 'sOrder'];
 // Games built from data/pairs.js (confusable words, minimal pairs): not tied to the word list or its schedule.
@@ -153,6 +155,7 @@ function renderGames() {
     </div>
     ${gameEdit ? '' : gameSections()}
     <button class="card-box guide-link" id="toRiddle"><span>🔤</span><div class="grow"><b>ปริศนาศัพท์ประจำวัน</b><div class="small muted">ทายคำ 5 ตัวอักษรใน 6 ครั้ง · คำใหม่ทุกวัน${riddleToday().over ? ' · ทำแล้ววันนี้ ✅' : ''}</div></div><span class="muted">›</span></button>
+    <button class="card-box guide-link" id="toMap"><span>🗺️</span><div class="grow"><b>แผนที่ด่าน</b><div class="small muted">เดินทางผ่านด่านของแต่ละหมวด ด่านละ 8 ข้อ ได้ ★ 1–3 · ผ่าน ${stageTotals()} ด่าน</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="toDuel"><span>⚔️</span><div class="grow"><b>ท้าดวลเพื่อน</b><div class="small muted">ข้อสอบ ${DUEL_N} ข้อจากรหัสสั้นๆ ส่งรหัสให้เพื่อนเล่นชุดเดียวกันแล้วเทียบคะแนน</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="toRead"><span>📖</span><div class="grow"><b>อ่านเรื่องสั้น</b><div class="small muted">${STORY_COUNT} เรื่อง · อ่านแล้ว ${Object.keys(S.read).length} · แตะคำเพื่อดูความหมาย</div></div><span class="muted">›</span></button>
     <div class="card-box ref-box"><div class="small muted"><b>📚 คลังความรู้</b> อ่านแล้วกดเล่นเกมของแต่ละหัวข้อได้</div>
@@ -175,6 +178,7 @@ function renderGames() {
   $('#toRiddle').onclick = () => go('riddle');
   $('#gDiffSet').onclick = (e) => { e.preventDefault(); go('settings'); };
   $('#toDuel').onclick = () => go('duel');
+  $('#toMap').onclick = () => go('map');
   $('#toId').onclick = () => renderIdioms();
   $('#toSit').onclick = () => renderSit();
   $('#toIrr').onclick = () => renderIrregular();
@@ -406,17 +410,28 @@ function startGame(id) {
 }
 
 // deckRun: {} = main progress, { map } = one set's progress table, { practice: true } = several sets (no progress written).
-function playQuiz(mode, src, gameId, deckRun = {}) {
+function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   const ROUND = 10;
   // Endless run (emojiRun): no round limit, wrong answers only reset the streak; the player ends it themselves.
   // Survival (3 hearts, words climb from A1 to C1) and time attack (60 s) are endless runs too.
   const SURV = gameId === 'survival', TIMED = gameId === 'timeAttack', EMOJI_RUN = gameId === 'emojiRun';
   const ENDLESS = EMOJI_RUN || SURV || TIMED;
+  // Level-map stage (js/map.js): the stage's words, each asked once in a mix of games; ends on the stars screen.
+  const STAGE = gameId === 'stage';
+  const GNAME = STAGE ? stage.title : GAMES[gameId].name;
+  const leave = () => (STAGE ? go('map', stage.topic) : go('games'));
+  let lastMode = '';
+  const stagePick = (w) => {
+    const ok = ['en2th', 'th2en', 'listen'];
+    if (hasCloze(w)) ok.push('cloze');
+    if (/^[a-z]{4,12}$/i.test(w.w)) ok.push('anagram');
+    return (lastMode = pick(ok.filter((x) => x !== lastMode)));
+  };
   const TIME_LIMIT = 60;
-  const items = SURV ? [] : SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId) ? lexPick(gameId, src, ROUND) : shuffle(src).slice(0, ENDLESS ? src.length : ROUND);
+  const items = SURV ? [] : SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId) ? lexPick(gameId, src, ROUND) : shuffle(src).slice(0, ENDLESS || STAGE ? src.length : ROUND);
   let i = 0, score = 0, combo = 0, bestCombo = 0, asked = 0, hearts = 3, reach = 0, finished = false, timeLeft = TIME_LIMIT;
   const wrong = [];
-  $('#title').textContent = GAMES[gameId].name;
+  $('#title').textContent = GNAME;
 
   // Top-right status of an endless run (rebuilt after every answer).
   const runStat = () => (SURV ? `${'❤️'.repeat(hearts)}${'🖤'.repeat(3 - hearts)} · ✅ <b>${asked - wrong.length}</b>`
@@ -424,21 +439,21 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
     : `🔥 <b>${combo}</b> · 🏅 ${Math.max(S.best[gameId] || 0, bestCombo)}`);
   function header() {
     if (ENDLESS) {
-      $('#title').textContent = `${GAMES[gameId].name} · ข้อ ${i + 1}`;
+      $('#title').textContent = `${GNAME} · ข้อ ${i + 1}`;
       const bar = TIMED ? timeLeft / TIME_LIMIT * 100 : SURV ? asked % 5 * 20 : combo % 10 * 10;
       return `<div class="session-top">
       <button class="icon-btn" id="quit" aria-label="จบรอบ">✕</button>
       <div class="progress"><div id="tBar" style="width:${bar}%"></div></div>
       <span class="small" id="runStat">${runStat()}</span></div>`;
     }
-    if (i < items.length) $('#title').textContent = `${GAMES[gameId].name} · ${i + 1}/${items.length}`;
+    if (i < items.length) $('#title').textContent = `${GNAME} · ${i + 1}/${items.length}`;
     return `<div class="session-top">
       <button class="icon-btn" id="quit" aria-label="ออก">✕</button>
       <div class="progress"><div style="width:${i / items.length * 100}%"></div></div>
       <span class="small"><b>${score}</b> แต้ม</span></div>`;
   }
 
-  const quit = () => (ENDLESS && asked ? result() : go('games'));
+  const quit = () => (ENDLESS && asked ? result() : leave());
   // Survival: the level climbs every 5 questions (A1 → C1); falls back to the nearest level the word source has.
   function survivalPick() {
     const want = Math.min(LEVELS.length - 1, Math.floor(i / 5));
@@ -468,7 +483,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
     if (i >= items.length) return result();
     const w = items[i];
     reach = Math.max(reach, LEVELS.indexOf(w.g));
-    const m = SURV ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'cloze'] : ['en2th', 'th2en', 'listen'])
+    const m = STAGE ? stagePick(w) : SURV ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'cloze'] : ['en2th', 'th2en', 'listen'])
       : TIMED ? pick(['en2th', 'th2en'])
       : gameId === 'review' ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'spell', 'cloze'] : ['en2th', 'th2en', 'listen', 'spell']) : mode;
     if (m === 'spell') return qSpell(w);
@@ -557,7 +572,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
         </div>
       </form>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     const inp = $('#si');
     inp.focus();
     let tries = 0, answered = false;
@@ -598,7 +613,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
       <div class="hg-kb" id="hgKb">${['qwertyuiop', 'asdfghjkl', 'zxcvbnm'].map((r) => `<div class="hg-kr">${[...r].map((c) => `<button class="hg-k" data-l="${c}" lang="en">${c}</button>`).join('')}</div>`).join('')}</div>
       <button class="btn block" id="hgGive" style="margin-top:12px">ไม่รู้ / เฉลย</button>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     const solved = () => [...word].every((c) => guessed.has(c));
     const paint = (reveal) => {
       $('#hgWord').innerHTML = [...word].map((c) => `<span class="hg-c${reveal && !guessed.has(c) ? ' miss' : ''}">${guessed.has(c) || reveal ? c : ''}</span>`).join('');
@@ -652,7 +667,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
       <div class="ord-pool" id="oPool" lang="en">${order.map((k) => `<button class="ord-chip" data-k="${k}">${esc(letters[k])}</button>`).join('')}</div>
       <div class="row" style="margin-top:10px"><button class="btn grow" id="oClear">↺ เริ่มใหม่</button><button class="btn grow" id="oGive">ไม่รู้ / เฉลย</button></div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     let answered = false, tries = 0;
     const paint = () => {
       $('#oAns').innerHTML = picked.length ? picked.map((k, j) => `<button class="ord-chip on" data-j="${j}">${esc(letters[k])}</button>`).join('') : '<span class="muted small">แตะตัวอักษรด้านล่างเรียงเป็นคำ</span>';
@@ -700,7 +715,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
       <div class="center small muted" id="heard">แตะไมค์แล้วพูด${sentence ? 'ทั้งประโยค' : 'คำนี้'}</div>
       <button class="btn block" id="skip" style="margin-top:12px">ข้าม / เฉลย</button>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     view.querySelector('[data-say]').onclick = () => speak(target);
     const mic = $('#mic'), heard = $('#heard');
     let tries = 0, answered = false, rec = null;
@@ -761,7 +776,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
         </div>
       </form>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     view.querySelector('[data-say]').onclick = () => speak(w.e);
     $('#dHint').onclick = () => { $('#dTh').hidden = false; $('#dHint').remove(); };
     const inp = $('#si');
@@ -806,7 +821,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
       <div class="ord-pool" id="oPool">${order.map((k) => `<button class="ord-chip" data-k="${k}">${esc(toks[k])}</button>`).join('')}</div>
       <div class="row" style="margin-top:10px"><button class="btn grow" id="oClear">↺ เริ่มใหม่</button><button class="btn grow" id="oGive">ไม่รู้ / เฉลย</button></div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     let answered = false, heard = false;
     $('#oSay').onclick = () => { heard = true; speak(sent); };
     const paint = () => {
@@ -845,7 +860,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
         <div class="cloze" lang="en" style="margin-top:8px">${esc(blank).replace('\u0000', '<span class="blank">_____</span>')}</div></div>
       <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     let answered = false;
     view.querySelector('.options').onclick = (e) => {
       const b = e.target.closest('.opt'); if (!b || answered) return;
@@ -871,7 +886,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
         <div class="muted" style="margin-top:6px">${esc(th)}</div></div>
       <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     let answered = false;
     view.querySelector('.options').onclick = (e) => {
       const b = e.target.closest('.opt'); if (!b || answered) return;
@@ -900,7 +915,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
         <button class="hint-btn" id="cHint">💡 ดูคำแปลประโยค</button><div class="thx" id="cTh" hidden>${esc(th)}</div></div>
       <div class="options two">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     $('#cHint').onclick = () => { $('#cTh').hidden = false; $('#cHint').remove(); };
     let answered = false;
     view.querySelector('.options').onclick = (e) => {
@@ -931,7 +946,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
         <button class="hint-btn" id="fHint">💡 ดูคำแปลประโยค</button><div class="thx" id="fTh" hidden>${esc(th)}</div></div>
       <div class="options${opts.length === 2 ? ' two' : ''}">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     $('#fHint').onclick = () => { $('#fTh').hidden = false; $('#fHint').remove(); };
     let answered = false;
     view.querySelector('.options').onclick = (e) => {
@@ -964,7 +979,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
         <button class="hint-btn" id="pvHint">💡 ดูคำแปลประโยค</button><div class="thx" id="pvTh" hidden>${esc(r.exTh)}</div></div>
       <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     $('#pvHint').onclick = () => { $('#pvTh').hidden = false; $('#pvHint').remove(); };
     let answered = false;
     view.querySelector('.options').onclick = (e) => {
@@ -996,7 +1011,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
         <div class="muted">${esc(it.g.th)}</div></div>
       <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     view.querySelector('[data-say]').onclick = () => speak(it.t);
     let answered = false;
     view.querySelector('.options').onclick = (e) => {
@@ -1025,7 +1040,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
         <div class="word" lang="en" style="margin-top:8px">${a.k === 'p' ? blank + esc(stem) : esc(stem) + blank}</div></div>
       <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     let answered = false;
     view.querySelector('.options').onclick = (e) => {
       const b = e.target.closest('.opt'); if (!b || answered) return;
@@ -1087,7 +1102,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
         <button class="hint-btn" id="idHint">💡 ดูคำแปลประโยค</button><div class="thx" id="idTh" hidden>${esc(r.exTh)}</div></div>
       <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}"${byMeaning ? '' : ' lang="en"'}>${esc(o)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     $('#idHint').onclick = () => { $('#idTh').hidden = false; $('#idHint').remove(); };
     const say = view.querySelector('.q-prompt [data-say]'); if (say) say.onclick = () => speak(r.plain);
     if (byMeaning) speak(r.plain);
@@ -1119,7 +1134,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
         <div class="small muted" style="margin-top:8px">${esc(whoB)}:</div></div>
       <div class="options">${opts.map((o) => `<button class="opt sit-opt" data-o="${esc(o)}" lang="en">${esc(o)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     $('#sitHint').onclick = () => { $('#sitTh').hidden = false; $('#sitHint').remove(); };
     view.querySelector('.q-prompt [data-say]').onclick = () => speak(prevEn);
     speak(prevEn);
@@ -1177,7 +1192,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
         <div class="muted small" style="margin-top:10px">ได้ยินเป็นอะไร? แตะเพื่อฟังอีกครั้ง</div>${slowBtn(n.say)}</div>
       <div class="options two">${opts.map((o) => `<button class="opt mp" data-o="${esc(o)}"><b>${esc(o)}</b></button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     view.querySelector('[data-say]').onclick = () => speak(n.say);
     let answered = false;
     view.querySelector('.options').onclick = (e) => {
@@ -1208,7 +1223,7 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
         <div class="muted small" style="margin-top:10px">ได้ยินคำไหน? แตะเพื่อฟังอีกครั้ง</div>${slowBtn(target)}</div>
       <div class="options two">${[[a, aTh], [b, bTh]].map(([x, t]) => `<button class="opt mp" data-o="${esc(x)}"><b>${esc(x)}</b><small>${esc(t)}</small></button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
-    $('#quit').onclick = () => go('games');
+    $('#quit').onclick = leave;
     view.querySelector('[data-say]').onclick = () => speak(target);
     let answered = false;
     view.querySelector('.options').onclick = (e) => {
@@ -1248,21 +1263,24 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
     if (finished) return;
     finished = true;
     if (cleanup) { cleanup(); cleanup = null; }
+    const done = STAGE ? stageDone(stage.topic, stage.k, items.length - wrong.length, items.length) : null;
     const prev = S.best[gameId];
     const right_ = asked - wrong.length;
     // endless emoji run: the record is the longest run of right answers; survival / time attack: how many were right
     const mark_ = SURV || TIMED ? right_ : ENDLESS ? bestCombo : score;
-    const isBest = (prev == null || mark_ > prev) && (mark_ > 0 || !ENDLESS);
+    const isBest = !STAGE && (prev == null || mark_ > prev) && (mark_ > 0 || !ENDLESS);
     if (isBest) { S.best[gameId] = mark_; save(); }
     const total = ENDLESS ? asked : items.length;
     const correct = total - wrong.length;
     if (!ENDLESS && correct === items.length && items.length >= 10) S.counts.perfect = (S.counts.perfect || 0) + 1;
     questEvent('round', { game: gameId, correct, bestCombo, perfect: !ENDLESS && correct === items.length && items.length >= 10 });
-    if (SURV || TIMED ? right_ >= 20 : ENDLESS ? bestCombo >= 10 : correct >= 8) confetti();
-    const emoji = SURV || TIMED ? (right_ >= 30 ? '🏆' : right_ >= 15 ? '🎉' : '💪') : ENDLESS ? (bestCombo >= 20 ? '🏆' : bestCombo >= 10 ? '🎉' : '💪') : correct === items.length ? '🏆' : correct >= 7 ? '🎉' : correct >= 4 ? '💪' : '📚';
+    if (STAGE ? done.stars >= 2 : SURV || TIMED ? right_ >= 20 : ENDLESS ? bestCombo >= 10 : correct >= 8) confetti();
+    const emoji = STAGE ? (done.stars === 3 ? '🏆' : done.stars ? '🎉' : '💪') : SURV || TIMED ? (right_ >= 30 ? '🏆' : right_ >= 15 ? '🎉' : '💪') : ENDLESS ? (bestCombo >= 20 ? '🏆' : bestCombo >= 10 ? '🎉' : '💪') : correct === items.length ? '🏆' : correct >= 7 ? '🎉' : correct >= 4 ? '💪' : '📚';
     view.innerHTML = `<div class="card-box center pop">
         <div class="result-emoji">${emoji}</div>
-        ${SURV ? `<div class="h2">❤️ รอดมาได้ ${right_} ข้อ ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
+        ${STAGE ? `<div class="h2" aria-label="${done.stars} ดาว">${starRow(done.stars)}</div>
+        <p>${done.stars ? (done.first ? 'ผ่านด่านแล้ว! ปลดล็อกด่านต่อไป 🔓' : 'ผ่านด่านแล้ว') : `ยังไม่ผ่าน ต้องถูกอย่างน้อย ${needFor(items.length)} ข้อ ลองใหม่นะ`} · ถูก ${correct}/${items.length}</p>`
+        : SURV ? `<div class="h2">❤️ รอดมาได้ ${right_} ข้อ ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
         <p>ไปถึงคำระดับ ${LV_LABEL[LEVELS[reach]]} · คอมโบสูงสุด ${bestCombo}${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>`
         : TIMED ? `<div class="h2">⏱️ ตอบถูก ${right_} ข้อใน ${TIME_LIMIT} วินาที ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
         <p>ตอบไป ${asked} ข้อ · คอมโบสูงสุด ${bestCombo}${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>`
@@ -1275,10 +1293,12 @@ function playQuiz(mode, src, gameId, deckRun = {}) {
       ${wrong.length ? `<div class="card-box wrong-list"><b>${gameId.startsWith('speak') ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b> <span class="small muted">${gameId.startsWith('speak') ? '(แตะคำเพื่อฟังเสียง)' : SKILL_GAMES.includes(gameId) ? '(แตะเพื่อฟังเสียง)' : deckRun.practice ? '(โหมดซ้อม) · กด ☆ เพื่อติดดาว' : deckRun.map ? '(ใส่ในการทบทวนของชุดให้แล้ว) · กด ☆ เพื่อติดดาว' : '(ใส่ในแฟลชการ์ดให้แล้ว) · กด ☆ เพื่อติดดาว'}</span>
         ${[...new Set(wrong)].map((w) => w.idx < 0 ? `<div class="wl" data-i="-1" data-say="${esc(w._q ? w._q[0].replace('___', w._q[1]) : w._m[0] + ', ' + w._m[2])}"><span><b>${esc(w.w)}</b></span><span class="muted grow" style="text-align:right">${esc(w._q ? w._q[3] : w.t)}</span></div>`
           : `<div class="wl" data-i="${w.idx}"><span><b>${esc(w.w)}</b> <span class="pos">${esc(w.p)}</span></span><span class="muted grow" style="text-align:right">${esc(w.t)}</span><button class="star-btn" data-star>${starIcon(w)}</button></div>`).join('')}</div>` : ''}
-      <button class="btn primary block" id="again">เล่นอีกรอบ</button>
-      <div style="height:10px"></div><button class="btn block" id="back">เลือกเกมอื่น</button>`;
-    $('#again').onclick = () => startGame(gameId);
-    $('#back').onclick = () => go('games');
+      ${STAGE && done.hasNext ? '<button class="btn primary block" id="stNext">ด่านต่อไป →</button><div style="height:10px"></div>' : ''}
+      <button class="btn ${STAGE && done.hasNext ? '' : 'primary '}block" id="again">${STAGE ? 'เล่นด่านนี้อีกครั้ง' : 'เล่นอีกรอบ'}</button>
+      <div style="height:10px"></div><button class="btn block" id="back">${STAGE ? '🗺️ กลับแผนที่' : 'เลือกเกมอื่น'}</button>`;
+    $('#again').onclick = () => (STAGE ? startStage(stage.topic, stage.k) : startGame(gameId));
+    $('#back').onclick = leave;
+    if ($('#stNext')) $('#stNext').onclick = () => startStage(stage.topic, stage.k + 1);
     const wl = view.querySelector('.wrong-list');
     if (wl) wl.onclick = (e) => {
       const row = e.target.closest('.wl'); if (!row) return;

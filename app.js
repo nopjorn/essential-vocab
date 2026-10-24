@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.83.0';
+const APP_VERSION = '1.84.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -190,6 +190,7 @@ const defaults = () => ({
   ltest: {},           // level -> best level-test result { r, n, at } (1.63)
   mtest: {},           // 'YYYY-MM' -> { r: right, n: questions, at: ms } best monthly-test score
   riddle: { d: '', g: [], over: false, win: false }, // daily word riddle: today's guesses
+  lvmap: {},           // topic id -> string of stars (0–3) per level-map stage
   gacc: { a: 0.7, n: 0 }, // rolling accuracy (a) of multiple-choice game answers (n answers) → automatic game difficulty
   duel: {},            // challenge code -> [right, questions, seconds, played at ms] best result per code (latest 30)
   riddleStat: { played: 0, won: 0, streak: 0, best: 0, dist: [0, 0, 0, 0, 0, 0], last: '' }, // riddle totals; dist[i] = solved in i+1 tries
@@ -385,6 +386,10 @@ function mergeBackup(d) {
   if (d.riddle && (d.riddle.d > S.riddle.d || (d.riddle.d === S.riddle.d && (d.riddle.g || []).length > S.riddle.g.length))) S.riddle = { d: d.riddle.d, g: d.riddle.g || [], over: !!d.riddle.over, win: !!d.riddle.win, lv: d.riddle.lv || ['A1', 'A2'] };
   if (d.riddleStat && d.riddleStat.played > S.riddleStat.played) S.riddleStat = { ...S.riddleStat, ...d.riddleStat, dist: (d.riddleStat.dist || []).concat([0, 0, 0, 0, 0, 0]).slice(0, 6) };
   for (const [k, v] of Object.entries(d.ltest || {})) if (v && v.n && (!S.ltest[k] || v.r / v.n > S.ltest[k].r / S.ltest[k].n)) S.ltest[k] = v;
+  for (const [k, v] of Object.entries(d.lvmap || {})) {
+    const a = String(S.lvmap[k] || ''), b = String(v || '').replace(/[^0-3]/g, '');
+    S.lvmap[k] = Array.from({ length: Math.max(a.length, b.length) }, (_, i) => Math.max(+a[i] || 0, +b[i] || 0)).join('');
+  }
   if (d.gacc && d.gacc.n > (S.gacc.n || 0)) S.gacc = { a: +d.gacc.a || 0.7, n: d.gacc.n | 0 };
   for (const [k, v] of Object.entries(d.duel || {})) if (Array.isArray(v) && (!Array.isArray(S.duel[k]) || v[0] > S.duel[k][0] || (v[0] === S.duel[k][0] && v[2] < S.duel[k][2]))) S.duel[k] = v;
   S.duel = Object.fromEntries(Object.entries(S.duel).sort((a, b) => b[1][3] - a[1][3]).slice(0, 30));
@@ -1193,7 +1198,7 @@ function markForReview(w, map = S.prog) {
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { duel: 'ท้าดวลเพื่อน', event: 'กิจกรรมเทศกาล', mascot: 'น้องคำ', year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
+const TITLES = { map: 'แผนที่ด่าน', duel: 'ท้าดวลเพื่อน', event: 'กิจกรรมเทศกาล', mascot: 'น้องคำ', year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
 function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
@@ -1207,7 +1212,7 @@ function go(tab, ...args) {
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab || (tab === 'decks' && !wide && b.dataset.tab === 'list')));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, mascot: renderMascot, event: renderEvent, riddle: renderRiddle, duel: renderDuel, decks: renderDecks }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, mascot: renderMascot, event: renderEvent, riddle: renderRiddle, duel: renderDuel, map: renderMap, decks: renderDecks }[tab])(...args);
   updateStreak();
   const a = TAB_ORDER.indexOf(prev), b = TAB_ORDER.indexOf(tab);
   animView(a < 0 || b < 0 || a === b ? 'vin' : b > a ? 'vin-l' : 'vin-r');
