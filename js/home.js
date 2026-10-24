@@ -179,7 +179,6 @@ const HOME_BLOCKS = [
   { id: 'play', ic: '⚡', name: 'ปุ่มเล่นด่วน', w: 'half', on: true },
   { id: 'short', ic: '⏱️', name: 'ปุ่มเซสชัน 3 นาที', w: 'half', on: true },
   { id: 'event', ic: '🎃', name: 'กิจกรรมเทศกาล (เฉพาะช่วงเทศกาล)', w: 'full', on: true },
-  { id: 'mascot', ic: '🫧', name: 'น้องคำ (มาสคอต) + กล่องรางวัล', w: 'full', on: true },
   { id: 'year', ic: '🎊', name: 'สรุปปี (ปลายธันวาคม–ต้นมกราคม)', w: 'full', on: true },
   { id: 'month', ic: '📅', name: 'สรุปเดือน (7 วันแรกของเดือน)', w: 'full', on: true },
   { id: 'week', ic: '📊', name: 'สรุปสัปดาห์ (ทุกวันจันทร์)', w: 'full', on: true },
@@ -189,6 +188,7 @@ const HOME_BLOCKS = [
   { id: 'decks', ic: '📚', name: 'ชุดของฉัน', w: 'full', on: true },
   { id: 'wotd', ic: '✨', name: 'คำประจำวัน', w: 'full', on: true },
   { id: 'prog', ic: '📈', name: 'ความคืบหน้า', w: 'full', on: true },
+  { id: 'mascot', ic: '🫧', name: 'น้องคำ (มาสคอต) + กล่องรางวัล', w: 'full', on: true },
   { id: 'level', ic: '⭐', name: 'เลเวลและ XP', w: 'half', on: false },
   { id: 'forecast', ic: '🔮', name: 'ทบทวน 7 วันข้างหน้า', w: 'full', on: false },
 ];
