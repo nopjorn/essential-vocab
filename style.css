@@ -149,7 +149,7 @@ button { touch-action: manipulation; cursor: pointer; }
 .lvl-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
 .lvl-row + .lvl-row { border-top: 1px solid var(--border); }
 .bar { position: relative; height: 10px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
-.bar .l { position: absolute; inset: 0 auto 0 0; background: var(--primary-2); }
+.bar .l { position: absolute; inset: 0 auto 0 0; background: var(--bar-l, var(--primary-2)); }
 .bar .m { position: absolute; inset: 0 auto 0 0; background: var(--good); }
 
 .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -500,6 +500,7 @@ body { touch-action: manipulation; }
 .eta-bar .l { background: var(--c-card); opacity: .35; }
 .eta-bar .m { background: var(--c-master); }
 .key { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 4px; }
+.key.bl { background: var(--bar-l, var(--primary-2)); } .key.bm { background: var(--good); }
 .key.l { background: var(--c-card); opacity: .45; } .key.m { background: var(--c-master); }
 .whatif td:first-child { text-align: left; }
 .whatif tr.cur td { font-weight: 800; color: var(--primary); }
@@ -1075,3 +1076,7 @@ details.danger-group > summary { color: var(--bad); }
 .pal.ico button { width: 54px; height: 54px; border-radius: 14px; padding: 3px; }
 .pal.ico button img { width: 100%; height: 100%; border-radius: 10px; display: block; }
 .pal button:focus-visible { outline: 2px solid var(--primary-text); outline-offset: 2px; }
+/* mint: the primary is green like "mastered", so the learned half of progress bars is blue to stay readable */
+:root[data-palette="mint"] { --bar-l: #6fa8dc; }
+@media (prefers-color-scheme: dark) { :root[data-palette="mint"]:not([data-theme="light"]) { --bar-l: #5b8fd0; } }
+:root[data-palette="mint"][data-theme="dark"], :root[data-palette="mint"][data-theme="black"] { --bar-l: #5b8fd0; }

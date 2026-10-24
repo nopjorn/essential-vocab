@@ -105,7 +105,7 @@ function renderStats(from) {
     ${levelCard()}
     <div class="h2">ความคืบหน้าแต่ละระดับ</div>
     <div class="card-box">${lvRows}
-      <div class="small muted" style="margin-top:8px">🟣 เรียนแล้ว &nbsp; 🟢 จำได้แล้ว (ทบทวนผ่านหลายรอบ)</div></div>
+      <div class="small muted" style="margin-top:8px"><span class="key bl"></span>เรียนแล้ว &nbsp; <span class="key bm"></span>จำได้แล้ว (ทบทวนผ่านหลายรอบ)</div></div>
     <div class="h2">📅 การ์ดที่ต้องทบทวน 7 วันข้างหน้า</div>
     <div class="card-box">${forecastChart()}</div>
     <div class="h2">นิสัยการเล่น <span class="small muted">${h.span} วันล่าสุด</span></div>
