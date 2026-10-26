@@ -184,7 +184,7 @@ function renderCards(extra) {
         <div class="fc-inner">
           <div class="face front">${enFront ? enFace : thFace}
             ${isNew ? '<button class="know-btn" data-know>✓ รู้คำนี้แล้ว ข้ามเลย</button>' : ''}
-            <div class="hint">${isNew ? '✨ คำใหม่ · ' : ''}${leechIn(card, map) ? '🐢 คำดื้อ · ' : ''}แตะเพื่อพลิก · ปัดซ้าย/ขวา</div></div>
+            <div class="hint">${isNew ? '✨ คำใหม่ · ' : ''}${leechIn(card, map) ? '🐢 คำดื้อ · ' : ''}<span class="tap-hint">แตะเพื่อพลิก · ปัดซ้าย/ขวา</span><span class="kb-hint">คลิกหรือกด Space เพื่อพลิก · ปุ่ม 1–4 ให้คะแนน</span></div></div>
           <div class="face back">${enFront ? `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
             <div class="th">${esc(card.t)}</div><div class="ipa" style="margin-top:8px">${esc(card.w)} ${esc(card.i)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>${backExtra}`
             : enFace + backExtra}</div>

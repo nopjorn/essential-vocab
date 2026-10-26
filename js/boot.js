@@ -41,5 +41,22 @@ document.addEventListener('visibilitychange', () => {
 document.addEventListener('visibilitychange', () => { if (!document.hidden && current === 'home') renderHome(); });
 document.addEventListener('visibilitychange', updateBadge);
 updateBadge();
+/* ---------- keyboard shortcuts (computer / iPad keyboard) ---------- */
+// 1–9 = answer choices (or the flashcard grade buttons once flipped), Space/Enter = flip the card or go to the next question.
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || view.classList.contains('feed-mode')) return;
+  if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable]')) return;
+  if (document.querySelector('.sheet-wrap.open')) return;
+  const on = (el) => el && !el.disabled && el.offsetParent !== null && getComputedStyle(el).visibility !== 'hidden';
+  const own = !e.target.closest || !e.target.closest('button, a') || e.target.closest('.opt, [data-g]');
+  if (/^[1-9]$/.test(e.key)) {
+    const opts = [...view.querySelectorAll('.options .opt')].filter(on);
+    const pick = (opts.length ? opts : [...view.querySelectorAll('.grade [data-g]')].filter(on))[+e.key - 1];
+    if (pick) { e.preventDefault(); pick.click(); }
+  } else if ((e.key === ' ' || e.key === 'Enter') && own) {
+    const nx = document.getElementById('nextQ'), fc = document.getElementById('fc');
+    if (on(nx)) { e.preventDefault(); nx.click(); } else if (on(fc)) { e.preventDefault(); fc.click(); }
+  }
+});
 window.BOOT_MS = Math.round(performance.now()); // time from navigation start to the first screen (settings → ⏱ วัดความเร็ว)
 setSig = settingsSig(); // after boot-time migrations: only real changes from here on stamp settingsAt

@@ -1494,3 +1494,32 @@ test('story reader (1.94): the word being spoken is highlighted, and the highlig
   expect(got.left).toBe(false);
   expect(errors).toEqual([]);
 });
+
+test('desktop + iPad landscape (1.95): centred feed, title in line with the content, keyboard shortcuts', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const left = (sel) => page.evaluate((s) => document.querySelector(s).getBoundingClientRect().left, sel);
+  await page.evaluate(() => go('feed'));
+  const feed = await page.evaluate(() => document.querySelector('.fcard').getBoundingClientRect().width);
+  expect(feed).toBeLessThanOrEqual(730);
+  await page.evaluate(() => go('settings'));
+  expect(Math.abs(await left('#title') - await left('#view > *:not(.row)'))).toBeLessThanOrEqual(30);
+  // quiz: 1–4 answers, Enter goes on
+  await page.evaluate(() => startGame('en2th'));
+  await page.keyboard.press('1');
+  await expect(page.locator('#nextQ')).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#title')).toContainText('2/');
+  // flashcards: Space flips, 3 grades
+  await page.evaluate(() => go('cards'));
+  await page.keyboard.press(' ');
+  await expect(page.locator('#fc')).toHaveClass(/flip/);
+  const before = await page.evaluate(() => document.querySelector('#fc .face.front').textContent);
+  await page.keyboard.press('3');
+  await expect.poll(() => page.evaluate(() => document.querySelector('#fc .face.front').textContent)).not.toBe(before);
+  // typing in a box never triggers a shortcut
+  await page.evaluate(() => go('list'));
+  await page.locator('.search').first().focus();
+  await page.keyboard.type('1 2');
+  expect(errors).toEqual([]);
+});

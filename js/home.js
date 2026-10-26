@@ -125,8 +125,7 @@ function renderHome() {
     ${!S.placedAt && Object.keys(S.prog).length < 50 ? `<div class="card-box place-card slim" id="placeCard">
       <div><b>🎯 รู้ศัพท์อยู่แล้วบ้างไหม?</b><div class="small muted">วัดระดับ 3–5 นาที แล้วข้ามคำที่รู้แล้ว</div></div>
       <button class="btn primary" data-pl="go">วัดระดับ</button><button class="x" data-pl="no" aria-label="ไม่ต้อง">✕</button></div>` : ''}
-    ${standalone || installHidden() ? '' : `<div class="card-box install-tip slim small" id="installTip">
-      <div>📲 <b>ติดตั้งแอป:</b> แชร์ → <b>เพิ่มไปยังหน้าจอโฮม</b></div><button class="x" data-inst aria-label="ปิด">✕</button></div>`}
+    ${standalone || installHidden() ? '' : `<div class="card-box install-tip slim small" id="installTip">${installTipInner()}</div>`}
     <div class="home-grid">${blocks.map((b) => `<div class="hb hw-${b.w}" data-hb="${b.id}">${b.html}</div>`).join('')}</div>
     ${blocks.length ? '' : '<div class="card-box center small muted">ซ่อนทุกกล่องอยู่ — เปิดกล่องที่ต้องการได้ที่ ⚙️ ตั้งค่า → จัดหน้าแรก</div>'}
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
@@ -170,8 +169,26 @@ function renderHome() {
     if (b.dataset.pl === 'go') go('placement'); else { S.placedAt = today(); save(); pc.remove(); }
   };
   const it = $('#installTip');
-  if (it) it.onclick = (e) => { if (!e.target.closest('[data-inst]')) return; try { localStorage.setItem('o3k.installHide', '1'); } catch (err) { /* ignore */ } it.remove(); };
+  if (it) it.onclick = (e) => {
+    if (e.target.closest('[data-instgo]') && installEvt) { installEvt.prompt(); installEvt.userChoice.then((c) => { if (c.outcome === 'accepted') it.remove(); }).catch(() => {}); installEvt = null; return; }
+    if (!e.target.closest('[data-inst]')) return;
+    try { localStorage.setItem('o3k.installHide', '1'); } catch (err) { /* ignore */ }
+    it.remove();
+  };
 }
+// Install banner: iPhone/iPad = Safari share sheet; Chrome/Edge on a computer = their own install prompt (beforeinstallprompt) or the address-bar icon.
+let installEvt = null;
+const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+function installTipInner() {
+  const x = '<button class="x" data-inst aria-label="ปิด">✕</button>';
+  if (isIOS()) return `<div>📲 <b>ติดตั้งแอป:</b> แชร์ → <b>เพิ่มไปยังหน้าจอโฮม</b></div>${x}`;
+  if (installEvt) return `<div>💻 <b>ติดตั้งเป็นแอป</b> เปิดได้ในหน้าต่างของตัวเอง ไม่ต้องเข้าเว็บ</div><button class="btn primary" data-instgo>ติดตั้ง</button>${x}`;
+  return `<div>💻 <b>ติดตั้งเป็นแอป:</b> Chrome / Edge กดไอคอนติดตั้งท้ายแถบที่อยู่ · Safari บน Mac: ไฟล์ → <b>เพิ่มไปยัง Dock</b></div>${x}`;
+}
+addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault(); installEvt = e;
+  const it = document.getElementById('installTip'); if (it) it.innerHTML = installTipInner();
+});
 // Home layout: the blocks the user can show/hide, reorder and size (settings → จัดหน้าแรก). S.homeCfg stores the choice.
 const HOME_BLOCKS = [
   { id: 'hero', ic: '🏠', name: 'การ์ดวันนี้ + ปุ่มเริ่มเรียน', w: 'full', on: true },
