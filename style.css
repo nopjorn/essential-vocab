@@ -1394,3 +1394,45 @@ html.no-ans .streak.bump { animation: none; }
   .g-group.masonry { margin-top: 18px; }
   .g-group.masonry[hidden] { display: none; }
 }
+
+/* ---------- hero sky scene (1.97): settings.heroBg 'time' paints the sky by time of day, settings.heroArt draws the scene ---------- */
+.hero.sky-time { background: var(--sky); }
+.hero.sky-art { position: relative; overflow: hidden; isolation: isolate; }
+.hero.sky-art > :not(.hero-scene) { position: relative; z-index: 1; }
+.hero-scene { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; border-radius: inherit; }
+.hero-scene svg { position: absolute; display: block; }
+.sc-sky { left: 0; top: 0; width: 100%; height: 100%; }
+.sc-hills { left: 0; bottom: 0; width: 100%; height: 52%; }
+.sc-hills .h1 { fill: var(--h1); } .sc-hills .h2 { fill: var(--h2); } .sc-hills .h3 { fill: var(--h3); }
+.sc-palm { right: 4%; bottom: 0; height: 50%; aspect-ratio: 100 / 130; fill: var(--palm); }
+.sc-cloud { fill: var(--cl); }
+.sc-star { fill: #fff; }
+.sc-bird { fill: none; stroke: rgba(255, 255, 255, .7); stroke-width: 1.4; stroke-linecap: round; }
+.sc-shoot { stroke: rgba(255, 255, 255, .9); stroke-width: 1.4; stroke-linecap: round; opacity: 0; animation: skyShoot 11s ease-in 3s infinite; }
+.sc-star.tw { animation: skyTwinkle 4s ease-in-out infinite; }
+@keyframes skyTwinkle { 50% { opacity: .25; } }
+@keyframes skyShoot { 0%, 92% { opacity: 0; transform: translate(0, 0); } 94% { opacity: 1; } 100% { opacity: 0; transform: translate(-70px, -30px); } }
+@media (prefers-reduced-motion: reduce) { .sc-star.tw, .sc-shoot { animation: none; } }
+/* the sun / moon sits inside the goal ring (the rings orbit it) with a soft halo behind the card text */
+.sky-art .ring::before { content: ''; position: absolute; inset: -74px; border-radius: 50%; z-index: -1; pointer-events: none; background: radial-gradient(circle, rgba(var(--glowc), .5) 0, rgba(var(--glowc), 0) 66%); }
+.ring-disc { position: absolute; left: 50%; top: 50%; width: 48%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle at 38% 34%, var(--d1), var(--d2) 80%); box-shadow: 0 0 16px 4px rgba(var(--glowc), .6), 0 0 40px 10px rgba(var(--glowc), .28); }
+.sk-dusk .ring-disc, .sk-night .ring-disc { background: radial-gradient(circle at 30% 30%, rgba(120, 120, 160, .16) 0 9%, transparent 10%), radial-gradient(circle at 66% 58%, rgba(120, 120, 160, .14) 0 13%, transparent 14%), radial-gradient(circle at 44% 76%, rgba(120, 120, 160, .12) 0 7%, transparent 8%), radial-gradient(circle at 38% 34%, var(--d1), var(--d2) 80%); }
+.hero.sky-art .ring-c { color: var(--ink); font-size: 17px; }
+.hero.sky-art.ring-closed .ring-c { font-size: 30px; }
+.hero.sky-art .stat { -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
+.hero.sky-time .stat { background: rgba(6, 14, 44, .24); }
+.hero.sky-time .hero-main, .hero.sky-time .ring-legend, .hero.sky-time .stat { text-shadow: 0 1px 3px rgba(0, 20, 60, .32); }
+.hero.sky-time .btn { color: var(--btn); }
+.hb.hw-half .hero.sky-art .ring-c { font-size: 15px; }
+.hb.hw-half .hero.sky-art.ring-closed .ring-c { font-size: 24px; }
+/* settings: gallery of the six skies */
+.sky-more { margin: 6px 0 2px; }
+.sky-more summary { cursor: pointer; padding: 6px 0; }
+.sky-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 8px; }
+.sk-mini { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; isolation: isolate; background: var(--sky); color: #fff; }
+.sk-mini.now { outline: 3px solid var(--primary); outline-offset: 2px; }
+.sk-mini .ring-disc { left: auto; right: 12%; top: 16%; width: 24%; transform: none; }
+.sk-cap { position: absolute; left: 10px; top: 8px; z-index: 1; display: flex; flex-direction: column; text-shadow: 0 1px 3px rgba(0, 20, 60, .45); }
+.sk-cap b { font-size: var(--fs-sm); }
+.sk-cap span { font-size: var(--fs-xs); opacity: .92; }
+.sk-now { align-self: flex-start; margin-top: 3px; padding: 1px 8px; border-radius: 99px; background: rgba(255, 255, 255, .92); color: #2b2b44; font-size: var(--fs-xs); font-style: normal; font-weight: 800; text-shadow: none; }

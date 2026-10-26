@@ -82,6 +82,11 @@ function renderSettings() {
         <div class="seg" id="theme">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด'], ['black', '⚫ ดำสนิท']].map(([v, t]) => `<button class="${(st.theme || 'auto') === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div></div>
       <div class="set-row" style="flex-wrap:wrap"><span>🎨 สีหลัก<br><span class="small muted" id="palName"></span></span>
         <div class="pal" id="palette" role="group" aria-label="สีหลัก">${PALETTES.map(([id, name, a, b]) => `<button data-p="${id}" ${paletteOpen(id) ? '' : 'disabled'} aria-label="${name}${paletteOpen(id) ? '' : ' (ยังไม่ปลดล็อก)'}" aria-pressed="${(st.palette || 'violet') === id}" class="${(st.palette || 'violet') === id ? 'on' : ''}"><i style="--sw1:${a};--sw2:${b}">${(st.palette || 'violet') === id ? '✓' : ''}</i></button>`).join('')}</div></div>
+      <div class="set-row" style="flex-wrap:wrap"><span>🌅 พื้นหลังการ์ดวันนี้<br><span class="small muted">การ์ดบนหน้าแรก: สีตามธีม หรือเปลี่ยนตามช่วงเวลา</span></span>
+        <div class="seg" id="heroBg" role="group" aria-label="พื้นหลังการ์ดวันนี้">${[['theme', '🎨 ตามธีม'], ['time', '🕒 ตามเวลา']].map(([v, t]) => `<button class="${(st.heroBg === 'time' ? 'time' : 'theme') === v ? 'on' : ''}" data-v="${v}" aria-pressed="${(st.heroBg === 'time' ? 'time' : 'theme') === v}">${t}</button>`).join('')}</div></div>
+      <div class="set-row"><span>🖼️ ภาพวาดพื้นหลัง<br><span class="small muted">ท้องฟ้า เมฆ ภูเขา พระอาทิตย์/พระจันทร์ที่วงแหวนวนรอบ (วาดเอง เปลี่ยนตามช่วงเวลา)</span></span>
+        <label class="switch"><input type="checkbox" id="heroArt" aria-label="ภาพวาดพื้นหลังการ์ดวันนี้" ${st.heroArt !== false ? 'checked' : ''}><span></span></label></div>
+      <details class="sky-more"><summary class="small muted">ดูท้องฟ้าทั้ง 6 ช่วงเวลา (เช้า สาย บ่าย เย็น มืด ดึก)</summary>${skyGallery()}</details>
       <div class="set-row" style="flex-wrap:wrap"><span>📱 ไอคอนแอป<br><span class="small muted" id="icoName"></span></span>
         <div class="pal ico" id="iconPick" role="group" aria-label="ไอคอนแอป">${ICONS.map(([id, name]) => `<button data-i="${id}" aria-label="ไอคอน${name}" aria-pressed="${(st.icon || 'purple') === id}" class="${(st.icon || 'purple') === id ? 'on' : ''}"><img src="${iconSrc(id)}" alt="" width="44" height="44"></button>`).join('')}</div></div>
       <p class="small muted" style="margin-top:0">iPhone/iPad ตั้งไอคอนได้ตอน "เพิ่มลงหน้าจอโฮม" เท่านั้น เลือกแบบที่ชอบตรงนี้ แล้วทำตามขั้นตอนใน <a href="#" id="icoHow">วิธีเปลี่ยนไอคอน</a> (ต้องสำรองข้อมูลก่อน เพราะลบไอคอนเดิมแล้วข้อมูลในเครื่องหาย)</p>
@@ -224,6 +229,12 @@ function renderSettings() {
     view.querySelectorAll('#iconPick button').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
   };
   $('#icoHow').onclick = (e) => { e.preventDefault(); go('guide', 'settings'); };
+  $('#heroBg').onclick = (e) => {
+    const b = e.target.closest('[data-v]'); if (!b) return;
+    st.heroBg = b.dataset.v; save();
+    view.querySelectorAll('#heroBg button').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+  };
+  $('#heroArt').onchange = (e) => { st.heroArt = e.target.checked; save(); };
   $('#palette').onclick = (e) => {
     const b = e.target.closest('[data-p]'); if (!b) return;
     st.palette = b.dataset.p; save(); applyTheme(); palName();

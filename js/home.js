@@ -49,7 +49,8 @@ function renderHome() {
       const newTot = Math.min(goal, S.daily.fresh + Math.min(newLeft, unseen)), nf = newTot ? Math.min(1, S.daily.fresh / newTot) : 1;
       const closed = rf >= 1 && nf >= 1 && (doneToday > 0 || todo === 0), pct = Math.round((rf + nf) / 2 * 100);
       const arc = (r, f, cls) => `<circle class="rg ${cls}${f <= 0 ? ' z' : ''}" cx="50" cy="50" r="${r}" pathLength="100" style="stroke-dashoffset:${(100 - f * 100).toFixed(1)}" transform="rotate(-90 50 50)"/>`;
-      return `<div class="hero pop${closed ? ' ring-closed' : ''}">
+      const sk = heroSky();
+      return `<div class="hero pop${closed ? ' ring-closed' : ''}${sk.cls}"${sk.style}>${sk.scene}
       <div class="hero-top">
         <div class="hero-main">
           <div class="small" style="opacity:.9">${greeting()}</div>
@@ -57,7 +58,7 @@ function renderHome() {
           <div>การ์ดที่รอวันนี้ (${lvNames(S.settings.levels)})</div>
         </div>
         <div class="ring" role="img" aria-label="ความคืบหน้าวันนี้ ${pct}% ทบทวน ${S.daily.reviews} จาก ${revTot} ใบ คำใหม่ ${S.daily.fresh} จาก ${goal} คำ">
-          <svg viewBox="0 0 100 100" aria-hidden="true"><circle class="rt" cx="50" cy="50" r="43"/><circle class="rt" cx="50" cy="50" r="30"/>${arc(43, rf, 'r1')}${arc(30, nf, 'r2')}</svg>
+          ${sk.disc}<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="rt" cx="50" cy="50" r="43"/><circle class="rt" cx="50" cy="50" r="30"/>${arc(43, rf, 'r1')}${arc(30, nf, 'r2')}</svg>
           <span class="ring-c" aria-hidden="true">${closed ? '✓' : pct + '%'}</span>
         </div>
       </div>
@@ -381,8 +382,7 @@ function forecastChart() {
     <div class="small muted" style="margin-top:8px">รวม ${total} ใบ · ยังไม่รวมคำใหม่วันละ ${newGoal()} คำ</div>${tip}`;
 }
 function greeting() {
-  const h = new Date().getHours();
-  const g = h < 12 ? 'อรุณสวัสดิ์ ☀️' : h < 17 ? 'สวัสดีตอนบ่าย 🌤️' : 'สวัสดีตอนเย็น 🌙';
+  const g = { morning: 'อรุณสวัสดิ์ 🌅', forenoon: 'สวัสดีตอนสาย ☀️', afternoon: 'สวัสดีตอนบ่าย 🌤️', evening: 'สวัสดีตอนเย็น 🌇', dusk: 'สวัสดีตอนค่ำ 🌙', night: 'ดึกแล้วนะ 🌌' }[skyId()];
   const s = streakNow();
   return s ? `${g} เรียนต่อเนื่อง ${s} วันแล้ว เก่งมาก!` : `${g} มาเริ่มกันเลย!`;
 }
