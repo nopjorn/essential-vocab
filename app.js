@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.97.0';
+const APP_VERSION = '1.98.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -154,7 +154,7 @@ function sanitizeDecks(r) {
 }
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -967,7 +967,7 @@ const PALETTES = [['violet', 'ม่วง', '#6c5ce7', '#fd79a8'], ['ocean', '�
   ['gold', 'ทอง (ปลดล็อก Lv.10)', '#9a6b00', '#f0c24a'], ['galaxy', 'กาแล็กซี (ปลดล็อก Lv.20)', '#4b2fa5', '#c07fd8']];
 function applyTheme() {
   const root = document.documentElement, t = S.settings.theme || 'auto';
-  let pal = S.settings.palette || 'violet'; if (!PALETTES.some((p) => p[0] === pal) || (typeof paletteOpen === 'function' && !paletteOpen(pal))) pal = 'violet';
+  let pal = S.settings.palAuto && typeof skyPalette === 'function' ? skyPalette() : S.settings.palette || 'violet'; if (!PALETTES.some((p) => p[0] === pal) || (typeof paletteOpen === 'function' && !paletteOpen(pal))) pal = 'violet';
   if (t === 'auto') delete root.dataset.theme; else root.dataset.theme = t;
   if (pal === 'violet') delete root.dataset.palette; else root.dataset.palette = pal;
   try { localStorage.setItem('o3k.theme', t); localStorage.setItem('o3k.palette', pal); } catch (e) { /* ignore */ }

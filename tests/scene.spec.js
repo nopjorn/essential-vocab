@@ -45,12 +45,13 @@ test('home hero: theme colours by default with the scene, time mode paints the s
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
   expect(await page.locator('.hero .small').first().innerText()).toContain('ดึกแล้วนะ');
-  await page.locator('#startBtn').click();
-  await expect(page.locator('#view[data-route="cards"]')).toBeVisible();
   // both off → the plain card
   await page.evaluate(() => { S.settings.heroBg = 'theme'; S.settings.heroArt = false; go('home'); });
+  await expect(page.locator('#view[data-route="home"]')).toBeVisible();
   await expect(hero).not.toHaveClass(/sky-/);
   await expect(hero.locator('.hero-scene, .ring-disc')).toHaveCount(0);
+  await page.locator('#startBtn').click();
+  await expect(page.locator('#view[data-route="cards"]')).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -70,5 +71,26 @@ test('settings: choose time-of-day colours, switch the scene off, gallery of six
   await page.evaluate(() => go('home'));
   await expect(page.locator('.hero')).toHaveClass(/sky-time/);
   await expect(page.locator('.hero')).not.toHaveClass(/sky-art/);
+  expect(errors).toEqual([]);
+});
+
+test('main colour follows the time of day (palAuto): palette per sky, picking a colour turns it off', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'], palAuto: true } });
+  const pal = () => page.evaluate(() => document.documentElement.dataset.palette || 'violet');
+  await page.evaluate(() => { window.skyId = () => 'forenoon'; applyTheme(); });
+  expect(await pal()).toBe('ocean');
+  await page.evaluate(() => { window.skyId = () => 'evening'; applyTheme(); });
+  expect(await pal()).toBe('orange');
+  await page.evaluate(() => { window.skyId = () => 'night'; applyTheme(); });
+  expect(await pal()).toBe('violet'); // galaxy is locked at level 1
+  await page.evaluate(() => { window.skyId = () => 'morning'; go('settings'); document.querySelector('[data-g="look"]').open = true; });
+  await expect(page.locator('#palName')).toHaveText(/ตามเวลา/);
+  await page.locator('#palette [data-p="mint"]').click();
+  await expect(page.locator('#palAuto')).not.toBeChecked();
+  expect(await pal()).toBe('mint');
+  const st = (await readState(page)).settings;
+  expect(st.palAuto).toBe(false); expect(st.palette).toBe('mint');
+  await page.locator('label.switch:has(#palAuto)').click();
+  expect(await pal()).toBe('sakura');
   expect(errors).toEqual([]);
 });

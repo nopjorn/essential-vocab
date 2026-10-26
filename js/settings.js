@@ -81,7 +81,9 @@ function renderSettings() {
       <div class="set-row"><span>ธีม</span>
         <div class="seg" id="theme">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด'], ['black', '⚫ ดำสนิท']].map(([v, t]) => `<button class="${(st.theme || 'auto') === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div></div>
       <div class="set-row" style="flex-wrap:wrap"><span>🎨 สีหลัก<br><span class="small muted" id="palName"></span></span>
-        <div class="pal" id="palette" role="group" aria-label="สีหลัก">${PALETTES.map(([id, name, a, b]) => `<button data-p="${id}" ${paletteOpen(id) ? '' : 'disabled'} aria-label="${name}${paletteOpen(id) ? '' : ' (ยังไม่ปลดล็อก)'}" aria-pressed="${(st.palette || 'violet') === id}" class="${(st.palette || 'violet') === id ? 'on' : ''}"><i style="--sw1:${a};--sw2:${b}">${(st.palette || 'violet') === id ? '✓' : ''}</i></button>`).join('')}</div></div>
+        <div class="pal" id="palette" role="group" aria-label="สีหลัก">${PALETTES.map(([id, name, a, b]) => `<button data-p="${id}" ${paletteOpen(id) ? '' : 'disabled'} aria-label="${name}${paletteOpen(id) ? '' : ' (ยังไม่ปลดล็อก)'}" aria-pressed="${(st.palAuto ? skyPalette() : st.palette || 'violet') === id}" class="${(st.palAuto ? skyPalette() : st.palette || 'violet') === id ? 'on' : ''}"><i style="--sw1:${a};--sw2:${b}">${(st.palAuto ? skyPalette() : st.palette || 'violet') === id ? '✓' : ''}</i></button>`).join('')}</div></div>
+      <div class="set-row"><span>🕒 สีหลักเปลี่ยนตามช่วงเวลา<br><span class="small muted">เช้า ชมพู · สาย ฟ้า · บ่าย มิ้นต์ · เย็น ส้ม · มืด ม่วง · ดึก กาแล็กซี (ถ้ายังไม่ปลดล็อก Lv.20 ใช้ม่วง) · เลือกสีเองด้านบนเมื่อไหร่จะปิดโหมดนี้</span></span>
+        <label class="switch"><input type="checkbox" id="palAuto" aria-label="สีหลักเปลี่ยนตามช่วงเวลา" ${st.palAuto ? 'checked' : ''}><span></span></label></div>
       <div class="set-row" style="flex-wrap:wrap"><span>🌅 พื้นหลังการ์ดวันนี้<br><span class="small muted">การ์ดบนหน้าแรก: สีตามธีม หรือเปลี่ยนตามช่วงเวลา</span></span>
         <div class="seg" id="heroBg" role="group" aria-label="พื้นหลังการ์ดวันนี้">${[['theme', '🎨 ตามธีม'], ['time', '🕒 ตามเวลา']].map(([v, t]) => `<button class="${(st.heroBg === 'time' ? 'time' : 'theme') === v ? 'on' : ''}" data-v="${v}" aria-pressed="${(st.heroBg === 'time' ? 'time' : 'theme') === v}">${t}</button>`).join('')}</div></div>
       <div class="set-row"><span>🖼️ ภาพวาดพื้นหลัง<br><span class="small muted">ท้องฟ้า เมฆ ภูเขา พระอาทิตย์/พระจันทร์ที่วงแหวนวนรอบ (วาดเอง เปลี่ยนตามช่วงเวลา)</span></span>
@@ -219,7 +221,8 @@ function renderSettings() {
     st.theme = b.dataset.v; save(); applyTheme();
     view.querySelectorAll('#theme button').forEach((x) => x.classList.toggle('on', x === b));
   };
-  const palName = () => { const p = PALETTES.find((x) => x[0] === (st.palette || 'violet')); $('#palName').textContent = p ? p[1] : ''; };
+  const palNow = () => (st.palAuto ? skyPalette() : st.palette) || 'violet';
+  const palName = () => { const p = PALETTES.find((x) => x[0] === palNow()); $('#palName').textContent = p ? (st.palAuto ? 'ตามเวลา · ' : '') + p[1] : ''; };
   palName();
   const icoName = () => { const p = ICONS.find((x) => x[0] === (st.icon || 'purple')); $('#icoName').textContent = p ? p[1] : ''; };
   icoName();
@@ -229,6 +232,10 @@ function renderSettings() {
     view.querySelectorAll('#iconPick button').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
   };
   $('#icoHow').onclick = (e) => { e.preventDefault(); go('guide', 'settings'); };
+  $('#palAuto').onchange = (e) => {
+    st.palAuto = e.target.checked; save(); applyTheme(); palName();
+    view.querySelectorAll('#palette button').forEach((x) => { const on = x.dataset.p === palNow(); x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); x.firstElementChild.textContent = on ? '✓' : ''; });
+  };
   $('#heroBg').onclick = (e) => {
     const b = e.target.closest('[data-v]'); if (!b) return;
     st.heroBg = b.dataset.v; save();
@@ -237,7 +244,7 @@ function renderSettings() {
   $('#heroArt').onchange = (e) => { st.heroArt = e.target.checked; save(); };
   $('#palette').onclick = (e) => {
     const b = e.target.closest('[data-p]'); if (!b) return;
-    st.palette = b.dataset.p; save(); applyTheme(); palName();
+    st.palette = b.dataset.p; st.palAuto = false; $('#palAuto').checked = false; save(); applyTheme(); palName();
     view.querySelectorAll('#palette button').forEach((x) => {
       const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); x.firstElementChild.textContent = on ? '✓' : '';
     });

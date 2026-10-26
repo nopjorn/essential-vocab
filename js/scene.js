@@ -13,6 +13,9 @@ const SKY = {
   dusk:      { name: 'มืด', hrs: '18:30–21:59', emo: '🌙', g: ['#0f1a4a', '#2a2f80', '#6a4a9c'], h: ['#2a3a85', '#1d2a68', '#121b47'], cl: ['#b8a8f0', [[132, 84, .9, .1], [284, 150, .7, .09]]], d: ['#f6f2d8', '#d9d4ee'], ink: '#1c2556', glow: '180,190,255', stars: 22, palm: '#0c1238' },
   night:     { name: 'ดึก', hrs: '22:00–04:59', emo: '🌌', g: ['#060a1f', '#0f1842', '#1b2a5c'], h: ['#17235a', '#101946', '#0a1133'], cl: ['#8a96e0', [[140, 86, .9, .07]]], d: ['#fffbe6', '#e8e4f6'], ink: '#141c4a', glow: '200,210,255', stars: 46, shoot: 1, palm: '#060a22' }
 };
+// Optional "main colour follows the time of day" (settings.palAuto): each sky maps to an existing palette; a locked one falls back to violet in applyTheme().
+const SKY_PAL = { morning: 'sakura', forenoon: 'ocean', afternoon: 'mint', evening: 'orange', dusk: 'violet', night: 'galaxy' };
+const skyPalette = (d) => SKY_PAL[skyId(d)];
 function skyId(d = new Date()) {
   const m = d.getHours() * 60 + d.getMinutes();
   let id = 'night';

@@ -38,7 +38,9 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) { clearTimeout(pushTimer); syncNow(); } else syncNow().then((ok) => { if (ok && current === 'home') renderHome(); });
 });
 // Refresh counts when returning to the app after a while (e.g. next day).
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.settings.palAuto) applyTheme(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && current === 'home') renderHome(); });
+if (S.settings.palAuto) applyTheme(); // app.js ran before scene.js existed
 document.addEventListener('visibilitychange', updateBadge);
 updateBadge();
 /* ---------- keyboard shortcuts (computer / iPad keyboard) ---------- */
