@@ -1523,3 +1523,29 @@ test('desktop + iPad landscape (1.95): centred feed, title in line with the cont
   await page.keyboard.type('1 2');
   expect(errors).toEqual([]);
 });
+
+test('wide screens (1.96): home, stats, settings, guide and reference pages pack their boxes into columns', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  // number of distinct left edges among the boxes = columns in use
+  const cols = (sel) => page.evaluate((s) => new Set([...document.querySelectorAll(s)].filter((e) => e.offsetHeight).map((e) => Math.round(e.getBoundingClientRect().left))).size, sel);
+  for (const [js, sel, min] of [["go('home')", '.home-grid > .hb', 3], ["go('stats')", '#view > *', 2], ["go('settings')", '#view > details', 2],
+    ["go('guide')", '.g-group > .g-sec', 2], ['renderIrregular()', '#irList .col-row', 2], ['renderPairs()', '.pair-list > .pair-card', 2]]) {
+    await page.evaluate(js);
+    await page.waitForTimeout(200);
+    expect(await cols(sel), js).toBeGreaterThanOrEqual(min);
+  }
+  // boxes never overlap: opening a settings group pushes the boxes under it down
+  await page.evaluate(() => { go('settings'); document.querySelectorAll('#view > details').forEach((d) => { d.open = true; }); });
+  await page.waitForTimeout(300);
+  const overlap = await page.evaluate(() => {
+    const r = [...document.querySelectorAll('#view > details')].map((d) => d.getBoundingClientRect());
+    return r.some((a, i) => r.some((b, j) => j > i && a.left < b.right && b.left < a.right && a.top < b.bottom - 1 && b.top < a.bottom - 1));
+  });
+  expect(overlap).toBe(false);
+  // phones keep one column
+  await page.setViewportSize({ width: 440, height: 956 });
+  await page.evaluate(() => go('stats'));
+  expect(await cols('#view > *:not(.row)')).toBe(1);
+  expect(errors).toEqual([]);
+});

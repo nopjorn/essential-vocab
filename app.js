@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.95.0';
+const APP_VERSION = '1.96.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1195,6 +1195,49 @@ function markForReview(w, map = S.prog) {
   save();
 }
 
+/* ---------- wide layout (desktop / iPad landscape) ---------- */
+// ≥1000×600 the long one-column pages (home, stats, settings, guide) pack their boxes into columns like masonry, so no
+// box stretches across the whole window. CSS (.masonry, inside the wide media query) makes the columns; this only tells
+// each box how many 4px grid rows it covers (--rs) and keeps that up to date when a box grows, shrinks or lazy-loads.
+const MASONRY_ROW = 4, MASONRY_GAP = 14;
+let masonryRO = null, masonryMO = null;
+function fitMasonry(el) { el.style.setProperty('--rs', Math.max(1, Math.ceil((el.offsetHeight + MASONRY_GAP) / MASONRY_ROW))); }
+// `full` = selector for children that take the whole row. Children added later (a list re-rendered by a filter) are picked up too.
+function masonry(boxes, full) {
+  if (!window.ResizeObserver) return;
+  if (!masonryRO) {
+    masonryRO = new ResizeObserver((es) => es.forEach((e) => fitMasonry(e.target)));
+    masonryMO = new MutationObserver((ms) => ms.forEach((m) => masonryKids(m.target)));
+  }
+  masonryRO.disconnect(); masonryMO.disconnect();
+  for (const box of boxes) {
+    if (!box) continue;
+    box.classList.add('masonry');
+    if (full) box.dataset.mfull = full;
+    masonryKids(box);
+    masonryMO.observe(box, { childList: true });
+  }
+}
+function masonryKids(box) {
+  for (const el of box.children) {
+    if (box.dataset.mfull && el.matches(box.dataset.mfull)) el.classList.add('m-full');
+    fitMasonry(el); masonryRO.observe(el);
+  }
+}
+// The reference pages (pairs, families, irregular verbs, idioms, …) all list their cards in a .pair-list.
+new MutationObserver(() => { const pl = view.querySelector(':scope > .pair-list:not(.masonry)'); if (pl) masonry([pl], '.pair-card:only-child'); }).observe(view, { childList: true });
+// Wraps each .h2 heading and the boxes under it (up to the next heading or a `brk` element) in one <section>,
+// so a heading always moves together with its boxes.
+function sectionize(box, brk) {
+  let sec = null;
+  for (const el of [...box.children]) {
+    const head = el.classList.contains('h2');
+    if (head || (brk && el.matches(brk))) { sec = null; if (!head) continue; }
+    if (head) { sec = document.createElement('section'); sec.className = 'm-sec'; el.before(sec); }
+    if (sec) sec.append(el);
+  }
+}
+
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
@@ -1205,7 +1248,7 @@ function go(tab, ...args) {
   if (window.speechSynthesis) speechSynthesis.cancel();
   const prev = current;
   current = tab;
-  view.classList.remove('feed-mode');
+  view.classList.remove('feed-mode', 'masonry');
   view.dataset.route = tab; // CSS uses this for wide (iPad/landscape) layouts
   // the sets page sits under the word list: on a phone the "คำศัพท์" tab stays lit, on the iPad rail its own item does
   const wide = matchMedia('(min-width: 700px)').matches;

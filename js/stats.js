@@ -177,6 +177,8 @@ function renderStats(from) {
     toast(a.secret && !S.ach[a.id] ? '❓ เหรียญลับ: ไม่บอกเงื่อนไข ลองเรียนไปเรื่อยๆ แล้วจะเจอเอง' : `${a.icon} ${a.name}: ${a.desc}${S.ach[a.id] ? ' ✅' : ' 🔒'}`);
   };
   bindChartTips();
+  sectionize(view, '[data-lz="stk"]');
+  masonry([view], '.row, .m-sec:has([data-lz="heat"], #ach), [data-lz="stk"]');
 }
 
 // Heavy blocks below the fold (calendar, trend chart, stickers, medals) are drawn when they come within 300px of the

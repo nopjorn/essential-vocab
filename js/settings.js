@@ -284,6 +284,7 @@ function renderSettings() {
     go('home');
   };
   labelRows(view);
+  masonry([view], 'p');
 }
 
 /* ---------- word of the day settings page ---------- */

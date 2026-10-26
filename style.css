@@ -1370,3 +1370,27 @@ html.no-ans .streak.bump { animation: none; }
   .topbar:has(~ .view > .q-prompt) { --maxw: 1040px; }
 }
 @media (min-width: 700px) { .celebrate { padding-left: calc(var(--rail-w) + 20px); } } /* centred on the content, not under the sidebar */
+/* wide screens: long pages pack their boxes into columns (masonry). masonry() in app.js sets --rs = rows of 4px each box covers. */
+@media (min-width: 1000px) and (min-height: 600px) {
+  .view[data-route="settings"], .view[data-route="guide"] { --maxw: 1100px; }
+  .topbar:has(~ .view[data-route="settings"]), .topbar:has(~ .view[data-route="guide"]) { --maxw: 1100px; }
+  .masonry { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 4px; grid-auto-flow: row dense; column-gap: 16px; row-gap: 0; align-items: start; align-content: start; }
+  .masonry > * { grid-row-end: span var(--rs, 1); margin-top: 0; margin-bottom: 0; }
+  .masonry > .m-full { grid-column: 1 / -1; }
+  .masonry > * > :last-child { margin-bottom: 0; }
+  .masonry > .m-sec > .h2:first-child { margin-top: 4px; }
+  .masonry > details.set-group > summary { margin-top: 4px; }
+  .masonry > .row:has(> .btn.ghost:only-child) { display: none; }
+  .view:has(> .pair-list) { --maxw: 1100px; }
+  .topbar:has(~ .view > .pair-list) { --maxw: 1100px; }
+  .pair-list.masonry > .pair-card.m-full:has(> .col-row) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px; align-content: start; }
+  .masonry #lvls, .masonry #lvls5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* home: four narrow columns, a "full" block covers two of them */
+  .home-grid.masonry { grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 14px; }
+  .home-grid.masonry > .hb.hw-full { grid-column: span 2; }
+  .home-grid.masonry > .hb > .card-box, .home-grid.masonry > .hb > * { margin-bottom: 0; }
+  /* guide: wider, the topics of each group in two columns */
+  .guide, .g-hero, .g-search { max-width: none !important; }
+  .g-group.masonry { margin-top: 18px; }
+  .g-group.masonry[hidden] { display: none; }
+}
