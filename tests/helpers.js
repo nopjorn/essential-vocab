@@ -92,6 +92,13 @@ async function answer(page, ok, round) {
       await page.evaluate(() => (window.__heard = 'zzzz'));
       for (let i = 0; i < 3; i++) { await view.locator('#mic').click(); await page.waitForTimeout(80); }
     }
+  } else if (await view.locator('#si[placeholder="พิมพ์ประโยคของคุณ"]').count()) { // compose: write your own sentence
+    if (!ok) await view.locator('#skip').click();
+    else {
+      const word = (await view.locator('.q-prompt .word').textContent()).trim();
+      await view.locator('#si').fill(`I really like ${word} very much`);
+      await view.locator('#sf button[type=submit]').click();
+    }
   } else if (await view.locator('#si').count()) {
     if (!ok) { await view.locator('#skip').click(); }
     else {

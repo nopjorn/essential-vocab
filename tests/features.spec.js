@@ -1645,3 +1645,64 @@ test('real-life stories (1.103): dialogues and emails carry a kind, library filt
   await expect(page.locator('.st-meta')).toContainText('💬 บทสนทนา');
   expect(errors).toEqual([]);
 });
+
+test('compose game (1.104): needs the word and 3+ words, shows the app example, saves the sentence into the memory hook', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1'] } });
+  await page.evaluate(() => startGame('compose'));
+  const view = page.locator('#view');
+  const word = (await view.locator('.q-prompt .word').textContent()).trim();
+  await view.locator('#si').fill('Hello there');
+  await view.locator('#sf button[type=submit]').click();
+  await expect(view.locator('#reveal')).toContainText('สั้นไป');
+  await view.locator('#si').fill('Nothing in this sentence at all');
+  await view.locator('#sf button[type=submit]').click();
+  await expect(view.locator('#reveal')).toContainText('ยังไม่มีคำว่า');
+  const mine = `I really like ${word} very much`;
+  await view.locator('#si').fill(mine);
+  await view.locator('#sf button[type=submit]').click();
+  await expect(view.locator('#reveal')).toContainText('✅');
+  await expect(view.locator('#reveal .example').first()).toBeVisible(); // the app's own example for comparison
+  await view.locator('#saveMine').click();
+  const st = await readState(page);
+  expect(st.note[word]).toBe('✍️ ' + mine);
+  expect(errors).toEqual([]);
+});
+
+test('roots and UK/US (1.104): reference pages, word-sheet boxes, UK then US voice, roots game data', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  // roots page: search, hear a word
+  await page.evaluate(() => { go('games'); renderRoots(); });
+  await expect(page.locator('#rtList .card-box').first()).toBeVisible();
+  await page.locator('#rtq').fill('มอง');
+  await expect(page.locator('#rtList')).toContainText('spect');
+  await page.locator('#rtList [data-col]').first().click();
+  expect(await page.evaluate(() => window.__said.length)).toBeGreaterThan(0);
+  await page.locator('#rtq').fill('qqqzzz');
+  await expect(page.locator('#rtList .empty-art')).toBeVisible();
+  // game items: the root is in the word, each question has distractors from other groups
+  const info = await page.evaluate(async () => {
+    await loadRoots();
+    const items = rootItems();
+    return { n: items.length, ok: items.every((it) => rootVariant(it._rt, it.w)), far: items.slice(0, 40).every((it) => rootDistractors(it._rt).length === 3 && rootDistractors(it._rt).every((d) => d.grp !== it._rt.grp)) };
+  });
+  expect(info.n).toBeGreaterThan(100); expect(info.ok).toBe(true); expect(info.far).toBe(true);
+  // UK/US page: filter, voices in order UK then US
+  await page.evaluate(() => { go('games'); renderUkUs(); });
+  await expect(page.locator('#ukList .col-row').first()).toBeVisible();
+  await page.locator('#ukKind [data-k="s"]').click();
+  expect(await page.locator('#ukList .col-row').count()).toBeGreaterThan(20);
+  await page.locator('#ukq').fill('colour');
+  await expect(page.locator('#ukList .col-row')).toHaveCount(1);
+  await page.evaluate(() => { window.__said = []; window.__langs = []; const orig = SpeechSynthesisUtterance; window.SpeechSynthesisUtterance = function (t) { const u = new orig(t); const set = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(u), 'lang'); return u; }; });
+  await page.locator('#ukList .col-row').click();
+  await expect.poll(() => page.evaluate(() => window.__said.join(','))).toBe('colour,color');
+  // word sheet shows the boxes for a word that has them
+  const w = await page.evaluate(async () => { await loadUkUs(); await loadRoots(); return { uk: W.find((x) => ukusOf(x.w).length)?.w, rt: W.find((x) => ROOT.some((r) => r.ex.includes(x.w)))?.w }; });
+  expect(w.uk).toBeTruthy(); expect(w.rt).toBeTruthy();
+  await page.evaluate((x) => openSheet(W.find((y) => y.w === x)), w.uk);
+  await expect(page.locator('#ukBox .col-row').first()).toBeVisible();
+  await page.mouse.click(5, 5);
+  await page.evaluate((x) => openSheet(W.find((y) => y.w === x)), w.rt);
+  await expect(page.locator('#rtBox .tip-box').first()).toBeVisible();
+  expect(errors).toEqual([]);
+});

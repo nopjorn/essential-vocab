@@ -98,6 +98,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'dict') return qDict(w);
     if (m === 'dictW') return qDictW(w);
     if (m === 'dictS') return qDictS(w);
+    if (m === 'compose') return qCompose(w);
     if (m === 'order') return qOrder(w, w.e, w.et);
     if (m === 'sOrder') return qOrder(w, w._s, '', w._st);
     if (m === 'sCloze') return qSCloze(w);
@@ -109,6 +110,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'phrasal') return qPhrasal(w);
     if (m === 'syn') return qSyn(w);
     if (m === 'affix') return qAffix(w);
+    if (m === 'root') return qRoot(w);
     if (m === 'idiom') return qIdiom(w);
     if (m === 'sit') return qSit(w);
     if (m === 'num') return qNum(w);
@@ -464,6 +466,55 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   }
 
   // Dictation: hear the example sentence, type the missing word.
+  // Write your own sentence with the word (1.104): auto-checked only for the word (any ending) and length; the app's example is shown to compare.
+  // The sentence can be saved into the word's memory hook (S.note).
+  function qCompose(w) {
+    const stem = w.w.split(/\s+/)[0].replace(/[^A-Za-z'-]/g, ''), cut = stem.length > 3 ? stem.replace(/(e|y)$/i, '') : stem;
+    const re = new RegExp('(^|[^A-Za-z])(' + reEsc(w.w) + '|' + reEsc(cut) + '[A-Za-z]*)(?![A-Za-z])', 'i');
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+        <div class="small muted">แต่งประโยคภาษาอังกฤษด้วยคำนี้ (อย่างน้อย 3 คำ)</div>
+        <div class="word" lang="en" style="margin-top:6px">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
+        <div class="muted" style="margin-top:6px">${esc(w.t)}</div></div>
+      <form id="sf" autocomplete="off">
+        <input class="spell-input" id="si" lang="en" maxlength="140" autocapitalize="sentences" spellcheck="true" enterkeyhint="done" placeholder="พิมพ์ประโยคของคุณ">
+        <div class="row" style="margin-top:10px">
+          <button type="button" class="btn grow" id="skip">ข้าม / ดูตัวอย่าง</button>
+          <button type="submit" class="btn primary grow">ส่งประโยค</button>
+        </div>
+      </form>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = leave;
+    const inp = $('#si');
+    let tries = 0, answered = false;
+    const done = (ok, mine) => {
+      answered = true; mark(w, ok);
+      inp.blur(); inp.readOnly = true;
+      const saveBtn = ok ? '<button class="btn block" id="saveMine" style="margin-top:10px">💾 เก็บประโยคของฉันไว้ในโน้ต</button>' : '';
+      $('#reveal').innerHTML = (ok ? `✅ เยี่ยม! ประโยคของคุณ: <b lang="en">${esc(mine)}</b>` : `👀 ลองดูตัวอย่างของแอปนะ`)
+        + `<div class="small muted" style="margin-top:8px">ตัวอย่างของแอป</div>` + hookBox(w) + exampleBox(w) + saveBtn
+        + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      bindSayEx(view, w.e);
+      if ($('#saveMine')) $('#saveMine').onclick = () => {
+        const old = (S.note[w.w] || '').split(' · ').filter((x) => x && !x.startsWith('✍️ ')).join(' · ');
+        S.note[w.w] = (old ? old + ' · ' : '') + '✍️ ' + mine; S.note[w.w] = S.note[w.w].slice(0, 200);
+        save(); $('#saveMine').textContent = '✅ เก็บไว้ในโน้ตแล้ว'; $('#saveMine').disabled = true;
+      };
+      $('#nextQ').onclick = next;
+    };
+    $('#sf').onsubmit = (e) => {
+      e.preventDefault(); if (answered) return;
+      const mine = inp.value.trim().replace(/\s+/g, ' ');
+      const words = mine.split(' ').filter(Boolean).length;
+      if (words >= 3 && re.test(mine)) return done(true, mine);
+      tries++;
+      inp.classList.remove('no'); void inp.offsetWidth; inp.classList.add('no');
+      if (tries >= 3) return done(false);
+      $('#reveal').textContent = words < 3 ? 'ประโยคสั้นไปหน่อย ลองแต่งให้ยาวขึ้น (อย่างน้อย 3 คำ) 💪' : `ในประโยคยังไม่มีคำว่า “${w.w}” (ใช้รูปอื่นได้ เช่น เติม -s -ed -ing) ลองอีกครั้งนะ 💪`;
+    };
+    $('#skip').onclick = () => { if (!answered) done(false); };
+    setTimeout(() => inp.focus(), 50);
+  }
   function qDict(w) {
     const blank = w.e.replace(clozeRe(w), (all, pre) => pre + '\u0000');
     view.innerHTML = `${header()}
@@ -735,6 +786,33 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   }
 
   // Word parts: the base word is shown, pick the prefix/suffix that gives the Thai meaning.
+  // Roots (1.104): the root part of a word is bold; pick its meaning.
+  function qRoot(w) {
+    const r = w._rt, right = r.th;
+    const opts = shuffle([r, ...rootDistractors(r)]).map((x) => x.th);
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit pop"><div class="small muted">ส่วนที่ตัวหนาในคำนี้ (รากศัพท์) หมายถึงอะไร</div>
+        <div class="word af-word" lang="en" style="margin-top:8px">${rootHTML(r, w.w)}</div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = leave;
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === right;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : `❌ ที่ถูกคือ <b>${esc(right)}</b>`}
+        <div class="tip-box"><b class="af-word" lang="en">${rootHTML(r, w.w)}</b> = ${esc(WORD_BY[w.w].t)}<div><b>${esc(rootVariant(r, w.w))}</b> = ${esc(r.th)}</div><div class="small muted">${esc(r.note)}</div></div>
+        <div class="fam-box"><div class="small muted" style="margin:10px 0 6px"><b>🌱 คำอื่นที่มี ${esc(r.x)}</b> (แตะเพื่อฟัง)</div>${rootRows({ ...r, ex: r.ex.filter((x) => x !== w.w).slice(0, 6) })}</div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('.fam-box').onclick = (ev) => { const c = ev.target.closest('[data-col]'); if (c) speak(c.dataset.col); };
+      $('#nextQ').onclick = next;
+      speak(w.w);
+    };
+  }
   function qAffix(w) {
     const a = w._af, stem = affixStem(a, w.w), right = affixLabel(a);
     const opts = shuffle([a, ...affixDistractors(a, w.w)]).map(affixLabel);
@@ -1033,7 +1111,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   function mark(w, ok) {
     // A missed pronunciation or word order doesn't mean the meaning was forgotten, so it doesn't reset the card.
     const spk = gameId === 'speak' || gameId === 'speakS';
-    const soft = spk || gameId === 'order' || gameId === 'sOrder' || gameId === 'dictS';
+    const soft = spk || gameId === 'order' || gameId === 'sOrder' || gameId === 'dictS' || gameId === 'compose';
     asked++;
     if (w.idx < 0 && SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId)) lexGrade(lexKey(gameId, w), ok);
     if (w.idx < 0 || (soft && !ok) || deckRun.practice) markActive(); else gameResult(w, ok, deckRun.map);

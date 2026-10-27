@@ -172,6 +172,40 @@ test('word parts (affixes) are valid', () => {
   expect(bad).toEqual([]);
 });
 
+test('word roots (1.104): every example is a list word that contains its root; meanings and groups make a fair game', () => {
+  const { ROOTS } = load('data/roots.js');
+  const { WORDS } = load(...WORD_FILES);
+  const have = new Set(WORDS.map((r) => r[0]));
+  expect(ROOTS.length).toBeGreaterThan(20);
+  const bad = [], meanings = new Set();
+  for (const [x, th, grp, note, ex] of ROOTS) {
+    if (!th || !grp || !note || ex.length < 3) bad.push(`${x}: meaning/group/note/examples`);
+    if (meanings.has(th)) bad.push(`${x}: meaning ${th} twice`);
+    meanings.add(th);
+    ex.forEach((w) => {
+      if (!have.has(w)) bad.push(`${x}: ${w} is not in the list`);
+      if (!x.split('/').some((v) => w.toLowerCase().includes(v))) bad.push(`${x}: ${w} lacks the root`);
+    });
+    if (new Set(ex).size !== ex.length) bad.push(`${x}: duplicate example`);
+  }
+  // at least 4 groups, so every question has 3 distractors from other groups
+  expect(new Set(ROOTS.map((r) => r[2])).size).toBeGreaterThanOrEqual(8);
+  expect(bad).toEqual([]);
+});
+
+test('UK ↔ US pairs (1.104): both spellings differ, Thai given, kinds valid, spelling pairs share most letters', () => {
+  const { UKUS } = load('data/ukus.js');
+  expect(UKUS.length).toBeGreaterThan(60);
+  const bad = [], seen = new Set();
+  for (const [uk, us, th, k] of UKUS) {
+    if (!uk || !us || uk === us || !th || !['w', 's'].includes(k)) bad.push(`${uk}/${us}`);
+    if (k === 's' && uk[0] !== us[0]) bad.push(`${uk}/${us}: spelling pair should start alike`);
+    if (seen.has(uk + '|' + us)) bad.push(`${uk}/${us} twice`);
+    seen.add(uk + '|' + us);
+  }
+  expect(bad).toEqual([]);
+});
+
 test('emoji picture words: real list words, one word per emoji', () => {
   const { EMOJI } = load('data/emoji.js');
   const words = new Set();

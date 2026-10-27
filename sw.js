@@ -1,5 +1,5 @@
 // Offline cache. Bump VERSION (keep it equal to APP_VERSION in app.js) on every push.
-const VERSION = 'o3k-1.103.0';
+const VERSION = 'o3k-1.104.0';
 // App shell: replaced as a whole with every version.
 const FILES = [
   './',
@@ -13,6 +13,7 @@ const FILES = [
   'js/reading.js',
   'js/words.js',
   'js/lexis.js',
+  'js/lexis2.js',
   'js/grammar.js',
   'js/placement.js',
   'js/riddle.js',
@@ -45,6 +46,8 @@ const FILES = [
 // the server says has changed (conditional request), so a new version doesn't fetch ~2 MB of unchanged data.
 const DATA_CACHE = 'o3k-data';
 const DATA = [
+  'data/roots.js',
+  'data/ukus.js',
   'data/stories/real.js',
   'data/play.js',
   'data/guide.js',

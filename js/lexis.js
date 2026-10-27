@@ -71,6 +71,7 @@ function renderPhrasal() {
 /* ---------- word sheet extras ---------- */
 // Fills the phrasal-verb and synonym boxes of the word sheet (el) for word w.
 function lexisBoxes(el, w) {
+  lexis2Boxes(el, w);
   if (isVerb(w)) irregBox(el, w);
   dpBox(el, w);
   gpBox(el, w);

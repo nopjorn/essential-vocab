@@ -43,11 +43,13 @@ const GAMES = {
   wform: { icon: '🧬', name: 'เปลี่ยนรูปคำ', desc: 'เลือกรูปคำให้เข้ากับประโยค เช่น decide → decision' },
   phrasal: { icon: '🧩', name: 'Phrasal verbs', desc: 'เติมคำเล็กๆ ให้ครบ เช่น give ___ = เลิก' },
   syn: { icon: '≈', name: 'คำเหมือน–ตรงข้าม', desc: 'big ≈ large, big ↔ small เลือกให้ถูก' },
+  root: { icon: '🌱', name: 'รากศัพท์', desc: 'ส่วนที่ไฮไลต์ในคำ เช่น spect = มอง เลือกความหมายให้ถูก' },
   affix: { icon: '🧱', name: 'เติมหน้า–ท้ายคำ', desc: 'un-, -ful, -less … เลือกให้ได้ความหมาย' },
   idiom: { icon: '🎭', name: 'สำนวน', desc: 'piece of cake = ? เลือกความหมายหรือสำนวนให้ถูก' },
   sit: { icon: '🗨️', name: 'ตอบให้เข้าสถานการณ์', desc: 'เลือกประโยคถัดไปในบทสนทนา' },
   guess: { icon: '🕵️', name: 'เดาความหมายจากบริบท', desc: 'อ่านประโยคจริง เดาความหมายของคำใหม่ก่อนดูเฉลย' },
   dictW: { icon: '🔠', name: 'พิมพ์คำที่ได้ยิน', desc: 'ฟังคำเดี่ยวแล้วพิมพ์ทั้งคำ ไม่มีคำแปลช่วย' },
+  compose: { icon: '🖊️', name: 'แต่งประโยคเอง', desc: 'แต่งประโยคด้วยคำนี้ แล้วเทียบกับตัวอย่างของแอป เก็บประโยคไว้ในโน้ต' },
   dictS: { icon: '📜', name: 'พิมพ์ประโยคที่ได้ยิน', desc: 'ฟังประโยคแล้วพิมพ์ให้ครบ ตรวจทีละคำ' },
   ipa: { icon: '🔡', name: 'อ่าน IPA', desc: 'ดูวิธีออกเสียง /ˈæpl/ แล้วเลือกคำที่ถูก' },
   gpat: { icon: '📐', name: 'เลือกรูปที่ถูก (ไวยากรณ์ผูกกับคำ)', desc: 'some advice / enjoy swimming / let me go เลือกรูปให้ถูก' },
@@ -72,7 +74,7 @@ const PAIR_GAMES = ['confuse', 'minpair'];
 // Skill games with their own items (idx -1): practice only, no flashcard scheduling.
 // Generated skill games: the questions are made up on the spot, so they are not scheduled (no S.lex keys).
 const GEN_GAMES = ['num'];
-const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix', 'idiom', 'sit', 'irreg', 'dprep', 'thaierr', 'gpat', ...GEN_GAMES];
+const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix', 'root', 'idiom', 'sit', 'irreg', 'dprep', 'thaierr', 'gpat', ...GEN_GAMES];
 function gameTile(id) {
   const g = GAMES[id];
   const best = S.best[id] != null ? `<span>🏅 สถิติ: ${S.best[id]}</span>` : '';
@@ -172,6 +174,8 @@ function renderGames() {
         <button class="ref-tile" id="toFams"><span>🧬</span>ครอบครัวคำ</button>
         <button class="ref-tile" id="toSyn"><span>≈</span>คำเหมือน–ตรงข้าม</button>
         <button class="ref-tile" id="toAf"><span>🧱</span>prefix / suffix</button>
+        <button class="ref-tile" id="toRt"><span>🌱</span>รากศัพท์</button>
+        <button class="ref-tile" id="toUk"><span>🇬🇧</span>อังกฤษ–อเมริกัน</button>
         <button class="ref-tile" id="toPV"><span>🧩</span>Phrasal verbs</button>
         <button class="ref-tile" id="toId"><span>🎭</span>สำนวน</button>
         <button class="ref-tile" id="toSit"><span>🗨️</span>ศัพท์ตามสถานการณ์</button>
@@ -204,6 +208,8 @@ function renderGames() {
   $('#toPV').onclick = () => renderPhrasal();
   $('#toSyn').onclick = () => renderSyn();
   $('#toAf').onclick = () => renderAffix();
+  $('#toRt').onclick = () => renderRoots();
+  $('#toUk').onclick = () => renderUkUs();
   const paint = () => view.querySelectorAll('#src .chip').forEach((c) => c.classList.toggle('on', c.dataset.s === gameSource));
   paint();
   if ($('#gTopic')) $('#gTopic').onchange = (e) => { gameTopic = e.target.value; };
@@ -295,6 +301,7 @@ function gamePool(id) {
   if (id === 'syn') return synItems().map((it) => ({ idx: -1, w: it.t, t: it.g.th, p: '', g: '', _syn: it, _q: ['___', it.t, '', it.g.th] }));
   if (id === 'affix') return AFFIX.flatMap((a) => a.ex.filter(([w]) => affixDistractors(a, w).length === 3).map(([w, th]) => ({ idx: -1, w, t: th, p: '', g: '', _af: a, _q: ['___', w, '', th] })));
   if (id === 'idiom') return IDIOMS.map((r) => ({ idx: -1, w: r.id, t: r.th, p: '', g: '', _id: r, _q: [r.plain, '', '', r.th] }));
+  if (id === 'root') return rootItems();
   if (id === 'irreg') return irregItems();
   if (id === 'dprep') return dpItems();
   if (id === 'thaierr') return misItems();
@@ -413,6 +420,7 @@ function startGame(id) {
   if (id === 'wform' && !FAMILIES) { withLoading(loadFamilies()).then(() => startGame(id)); return; }
   if (id === 'phrasal' && !PHRASAL) { withLoading(loadPhrasal()).then(() => startGame(id)); return; }
   if (id === 'syn' && !SYN) { withLoading(loadSyn()).then(() => startGame(id)); return; }
+  if (id === 'root' && !ROOT) { withLoading(loadRoots()).then(() => startGame(id)); return; }
   if (id === 'affix' && !AFFIX) { withLoading(loadAffix()).then(() => startGame(id)); return; }
   if (id === 'idiom' && !IDIOMS) { withLoading(loadIdioms()).then(() => startGame(id)); return; }
   if (id === 'gpat' && !GRAMPAT) { withLoading(loadGramPat()).then(() => startGame(id)); return; }

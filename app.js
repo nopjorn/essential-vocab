@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.103.0';
+const APP_VERSION = '1.104.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1017,9 +1017,9 @@ function speak(text, opt) {
   if (slow == null) slow = S.settings.slowRepeat !== false && lastSaid.text === text && Date.now() - lastSaid.at < SLOW_AGAIN && !lastSaid.slow;
   lastSaid = { text, at: Date.now(), slow: !!slow };
   const u = new SpeechSynthesisUtterance(text);
-  const lang = S.settings.accent;
+  const lang = (opt && opt.lang) || S.settings.accent; // opt.lang = a fixed accent (UK ↔ US comparison), ignores the chosen voice
   u.lang = lang; u.rate = slow ? slowRate() : S.settings.rate;
-  const chosen = S.settings.voice && voices.find((x) => x.voiceURI === S.settings.voice);
+  const chosen = !(opt && opt.lang) && S.settings.voice && voices.find((x) => x.voiceURI === S.settings.voice);
   if (chosen) { try { u.voice = chosen; u.lang = chosen.lang; } catch (e) { /* voice went away */ } return say(u, busy); }
   const v = voices.find((v) => v.lang === lang && /Samantha|Daniel|Karen|Ava|Siri/i.test(v.name)) || voices.find((v) => v.lang === lang) || voices.find((v) => v.lang && v.lang.startsWith('en'));
   if (v) u.voice = v;
@@ -1309,7 +1309,7 @@ new MutationObserver(() => {
 }).observe(view, { childList: true });
 $('#topBack').addEventListener('click', () => { const b = view.querySelector('[id$="Back"]'); if (b) b.click(); });
 // iPad sidebar extras: reference pages live under the games screen, so open games first (their ‹ กลับ returns there).
-const REF_PAGES = { pairs: () => renderPairs(), fams: () => renderFamilies(), syn: () => renderSyn(), affix: () => renderAffix(), phrasal: () => renderPhrasal(), idiom: () => renderIdioms(), sit: () => renderSit(), irr: () => renderIrregular(), dprep: () => renderDepPrep(), mis: () => renderMistakes(), gpat: () => renderGramPat(), ipa: () => renderIpa() };
+const REF_PAGES = { pairs: () => renderPairs(), fams: () => renderFamilies(), syn: () => renderSyn(), affix: () => renderAffix(), roots: () => renderRoots(), ukus: () => renderUkUs(), phrasal: () => renderPhrasal(), idiom: () => renderIdioms(), sit: () => renderSit(), irr: () => renderIrregular(), dprep: () => renderDepPrep(), mis: () => renderMistakes(), gpat: () => renderGramPat(), ipa: () => renderIpa() };
 $('#tabbar').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   if (!b.dataset.ref) return vtRun(() => go(b.dataset.tab));
