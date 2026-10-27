@@ -1436,3 +1436,11 @@ html.no-ans .streak.bump { animation: none; }
 .sk-cap b { font-size: var(--fs-sm); }
 .sk-cap span { font-size: var(--fs-xs); opacity: .92; }
 .sk-now { align-self: flex-start; margin-top: 3px; padding: 1px 8px; border-radius: 99px; background: rgba(255, 255, 255, .92); color: #2b2b44; font-size: var(--fs-xs); font-style: normal; font-weight: 800; text-shadow: none; }
+
+/* settings: collapsible extra-games picker */
+.ng-box > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; }
+.ng-box > summary::-webkit-details-marker { display: none; }
+.ng-box > summary::after { content: "›"; font-size: 24px; color: var(--muted); transform: rotate(0); transition: transform .2s; flex: none; }
+.ng-box[open] > summary::after { transform: rotate(90deg); }
+.ng-box[open] > summary #ngSum { display: none; }
+.ng-box .ng-help { margin: 10px 0 8px; }

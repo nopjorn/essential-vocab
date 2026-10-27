@@ -19,6 +19,11 @@ async function perfCheck() {
 const REMIND_TIMES = ['0600', '0700', '0800', '0900', '1200', '1700', '1800', '1900', '2000', '2100', '2200'];
 const setOpen = {}; // which settings groups are expanded (kept while the app is open)
 const setIsOpen = (id) => ((id in setOpen ? setOpen[id] : id === 'lv' || id === 'learn') ? 'open' : '');
+// Collapsed summary of the extra games picked for the flashcard done screen.
+function nextGamesSummary(list) {
+  const g = (list || []).filter((id) => GAMES[id]);
+  return g.length ? g.map((id) => GAMES[id].icon + ' ' + GAMES[id].name).join(' · ') : 'ยังไม่ได้เลือก · แตะเพื่อเลือกเกม';
+}
 function renderSettings() {
   const st = S.settings;
   const lvChip = (l) => `<button class="chip" data-v="${l}">${LV_LABEL[l]} · ${W.filter((w) => w.g === l).length} คำ</button>`;
@@ -58,8 +63,9 @@ function renderSettings() {
         <select class="sel" id="start"><option value="home" ${st.start === 'home' ? 'selected' : ''}>🏠 หน้าแรก</option><option value="feed" ${st.start === 'feed' ? 'selected' : ''}>📱 ไถศัพท์</option><option value="cards" ${st.start === 'cards' ? 'selected' : ''}>🃏 แฟลชการ์ด</option></select></div>
       <div class="set-row"><span>ด้านหน้าการ์ด</span>
         <select class="sel" id="front"><option value="en" ${st.front === 'en' ? 'selected' : ''}>อังกฤษ → ไทย</option><option value="th" ${st.front === 'th' ? 'selected' : ''}>ไทย → อังกฤษ</option><option value="mix" ${st.front === 'mix' ? 'selected' : ''}>สลับกัน (คำที่แม่นแล้วถามกลับด้านบ้าง)</option></select></div>
-      <div class="set-row stack"><span>เกมเพิ่มเติมหลังทำแฟลชการ์ดครบ<br><span class="small muted">แตะเลือกได้หลายเกม จะขึ้นเป็นปุ่มต่อจาก "เล่นด่วน" ในหน้าจบรอบ</span></span>
-        <div class="chips" id="nextGames">${Object.keys(GAMES).map((g) => `<button class="chip ${(st.nextGames || []).includes(g) ? 'on' : ''}" data-v="${g}">${GAMES[g].icon} ${GAMES[g].name}</button>`).join('')}</div></div>
+      <details class="set-row stack ng-box" id="ngBox"><summary><span>เกมเพิ่มเติมหลังทำแฟลชการ์ดครบ<br><span class="small muted" id="ngSum">${nextGamesSummary(st.nextGames)}</span></span></summary>
+        <div class="small muted ng-help">แตะเลือกได้หลายเกม จะขึ้นเป็นปุ่มต่อจาก "เล่นด่วน" ในหน้าจบรอบ</div>
+        <div class="chips" id="nextGames">${Object.keys(GAMES).map((g) => `<button class="chip ${(st.nextGames || []).includes(g) ? 'on' : ''}" data-v="${g}">${GAMES[g].icon} ${GAMES[g].name}</button>`).join('')}</div></details>
       <button class="set-row set-link" id="wotdSetBtn"><span>✨ ตั้งค่าคำประจำวัน<br><span class="small muted">เลือกระดับ สถานะคำ และหมวดที่อยากให้ขึ้นในกล่องหน้าแรก</span></span><span class="muted">›</span></button>
     </div></details>
 
@@ -173,6 +179,7 @@ function renderSettings() {
     if (on.has(c.dataset.v)) on.delete(c.dataset.v); else on.add(c.dataset.v);
     st.nextGames = Object.keys(GAMES).filter((g) => on.has(g)); // keep the games-menu order
     c.classList.toggle('on', on.has(c.dataset.v)); save();
+    $('#ngSum').textContent = nextGamesSummary(st.nextGames);
   };
   $('#guideBtn').onclick = () => go('guide', 'settings');
   $('#clBtn').onclick = () => go('changelog', 'settings');

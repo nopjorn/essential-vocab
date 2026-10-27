@@ -375,11 +375,16 @@ test('UI polish 2: sheet action bar, session title counter, empty forecast', asy
 test('flashcards done screen shows the extra games picked in settings', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   await page.evaluate(() => go('settings'));
+  await expect(page.locator('#nextGames')).toBeHidden(); // folded by default
+  await expect(page.locator('#ngSum')).toContainText('ยังไม่ได้เลือก');
+  await page.locator('#ngBox > summary').click();
   await page.locator('#nextGames .chip[data-v="match"]').click();
   await page.locator('#nextGames .chip[data-v="spell"]').click();
   await page.locator('#nextGames .chip[data-v="spell"]').click(); // tap again = off
   await page.locator('#nextGames .chip[data-v="cloze"]').click();
   expect(await page.evaluate(() => S.settings.nextGames)).toEqual(['cloze', 'match']);
+  await page.locator('#ngBox > summary').click(); // fold again: the picked games are listed
+  await expect(page.locator('#ngSum')).toContainText('จับคู่');
   await page.evaluate(() => {
     const now = Date.now();
     W.slice(0, 30).forEach((w) => { S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: now + 86400000, s: 1, c: 1, x: 0 }; });
