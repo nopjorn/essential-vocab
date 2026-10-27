@@ -1715,3 +1715,20 @@ test('synonym page: tapping a word opens its word card', async ({ page }) => {
   await expect(page.locator('.wsheet .sheet-word')).toContainText('big');
   expect(errors).toEqual([]);
 });
+
+test('word card: swipe down closes it, a short drag keeps it open', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => openSheet(W.find((w) => w.w === 'big')));
+  await expect(page.locator('.sheet-wrap.open')).toHaveCount(1);
+  const swipe = (to) => page.evaluate((y) => {
+    const s = document.querySelector('.sheet');
+    const touch = (cy) => [new Touch({ identifier: 1, target: s, clientX: 200, clientY: cy })];
+    const fire = (type, cy) => s.dispatchEvent(new TouchEvent(type, { bubbles: true, cancelable: true, touches: type === 'touchend' ? [] : touch(cy), changedTouches: touch(cy) }));
+    fire('touchstart', 300); fire('touchmove', y); fire('touchend', y);
+  }, to);
+  await swipe(330);
+  await expect(page.locator('.sheet-wrap')).toHaveCount(1);
+  await swipe(480);
+  await expect(page.locator('.sheet-wrap')).toHaveCount(0, { timeout: 2000 });
+  expect(errors).toEqual([]);
+});

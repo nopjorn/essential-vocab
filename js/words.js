@@ -136,6 +136,21 @@ function openSheet(w, onChange, opt = {}) {
   });
   lexisBoxes(el, w);
   const close = () => { el.classList.remove('open'); setTimeout(() => el.remove(), 250); };
+  // Swipe the card down to close it. Only starts when the card is scrolled to the top, so reading a long card still scrolls.
+  const sheet = el.querySelector('.sheet');
+  let y0 = null, dy = 0;
+  sheet.addEventListener('touchstart', (e) => { y0 = sheet.scrollTop <= 0 ? e.touches[0].clientY : null; dy = 0; sheet.style.transition = 'none'; }, { passive: true });
+  sheet.addEventListener('touchmove', (e) => {
+    if (y0 == null) return;
+    dy = Math.max(0, e.touches[0].clientY - y0);
+    sheet.style.transform = `translateY(${dy}px)`; // follows the finger
+  }, { passive: true });
+  sheet.addEventListener('touchend', () => {
+    if (y0 == null) return;
+    y0 = null; sheet.style.transition = '';
+    if (dy > 90) { sheet.style.transform = 'translateY(100%)'; close(); }
+    else sheet.style.transform = '';
+  });
   el.onclick = (e) => {
     if (e.target === el) return close();
     const col = e.target.closest('[data-col]'); if (col) return speak(col.dataset.col);
