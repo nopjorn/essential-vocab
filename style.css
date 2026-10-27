@@ -1502,3 +1502,13 @@ html.no-ans .streak.bump { animation: none; }
 .m-cheer { position: fixed; z-index: 30; left: calc(var(--rail-w, 0px) + 12px); bottom: calc(env(safe-area-inset-bottom) + 92px); display: flex; align-items: flex-end; gap: 4px; pointer-events: none; }
 .m-cheer .m-say { background: var(--surface); color: var(--text); font-weight: 800; font-size: 14px; padding: 8px 12px; border-radius: 14px 14px 14px 4px; box-shadow: var(--shadow); max-width: 190px; order: 2; margin-bottom: 18px; }
 @media (prefers-reduced-motion: no-preference) { .m-cheer { animation: m-in .35s cubic-bezier(.2, .9, .3, 1.2); } @keyframes m-in { from { opacity: 0; transform: translateY(30px) scale(.8); } } }
+
+/* role play (renderRole in js/lexis.js) */
+.role-log { display: grid; gap: 6px; margin-bottom: 10px; opacity: .8; }
+.dlg-line.me { border-radius: 14px 14px 4px 14px; background: color-mix(in srgb, var(--primary) 14%, var(--surface)); }
+.dlg-line.cur { outline: 2px solid var(--primary); }
+
+/* dialogue / email stories (data/stories/real.js) */
+.story.k-dialogue .st-para { margin: 8px 0; padding: 8px 12px; border-radius: 14px 14px 14px 4px; background: var(--surface-2); }
+.story.k-dialogue .st-para:nth-child(even) { border-radius: 14px 14px 4px 14px; background: color-mix(in srgb, var(--primary) 14%, var(--surface)); }
+.story.k-email .st-para:first-child { font-weight: 800; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }

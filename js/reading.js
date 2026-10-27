@@ -5,9 +5,10 @@
 /* ---------- reading (short stories) ---------- */
 // data/stories/<level>.js: each file pushes { id, level, emoji, title, titleTh, en: [paragraphs], th: [paragraphs], q: [{ q, o: [3], a }] }
 // onto window.STORIES. Loaded on first use so app start stays fast; the service worker still caches them offline.
-const STORY_FILES = ['a1', 'a2', 'b1', 'b2', 'c1', 'c2'];
+const STORY_FILES = ['a1', 'a2', 'b1', 'b2', 'c1', 'c2', 'real']; // 'real' (1.103) = dialogues and emails, `kind` on each story
+const KIND_LABEL = { dialogue: '💬 บทสนทนา', email: '✉️ อีเมล' };
 let STORIES = null;
-const STORY_COUNT = 105;
+const STORY_COUNT = 115;
 function loadStories() {
   if (STORIES) return Promise.resolve(STORIES);
   window.STORIES = [];
@@ -166,7 +167,7 @@ function renderRead(id) {
     <div class="st-hero lv-${st.level}">
       <div class="st-emoji">${st.emoji || '📖'}</div>
       <div class="st-h1">${esc(st.title)}</div><div class="st-h2">${esc(st.titleTh)}</div>
-      <div class="st-meta"><span>${LV_LABEL[st.level]} · ${RLV_TH[st.level]}</span><span>⏱ ${inf.mins} นาที</span><span>📝 ${inf.words} คำ</span><span>${inf.known ? `🧠 รู้แล้ว ${inf.known}%` : `✨ คำใหม่ ${inf.fresh.length}`}</span></div>
+      <div class="st-meta">${st.kind ? `<span>${KIND_LABEL[st.kind]}</span>` : ''}<span>${LV_LABEL[st.level]} · ${RLV_TH[st.level]}</span><span>⏱ ${inf.mins} นาที</span><span>📝 ${inf.words} คำ</span><span>${inf.known ? `🧠 รู้แล้ว ${inf.known}%` : `✨ คำใหม่ ${inf.fresh.length}`}</span></div>
     </div>
     <div class="st-tools">
       <button class="tool" id="rAll"><span>▶️</span>ฟังทั้งเรื่อง</button>
@@ -176,7 +177,7 @@ function renderRead(id) {
       <button class="tool" id="rSlow" aria-pressed="false"><span>🐢</span>อ่านช้า</button>
       <button class="tool" id="rShadow"><span>🗣️</span>พูดตาม</button>
     </div>
-    <article class="card-box story" id="rText" style="--st-font:${font()}px">
+    <article class="card-box story${st.kind ? ' k-' + st.kind : ''}" id="rText" style="--st-font:${font()}px">
       ${st.en.map((para, k) => `<div class="st-para" data-k="${k}"><p class="st-p" lang="en">${storyHTML(para)}</p>
         <div class="st-row"><button class="st-say" data-para="${k}" aria-label="ฟังย่อหน้านี้">🔊</button><button class="st-thbtn" data-th="${k}">แปลย่อหน้านี้</button></div>
         <p class="st-th" hidden>${esc(st.th[k] || '')}</p></div>`).join('')}
@@ -311,18 +312,18 @@ function renderLibrary() {
       <div class="row" style="gap:14px;align-items:center"><div class="st-pick-emoji">${pick.emoji || '📖'}</div>
       <div class="grow"><div class="st-pick-t">${esc(pick.title)}</div><div class="st-pick-s">${esc(pick.titleTh)}</div>
       <div class="st-pick-m">${LV_LABEL[pick.level]} · ⏱ ${pi.mins} นาที · ${pi.known ? `🧠 รู้แล้ว ${pi.known}%` : `📝 ${pi.words} คำ`}</div></div><span class="st-pick-go">▶</span></div></button>` : '<div class="card-box center">🎉 อ่านครบทุกเรื่องแล้ว อ่านซ้ำเพื่อทบทวนได้เลย</div>'}
-    <div class="chips" id="rf" style="margin:14px 0 6px">${[['all', 'ทั้งหมด'], ...RLEVELS.filter((lv) => counts[lv].length).map((lv) => [lv, LV_LABEL[lv]]), ['unread', 'ยังไม่อ่าน']].map(([v, t]) => `<button class="chip${readFilter === v ? ' on' : ''}" data-v="${v}">${t}</button>`).join('')}</div>
+    <div class="chips" id="rf" style="margin:14px 0 6px">${[['all', 'ทั้งหมด'], ...RLEVELS.filter((lv) => counts[lv].length).map((lv) => [lv, LV_LABEL[lv]]), ['unread', 'ยังไม่อ่าน'], ['dialogue', KIND_LABEL.dialogue], ['email', KIND_LABEL.email]].map(([v, t]) => `<button class="chip${readFilter === v ? ' on' : ''}" data-v="${v}">${t}</button>`).join('')}</div>
     <div id="rList"></div>`;
   const paint = () => {
     view.querySelectorAll('#rf .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === readFilter));
     const lvs = RLEVELS.includes(readFilter) ? [readFilter] : RLEVELS;
     $('#rList').innerHTML = lvs.map((lv) => {
-      const list = counts[lv].filter((st) => readFilter !== 'unread' || !S.read[st.id]);
+      const list = counts[lv].filter((st) => (readFilter !== 'unread' || !S.read[st.id]) && (!KIND_LABEL[readFilter] || st.kind === readFilter));
       if (!list.length) return '';
       return `<div class="h2 lib-lv">${lvBadge(lv)} ${RLV_TH[lv]}</div>${list.map((st) => { const inf = storyInfo(st); return `<button class="st-card${S.read[st.id] ? ' read' : ''}" data-id="${st.id}">
         <span class="st-tile lv-${st.level}">${st.emoji || '📖'}</span>
         <span class="grow"><b>${esc(st.title)}</b><span class="small muted st-th2">${esc(st.titleTh)}</span>
-        <span class="st-sub">⏱ ${inf.mins} นาที · ${!inf.fresh.length ? '🧠 รู้ทุกคำแล้ว' : inf.known ? `🧠 รู้แล้ว ${inf.known}%` : `📝 ${inf.words} คำ`}</span></span>${scoreTag(st) || '<span class="muted">›</span>'}</button>`; }).join('')}`;
+        <span class="st-sub">${st.kind ? KIND_LABEL[st.kind] + ' · ' : ''}⏱ ${inf.mins} นาที · ${!inf.fresh.length ? '🧠 รู้ทุกคำแล้ว' : inf.known ? `🧠 รู้แล้ว ${inf.known}%` : `📝 ${inf.words} คำ`}</span></span>${scoreTag(st) || '<span class="muted">›</span>'}</button>`; }).join('')}`;
     }).join('') || '<p class="center muted">อ่านครบทุกเรื่องในหมวดนี้แล้ว 🎉</p>';
   };
   paint();

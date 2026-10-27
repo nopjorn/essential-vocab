@@ -1590,3 +1590,58 @@ test('1.100: View Transition navigation, illustrated empty states, swipe tilt', 
   expect(await fc.evaluate((e) => e.style.transform)).toContain('rotateY');
   expect(errors).toEqual([]);
 });
+
+test('role play (1.103): pick a side, the app speaks the other lines, mic checks mine, summary lists misses', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(async () => { await loadSit(); go('games'); renderSit('restaurant'); });
+  await page.locator('#sitRole').click();
+  const roles = await page.locator('#roleWho .chip').allTextContents();
+  expect(roles.length).toBeGreaterThanOrEqual(2);
+  await page.locator('#roleHide').evaluate((e) => e.click()); // hide-text mode on
+  await page.locator('#roleWho .chip').nth(1).click();
+  const lines = await page.evaluate(() => SIT.find((x) => x.id === 'restaurant').d);
+  let right = 0, miss = 0;
+  for (let n = 0; n < lines.length; n++) {
+    // wait for my turn (the app's lines advance by themselves) or the summary
+    await expect.poll(async () => (await page.locator('#mic').count()) + (await page.locator('#roleAgain').count()), { timeout: 8000 }).toBeGreaterThan(0);
+    if (await page.locator('#roleAgain').count()) break;
+    await expect(page.locator('#roleEn')).toBeHidden(); // text hidden
+    const k = +(await page.locator('#title').textContent()).match(/(\d+)\/\d+/)[1] - 1;
+    if (right === 0 || miss > 0) { // first my line right, the next one wrong (3 tries), the rest right
+      await page.evaluate((t) => { window.__heard = t; }, lines[k][1]); right++; await page.locator('#mic').click();
+    } else {
+      await page.evaluate(() => { window.__heard = 'banana'; }); miss++;
+      for (let t = 0; t < 3; t++) { await page.locator('#mic').click(); await page.waitForTimeout(120); }
+      await expect(page.locator('#reveal')).toContainText('ประโยคนี้คือ');
+      await page.locator('#roleNext').click();
+      miss = 0;
+    }
+  }
+  await expect(page.locator('#roleAgain')).toBeVisible({ timeout: 8000 });
+  await expect(page.locator('.result-emoji')).toBeVisible();
+  await expect(page.locator('.wrong-list')).toBeVisible();
+  expect((await readState(page)).counts.role).toBe(1);
+  // swap sides starts the chooser again; the exit button leaves the page
+  await page.locator('#roleSwap').click();
+  await expect(page.locator('#roleWho')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('real-life stories (1.103): dialogues and emails carry a kind, library filters by it, reader styles them', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const kinds = await page.evaluate(async () => { await loadStories(); return STORIES.filter((s) => s.kind).map((s) => [s.id, s.kind, s.level]); });
+  expect(kinds.length).toBe(10);
+  expect(kinds.filter((k) => k[1] === 'dialogue').length).toBe(4);
+  expect(new Set(kinds.map((k) => k[2])).size).toBeGreaterThanOrEqual(4);
+  await page.evaluate(() => { go('games'); });
+  await page.evaluate(() => { renderLibrary(); });
+  await page.locator('#rf .chip[data-v="email"]').click();
+  await expect(page.locator('#rList .st-card')).toHaveCount(6);
+  await expect(page.locator('#rList')).toContainText('✉️ อีเมล');
+  await page.locator('#rf .chip[data-v="dialogue"]').click();
+  await expect(page.locator('#rList .st-card')).toHaveCount(4);
+  await page.locator('#rList .st-card').first().click();
+  await expect(page.locator('#rText.story.k-dialogue')).toBeVisible();
+  await expect(page.locator('.st-meta')).toContainText('💬 บทสนทนา');
+  expect(errors).toEqual([]);
+});

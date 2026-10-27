@@ -185,8 +185,10 @@ function renderSit(id) {
     <div class="card-box"><div class="small muted" style="margin-bottom:8px"><b>🔑 คำและวลีสำคัญ</b> (แตะเพื่อฟัง)</div>
       ${st.w.map(([en, th]) => `<button class="col-row" data-col="${esc(en)}"><b lang="en">${esc(en)}</b><span>${esc(th)}</span></button>`).join('')}</div>
     <div class="card-box"><div class="small muted" style="margin-bottom:4px"><b>🗨️ บทสนทนา</b> (แตะประโยคเพื่อฟัง)</div>
-      <div id="sitDlg">${st.d.map(([who, en, th], k) => `<button class="dlg-line${k % 2 ? ' alt' : ''}" data-k="${k}"><small class="muted">${esc(who)}</small><span lang="en">${esc(en)}</span><small class="muted">${esc(th)}</small></button>`).join('')}</div></div>`;
+      <div id="sitDlg">${st.d.map(([who, en, th], k) => `<button class="dlg-line${k % 2 ? ' alt' : ''}" data-k="${k}"><small class="muted">${esc(who)}</small><span lang="en">${esc(en)}</span><small class="muted">${esc(th)}</small></button>`).join('')}</div></div>
+    <button class="btn primary block" id="sitRole">🎭 ฝึกพูดบทบาทสมมติ</button>`;
   $('#sitBack').onclick = () => renderSit();
+  $('#sitRole').onclick = () => renderRole(st);
   view.querySelectorAll('[data-col]').forEach((b) => (b.onclick = () => speak(b.dataset.col)));
   const lines = [...view.querySelectorAll('.dlg-line')];
   const on = (k) => lines.forEach((b, j) => b.classList.toggle('on', j === k));
@@ -202,6 +204,120 @@ function renderSit(id) {
     };
     step(0);
   };
+}
+
+/* ---------- role play (1.103) ---------- */
+// Pick one side of a situation's dialogue; the app speaks the other side's lines and you say yours (checked with sentenceMatch,
+// 3 tries per line). Without speech recognition (canListen false) it is repeat-after-me: say it aloud, tap ✅. Hide-text mode shows only the Thai.
+let roleHide = false;
+function renderRole(st, me) {
+  const tok = ++sitPlayTok; // also stops the dialogue player and any earlier role play
+  view.scrollTop = 0;
+  const roles = [...new Set(st.d.map((l) => l[0]))];
+  const back = () => renderSit(st.id);
+  if (me == null) {
+    $('#title').textContent = `🎭 ${st.th}`;
+    view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="roleBack">‹ ${esc(st.th)}</button></div>
+      <div class="card-box center"><div class="result-emoji" aria-hidden="true">🎭</div><div class="h2" style="margin:2px 0">ฝึกพูดบทบาทสมมติ</div>
+        <p class="small muted">เลือกว่าคุณเป็นใคร แอปจะพูดบทของอีกฝ่าย แล้วถึงตาคุณพูด${canListen ? ' (ระบบฟังเสียงตรวจให้)' : ' (เครื่องนี้ฟังเสียงไม่ได้ พูดออกเสียงเองแล้วแตะ ✅)'}</p>
+        <div class="chips" id="roleWho" style="justify-content:center">${roles.map((r) => `<button class="chip" data-who="${esc(r)}">${esc(r)}</button>`).join('')}</div></div>
+      <div class="set-row"><span>ซ่อนข้อความของฉัน<br><span class="small muted">เห็นแค่คำแปลไทย ต้องนึกประโยคเอง (แตะดูใบ้ได้)</span></span>
+        <label class="switch"><input type="checkbox" id="roleHide" aria-label="ซ่อนข้อความของฉัน" ${roleHide ? 'checked' : ''}><span></span></label></div>`;
+    $('#roleBack').onclick = back;
+    $('#roleHide').onchange = (e) => { roleHide = e.target.checked; };
+    $('#roleWho').onclick = (e) => { const b = e.target.closest('[data-who]'); if (b) renderRole(st, b.dataset.who); };
+    return;
+  }
+  const res = [];
+  let rec = null;
+  const alive = () => tok === sitPlayTok && document.getElementById('roleBox');
+  const stop = () => { if (rec) { try { rec.abort(); } catch (e) { /* ignore */ } rec = null; } };
+  cleanup = stop;
+  const bubbles = (k) => st.d.slice(Math.max(0, k - 3), k).map(([who, en, th], j) => `<div class="dlg-line${who === me ? ' me' : ''}"><small class="muted">${esc(who)}</small><span lang="en">${esc(en)}</span><small class="muted">${esc(th)}</small></div>`).join('');
+  const frame = (k, inner) => {
+    $('#title').textContent = `🎭 ${st.th} · ${k + 1}/${st.d.length}`;
+    view.innerHTML = `<div id="roleBox"><div class="session-top"><button class="icon-btn" id="roleBack" aria-label="ออก">✕</button>
+      <div class="progress"><div style="width:${k / st.d.length * 100}%"></div></div><span class="small">คุณคือ <b>${esc(me)}</b></span></div>
+      <div class="role-log">${bubbles(k)}</div>${inner}</div>`;
+    $('#roleBack').onclick = () => { stop(); sitPlayTok++; back(); };
+  };
+  const step = (k) => {
+    stop();
+    if (!alive() && k > 0) return;
+    if (k >= st.d.length) return finish();
+    const [who, en, th] = st.d[k];
+    if (who !== me) { // the app's line
+      frame(k, `<div class="dlg-line cur"><small class="muted">${esc(who)}</small><span lang="en">${esc(en)}</span><small class="muted">${esc(th)}</small></div><div class="center small muted" style="margin-top:8px">🔊 กำลังฟัง…</div><button class="btn block" id="roleSkip" style="margin-top:10px">ข้าม ▶</button>`);
+      let moved = false;
+      const go1 = () => { if (!moved && alive()) { moved = true; setTimeout(() => step(k + 1), 350); } };
+      $('#roleSkip').onclick = () => { moved = true; if (window.speechSynthesis) speechSynthesis.cancel(); step(k + 1); };
+      const u = speak(en);
+      if (u) { u.onend = go1; u.onerror = go1; } else setTimeout(go1, 1200);
+      return;
+    }
+    let tries = 0, shown = !roleHide, over = false;
+    const paint = () => {
+      frame(k, `<div class="card-box q-prompt pop"><div class="small muted">ถึงตาคุณแล้ว 🎤 พูดว่า…</div>
+        <div class="th" style="margin-top:6px">${esc(th)}</div>
+        <div class="cloze" lang="en" id="roleEn" style="margin-top:8px" ${shown ? '' : 'hidden'}>${esc(en)}</div>
+        ${shown ? '' : '<button class="hint-btn" id="roleShow">👁 ดูใบ้ประโยค</button>'}<button class="hint-btn" id="roleHear">🔊 ฟังตัวอย่าง</button></div>
+        ${canListen ? '<div class="center"><button class="mic" id="mic" aria-label="กดแล้วพูด">🎤</button></div>' : '<button class="btn primary block" id="roleDone" style="margin-top:10px">✅ พูดแล้ว ไปต่อ</button>'}
+        <div class="center small muted" id="heard">${canListen ? 'แตะไมค์แล้วพูดประโยคนี้' : 'พูดออกเสียงตามเอง แล้วแตะปุ่ม'}</div>
+        <button class="btn block" id="roleGive" style="margin-top:12px">ข้าม / เฉลย</button><div class="reveal" id="reveal" aria-live="polite"></div>`);
+      if ($('#roleShow')) $('#roleShow').onclick = () => { shown = true; paint(); };
+      $('#roleHear').onclick = () => speak(en);
+      $('#roleGive').onclick = () => fin(false);
+      if ($('#roleDone')) $('#roleDone').onclick = () => fin(true);
+      if ($('#mic')) $('#mic').onclick = listen;
+    };
+    const fin = (ok) => {
+      if (over) return; over = true; stop();
+      res.push({ k, ok, tries });
+      if (ok) { addXP(2); markActive(); }
+      const rv = $('#reveal');
+      rv.innerHTML = (ok ? '✅ เยี่ยมเลย!' : `👂 ประโยคนี้คือ <b lang="en">${esc(en)}</b>`) + `<button class="btn primary block" id="roleNext" style="margin-top:12px">ถัดไป →</button>`;
+      $('#roleNext').onclick = () => step(k + 1);
+      $('#roleGive').remove(); if ($('#mic')) $('#mic').disabled = true; if ($('#roleDone')) $('#roleDone').remove();
+      if (!ok) speak(en); else setTimeout(() => { if (alive() && res.length && res[res.length - 1].k === k) step(k + 1); }, 1100);
+    };
+    const listen = () => {
+      if (over) return;
+      if (rec) { rec.stop(); return; }
+      if (window.speechSynthesis) speechSynthesis.cancel();
+      const mic = $('#mic'), heard = $('#heard');
+      rec = new SR(); rec.lang = S.settings.accent; rec.interimResults = false; rec.maxAlternatives = 5; rec.continuous = false;
+      mic.classList.add('on'); heard.textContent = 'กำลังฟัง... พูดได้เลย';
+      rec.onresult = (e) => {
+        const alts = Array.from(e.results[0]).map((a) => a.transcript);
+        if (alts.some((a) => sentenceMatch(a, en))) { tries++; return fin(true); }
+        tries++;
+        heard.innerHTML = `ได้ยินว่า "<b>${esc(alts[0] || '')}</b>" ลองอีกครั้งนะ 💪 (${tries}/3)`;
+        mic.classList.remove('no'); void mic.offsetWidth; mic.classList.add('no');
+        if (tries >= 3) fin(false);
+      };
+      rec.onerror = (e) => { heard.textContent = e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'ยังไม่ได้อนุญาตให้ใช้ไมค์/การรู้จำเสียง ลองเปิดในตั้งค่า iPhone ดูนะ' : 'ไม่ได้ยินเสียง แตะไมค์แล้วลองอีกครั้งนะ'; };
+      rec.onend = () => { rec = null; if (mic) mic.classList.remove('on'); };
+      try { rec.start(); } catch (err) { rec = null; mic.classList.remove('on'); heard.textContent = 'เปิดไมค์ไม่ได้ ลองอีกครั้งนะ'; }
+    };
+    paint();
+  };
+  const finish = () => {
+    const ok = res.filter((r) => r.ok).length, n = res.length;
+    S.counts.role = (S.counts.role || 0) + 1; save();
+    if (n && ok === n) confetti();
+    $('#title').textContent = `🎭 ${st.th}`;
+    view.innerHTML = `<div class="card-box center pop"><div class="result-emoji">${!n ? '🎭' : ok === n ? '🏆' : ok >= n / 2 ? '🎉' : '💪'}</div>
+        <div class="h2">${n ? `พูดได้ ${ok}/${n} ประโยค` : 'จบบทสนทนาแล้ว'}</div><p class="small muted">คุณเป็น ${esc(me)} · ${esc(st.th)}</p></div>
+      ${res.some((r) => !r.ok) ? `<div class="card-box wrong-list"><b>ประโยคที่ควรฝึกอีก</b> <span class="small muted">(แตะเพื่อฟัง)</span>
+        ${res.filter((r) => !r.ok).map((r) => `<button class="col-row" data-col="${esc(st.d[r.k][1])}"><b lang="en">${esc(st.d[r.k][1])}</b><span>${esc(st.d[r.k][2])}</span></button>`).join('')}</div>` : ''}
+      <button class="btn primary block" id="roleAgain">เล่นอีกรอบ (บทเดิม)</button><div style="height:10px"></div>
+      <button class="btn block" id="roleSwap">สลับบท</button><div style="height:10px"></div><button class="btn block" id="roleBack">‹ กลับ</button>`;
+    view.querySelectorAll('[data-col]').forEach((b) => (b.onclick = () => speak(b.dataset.col)));
+    $('#roleAgain').onclick = () => renderRole(st, me);
+    $('#roleSwap').onclick = () => renderRole(st);
+    $('#roleBack').onclick = back;
+  };
+  step(0);
 }
 
 /* ---------- synonyms & antonyms ---------- */
