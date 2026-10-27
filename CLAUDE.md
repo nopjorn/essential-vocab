@@ -10,7 +10,7 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
   Tell the user the new version number.
 - Patch (x.y.Z) for small fixes, minor (x.Y.0) for new features.
 - Push directly to `master` (no PRs unless asked).
-- The in-app manual (`GUIDE` / `renderGuide()` in `js/guide.js`, route `guide`) describes every feature
+- The in-app manual (`GUIDE` / `renderGuideBody()` in `data/guide.js`, lazy-loaded by `loadGuide()`/`renderGuide()` in `js/guide.js`, route `guide`) describes every feature
   in Thai: update it whenever a feature is added or changed.
 - The version is shown at the bottom of the home and settings screens so the user can
   check whether the iPhone has picked up the update.
@@ -28,6 +28,7 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
 | `js/scene.js` | Home hero sky (1.97): `SKY` (6 time-of-day skies `morning forenoon afternoon evening dusk night`, `SKY_AT` start minutes 05:00 09:00 12:00 16:00 18:30 22:00), `skyId(date)`, `skyScene(id)` (hand-drawn SVG layer: clouds, birds, stars, shooting star, hills, palm), `skyVars`, `heroSky()` (classes/style/scene/disc used by `B.hero`), `skyGallery()` (settings preview). Settings `heroBg` ('theme' default / 'time' = sky gradient) and `heroArt` (default true). `palAuto` (1.98): `skyPalette()` / `SKY_PAL` make `applyTheme()` pick the palette by time of day (re-applied on boot and when the app becomes visible); picking a swatch turns it off. The sun/moon is `.ring-disc` inside the goal ring; `greeting()` also follows `skyId()`. Colours are checked for white-text contrast in `tests/scene.spec.js` |
 | `js/mascot.js` | Mascot "น้องคำ" (`mascotSvg({mood,stage,equip})`, `mascotMood/Stage`, home block `mascot` = `mascotCard`, route `mascot` = wardrobe `renderMascot`), unlockables `ITEMS` (accessories / palettes `gold` `galaxy` / card frame; open by level or via `S.owned`; `itemOpen`, `paletteOpen`) and the daily mystery box (`boxReady`/`openBox`, `S.box`). State: `S.mascot {equip, at}`, `S.owned`, `S.box`, `settings.frame` |
 | `js/events.js` | Seasonal events (`EVENTS`: halloween 24–31 Oct, songkran 10–16 Apr, loy 5–30 Nov, newyear 26 Dec–3 Jan; each with 10 original words + short story + 5-question quiz). `eventOn(date)`, `eventYear`, home block `event` (`eventCard`), route `event` (`renderEvent(id)`), quiz pass (3/5) → `S.evt['id-year']`, sticker + mascot item `evt:*` in `S.owned` |
+| `data/play.js` | Game engine `playQuiz`/`playMatch` (moved out of `js/games.js` in 1.101): `loadPlay()` + stubs in games.js, idle prefetch in boot.js; `openApp` in tests waits for `playOn` |
 | `sw.js` | Network-first service worker with versioned cache |
 | `data/families.js` | `window.FAMILIES = [{f: [[word, pos, thai], ...], q: [[sentence ___, answer, thai], ...]}]` original word families (a word is in one family only), lazy-loaded by `loadFamilies()`; `familyOf(word)` → family (word sheet box, `wform` game, `renderFamilies()` browser) |
 | `tests/*.spec.js`, `playwright.config.js` | Playwright test suite (`npm test`), run by `.github/workflows/test.yml` on every push to `master` |

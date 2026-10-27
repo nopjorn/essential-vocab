@@ -339,6 +339,7 @@ test('level map (1.83): stages mix every question type and reach the stars scree
 test('guide (1.84): the duel, level map and word search sections sit in the practice group', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   await page.evaluate(() => go('guide'));
+  await page.waitForFunction(() => typeof guideOn !== 'undefined' && guideOn);
   const grp = await page.evaluate(() => ['ท้าดวลเพื่อน', 'แผนที่ด่าน', 'ค้นหาคำในตาราง'].map((t) => GUIDE_GROUPS[guideGroupOf(t)][1]));
   expect(grp).toEqual(['เรียนและฝึก', 'เรียนและฝึก', 'เรียนและฝึก']);
   expect(errors).toEqual([]);

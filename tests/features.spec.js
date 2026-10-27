@@ -1186,6 +1186,7 @@ test('speed check (1.76): settings button measures boot, home, stats and save an
 test('guide (1.77): grouped sections, search filters and opens matches, empty state', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   await page.evaluate(() => go('guide'));
+  await page.waitForFunction(() => typeof guideOn !== 'undefined' && guideOn);
   const total = await page.evaluate(() => GUIDE.length);
   expect(await page.locator('.g-sec').count()).toBe(total);
   expect(await page.locator('.g-group').count()).toBeGreaterThanOrEqual(4);
@@ -1205,6 +1206,7 @@ test('guide (1.77): grouped sections, search filters and opens matches, empty st
 test('guide (1.77.3): nothing open by default, every game is in the manual, group titles all exist', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   await page.evaluate(() => go('guide'));
+  await expect(page.locator('.g-sec').first()).toBeVisible();
   expect(await page.locator('.g-sec[open]').count()).toBe(0);
   const miss = await page.evaluate(() => {
     const txt = GUIDE.map((g) => g[2]).join(' ');
@@ -1532,6 +1534,7 @@ test('wide screens (1.96): home, stats, settings, guide and reference pages pack
   for (const [js, sel, min] of [["go('home')", '.home-grid > .hb', 3], ["go('stats')", '#view > *', 2], ["go('settings')", '#view > details', 2],
     ["go('guide')", '.g-group > .g-sec', 2], ['renderIrregular()', '#irList .col-row', 2], ['renderPairs()', '.pair-list > .pair-card', 2]]) {
     await page.evaluate(js);
+    if (js === "go('guide')") await page.waitForFunction(() => guideOn); // the manual is lazy-loaded
     await page.waitForTimeout(200);
     expect(await cols(sel), js).toBeGreaterThanOrEqual(min);
   }

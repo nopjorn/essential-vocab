@@ -13,7 +13,7 @@ function load(...files) {
   return window;
 }
 // All app code: app.js plus the js/*.js scripts it is split into.
-const appCode = () => ['app.js', ...fs.readdirSync(path.join(root, 'js')).map((f) => `js/${f}`)].map(read).join('\n');
+const appCode = () => ['app.js', ...fs.readdirSync(path.join(root, 'js')).map((f) => `js/${f}`), 'data/play.js', 'data/guide.js'].map(read).join('\n'); // + the lazy-loaded engine and manual (1.101)
 const WORD_FILES = ['a1', 'a2', 'b1', 'b2', 'b2plus', 'c1'].map((l) => `data/words/${l}.js`);
 
 test('version is the same in app.js, sw.js and the README changelog', () => {

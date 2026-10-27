@@ -1454,6 +1454,12 @@ html.no-ans .streak.bump { animation: none; }
   html[data-vt="vin-r"]::view-transition-new(page) { animation-name: vt-in-r; }
   html[data-vt="vin-push"]::view-transition-new(page) { animation-name: vt-in-push; }
   html[data-vt="vin-pop"]::view-transition-new(page) { animation-name: vt-in-pop; }
+  /* the top bar and tab bar keep their own layers, so they never blink out while the page changes (1.101) */
+  html[data-vt] .tabbar { view-transition-name: tabbar; }
+  html[data-vt] .topbar { view-transition-name: topbar; }
+  html[data-vt]::view-transition-group(tabbar), html[data-vt]::view-transition-group(topbar) { animation: none; }
+  html[data-vt]::view-transition-old(tabbar), html[data-vt]::view-transition-old(topbar) { display: none; }
+  html[data-vt]::view-transition-new(tabbar), html[data-vt]::view-transition-new(topbar) { animation: none; }
   html[data-vt]::view-transition-group(wd) { animation-duration: .32s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
   @keyframes vt-out { to { opacity: 0; } }
   @keyframes vt-in { from { opacity: 0; } }

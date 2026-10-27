@@ -30,6 +30,7 @@ async function openApp(page, state) {
     window.webkitSpeechRecognition = FakeRec;
   }, [KEY, state || null]);
   await page.goto('index.html');
+  await page.waitForFunction(() => typeof playOn !== 'undefined' && playOn); // the game engine is idle-prefetched at boot (1.101); games start synchronously once it is in
   await expect(page.locator('#view')).not.toBeEmpty();
   return errors;
 }
