@@ -59,7 +59,7 @@ function renderPhrasal() {
     const verbs = [...new Set(list.map((r) => r.verb))].sort();
     $('#pvList').innerHTML = verbs.length ? verbs.map((v) => `<div class="card-box pair-card"><div class="pair-h"><b>${esc(v)}</b> <span class="small muted">${esc(WORD_BY[v] ? thFirst(WORD_BY[v].t) : '')}</span></div>
       ${list.filter((r) => r.verb === v).map((r) => `<button class="pair-ex" data-say="${esc(r.plain)}"><span><b>${esc(r.pv)}</b> <span class="lvl-mini">${r.lv}</span> = ${esc(r.th)}</span><span>${pvHTML(r)}</span><small class="muted">${esc(r.exTh)}</small></button>`).join('')}</div>`).join('')
-      : '<p class="muted center">ไม่พบ phrasal verb นี้</p>';
+      : emptyArt({ kind: 'search', title: 'ไม่พบ phrasal verb นี้', sub: 'ลองพิมพ์ให้สั้นลง หรือเปลี่ยนตัวกรอง', sm: true });
   };
   paint();
   $('#pvq').oninput = (e) => { pvQuery = e.target.value; paint(); };
@@ -144,7 +144,7 @@ function renderIdioms() {
     const lvs = ['A1', 'A2', 'B1', 'B2', 'C1'].filter((l) => list.some((r) => r.lv === l));
     $('#idList').innerHTML = lvs.length ? lvs.map((l) => `<div class="card-box pair-card"><div class="pair-h"><b>${l}</b> <span class="small muted">${list.filter((r) => r.lv === l).length} สำนวน</span></div>
       ${list.filter((r) => r.lv === l).map((r) => `<button class="pair-ex" data-say="${esc(r.plain)}"><span><b lang="en">${esc(r.id)}</b> = ${esc(r.th)}</span><span lang="en">${idHTML(r)}</span><small class="muted">${esc(r.exTh)}</small></button>`).join('')}</div>`).join('')
-      : '<p class="muted center">ไม่พบสำนวนนี้</p>';
+      : emptyArt({ kind: 'search', title: 'ไม่พบสำนวนนี้', sub: 'ลองพิมพ์ให้สั้นลง หรือเปลี่ยนตัวกรอง', sm: true });
   };
   paint();
   $('#idq').oninput = (e) => { idQuery = e.target.value; paint(); };
@@ -262,7 +262,7 @@ function renderSyn() {
   const paint = () => {
     const q = synQuery.trim().toLowerCase();
     const list = q ? SYN.filter((g) => g.th.includes(q) || g.s.some((x) => x.includes(q)) || g.a.some((x) => x.includes(q))) : SYN;
-    $('#synList').innerHTML = list.length ? list.map((g) => `<div class="card-box pair-card">${synCard(g)}</div>`).join('') : '<p class="muted center">ไม่พบคำนี้</p>';
+    $('#synList').innerHTML = list.length ? list.map((g) => `<div class="card-box pair-card">${synCard(g)}</div>`).join('') : emptyArt({ kind: 'search', title: 'ไม่พบคำนี้', sub: 'ลองพิมพ์ให้สั้นลง หรือเปลี่ยนตัวกรอง', sm: true });
   };
   paint();
   $('#synq').oninput = (e) => { synQuery = e.target.value; paint(); };
@@ -309,7 +309,7 @@ function renderAffix() {
     const part = (k, h) => { const list = AFFIX.filter((a) => a.k === k && hit(a)); return list.length ? `<div class="h2">${h}</div><div class="pair-list">${list.map((a) => `<div class="card-box pair-card"><div class="pair-h"><b class="af-x">${affixLabel(a)}</b> <span>= ${esc(a.th)}</span></div>
       ${a.note ? `<div class="small muted" style="margin:4px 0 6px">${esc(a.note)}</div>` : ''}${affixRows(a)}</div>`).join('')}</div>` : ''; };
     const html = part('p', '⬅️ อุปสรรค (prefix) — เติมหน้าคำ') + part('s', '➡️ ปัจจัย (suffix) — เติมท้ายคำ');
-    $('#afList').innerHTML = html || '<p class="muted center">ไม่พบ</p>';
+    $('#afList').innerHTML = html || emptyArt({ kind: 'search', title: 'ไม่พบ', sub: 'ลองพิมพ์ให้สั้นลง หรือเปลี่ยนตัวกรอง', sm: true });
   };
   paint();
   $('#afq').oninput = (e) => { affixQuery = e.target.value; paint(); };

@@ -101,7 +101,7 @@ function yearLine(line) {
 function renderYear(arg) {
   const y = +arg || yearToShow() || new Date().getFullYear(), s = yearStats(y);
   if (!s.days) {
-    view.innerHTML = `<div class="card-box center"><div class="result-emoji">🎊</div><p>ยังไม่มีข้อมูลการเรียนในปี ${y + 543}</p><button class="btn primary block" data-go="stats">กลับ</button></div>`;
+    view.innerHTML = `<div class="card-box">${emptyArt({ kind: 'empty', title: `ยังไม่มีข้อมูลการเรียนในปี ${y + 543}`, sub: 'เรียนสักวัน แล้วสรุปของปีนี้จะมาอยู่ที่นี่', btn: 'กลับ', go: 'stats' })}</div>`;
     return;
   }
   const slides = yearSlides(s); let i = 0;

@@ -111,6 +111,17 @@ function openBox() {
   return text;
 }
 
+/* ---------- illustrated empty states (1.100) ---------- */
+// The mascot in a pose + a small prop instead of a bare line of text. kind: search (nothing found), empty (nothing here yet),
+// done (all finished), sleep (nothing happening now). title/sub are trusted markup (escape dynamic text first);
+// btn + go = optional button (data-go route); sm = compact row for lists and panels.
+const EMPTY_ART = { search: ['normal', '🔎'], empty: ['miss', '📭'], done: ['happy', '🎉'], sleep: ['sleepy', '🌙'] };
+function emptyArt({ kind = 'empty', title, sub = '', btn = '', go = '', sm = false }) {
+  const [mood, prop] = EMPTY_ART[kind] || EMPTY_ART.empty;
+  return `<div class="empty-art${sm ? ' sm' : ''}"><div class="ea-pic" aria-hidden="true">${mascotSvg({ mood, size: sm ? 64 : 104 })}<span class="ea-prop">${prop}</span></div>
+    <div class="ea-txt"><b>${title}</b>${sub ? `<div class="small muted">${sub}</div>` : ''}${btn ? `<button class="btn primary" data-go="${go}">${btn}</button>` : ''}</div></div>`;
+}
+
 /* ---------- home card + wardrobe page ---------- */
 function mascotCard() {
   const mood = mascotMood(), st = mascotStage();

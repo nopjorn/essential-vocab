@@ -1549,3 +1549,40 @@ test('wide screens (1.96): home, stats, settings, guide and reference pages pack
   expect(await cols('#view > *:not(.row)')).toBe(1);
   expect(errors).toEqual([]);
 });
+
+test('1.100: View Transition navigation, illustrated empty states, swipe tilt', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  // tab tap goes through vtRun and ends with the transition flag cleared
+  await page.locator('.tabbar button[data-tab="list"]').click();
+  await expect(page.locator('#view')).toHaveAttribute('data-route', 'list');
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.vt || '')).toBe('');
+  // tapping a word opens its sheet (the title morphs in); closing and opening again still works
+  await page.locator('#rows .wrow').first().click();
+  await expect(page.locator('.sheet .sheet-word')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.vt || '')).toBe('');
+  await page.mouse.click(5, 5);
+  await expect(page.locator('.sheet-wrap')).toHaveCount(0);
+  // nothing found -> mascot illustration instead of bare text
+  await page.locator('#q').fill('zzzzqqqq');
+  await expect(page.locator('#rows .empty-art .mascot')).toBeVisible();
+  await expect(page.locator('#rows')).toContainText('ไม่พบคำศัพท์');
+  // without View Transition support / with the setting off everything still navigates
+  await page.evaluate(() => { S.settings.animPage = false; });
+  await page.locator('.tabbar button[data-tab="stats"]').click();
+  await expect(page.locator('#view')).toHaveAttribute('data-route', 'stats');
+  // empty set screen uses the illustration too
+  await page.evaluate(() => go('decks'));
+  await expect(page.locator('#view .empty-art')).toBeVisible();
+  // swipe: tilt + glow classes are applied while dragging a flashcard
+  await page.evaluate(() => go('cards'));
+  const fc = page.locator('#fc');
+  await expect(fc).toBeVisible();
+  await page.evaluate(() => {
+    const el = document.querySelector('#fc');
+    const t = (type, x) => el.dispatchEvent(new TouchEvent(type, { bubbles: true, touches: type === 'touchend' ? [] : [new Touch({ identifier: 1, target: el, clientX: x, clientY: 200 })] }));
+    t('touchstart', 100); t('touchmove', 160);
+  });
+  await expect(fc).toHaveClass(/dragging/);
+  expect(await fc.evaluate((e) => e.style.transform)).toContain('rotateY');
+  expect(errors).toEqual([]);
+});

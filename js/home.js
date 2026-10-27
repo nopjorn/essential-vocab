@@ -376,7 +376,7 @@ function forecastChart() {
   }
   const max = Math.max(10, ...days.map((d) => d.n));
   const total = days.reduce((a, d) => a + d.n, 0);
-  if (!total) return `<div class="empty-box"><div class="em">🌱</div><div>ยังไม่มีการ์ดที่ต้องทบทวน<div class="small muted">เรียนคำแรกแล้วตารางนี้จะเริ่มขึ้นเอง</div></div><button class="btn primary" data-go="cards">▶︎ เริ่มเรียน</button></div>`;
+  if (!total) return emptyArt({ kind: 'sleep', title: 'ยังไม่มีการ์ดที่ต้องทบทวน', sub: 'เรียนคำแรกแล้วตารางนี้จะเริ่มขึ้นเอง', btn: '▶︎ เริ่มเรียน', go: 'cards', sm: true });
   const tip = total / 7 > 80 ? '<div class="small" style="margin-top:8px">⚠️ งานทบทวนเยอะแล้ว ลองลดจำนวนคำใหม่ต่อวันในตั้งค่า</div>' : '';
   return `<div class="week">${days.map((d) => `<div class="wk"><div class="wk-n">${d.n || ''}</div><div class="wk-bar fc-bar"><div style="height:${d.n / max * 100}%"></div></div><div class="wk-l">${d.label}</div></div>`).join('')}</div>
     <div class="small muted" style="margin-top:8px">รวม ${total} ใบ · ยังไม่รวมคำใหม่วันละ ${newGoal()} คำ</div>${tip}`;

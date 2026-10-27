@@ -271,7 +271,10 @@ function renderCards(extra) {
       const t = e.touches[0]; dx = t.clientX - sx;
       if (Math.abs(dx) < Math.abs(t.clientY - sy)) return;
       if (Math.abs(dx) > 8) moved = true;
-      fc.style.transform = `translateX(${dx}px) rotate(${dx / 20}deg)`;
+      fc.style.transform = `translateX(${dx}px) rotate(${dx / 20}deg) rotateY(${Math.max(-25, Math.min(25, dx / 8))}deg)`; // tilts with the finger
+      fc.classList.add('dragging');
+      fc.style.setProperty('--sa', Math.min(1, Math.abs(dx) / 110));
+      fc.style.setProperty('--sc', dx > 0 ? 'var(--good)' : 'var(--bad)');
       tl.style.opacity = Math.min(1, Math.max(0, -dx / 100));
       tr.style.opacity = Math.min(1, Math.max(0, dx / 100));
     }, { passive: true });
@@ -279,10 +282,10 @@ function renderCards(extra) {
       dragging = false;
       fc.style.transition = '';
       if (Math.abs(dx) > 100) {
-        fc.style.transform = `translateX(${dx > 0 ? 600 : -600}px) rotate(${dx / 10}deg)`;
+        fc.style.transform = `translateX(${dx > 0 ? 600 : -600}px) rotate(${dx / 10}deg) rotateY(${dx > 0 ? 35 : -35}deg)`;
         setTimeout(() => answer(dx > 0 ? 2 : 0), 180);
       } else {
-        fc.style.transform = ''; tl.style.opacity = 0; tr.style.opacity = 0;
+        fc.style.transform = ''; tl.style.opacity = 0; tr.style.opacity = 0; fc.classList.remove('dragging');
         setTimeout(() => (moved = false), 50);
       }
     });

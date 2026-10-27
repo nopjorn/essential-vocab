@@ -51,7 +51,7 @@ function renderIrregular() {
     const list = IRREG.filter((r) => (irrPat === 'all' || r.pat === irrPat) && (!q || [r.v1, r.v2, r.v3].some((x) => x.includes(q)) || r.th.includes(q)));
     view.querySelectorAll('#irPat .chip').forEach((c) => { const on = c.dataset.p === irrPat; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
     $('#irList').innerHTML = list.length ? `<div class="card-box pair-card">${list.map((r) => `<button class="col-row" data-col="${esc(irrSay(r))}"><span>${irrHTML(r)}</span><span>${esc(r.th)}</span></button>`).join('')}</div>`
-      : '<p class="muted center">ไม่พบกริยานี้</p>';
+      : emptyArt({ kind: 'search', title: 'ไม่พบกริยานี้', sub: 'ลองพิมพ์ให้สั้นลง หรือเปลี่ยนตัวกรอง', sm: true });
   };
   paint();
   $('#irq').oninput = (e) => { irrQuery = e.target.value; paint(); };
@@ -124,7 +124,7 @@ function renderDepPrep() {
     const groups = [...new Set(list.map((r) => r.prep))].sort((a, b) => list.filter((r) => r.prep === b).length - list.filter((r) => r.prep === a).length);
     $('#dpList').innerHTML = groups.length ? groups.map((p) => `<div class="card-box pair-card"><div class="pair-h"><b>… ${esc(p)}</b> <span class="small muted">${list.filter((r) => r.prep === p).length} คำ</span></div>
       ${list.filter((r) => r.prep === p).map((r) => `<button class="pair-ex" data-say="${esc(r.plain)}"><span><b lang="en">${esc(r.head)} <mark>${esc(r.prep)}</mark></b> <span class="lvl-mini">${r.lv}</span> = ${esc(r.th)}</span><span lang="en">${dpHTML(r)}</span><small class="muted">${esc(r.exTh)}</small></button>`).join('')}</div>`).join('')
-      : '<p class="muted center">ไม่พบคำนี้</p>';
+      : emptyArt({ kind: 'search', title: 'ไม่พบคำนี้', sub: 'ลองพิมพ์ให้สั้นลง หรือเปลี่ยนตัวกรอง', sm: true });
   };
   paint();
   $('#dpq').oninput = (e) => { dpQuery = e.target.value; paint(); };
@@ -160,7 +160,7 @@ function renderMistakes() {
     const cats = Object.keys(MIS_CAT).filter((c) => list.some((r) => r.cat === c));
     $('#misList').innerHTML = cats.length ? cats.map((c) => `<div class="card-box pair-card"><div class="pair-h"><b>${MIS_CAT[c]}</b> <span class="small muted">${list.filter((r) => r.cat === c).length} ข้อ</span></div>
       ${list.filter((r) => r.cat === c).map((r) => `<button class="pair-ex" data-say="${esc(r.ok)}"><span lang="en">❌ <s>${esc(r.no)}</s></span><span lang="en">✅ <b>${esc(r.ok)}</b></span><small class="muted">💡 ${esc(r.tip)}</small></button>`).join('')}</div>`).join('')
-      : '<p class="muted center">ไม่พบข้อนี้</p>';
+      : emptyArt({ kind: 'search', title: 'ไม่พบข้อนี้', sub: 'ลองพิมพ์ให้สั้นลง หรือเปลี่ยนตัวกรอง', sm: true });
   };
   paint();
   $('#misq').oninput = (e) => { misQuery = e.target.value; paint(); };
@@ -224,7 +224,7 @@ function renderGramPat() {
     const kinds = Object.keys(GP_KIND).filter((k) => list.some((r) => r.kind === k));
     $('#gpList').innerHTML = kinds.length ? kinds.map((k) => `<div class="card-box pair-card"><div class="pair-h"><b>${GP_KIND[k].icon} ${GP_KIND[k].title}</b> <span class="small muted">${list.filter((r) => r.kind === k).length} คำ</span></div>
       <div class="tip-box">${GP_KIND[k].note}</div>${list.filter((r) => r.kind === k).map(gpRow).join('')}</div>`).join('')
-      : '<p class="muted center">ไม่พบคำนี้</p>';
+      : emptyArt({ kind: 'search', title: 'ไม่พบคำนี้', sub: 'ลองพิมพ์ให้สั้นลง หรือเปลี่ยนตัวกรอง', sm: true });
   };
   paint();
   $('#gpq').oninput = (e) => { gpQuery = e.target.value; paint(); };

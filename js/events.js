@@ -47,7 +47,7 @@ function eventCard() {
 }
 function renderEvent(id) {
   const e = EVENTS.find((x) => x.id === id) || eventOn();
-  if (!e) { view.innerHTML = '<div class="card-box center"><div class="result-emoji">🗓️</div><p>ตอนนี้ยังไม่มีกิจกรรมเทศกาล</p><button class="btn primary block" data-go="home">กลับหน้าแรก</button></div>'; return; }
+  if (!e) { view.innerHTML = `<div class="card-box">${emptyArt({ kind: 'sleep', title: 'ตอนนี้ยังไม่มีกิจกรรมเทศกาล', sub: 'ไว้รอเทศกาลหน้านะคะ', btn: 'กลับหน้าแรก', go: 'home' })}</div>`; return; }
   const key = eventKey(e), rec = S.evt[key], item = ITEMS.find((x) => x.id === e.item);
   view.innerHTML = `<div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="eBack">‹ กลับ</button></div>
     <div class="card-box center pop"><div class="result-emoji" aria-hidden="true">${e.ic}</div><div class="h2" style="margin:2px 0">กิจกรรม${e.name} ${eventYear(e) + 543}</div>

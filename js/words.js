@@ -41,7 +41,7 @@ function renderList() {
       && (!q || w.w.toLowerCase().includes(q) || w.t.includes(q)));
     if (q) items.sort((a, b) => (b.w.toLowerCase().startsWith(q)) - (a.w.toLowerCase().startsWith(q)));
     rows.innerHTML = ''; shown = 0; more();
-    if (!items.length) rows.innerHTML = '<p class="center muted">ไม่พบคำศัพท์</p>';
+    if (!items.length) rows.innerHTML = emptyArt({ kind: 'search', title: 'ไม่พบคำศัพท์', sub: 'ลองพิมพ์ให้สั้นลง หรือเปลี่ยนตัวกรองด้านบน' });
     $('#cnt').textContent = `${items.length} คำ · แตะคำเพื่อดูตัวอย่างประโยค`;
     paint();
   };
@@ -54,7 +54,12 @@ function renderList() {
     const r = e.target.closest('.wrow'); if (!r) return;
     const w = W[+r.dataset.i];
     speak(w.w);
-    openSheet(w, () => { r.querySelector('.dot').className = 'dot ' + status(w); r.querySelector('.star-mark').textContent = (isLeech(w) ? '🐢' : '') + (isStar(w) ? '⭐' : ''); });
+    const onChange = () => { r.querySelector('.dot').className = 'dot ' + status(w); r.querySelector('.star-mark').textContent = (isLeech(w) ? '🐢' : '') + (isStar(w) ? '⭐' : ''); };
+    // the tapped word morphs into the sheet's title (View Transitions); otherwise the sheet slides up as before
+    const from = r.querySelector('.w');
+    if (!vtOk() || vtBusy) return openSheet(w, onChange);
+    from.style.viewTransitionName = 'wd';
+    vtRun(() => { from.style.viewTransitionName = ''; const el = openSheet(w, onChange, { now: true }); const t = el.querySelector('.sheet-word'); if (t) t.style.viewTransitionName = 'wd'; }, 'wd');
   };
   const io = new IntersectionObserver((es) => { if (es[0].isIntersecting && shown < items.length) more(); }, { root: view, rootMargin: '400px' });
   io.observe($('#sentinel'));
@@ -118,7 +123,7 @@ function openSheet(w, onChange, opt = {}) {
       </div>
     </div>`;
   document.body.appendChild(el);
-  requestAnimationFrame(() => el.classList.add('open'));
+  if (opt.now) el.classList.add('open', 'nt'); else requestAnimationFrame(() => el.classList.add('open')); // opt.now: shown at once (View Transition morph)
   if (!EMOJI) loadEmoji().then(() => { const b = el.querySelector('#emBox'); if (b) b.textContent = emojiOf(w); }).catch(() => {});
   loadColloc().then((c) => {
     const box = el.querySelector('#colBox'), list = c[w.w];
@@ -149,6 +154,7 @@ function openSheet(w, onChange, opt = {}) {
     if (onChange) onChange();
     close();
   };
+  return el;
 }
 
 // Weekly summary. Weeks run Monday–Sunday; `off` = 0 for this week, 1 for last week, …

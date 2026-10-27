@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.99.2';
+const APP_VERSION = '1.100.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1264,7 +1264,23 @@ function go(tab, ...args) {
 const TAB_ORDER = ['home', 'cards', 'games', 'stats', 'list', 'settings'];
 const VIEW_ANIMS = ['vin', 'vin-l', 'vin-r', 'vin-push', 'vin-pop'];
 function animView(cls) {
+  if (vtBusy) { document.documentElement.dataset.vt = cls; return; } // a View Transition is animating this change (direction picked here)
   view.classList.remove(...VIEW_ANIMS); void view.offsetWidth; view.classList.add(cls);
+}
+// View Transitions (1.100): taps on tabs / links morph between pages (document.startViewTransition, iOS 18+).
+// Only user taps use it (vtRun) - a plain go() stays synchronous. Without support, with settings.animPage off or
+// reduced motion, fn() just runs and the old slide/fade (animView) is used. html[data-vt] = direction, see style.css.
+let vtBusy = false;
+const vtOk = () => typeof document.startViewTransition === 'function' && S.settings.animPage !== false && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+function vtRun(fn, dir = 'vin') {
+  if (vtBusy || !vtOk()) return fn();
+  const root = document.documentElement;
+  try {
+    vtBusy = true; root.dataset.vt = dir;
+    const t = document.startViewTransition(() => { fn(); });
+    const end = () => { vtBusy = false; delete root.dataset.vt; };
+    t.finished.then(end, end);
+  } catch (e) { vtBusy = false; delete root.dataset.vt; fn(); }
 }
 // While a lazy data file loads, show a skeleton instead of a frozen screen (only if it takes > 150 ms
 // and nothing else has replaced the page meanwhile). withLoading(loadPairs()).then(renderPairs)
@@ -1279,7 +1295,7 @@ function updateStreak() {
   el.textContent = '🔥 ' + streakNow() + (S.freeze ? ' · 🧊' + S.freeze : '') + ' · Lv.' + L;
   el.style.setProperty('--xp', Math.min(100, Math.max(0, ((S.xp || 0) - levelStart(L)) / (50 * L) * 100)) + '%'); // progress to the next level
 }
-view.addEventListener('click', (e) => { const g = e.target.closest('[data-go]'); if (g) go(g.dataset.go, g.dataset.year); });
+view.addEventListener('click', (e) => { const g = e.target.closest('[data-go]'); if (g) vtRun(() => go(g.dataset.go, g.dataset.year)); });
 // 🐢 buttons (data-slow = the text) replay slowly on any screen.
 document.addEventListener('click', (e) => { const b = e.target.closest('[data-slow]'); if (b) speak(b.dataset.slow, { slow: true }); });
 const slowBtn = (text, label = 'ฟังช้า') => `<button class="slow-btn" data-slow="${esc(text)}" aria-label="ฟังช้าๆ">🐢 ${label}</button>`;
@@ -1296,7 +1312,9 @@ $('#topBack').addEventListener('click', () => { const b = view.querySelector('[i
 const REF_PAGES = { pairs: () => renderPairs(), fams: () => renderFamilies(), syn: () => renderSyn(), affix: () => renderAffix(), phrasal: () => renderPhrasal(), idiom: () => renderIdioms(), sit: () => renderSit(), irr: () => renderIrregular(), dprep: () => renderDepPrep(), mis: () => renderMistakes(), gpat: () => renderGramPat(), ipa: () => renderIpa() };
 $('#tabbar').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
-  if (!b.dataset.ref) return go(b.dataset.tab);
-  go('games'); REF_PAGES[b.dataset.ref]();
-  document.querySelectorAll('.tabbar button').forEach((x) => x.classList.toggle('active', x === b));
+  if (!b.dataset.ref) return vtRun(() => go(b.dataset.tab));
+  vtRun(() => {
+    go('games'); REF_PAGES[b.dataset.ref]();
+    document.querySelectorAll('.tabbar button').forEach((x) => x.classList.toggle('active', x === b));
+  });
 });

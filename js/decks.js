@@ -66,9 +66,7 @@ function deckStepsHtml(d) {
 }
 function deckEmptyHtml(d) {
   const st = deckStats(d);
-  return `<div class="card-box center pop" style="margin-top:20px"><div class="result-emoji">${st.n ? '🎉' : '📭'}</div>
-    <div class="h2">${st.n ? 'ชุดนี้ไม่มีอะไรค้างแล้ว!' : 'ชุดนี้ยังไม่มีคำ'}</div>
-    <p class="muted">${st.n ? 'ไม่มีการ์ดครบกำหนดและไม่มีคำใหม่ในชุด' : 'เพิ่มคำเข้าชุดก่อนนะคะ'}</p></div>${deckStepsHtml(d)}`;
+  return `<div class="card-box pop" style="margin-top:20px">${emptyArt({ kind: st.n ? 'done' : 'empty', title: st.n ? 'ชุดนี้ไม่มีอะไรค้างแล้ว!' : 'ชุดนี้ยังไม่มีคำ', sub: st.n ? 'ไม่มีการ์ดครบกำหนดและไม่มีคำใหม่ในชุด' : 'เพิ่มคำเข้าชุดก่อนนะคะ' })}</div>${deckStepsHtml(d)}`;
 }
 function bindDeckSteps(d) {
   view.querySelectorAll('[data-dk]').forEach((el) => {
@@ -127,8 +125,7 @@ function renderDecks(openId) {
     ${libSwitch('decks')}
     ${ds.length ? `<div class="deck-grid">${ds.map((d) => { const st = deckStats(d); return `<button class="card-box guide-link deck-card" data-id="${d.id}">
         <span>${esc(d.icon)}</span><div class="grow"><b>${esc(d.name || 'ชุดไม่มีชื่อ')}</b><div class="small muted">${st.n} คำ${st.due ? ` · ⏰ ครบกำหนด ${st.due}` : ''}${st.solid === st.n && st.n ? ' · ✅ แม่นทั้งชุด' : ''}</div>${st.n ? deckBar(st) : ''}</div><span class="muted">›</span></button>`; }).join('')}</div>`
-    : `<div class="card-box center"><div style="font-size:44px">📚</div><b>ยังไม่มีชุดคำ</b>
-        <p class="small muted">สร้างชุดจากคำในแอป เช่น ศัพท์ประจำสัปดาห์ที่ครูสั่ง คำที่ใช้บ่อยที่ทำงาน หรือคำสำหรับไปเที่ยว</p></div>`}
+    : `<div class="card-box">${emptyArt({ kind: 'empty', title: 'ยังไม่มีชุดคำ', sub: 'สร้างชุดจากคำในแอป เช่น ศัพท์ประจำสัปดาห์ที่ครูสั่ง คำที่ใช้บ่อยที่ทำงาน หรือคำสำหรับไปเที่ยว' })}</div>`}
     <button class="btn primary block" id="dkNew">＋ สร้างชุด</button>
     ${ds.length ? '' : `<div class="small muted" style="margin:16px 4px 6px">หรือเริ่มจากชุดสำเร็จรูป (แก้ไขเพิ่ม–ลดคำได้ภายหลัง)</div>
       <div class="chips">${goals.map(([id, ic, th]) => `<button class="chip" data-from="${id}">${ic} ${esc(th)} · ${tagWords(id).length}</button>`).join('')}</div>`}
@@ -164,7 +161,7 @@ function renderDeck(id) {
         <div class="grow"><b class="h2">${esc(d.name || 'ชุดไม่มีชื่อ')}</b><div class="small muted">${st.n} คำ · ${st.last ? 'ใช้ล่าสุด ' + thDate(st.last) : 'ยังไม่เคยเรียน'}</div></div>
         <button class="btn ghost" id="dkEdit" aria-label="แก้ไขชุด">✏️ แก้ไข</button></div>
       ${st.n ? `${deckBar(st)}<div class="dk-legend small"><span>🟢 แม่นแล้ว ${st.solid}</span><span>🟡 กำลังจำ ${st.learning}</span><span>⚪ ใหม่ ${st.fresh}</span></div>
-      <div class="dk-nums"><div><b>${st.due}</b><small>ครบกำหนด</small></div><div><b>${pct}</b><small>ความแม่น</small></div><div><b>${st.leech}</b><small>🐢 คำดื้อ</small></div></div>` : '<p class="center muted small">ยังไม่มีคำในชุดนี้ กด ✏️ แก้ไข เพื่อเพิ่มคำค่ะ</p>'}
+      <div class="dk-nums"><div><b>${st.due}</b><small>ครบกำหนด</small></div><div><b>${pct}</b><small>ความแม่น</small></div><div><b>${st.leech}</b><small>🐢 คำดื้อ</small></div></div>` : emptyArt({ kind: 'empty', title: 'ยังไม่มีคำในชุดนี้', sub: 'กด ✏️ แก้ไข เพื่อเพิ่มคำค่ะ', sm: true })}
     </div>
     <button class="btn primary block" id="dkStudy" ${st.n ? '' : 'disabled'}>▶︎ เรียนชุดนี้ <small>(ครบกำหนด ${st.due} · คำใหม่ ${Math.min(DECK_ROUND, st.fresh)})</small></button>
     <button class="btn block" id="dkPlay" style="margin-top:8px" ${st.n ? '' : 'disabled'}>🎮 เล่นเกมจากชุดนี้</button>
@@ -270,7 +267,7 @@ function renderDeckEdit(id) {
     $('#dkCount').textContent = `คำในชุด (${ws.length})`;
     $('#dkWords').innerHTML = ws.length ? ws.map((w) => `<div class="wrow" data-i="${w.idx}"><div class="grow dk-w"><div><span class="w" lang="en">${esc(w.w)}</span> <span class="pos">${esc(w.p)}</span></div><div class="t">${esc(w.t)}</div></div>
         <button class="chip dk-x" data-rm="${esc(w.w)}" aria-label="เอา ${esc(w.w)} ออกจากชุด">✕</button></div>`).join('')
-      : '<p class="center muted small">ยังไม่มีคำในชุดนี้ ลองวางลิสต์ ค้นหา หรือใช้ทางลัดด้านบนได้เลยค่ะ</p>';
+      : emptyArt({ kind: 'empty', title: 'ยังไม่มีคำในชุดนี้', sub: 'ลองวางลิสต์ ค้นหา หรือใช้ทางลัดด้านบนได้เลยค่ะ', sm: true });
   };
   const paintPanel = () => {
     const box = $('#dkPanel');

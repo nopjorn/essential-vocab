@@ -1444,3 +1444,40 @@ html.no-ans .streak.bump { animation: none; }
 .ng-box[open] > summary::after { transform: rotate(90deg); }
 .ng-box[open] > summary #ngSum { display: none; }
 .ng-box .ng-help { margin: 10px 0 8px; }
+
+/* ---------- View Transitions (1.100): vtRun() in app.js sets html[data-vt] = direction ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-vt]:not([data-vt="wd"]) #view { view-transition-name: page; }
+  html[data-vt]::view-transition-old(page) { animation: vt-out .14s ease-in both; }
+  html[data-vt]::view-transition-new(page) { animation: vt-in .26s cubic-bezier(.2, .8, .3, 1) both; }
+  html[data-vt="vin-l"]::view-transition-new(page) { animation-name: vt-in-l; }
+  html[data-vt="vin-r"]::view-transition-new(page) { animation-name: vt-in-r; }
+  html[data-vt="vin-push"]::view-transition-new(page) { animation-name: vt-in-push; }
+  html[data-vt="vin-pop"]::view-transition-new(page) { animation-name: vt-in-pop; }
+  html[data-vt]::view-transition-group(wd) { animation-duration: .32s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+  @keyframes vt-out { to { opacity: 0; } }
+  @keyframes vt-in { from { opacity: 0; } }
+  @keyframes vt-in-l { from { opacity: 0; transform: translateX(22px); } }
+  @keyframes vt-in-r { from { opacity: 0; transform: translateX(-22px); } }
+  @keyframes vt-in-push { from { opacity: 0; transform: translateX(40px); } }
+  @keyframes vt-in-pop { from { opacity: 0; transform: translateX(-28px); } }
+}
+.sheet-wrap.nt, .sheet-wrap.nt .sheet { transition: none; }
+
+/* flashcard swipe: shadow glows green / red with the drag, card tilts in 3D (cards.js) */
+.fc.dragging .face { box-shadow: var(--shadow), 0 14px 38px -6px color-mix(in srgb, var(--sc, transparent) calc(var(--sa, 0) * 75%), transparent); }
+.fc-inner { transition-timing-function: cubic-bezier(.3, .75, .25, 1.15); }
+
+/* illustrated empty states (emptyArt in js/mascot.js) */
+.empty-art { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 18px 12px; }
+.empty-art .ea-pic { position: relative; display: inline-block; }
+.empty-art .ea-prop { position: absolute; right: -10px; bottom: 2px; font-size: 32px; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .25)); }
+.empty-art .ea-txt { display: grid; gap: 4px; justify-items: center; }
+.empty-art .ea-txt > b { font-size: 17px; }
+.empty-art .btn { margin-top: 8px; }
+.empty-art.sm { flex-direction: row; text-align: left; padding: 6px 2px; gap: 12px; }
+.empty-art.sm .ea-prop { font-size: 22px; right: -8px; }
+.empty-art.sm .ea-txt { justify-items: start; flex: 1; }
+.empty-art.sm .ea-txt > b { font-size: 15px; }
+.empty-art.sm .btn { min-height: 44px; padding: 0 16px; }
+@media (prefers-reduced-motion: no-preference) { .empty-art .ea-pic { animation: ea-bob 3.2s ease-in-out infinite; } @keyframes ea-bob { 50% { transform: translateY(-5px); } } }

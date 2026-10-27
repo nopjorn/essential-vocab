@@ -254,7 +254,7 @@ function renderFamilies() {
     const list = q ? FAMILIES.filter((f) => f.f.some(([w, , th]) => w.includes(q) || th.includes(q))) : FAMILIES;
     $('#famList').innerHTML = list.length ? list.map((f) => `<div class="card-box pair-card">${famRows(f)}
       ${f.q.map(([sn, a, th]) => `<button class="pair-ex" data-say="${esc(sn.replace('___', a))}"><span>${esc(sn).replace('___', `<mark>${esc(a)}</mark>`)}</span><small class="muted">${esc(th)}</small></button>`).join('')}</div>`).join('')
-      : '<p class="muted center">ไม่พบคำนี้ในครอบครัวคำ</p>';
+      : emptyArt({ kind: 'search', title: 'ไม่พบคำนี้ในครอบครัวคำ', sub: 'ลองพิมพ์ให้สั้นลง หรือเปลี่ยนตัวกรอง', sm: true });
   };
   paint();
   $('#fq').oninput = (e) => { famQuery = e.target.value; paint(); };
