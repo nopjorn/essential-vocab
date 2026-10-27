@@ -52,6 +52,7 @@ function buildQueueRaw(extra) {
   }
   if (extra === 'leech') return shuffle(W.filter(isLeech)).slice(0, 15); // 🐢 leech session: back of each card shows the memory hook
   if (extra === 'mastered') return shuffle(masteredWords()).slice(0, 20);
+  if (extra === 'learning') return shuffle(W.filter((w) => status(w) === 'learning')).slice(0, 20);
   if (extra === 'ahead') return W.filter((w) => S.prog[w.w]).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d).slice(0, 20);
   const n = extra ? 10 : plan.on ? 0 : Math.max(0, newGoal() - S.daily.fresh);
   fresh = fresh.slice(0, n);
@@ -72,6 +73,7 @@ function buildQueueRaw(extra) {
 function nextSteps(learned) {
   const unseen = pool().filter((w) => !S.prog[w.w]).length;
   const mastered = masteredWords().length;
+  const learning = W.filter((w) => status(w) === 'learning').length;
   const backlog = backlogPlan().on ? dueList().length : 0;
   const leech = W.filter(isLeech).length, star = W.filter(isStar).length;
   const b = (id, ic, t, d) => `<button class="quick-btn" data-ns="${id}"><span>${ic}</span><b>${t}</b><small>${d}</small></button>`;
@@ -81,6 +83,7 @@ function nextSteps(learned) {
     ${learned >= 4 ? b('ahead', '🔮', 'ทบทวนล่วงหน้า', '20 ใบที่ใกล้ถึงกำหนดที่สุด') : ''}
     ${b('feed', '📱', 'ไถศัพท์', 'ปัดดูทีละคำ ไม่มีวันจบ')}
     ${b('play', '⚡', 'เล่นด่วน', 'เกมสุ่ม 10 ข้อ ~1 นาที')}
+    ${learning ? b('learning', '🟡', 'ทบทวนคำที่กำลังเรียน', 'สุ่ม 20 ใบ จากคำที่กำลังเรียน ' + learning + ' คำ') : ''}
     ${mastered ? b('mastered', '🟢', 'ทบทวนคำที่จำได้แล้ว', 'สุ่ม 20 ใบ จากคำที่จำได้แล้ว ' + mastered + ' คำ') : ''}
     ${leech ? b('leech', '🐢', 'ฝึกคำดื้อ', leech + ' คำที่ลืมบ่อย') : ''}
     ${star ? b('star', '⭐', 'ฝึกคำติดดาว', star + ' คำที่ติดดาวไว้') : ''}
@@ -94,6 +97,7 @@ function bindNextSteps() {
       else if (id === 'ahead') go('cards', 'ahead');
       else if (id === 'backlog') go('cards', 'backlog');
       else if (id === 'mastered') go('cards', 'mastered');
+      else if (id === 'learning') go('cards', 'learning');
       else if (id === 'play') quickPlay();
       else if (id === 'leech') go('cards', 'leech');
       else if (id === 'star') { gameSource = id; startGame('en2th'); }
@@ -106,7 +110,7 @@ function bindNextSteps() {
   });
 }
 
-// extra: undefined (today's cards), true (10 more new), 'ahead', 'mastered', 'leech' (stubborn words, 15), or { deck: id, ahead? } = study one of my word sets.
+// extra: undefined (today's cards), true (10 more new), 'ahead', 'mastered', 'learning' (random 20 learning words), 'leech' (stubborn words, 15), or { deck: id, ahead? } = study one of my word sets.
 // A set uses its own progress table `map` (S.dprog[id]); the main S.prog and the daily counts stay untouched.
 function renderCards(extra) {
   if (!FAMILIES) { withLoading(loadFamilies()).then(() => renderCards(extra)); return; } // spreadFamilies() needs the family data

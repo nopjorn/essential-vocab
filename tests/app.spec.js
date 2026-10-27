@@ -252,6 +252,9 @@ test('home: word of the day, no guide button; flashcards hub when today is done'
   await expect(page.locator('#view')).toContainText('วันนี้ทำครบแล้ว');
   await page.locator('[data-ns="ahead"]').click();
   await expect(page.locator('#fc')).toBeVisible();
+  await page.evaluate(() => go('cards'));
+  await page.locator('[data-ns="learning"]').click();
+  await expect(page.locator('#fc')).toBeVisible();
   await page.evaluate(() => { S.prog[W[0].w] = { b: 5, i: 35, e: 2.5, d: Date.now() + 86400000 * 30, s: 3, c: 3, x: 0 }; save(); go('cards'); });
   await page.locator('[data-ns="mastered"]').click();
   await expect(page.locator('#fc')).toBeVisible();
