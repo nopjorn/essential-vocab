@@ -34,6 +34,7 @@ function renderSettings() {
       <div class="small muted" style="margin:14px 0 8px"><b>ชุด 5000 คำ</b> · คำเพิ่มเติมระดับสูง</div>
       <div class="chips grid" id="lvls5">${LEVELS_5000.map(lvChip).join('')}</div>
       <p class="small muted">A1–A2 = พื้นฐาน, B1–B2 = ระดับกลาง, B2+ และ C1 = ระดับสูง (เลือกได้หลายระดับ)</p>
+      <button class="set-row set-link" id="toPlace"><span>🎯 แบบทดสอบวัดระดับ<br><span class="small muted">ไม่แน่ใจว่าควรเริ่มระดับไหน? ทำแบบทดสอบแล้วแอปจะข้ามคำที่คุณรู้แล้วให้</span></span><span class="muted">›</span></button>
       <div class="set-row stack" style="border-top:1px solid var(--border);padding-top:12px"><span>คำใหม่จากหมวด</span>
         <select class="sel" id="topic"><option value="">📚 ทุกหมวด</option>${topicOptions(st.topic)}</select></div>
       <div class="set-row stack"><span>คำใหม่ตามเป้าหมาย</span>
@@ -58,7 +59,6 @@ function renderSettings() {
         <select class="sel" id="gdiff"><option value="auto" ${!st.gdiff || st.gdiff === 'auto' ? 'selected' : ''}>อัตโนมัติ</option>${['ปกติ', 'คล้ายขึ้น', 'คล้ายขึ้น + จับเวลา'].map((t, k) => `<option value="${k + 1}" ${String(st.gdiff) === String(k + 1) ? 'selected' : ''}>⭐${k + 1} ${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>ลำดับคำใหม่</span>
         <select class="sel" id="ord"><option value="shuffle" ${st.order === 'shuffle' ? 'selected' : ''}>สุ่ม</option><option value="alpha" ${st.order === 'alpha' ? 'selected' : ''}>เรียงตามตัวอักษร</option></select></div>
-      <button class="btn block" id="toPlace" style="margin:4px 0 8px">🎯 แบบทดสอบวัดระดับ (ข้ามคำที่รู้แล้ว)</button>
       <div class="set-row"><span>เปิดแอปแล้วไปที่</span>
         <select class="sel" id="start"><option value="home" ${st.start === 'home' ? 'selected' : ''}>🏠 หน้าแรก</option><option value="feed" ${st.start === 'feed' ? 'selected' : ''}>📱 ไถศัพท์</option><option value="cards" ${st.start === 'cards' ? 'selected' : ''}>🃏 แฟลชการ์ด</option></select></div>
       <div class="set-row"><span>ด้านหน้าการ์ด</span>
