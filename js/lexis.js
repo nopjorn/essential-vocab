@@ -373,7 +373,7 @@ function renderSyn() {
   $('#title').textContent = 'คำเหมือน–คำตรงข้าม';
   view.scrollTop = 0;
   view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="synBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="synPlay">≈ เล่นเกม</button></div>
-    <p class="small muted" style="margin:0 4px 10px">${SYN.length} กลุ่มคำความหมายใกล้เคียง พร้อมคำตรงข้ามและวิธีเลือกใช้ · แตะคำเพื่อฟัง</p>
+    <p class="small muted" style="margin:0 4px 10px">${SYN.length} กลุ่มคำความหมายใกล้เคียง พร้อมคำตรงข้ามและวิธีเลือกใช้ · แตะคำเพื่อฟังและดูการ์ดคำ</p>
     <input class="search" id="synq" type="search" placeholder="ค้นหา เช่น big หรือ ใหญ่" value="${esc(synQuery)}" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="ค้นหาคำเหมือน">
     <div class="pair-list" id="synList"></div>`;
   const paint = () => {
@@ -385,7 +385,11 @@ function renderSyn() {
   $('#synq').oninput = (e) => { synQuery = e.target.value; paint(); };
   $('#synBack').onclick = () => go('games');
   $('#synPlay').onclick = () => startGame('syn');
-  $('#synList').onclick = (e) => { const b = e.target.closest('[data-col]'); if (b) speak(b.dataset.col); };
+  $('#synList').onclick = (e) => {
+    const b = e.target.closest('[data-col]'); if (!b) return;
+    speak(b.dataset.col);
+    const w = WORD_BY[b.dataset.col]; if (w) openSheet(w);
+  };
 }
 
 /* ---------- word parts (prefixes / suffixes) ---------- */

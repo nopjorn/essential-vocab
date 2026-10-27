@@ -1706,3 +1706,12 @@ test('roots and UK/US (1.104): reference pages, word-sheet boxes, UK then US voi
   await expect(page.locator('#rtBox .tip-box').first()).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('synonym page: tapping a word opens its word card', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => renderSyn());
+  await expect(page.locator('#synList')).toBeVisible();
+  await page.locator('#synList [data-col="big"]').first().click();
+  await expect(page.locator('.wsheet .sheet-word')).toContainText('big');
+  expect(errors).toEqual([]);
+});
