@@ -1490,3 +1490,15 @@ html.no-ans .streak.bump { animation: none; }
 
 /* home hero: once today is finished the start button is a faded, glass-like button (still tappable) */
 .hero .btn.done { background: rgba(255, 255, 255, .16); color: #fff; font-weight: 700; box-shadow: none; border: 1px solid rgba(255, 255, 255, .38); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+
+/* level-map boss (data/play.js BOSS) */
+.boss-top { gap: 8px; }
+.boss-top .boss-m { flex: none; line-height: 0; }
+.boss-bars { flex: 1; display: grid; gap: 4px; }
+.boss-hp { height: 12px; }
+.boss-hp > div { background: linear-gradient(90deg, #e8504a, #ff9a4a); }
+
+/* น้องคำ pop-up: combo cheer / welcome back (mascotPop in js/mascot.js) */
+.m-cheer { position: fixed; z-index: 30; left: calc(var(--rail-w, 0px) + 12px); bottom: calc(env(safe-area-inset-bottom) + 92px); display: flex; align-items: flex-end; gap: 4px; pointer-events: none; }
+.m-cheer .m-say { background: var(--surface); color: var(--text); font-weight: 800; font-size: 14px; padding: 8px 12px; border-radius: 14px 14px 14px 4px; box-shadow: var(--shadow); max-width: 190px; order: 2; margin-bottom: 18px; }
+@media (prefers-reduced-motion: no-preference) { .m-cheer { animation: m-in .35s cubic-bezier(.2, .9, .3, 1.2); } @keyframes m-in { from { opacity: 0; transform: translateY(30px) scale(.8); } } }

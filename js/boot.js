@@ -64,3 +64,4 @@ window.BOOT_MS = Math.round(performance.now()); // time from navigation start to
 setSig = settingsSig(); // after boot-time migrations: only real changes from here on stamp settingsAt
 // Fetch the game engine (data/play.js) once the first screen is up, so the first game doesn't wait for it (1.101).
 (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => loadPlay(), { timeout: 4000 });
+mascotWelcome(); // น้องคำ wakes up when you return after a few days (1.102)

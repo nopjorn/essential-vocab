@@ -471,3 +471,70 @@ test('emoji on cards and the word sheet (1.87): back of the flashcard, feed lear
   await expect(view.locator('.face.back .card-emoji')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test('boss stage (1.102): last stage of a topic has a boss bar and 3 hearts; defeat does not clear, win gives the badge and mascot items', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  const view = page.locator('#view');
+  const info = await page.evaluate(() => {
+    const n = topicStages('animal').length;
+    S.lvmap = { animal: '3'.repeat(n - 1) };
+    Math.random = () => 0; // pick() takes the first mode: only multiple-choice questions, so the test can answer them all
+    return { n, boss: isBoss('animal', n - 1), notBoss: isBoss('animal', 0) };
+  });
+  expect(info.boss).toBe(true); expect(info.notBoss).toBe(false);
+  const answer = async (right) => {
+    await expect(view.locator('.opt').first()).toBeVisible();
+    const rightIdx = await page.evaluate(() => {
+      const pos = document.querySelector('.q-prompt .pos').textContent, word = document.querySelector('.q-prompt .word'), th = document.querySelector('.q-prompt .th');
+      return (word ? W.find((x) => x.w === word.textContent && x.p === pos) : W.find((x) => x.t === th.textContent && x.p === pos)).idx;
+    });
+    await (right ? view.locator(`.opt[data-i="${rightIdx}"]`) : view.locator(`.opt:not([data-i="${rightIdx}"])`).first()).click();
+    if (await view.locator('#nextQ').count()) await view.locator('#nextQ').click().catch(() => {});
+  };
+  // lose: three wrong answers
+  await page.evaluate(() => startStage('animal', topicStages('animal').length - 1));
+  await expect(view.locator('.boss-hp')).toBeVisible();
+  await expect(page.locator('#title')).toContainText('บอส');
+  for (let q = 0; q < 3; q++) await answer(false);
+  await expect(view.locator('.result-emoji')).toBeVisible();
+  await expect(view.locator('.card-box').first()).toContainText('หัวใจหมด');
+  const lost = await readState(page);
+  expect(lost.lvmap.animal.endsWith('0')).toBe(true); // boss stage not cleared
+  expect(lost.owned || []).not.toContain('boss:animal');
+  // win: every answer right
+  await page.evaluate(() => startStage('animal', topicStages('animal').length - 1));
+  for (let q = 0; q < await page.evaluate(() => topicStages('animal').slice(-1)[0].length); q++) await answer(true);
+  await expect(view.locator('.result-emoji')).toBeVisible();
+  await expect(view.locator('.card-box').first()).toContainText('ชนะบอส');
+  const won = await readState(page);
+  expect(won.owned).toContain('boss:animal');
+  expect(won.lvmap.animal.endsWith('3')).toBe(true);
+  expect(await page.evaluate(() => [itemOpen('acc:helm'), itemOpen('acc:medal'), bossCount()])).toEqual([true, false, 1]);
+  await page.evaluate(() => go('mascot'));
+  await expect(page.locator('[data-eq="head:helm"]')).toBeEnabled();
+  await expect(page.locator('[data-eq="body:medal"]')).toBeDisabled();
+  expect(errors).toEqual([]);
+});
+
+test('mascot comes alive (1.102): combo cheer pops up, welcome-back wakes it after 3+ days once a day', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => mascotCheer(5));
+  await expect(page.locator('.m-cheer .m-say')).toContainText('คอมโบ 5');
+  await expect(page.locator('.m-cheer')).toHaveCSS('pointer-events', 'none');
+  // switched off with the answer animations
+  await page.evaluate(() => { document.querySelector('.m-cheer').remove(); document.documentElement.classList.add('no-ans'); mascotCheer(10); });
+  await expect(page.locator('.m-cheer')).toHaveCount(0);
+  // away 5 days -> welcome pop-up (sleepy first), only once per day
+  await page.evaluate(() => {
+    document.documentElement.classList.remove('no-ans');
+    localStorage.removeItem('o3k.wb');
+    const d = new Date(Date.now() - 5 * 864e5).toLocaleDateString('en-CA');
+    S.hist = { [d]: 10 }; mascotWelcome();
+  });
+  await expect(page.locator('.m-cheer .m-say')).toContainText('ตื่นแล้ว');
+  await expect(page.locator('.m-cheer .mascot')).toHaveAttribute('aria-label', /ง่วง/);
+  await expect(page.locator('.m-cheer .mascot')).toHaveAttribute('aria-label', /ดีใจ/, { timeout: 3000 });
+  await page.evaluate(() => { document.querySelector('.m-cheer').remove(); mascotWelcome(); });
+  await expect(page.locator('.m-cheer')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

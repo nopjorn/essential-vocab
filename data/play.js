@@ -12,6 +12,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   const ENDLESS = EMOJI_RUN || SURV || TIMED;
   // Level-map stage (js/map.js): the stage's words, each asked once in a mix of games; ends on the stars screen.
   const STAGE = gameId === 'stage';
+  const BOSS = STAGE && !!stage.boss; // boss stage (js/map.js): hearts like survival, plus a boss bar
   const GNAME = STAGE ? stage.title : GAMES[gameId].name;
   const leave = () => (STAGE ? go('map', stage.topic) : go('games'));
   let lastMode = '';
@@ -39,6 +40,15 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       <button class="icon-btn" id="quit" aria-label="จบรอบ">✕</button>
       <div class="progress"><div id="tBar" style="width:${bar}%"></div></div>
       <span class="small" id="runStat">${runStat()}</span></div>`;
+    }
+    if (BOSS) {
+      const hp = items.length - (asked - wrong.length);
+      $('#title').textContent = `${GNAME} · ข้อ ${Math.min(i + 1, items.length)}/${items.length}`;
+      return `<div class="session-top boss-top">
+      <button class="icon-btn" id="quit" aria-label="ออก">✕</button>
+      <span class="boss-m" aria-hidden="true">${mascotSvg({ mood: wrong.length ? 'miss' : 'normal', size: 40 })}</span>
+      <div class="boss-bars"><div class="progress boss-hp" role="img" aria-label="เลือดบอสเหลือ ${hp} จาก ${items.length}"><div style="width:${hp / items.length * 100}%"></div></div>
+        <span class="small">${'❤️'.repeat(hearts)}${'🖤'.repeat(3 - hearts)} · 🐲 ${hp}</span></div></div>`;
     }
     if (i < items.length) $('#title').textContent = `${GNAME} · ${i + 1}/${items.length}`;
     return `<div class="session-top">
@@ -140,7 +150,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       gameAcc(ok);
       mark(w, ok);
       if (ENDLESS) $('#runStat').innerHTML = runStat();
-      const out = SURV && hearts <= 0;
+      const out = (SURV || BOSS) && hearts <= 0;
       $('#reveal').innerHTML = (ok ? `✅ ถูกต้อง! <b>${esc(w.w)}</b> = ${esc(w.t)}` : `${b ? '❌' : '⏰ หมดเวลา'} <b>${esc(w.w)}</b> = ${esc(w.t)}`)
         + (!TIMED && (m === 'cloze' || m === 'guess' || !ok) ? hookBox(w) + exampleBox(w) : '')
         + (out ? '<div class="center" style="margin-top:8px">💔 หัวใจหมดแล้ว</div>' : '')
@@ -1030,23 +1040,23 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (spk && ok) S.counts.speak = (S.counts.speak || 0) + 1;
     questEvent('answer', { game: gameId, ok });
     sfx(ok ? 'ok' : 'bad');
-    if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); S.counts.maxCombo = Math.max(S.counts.maxCombo || 0, combo); score += 10 + Math.min(combo - 1, 5) * 2; addXP(comboXP(combo)); }
-    else { combo = 0; wrong.push(w); if (SURV) hearts--; }
+    if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); S.counts.maxCombo = Math.max(S.counts.maxCombo || 0, combo); score += 10 + Math.min(combo - 1, 5) * 2; addXP(comboXP(combo)); if (combo >= 5 && combo % 5 === 0) mascotCheer(combo); }
+    else { combo = 0; wrong.push(w); if (SURV || BOSS) hearts--; }
   }
-  function next() { if (SURV && hearts <= 0) return result(); i++; q(); }
+  function next() { if ((SURV || BOSS) && hearts <= 0) return result(); i++; q(); }
 
   function result() {
     if (finished) return;
     finished = true;
     if (cleanup) { cleanup(); cleanup = null; }
-    const done = STAGE ? stageDone(stage.topic, stage.k, items.length - wrong.length, items.length) : null;
+    const done = STAGE ? stageDone(stage.topic, stage.k, items.length - wrong.length, items.length, BOSS && hearts <= 0) : null;
     const prev = S.best[gameId];
     const right_ = asked - wrong.length;
     // endless emoji run: the record is the longest run of right answers; survival / time attack: how many were right
     const mark_ = SURV || TIMED ? right_ : ENDLESS ? bestCombo : score;
     const isBest = !STAGE && (prev == null || mark_ > prev) && (mark_ > 0 || !ENDLESS);
     if (isBest) { S.best[gameId] = mark_; save(); }
-    const total = ENDLESS ? asked : items.length;
+    const total = ENDLESS || (BOSS && hearts <= 0) ? asked : items.length;
     const correct = total - wrong.length;
     if (!ENDLESS && correct === items.length && items.length >= 10) S.counts.perfect = (S.counts.perfect || 0) + 1;
     questEvent('round', { game: gameId, correct, bestCombo, perfect: !ENDLESS && correct === items.length && items.length >= 10 });
@@ -1055,7 +1065,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     view.innerHTML = `<div class="card-box center pop">
         <div class="result-emoji">${emoji}</div>
         ${STAGE ? `<div class="h2" aria-label="${done.stars} ดาว">${starRow(done.stars)}</div>
-        <p>${done.stars ? (done.first ? 'ผ่านด่านแล้ว! ปลดล็อกด่านต่อไป 🔓' : 'ผ่านด่านแล้ว') : `ยังไม่ผ่าน ต้องถูกอย่างน้อย ${needFor(items.length)} ข้อ ลองใหม่นะ`} · ถูก ${correct}/${items.length}</p>`
+        <p>${BOSS ? (done.stars ? `🐲 ชนะบอสแล้ว!${done.badge ? ' ได้ 🏅 ตราบอสหมวดนี้ (+25 XP)' : ''}` : '💔 หัวใจหมด บอสชนะรอบนี้ ลองใหม่นะ') : done.stars ? (done.first ? 'ผ่านด่านแล้ว! ปลดล็อกด่านต่อไป 🔓' : 'ผ่านด่านแล้ว') : `ยังไม่ผ่าน ต้องถูกอย่างน้อย ${needFor(items.length)} ข้อ ลองใหม่นะ`} · ถูก ${correct}/${items.length}</p>`
         : SURV ? `<div class="h2">❤️ รอดมาได้ ${right_} ข้อ ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
         <p>ไปถึงคำระดับ ${LV_LABEL[LEVELS[reach]]} · คอมโบสูงสุด ${bestCombo}${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>`
         : TIMED ? `<div class="h2">⏱️ ตอบถูก ${right_} ข้อใน ${TIME_LIMIT} วินาที ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>

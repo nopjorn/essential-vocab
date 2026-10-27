@@ -29,22 +29,29 @@ function topicProgress(id) {
 // First stage not cleared yet (the one the path points at); the last stage when everything is cleared.
 const stageNext = (id) => { const n = topicStages(id).length; for (let k = 0; k < n; k++) if (starsAt(id, k) === 0) return k; return n - 1; };
 // Called when a stage round ends: keeps the best stars, pays XP; returns what to show.
-function stageDone(topic, k, right, n) {
-  const stars = starsFor(right, n), prev = starsAt(topic, k);
+function stageDone(topic, k, right, n, beaten = false) {
+  const stars = beaten ? 0 : starsFor(right, n), prev = starsAt(topic, k); // beaten = the boss took all 3 hearts: not cleared
   if (!S.lvmap || typeof S.lvmap !== 'object') S.lvmap = {};
   const s = starsOf(topic).padEnd(k + 1, '0').split('');
   s[k] = String(Math.max(+s[k] || 0, stars));
   S.lvmap[topic] = s.join('');
   addXP(stars * 4 + (prev === 0 && stars > 0 ? 6 : 0));
-  return { stars, first: prev === 0 && stars > 0, hasNext: stars > 0 && k + 1 < topicStages(topic).length };
+  let badge = false;
+  if (stars > 0 && isBoss(topic, k) && !(S.owned = S.owned || []).includes('boss:' + topic)) { S.owned.push('boss:' + topic); addXP(25); badge = true; }
+  return { stars, first: prev === 0 && stars > 0, hasNext: stars > 0 && k + 1 < topicStages(topic).length, badge };
 }
+// Boss (1.102): the last stage of a topic with 2+ stages. The boss has one hit point per word; a right answer hits it, a wrong one
+// costs น้องคำ a heart (3). Win = stars as usual, first win of a topic = ตราบอส in S.owned ('boss:<topic>'), which unlocks mascot items.
+const isBoss = (id, k) => { const n = topicStages(id).length; return n > 1 && k === n - 1; };
+const bossCount = () => (S.owned || []).filter((x) => String(x).startsWith('boss:')).length;
 function startStage(topic, k) {
   const words = topicStages(topic)[k];
   if (!words || !stageOpen(topic, k)) return go('map', topic);
   if (cleanup) { cleanup(); cleanup = null; }
   current = 'games'; view.classList.remove('feed-mode'); view.dataset.route = 'games'; view.scrollTop = 0;
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === 'games'));
-  playQuiz('en2th', words, 'stage', {}, { topic, k, title: `${TOPIC_LABEL[topic]} · ด่าน ${k + 1}` });
+  const boss = isBoss(topic, k);
+  playQuiz('en2th', words, 'stage', {}, { topic, k, boss, title: `${TOPIC_LABEL[topic]} · ${boss ? '🐲 บอส' : 'ด่าน ' + (k + 1)}` });
 }
 
 const starRow = (n) => '★'.repeat(n) + '☆'.repeat(3 - n);
@@ -76,14 +83,15 @@ function renderMapTopic(id) {
     const words = stages[sel], open = stageOpen(id, sel), st = starsAt(id, sel);
     view.innerHTML = `<div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="mpBack">‹ แผนที่</button><div class="grow"></div><span class="small muted">★ ${topicProgress(id).stars}/${stages.length * 3}</span></div>
       <div class="card-box center" style="padding:12px"><div class="h2" style="margin:0">${TOPIC_LABEL[id]}</div><div class="small muted">ผ่าน ${topicProgress(id).cleared}/${stages.length} ด่าน</div></div>
-      <div class="card-box" id="mpSel"><div class="row"><b>ด่าน ${sel + 1}/${stages.length}</b><div class="grow"></div><span class="map-st" aria-label="${st} ดาว">${starRow(st)}</span></div>
+      <div class="card-box" id="mpSel"><div class="row"><b>${isBoss(id, sel) ? '🐲 บอสท้ายด่าน' : `ด่าน ${sel + 1}`} <span class="small muted">· ${sel + 1}/${stages.length}</span></b><div class="grow"></div><span class="map-st" aria-label="${st} ดาว">${starRow(st)}</span></div>
         ${open ? `<div class="map-words" lang="en">${words.map((w) => `<span>${esc(w.w)}</span>`).join('')}</div>
-          <button class="btn primary block" id="mpGo" style="margin-top:10px">▶ ${st ? 'เล่นอีกครั้ง' : 'เริ่มด่านนี้'}</button>`
+          ${isBoss(id, sel) ? `<p class="small muted" style="margin:8px 0 0">🐲 ตอบถูกให้บอสเสียเลือด ตอบผิดน้องคำเสียหัวใจ (มี 3 ดวง) ชนะครั้งแรกได้ตราบอส${(S.owned || []).includes('boss:' + id) ? ' · 🏅 ได้ตราหมวดนี้แล้ว' : ''}</p>` : ''}
+          <button class="btn primary block" id="mpGo" style="margin-top:10px">▶ ${st ? 'เล่นอีกครั้ง' : isBoss(id, sel) ? 'สู้กับบอส' : 'เริ่มด่านนี้'}</button>`
           : `<p class="small muted" style="margin:8px 0 0">🔒 ผ่านด่านก่อนหน้าให้ได้ ★ อย่างน้อย 1 ดวงก่อน (ตอบถูก ${needFor(stages[sel - 1].length)} ข้อขึ้นไป)</p>`}</div>
       <ol class="map-path" aria-label="เส้นทางด่าน">${stages.map((ws, k) => {
         const s = starsAt(id, k), o = stageOpen(id, k);
         return `<li class="map-node ${!o ? 'lock' : s ? 'done' : 'cur'}${k === sel ? ' sel' : ''}" style="--x:${STAGE_WAVE[k % STAGE_WAVE.length]}px">
-          <button data-k="${k}" aria-label="ด่าน ${k + 1} ${o ? (s ? s + ' ดาว' : 'ยังไม่ผ่าน') : 'ล็อกอยู่'}">${o ? k + 1 : '🔒'}</button><span class="map-st">${o ? starRow(s) : ''}</span></li>`;
+          <button data-k="${k}" aria-label="ด่าน ${k + 1} ${o ? (s ? s + ' ดาว' : 'ยังไม่ผ่าน') : 'ล็อกอยู่'}">${o ? (isBoss(id, k) ? '🐲' : k + 1) : '🔒'}</button><span class="map-st">${o ? starRow(s) : ''}</span></li>`;
       }).join('')}</ol>`;
     $('#mpBack').onclick = () => go('map');
     if ($('#mpGo')) $('#mpGo').onclick = () => startStage(id, sel);
