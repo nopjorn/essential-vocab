@@ -1535,6 +1535,7 @@ test('wide screens (1.96): home, stats, settings, guide and reference pages pack
     ["go('guide')", '.g-group > .g-sec', 2], ['renderIrregular()', '#irList .col-row', 2], ['renderPairs()', '.pair-list > .pair-card', 2]]) {
     await page.evaluate(js);
     if (js === "go('guide')") await page.waitForFunction(() => guideOn); // the manual is lazy-loaded
+    await page.waitForSelector(sel, { timeout: 3000 }).catch(() => {}); // lazy data may still be loading
     await page.waitForTimeout(200);
     expect(await cols(sel), js).toBeGreaterThanOrEqual(min);
   }

@@ -1487,3 +1487,6 @@ html.no-ans .streak.bump { animation: none; }
 .empty-art.sm .ea-txt > b { font-size: 15px; }
 .empty-art.sm .btn { min-height: 44px; padding: 0 16px; }
 @media (prefers-reduced-motion: no-preference) { .empty-art .ea-pic { animation: ea-bob 3.2s ease-in-out infinite; } @keyframes ea-bob { 50% { transform: translateY(-5px); } } }
+
+/* home hero: once today is finished the start button is a faded, glass-like button (still tappable) */
+.hero .btn.done { background: rgba(255, 255, 255, .16); color: #fff; font-weight: 700; box-shadow: none; border: 1px solid rgba(255, 255, 255, .38); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
