@@ -341,9 +341,14 @@ function storySentences(st) {
   st.en.forEach((para, k) => (para.match(/[^.!?]+[.!?]+["'”’)]*|[^.!?]+$/g) || [para]).forEach((x) => { x = x.trim(); if (x) out.push({ en: x, k }); }));
   return out;
 }
+// Recording your own voice while shadowing (1.108): the mic is opened only for the pause after each sentence (so the phone's
+// speaker volume comes back for the next one), each take is kept in memory for this session and can be played right after the
+// original to compare. Needs MediaRecorder; without it the button is not shown.
+const canRecord = () => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
 function shadowStory(st, slowStart) {
   const list = storySentences(st);
   let i = 0, tok = 0, auto = false, slow = !!slowStart, hide = false, showTh = false, timer = null;
+  let recOn = false, take = null; const clips = new Map(); // take = { rec, stream, k, chunks, at }
   $('#title').textContent = 'ฝึกพูดตาม';
   view.innerHTML = `<div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="shBack">‹ กลับไปที่เรื่อง</button></div>
     <div class="card-box sh-box">
@@ -360,19 +365,49 @@ function shadowStory(st, slowStart) {
       <button class="tool" id="shNext" aria-label="ประโยคถัดไป"><span>⏭</span>ถัดไป</button>
       <button class="tool" id="shRep"><span>🔁</span>ฟังซ้ำ</button>
       <button class="tool ${slow ? 'on' : ''}" id="shSlow" aria-pressed="${slow}"><span>🐢</span>ช้า</button>
+      ${canRecord() ? '<button class="tool" id="shRec" aria-pressed="false"><span>🎙️</span>อัดเสียงฉัน</button><button class="tool" id="shCmp" disabled><span>🎧</span>เทียบเสียง</button>' : ''}
       <button class="tool" id="shHide" aria-pressed="false"><span>🙈</span>ซ่อนข้อความ</button>
     </div>
     <button class="hint-btn" id="shThBtn">🇹🇭 ดูคำแปลย่อหน้านี้</button>
     <p class="small muted" style="margin:14px 2px">💡 Shadowing: ฟังประโยค แล้วพูดตามทันทีให้จังหวะ น้ำเสียง และการเน้นคำเหมือนต้นฉบับมากที่สุด ไม่ต้องเข้าใจทุกคำก็ได้ ลองซ่อนข้อความเมื่อคล่องแล้ว</p>`;
   const bar = $('#shBar');
   const setBar = (ms) => { bar.style.transition = 'none'; bar.style.width = '0'; if (ms) { void bar.offsetWidth; bar.style.transition = `width ${ms}ms linear`; bar.style.width = '100%'; } };
-  const halt = () => { tok++; clearTimeout(timer); setBar(0); if (window.speechSynthesis) speechSynthesis.cancel(); };
+  // one take = the pause after one sentence; stopTake() keeps it (when it is longer than half a second) under that sentence
+  const startTake = async (k) => {
+    if (!recOn || take) return;
+    const mine = {};
+    take = mine;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (take !== mine) { stream.getTracks().forEach((t) => t.stop()); return; } // the pause ended while the mic was opening
+      const rec = new MediaRecorder(stream);
+      Object.assign(mine, { rec, stream, k, chunks: [], at: Date.now() });
+      rec.ondataavailable = (e) => { if (e.data && e.data.size) mine.chunks.push(e.data); };
+      rec.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        if (Date.now() - mine.at > 500 && mine.chunks.length) {
+          if (clips.has(k)) URL.revokeObjectURL(clips.get(k));
+          clips.set(k, URL.createObjectURL(new Blob(mine.chunks, { type: rec.mimeType || 'audio/mp4' })));
+          const cmp = $('#shCmp'); if (cmp && k === i) cmp.disabled = false;
+        }
+      };
+      rec.start();
+      $('#shState').textContent = '🎙️ ตาคุณ กำลังอัดเสียง…';
+    } catch (e) {
+      take = null; recOn = false;
+      const b = $('#shRec'); if (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); }
+      toast('เปิดไมค์ไม่ได้ ลองอนุญาตการใช้ไมค์ในตั้งค่า iPhone ดูนะ');
+    }
+  };
+  const stopTake = () => { const t = take; take = null; if (t && t.rec && t.rec.state !== 'inactive') { try { t.rec.stop(); } catch (e) { /* ignore */ } } else if (t && t.stream) t.stream.getTracks().forEach((x) => x.stop()); };
+  const halt = () => { tok++; clearTimeout(timer); stopTake(); setBar(0); if (window.speechSynthesis) speechSynthesis.cancel(); };
   const setAuto = (on) => { auto = on; $('#shPlay').innerHTML = on ? '<span>⏸</span>หยุด' : '<span>▶️</span>เริ่ม'; };
   const show = () => {
     const c = list[i];
     $('#shN').textContent = `ประโยค ${i + 1}/${list.length}`;
     $('#shProg').style.width = ((i + 1) / list.length) * 100 + '%';
     $('#shEn').textContent = c.en; $('#shEn').classList.toggle('hid', hide);
+    if ($('#shCmp')) $('#shCmp').disabled = !clips.has(i);
     $('#shTh').textContent = st.th[c.k] || ''; $('#shTh').hidden = !showTh;
   };
   const finish = () => {
@@ -384,16 +419,17 @@ function shadowStory(st, slowStart) {
   const run = () => {
     const my = ++tok; clearTimeout(timer); show(); setBar(0);
     $('#shState').textContent = '🔊 ฟัง…';
-    const t0 = Date.now(), c = list[i];
+    const t0 = Date.now(), c = list[i], idx = i;
     const pause = () => {
       if (my !== tok || current !== 'read') return;
       const said = Date.now() - t0, est = c.en.split(/\s+/).length * 380 / (slow ? 0.62 : 1);
       const gap = Math.min(14000, Math.max(1500, Math.max(said, est) * 1.15 + 600));
       $('#shState').textContent = '🗣️ ตาคุณ พูดตามเลย!';
       setBar(gap);
+      startTake(idx);
       timer = setTimeout(() => {
         if (my !== tok) return;
-        setBar(0);
+        stopTake(); setBar(0);
         if (!auto) { $('#shState').textContent = 'แตะ 🔁 ฟังซ้ำ หรือ ⏭ ไปประโยคถัดไป'; return; }
         if (i + 1 < list.length) { i++; run(); } else finish();
       }, gap);
@@ -404,6 +440,24 @@ function shadowStory(st, slowStart) {
   const move = (d) => { halt(); i = Math.max(0, Math.min(list.length - 1, i + d)); run(); };
   $('#shBack').onclick = () => go('read', st.id);
   $('#shPlay').onclick = () => { if (auto) { setAuto(false); halt(); $('#shState').textContent = 'หยุดไว้ แตะ ▶️ เพื่อเล่นต่อ'; } else { setAuto(true); run(); } };
+  if ($('#shRec')) {
+    $('#shRec').onclick = () => { recOn = !recOn; $('#shRec').classList.toggle('on', recOn); $('#shRec').setAttribute('aria-pressed', recOn); if (!recOn) stopTake(); };
+    // original first, then your take
+    $('#shCmp').onclick = () => {
+      const c = list[i], url = clips.get(i); if (!url) return;
+      halt(); setAuto(false);
+      const my = tok;
+      $('#shState').textContent = '🔊 เสียงต้นฉบับ…';
+      const mine = () => {
+        if (my !== tok) return;
+        $('#shState').textContent = '🎙️ เสียงของคุณ…';
+        const a = new Audio(url); a.onended = () => { if (my === tok) $('#shState').textContent = 'แตะ 🎧 เพื่อเทียบอีกครั้ง หรือ 🔁 ฟังซ้ำ'; };
+        const pr = a.play(); if (pr && pr.catch) pr.catch(() => toast('เล่นเสียงที่อัดไม่ได้'));
+      };
+      const u = speak(c.en, { slow });
+      if (u) { u.onend = mine; u.onerror = mine; } else mine();
+    };
+  }
   $('#shPrev').onclick = () => move(-1);
   $('#shNext').onclick = () => move(1);
   $('#shRep').onclick = () => { halt(); run(); };
@@ -412,5 +466,5 @@ function shadowStory(st, slowStart) {
   $('#shEn').onclick = () => { if (hide) $('#shEn').classList.toggle('hid'); };
   $('#shThBtn').onclick = () => { showTh = !showTh; $('#shTh').hidden = !showTh; $('#shThBtn').textContent = showTh ? '🇹🇭 ซ่อนคำแปล' : '🇹🇭 ดูคำแปลย่อหน้านี้'; };
   show();
-  cleanup = () => { halt(); };
+  cleanup = () => { halt(); clips.forEach((u) => URL.revokeObjectURL(u)); clips.clear(); };
 }
