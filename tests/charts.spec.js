@@ -41,10 +41,15 @@ test('trend range buttons redraw the chart', async ({ page }) => {
   await page.waitForSelector('[data-chart="trend"] svg', { timeout: 5000 });
   const pts = () => page.evaluate(() => document.querySelector('[data-chart="trend"] .ln-l').getAttribute('points').split(' ').length);
   const all = await pts();
+  expect(await page.locator('[data-range]').allInnerTexts()).toEqual(['7 วัน', '14 วัน', '30 วัน', 'ทั้งหมด']);
+  await page.click('[data-range="7"]');
+  const m7 = await pts();
+  expect(m7).toBeLessThanOrEqual(7);
   await page.click('[data-range="30"]');
   const m30 = await pts();
   expect(m30).toBeLessThan(all);
   expect(m30).toBeLessThanOrEqual(30);
+  expect(m30).toBeGreaterThan(m7);
   await expect(page.locator('[data-range="30"]')).toHaveAttribute('aria-pressed', 'true');
   await page.click('[data-range="all"]');
   expect(await pts()).toBe(all);

@@ -256,7 +256,7 @@ function activityChart(Wd) {
 // Lines: words learned and words mastered (all levels), from daily snapshots. The SVG is drawn at the width of its box
 // (1 unit = 1 px, so the text keeps its real size on a wide iPad column, 1.110); the latest numbers sit in the legend below.
 let trendRange = 'all';
-const TREND_RANGES = [['30', '30 วัน'], ['90', '90 วัน'], ['all', 'ทั้งหมด']];
+const TREND_DAYS = [7, 14, 30, 90, 180, 365]; // a range button shows only while the data is longer than it
 const niceStep = (range, n) => { const raw = Math.max(1, range) / n, p = 10 ** Math.floor(Math.log10(raw)), f = raw / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; };
 function trendChart(Wd) {
   const all = Object.keys(S.snap).sort();
@@ -264,8 +264,10 @@ function trendChart(Wd) {
     return `<div class="small muted">📊 แอปเริ่มเก็บข้อมูลแนวโน้มตั้งแต่วันนี้ เล่นต่ออีกวันสองวันแล้วกราฟเส้นจะขึ้นตรงนี้</div>
       <div style="margin-top:8px">ตอนนี้: เรียนแล้ว <b>${S.snap[today()][2]}</b> คำ · จำได้แล้ว <b>${S.snap[today()][3]}</b> คำ</div>`;
   }
-  const canRange = all.length > 14;
-  const range = canRange ? trendRange : 'all';
+  const days = (Date.parse(all[all.length - 1] + 'T12:00:00') - Date.parse(all[0] + 'T12:00:00')) / DAY;
+  const rangeIds = TREND_DAYS.filter((d) => days > d + 1);
+  const canRange = rangeIds.length > 0;
+  const range = canRange && (trendRange === 'all' || rangeIds.includes(+trendRange)) ? trendRange : 'all';
   let keys = all;
   if (range !== 'all') { const cut = dayKey(+range - 1); keys = all.filter((k) => k >= cut); if (keys.length < 2) keys = all.slice(-2); }
   const big = Wd >= 520;
@@ -288,7 +290,7 @@ function trendChart(Wd) {
     return `<rect class="hit" data-x="${px(k)}" data-tip="${thDate(Date.parse(k + 'T12:00:00'))}: เรียนแล้ว ${S.snap[k][2]} · จำได้ ${S.snap[k][3]}" x="${x0}" y="0" width="${x1 - x0}" height="${H}"/>`;
   }).join('');
   const gain = (i) => { const d = L[i] - F[i]; return d > 0 ? ` <small class="up">+${d.toLocaleString()}</small>` : ''; };
-  const seg = canRange ? `<div class="chips trend-range" role="group" aria-label="ช่วงเวลาของกราฟ">${TREND_RANGES.map(([id, t]) => `<button class="chip${range === id ? ' on' : ''}" data-range="${id}" aria-pressed="${range === id}">${t}</button>`).join('')}</div>` : '';
+  const seg = canRange ? `<div class="chips trend-range" role="group" aria-label="ช่วงเวลาของกราฟ">${[...rangeIds.map((d) => [String(d), `${d} วัน`]), ['all', 'ทั้งหมด']].map(([id, t]) => `<button class="chip${range === id ? ' on' : ''}" data-range="${id}" aria-pressed="${range === id}">${t}</button>`).join('')}</div>` : '';
   return `${seg}<div class="chart${big ? ' big' : ''}"><svg viewBox="0 0 ${Wd} ${H}" width="100%" role="img" aria-label="แนวโน้มจำนวนคำที่เรียนแล้วและจำได้แล้ว: เรียนแล้ว ${L[2]} จำได้แล้ว ${L[3]}">
     ${grid.join('')}${line(2, 'ln-l')}${line(3, 'ln-m')}${dot(L[2], 'dot-l')}${dot(L[3], 'dot-m')}
     <text class="ax" x="${left}" y="${H - 7}">${thDate(t0)}</text><text class="ax" x="${Wd - right}" y="${H - 7}" text-anchor="end">วันนี้</text>
