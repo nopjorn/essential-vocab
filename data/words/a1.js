@@ -62,7 +62,7 @@
   ["bank","n","A1","/bæŋk/","ธนาคาร, ริมฝั่ง","I need to go to the bank.","ฉันต้องไปธนาคาร","money",[["We sat on the bank of the river.","เรานั่งอยู่ริมฝั่งแม่น้ำ"]]],
   ["bath","n","A1","/bæθ/","อ่างอาบน้ำ, การอาบน้ำ","I take a bath every evening.","ฉันอาบน้ำทุกเย็น","home",[["The bath is full of hot water.","อ่างอาบน้ำเต็มไปด้วยน้ำร้อน"]]],
   ["bathroom","n","A1","/ˈbæθruːm/","ห้องน้ำ","Where is the bathroom?","ห้องน้ำอยู่ที่ไหน","home"],
-  ["be","v/aux","A1","/bi/","เป็น, อยู่, คือ","I want to be a doctor.","ฉันอยากเป็นหมอ","grammar",[["The keys are on the table.","กุญแจอยู่บนโต๊ะ"],["This is my brother.","นี่คือพี่ชายของฉัน"]]],
+  ["be","v/aux","A1","/bi/","เป็น, อยู่, คือ","I want to be a doctor.","ฉันอยากเป็นหมอ","grammar",[["The keys will be on the table.","กุญแจจะอยู่บนโต๊ะ"],["That must be my brother.","นั่นคงเป็นพี่ชายของฉัน"]]],
   ["beach","n","A1","/biːtʃ/","ชายหาด","Let's go to the beach.","ไปทะเลกัน","weather"],
   ["beautiful","adj","A1","/ˈbjuːtɪfl/","สวยงาม","What a beautiful day!","วันนี้อากาศดีจัง","clothes"],
   ["because","conj","A1","/bɪˈkəz/","เพราะว่า","I stayed home because I was sick.","ฉันอยู่บ้านเพราะไม่สบาย","grammar"],
