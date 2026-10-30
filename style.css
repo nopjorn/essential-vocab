@@ -177,6 +177,11 @@ html.no-ans .ring .rg, html.no-ans .hero.ring-closed .ring { animation: none; }
 .games-sec { margin: 4px 4px 8px; }
 .games-sec + .game-grid { margin-bottom: 14px; }
 .games-head { align-items: center; margin: 16px 4px 10px; }
+.skill-chips { margin: 0 0 12px; }
+.skill-chips .chip small { opacity: .7; margin-left: 2px; }
+.skill-chips + .games-sec { margin-top: 2px; }
+@media (max-width: 699px) { .skill-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; } .skill-chips::-webkit-scrollbar { display: none; } .skill-chips .chip { flex: none; } }
+.games-sec ~ .games-sec { margin-top: 6px; }
 .hidden-games { margin-top: 14px; }
 .hidden-games summary { cursor: pointer; }
 .gedit-row { display: flex; align-items: center; gap: 6px; padding: 6px 4px 6px 12px; margin-bottom: 6px; border-radius: 12px; background: var(--surface-2); }

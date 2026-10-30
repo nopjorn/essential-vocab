@@ -75,6 +75,18 @@ const PAIR_GAMES = ['confuse', 'minpair'];
 // Generated skill games: the questions are made up on the spot, so they are not scheduled (no S.lex keys).
 const GEN_GAMES = ['num'];
 const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix', 'root', 'idiom', 'sit', 'irreg', 'dprep', 'thaierr', 'gpat', ...GEN_GAMES];
+// The games menu groups every game by the skill it trains (1.106): chips filter, and "all" lists them under these headings.
+// Every game id is in exactly one group (a test checks).
+const GAME_SKILLS = [
+  ['hear', '👂', 'ฟังและเสียง', ['listen', 'minpair', 'num', 'dict', 'dictW', 'dictS', 'ipa']],
+  ['say', '🗣️', 'พูด', ['speak', 'speakS']],
+  ['mean', '📖', 'ความหมาย', ['en2th', 'th2en', 'match', 'emoji', 'guess', 'syn', 'confuse', 'review']],
+  ['write', '✍️', 'สะกดและเขียน', ['spell', 'hangman', 'anagram', 'cloze', 'sCloze', 'order', 'sOrder', 'compose']],
+  ['gram', '📐', 'ไวยากรณ์และรูปคำ', ['wform', 'affix', 'root', 'gpat', 'thaierr', 'dprep', 'irreg']],
+  ['phrase', '🧩', 'วลีและสำนวน', ['colloc', 'phrasal', 'idiom', 'sit']],
+  ['chal', '🎉', 'ท้าทาย', ['survival', 'timeAttack', 'emojiRun']],
+];
+let gameSkill = 'all'; // chip selected in the games menu: 'all' or a GAME_SKILLS id
 function gameTile(id) {
   const g = GAMES[id];
   const best = S.best[id] != null ? `<span>🏅 สถิติ: ${S.best[id]}</span>` : '';
@@ -135,6 +147,18 @@ function diffLabel() {
   const d = gameDiff(), auto = !S.settings.gdiff || S.settings.gdiff === 'auto';
   return '⭐'.repeat(d) + ' ' + ['ปกติ', 'ตัวเลือกลวงคล้ายขึ้น', 'ตัวเลือกคล้ายขึ้น + จับเวลาข้อละ 12 วินาที'][d - 1] + (auto ? ` · อัตโนมัติ (แม่น ${Math.round(((S.gacc || {}).a || 0.7) * 100)}%)` : ' · ตั้งเอง');
 }
+// Games not pinned or hidden, as the "all games" list: chips by skill + the tiles (grouped under headings when "all").
+function gameList() {
+  const skip = new Set([...gamePins(), ...gameHidden()]);
+  const groups = GAME_SKILLS.map(([id, ic, name, ids]) => [id, ic, name, ids.filter((g) => GAMES[g] && !skip.has(g))]).filter((g) => g[3].length);
+  if (gameSkill !== 'all' && !groups.some((g) => g[0] === gameSkill)) gameSkill = 'all';
+  const n = groups.reduce((a, g) => a + g[3].length, 0);
+  const chips = [['all', '🎮', 'ทั้งหมด', n], ...groups.map((g) => [g[0], g[1], g[2], g[3].length])]
+    .map(([id, ic, name, c]) => `<button class="chip${gameSkill === id ? ' on' : ''}" data-skill="${id}" aria-pressed="${gameSkill === id}">${ic} ${name} <small>${c}</small></button>`).join('');
+  const shown = gameSkill === 'all' ? groups : groups.filter((g) => g[0] === gameSkill);
+  const body = shown.map(([, ic, name, ids]) => (gameSkill === 'all' ? `<div class="small muted games-sec"><b>${ic} ${name}</b></div>` : '') + `<div class="game-grid">${ids.map(gameTile).join('')}</div>`).join('');
+  return `<div class="chips skill-chips" id="gSkill" role="group" aria-label="กรองเกมตามทักษะ">${chips}</div>${body}`;
+}
 function renderGames() {
   if (gameSource === 'custom') gameSource = 'level';
   gameDecks = gameDecks.filter((id) => deckById(id)); // a set deleted meanwhile (also by another device) drops out
@@ -186,8 +210,14 @@ function renderGames() {
         <button class="ref-tile" id="toIpa"><span>🔡</span>ตารางเสียง IPA</button>
       </div></div>
     <div class="row games-head"><b class="grow">${gameEdit ? '✏️ จัดหน้าเกม' : (gamePins().length ? '🎮 เกมอื่นๆ' : '🎮 เกมทั้งหมด')}</b><button class="btn${gameEdit ? ' primary' : ''}" id="gEdit">${gameEdit ? '✓ เสร็จ' : '✏️ จัดเกม'}</button></div>
-    ${gameEdit ? gameEditor() : `<div class="game-grid">${Object.keys(GAMES).filter((id) => !gameHidden().has(id) && !gamePins().includes(id)).map(gameTile).join('')}</div>
+    ${gameEdit ? gameEditor() : `${gameList()}
     ${gameHidden().size ? `<details class="card-box hidden-games"><summary class="small muted">🙈 เกมที่ซ่อนไว้ (${gameHidden().size})</summary><div class="game-grid" style="margin-top:10px">${[...gameHidden()].map(gameTile).join('')}</div></details>` : ''}`}`;
+  if ($('#gSkill')) $('#gSkill').onclick = (e) => {
+    const c = e.target.closest('[data-skill]'); if (!c) return;
+    gameSkill = c.dataset.skill;
+    const top = view.scrollTop; renderGames(); view.scrollTop = top;
+    const on = $('#gSkill .chip.on'); if (on) { on.focus({ preventScroll: true }); $('#gSkill').scrollLeft = on.offsetLeft - ($('#gSkill').clientWidth - on.offsetWidth) / 2; } // the re-render reset the chip row: keep the chosen chip in view
+  };
   $('#gEdit').onclick = () => { gameEdit = !gameEdit; renderGames(); if (gameEdit) $('#gEdit').scrollIntoView({ block: 'start' }); };
   if (gameEdit) bindGameEditor();
   $('#toRead').onclick = () => go('read');

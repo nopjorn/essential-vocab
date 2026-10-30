@@ -1732,3 +1732,33 @@ test('word card: swipe down closes it, a short drag keeps it open', async ({ pag
   await expect(page.locator('.sheet-wrap')).toHaveCount(0, { timeout: 2000 });
   expect(errors).toEqual([]);
 });
+
+test('games menu by skill (1.106): every game is in exactly one group, chips filter, pins and hidden still work', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1'], gamePin: ['emoji'], gameHide: ['spell'] } });
+  const all = await page.evaluate(() => { const ids = GAME_SKILLS.flatMap((g) => g[3]); return { ids: ids.slice().sort(), games: Object.keys(GAMES).sort(), dup: ids.length - new Set(ids).size }; });
+  expect(all.dup).toBe(0);
+  expect(all.ids).toEqual(all.games);
+  await page.evaluate(() => go('games'));
+  const view = page.locator('#view');
+  const grid = (sel = '') => view.locator('.game-grid:not(.hidden-games .game-grid)' + sel);
+  // "all": headings per skill, every visible game once (pinned only on top, hidden only in its box)
+  await expect(view.locator('#gSkill .chip')).toHaveCount(8);
+  expect(await view.locator('.games-sec b', { hasText: 'ฟังและเสียง' }).count()).toBe(1);
+  await expect(view.locator('[data-game="emoji"]')).toHaveCount(1);
+  await expect(grid('[data-game="spell"]')).toHaveCount(0);
+  // pick a skill: only its games, no skill headings, chips show the selection
+  await view.locator('#gSkill [data-skill="say"]').click();
+  await expect(view.locator('#gSkill [data-skill="say"]')).toHaveAttribute('aria-pressed', 'true');
+  const ids = await view.locator('.game-grid:not(.hidden-games .game-grid) [data-game]').evaluateAll((els) => els.map((e) => e.dataset.game));
+  expect(ids).toEqual(expect.arrayContaining(['speak', 'speakS']));
+  expect(ids).not.toContain('listen');
+  await expect(view.locator('.games-sec b', { hasText: 'ฟังและเสียง' })).toHaveCount(0);
+  // a game still starts from the filtered list; back to the menu keeps the filter; "all" restores the list
+  await view.locator('[data-game="speakS"]').click();
+  await page.evaluate(() => go('games'));
+  await expect(view.locator('#gSkill [data-skill="say"]')).toHaveAttribute('aria-pressed', 'true');
+  await view.locator('#gSkill [data-skill="all"]').click();
+  await expect(view.locator('.games-sec b', { hasText: 'ท้าทาย' })).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
