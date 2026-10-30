@@ -568,6 +568,10 @@ body { touch-action: manipulation; }
 
 /* lock screen when sync requires login */
 body.locked .tabbar { display: none; }
+/* keyboard open (syncKeyboard in app.js): keep the question visible, hide the tab bar */
+html.kbd .tabbar { display: none; }
+html.kbd #app { height: var(--kb-h); transform: translateY(var(--kb-top, 0px)); }
+html.kbd .view, html.kbd .view.feed-mode, html.kbd .view.rd-fit { padding-bottom: 12px; }
 code { background: var(--surface-2); border-radius: 6px; padding: 1px 5px; font-size: .9em; }
 .block-sel { display: block; width: 100%; margin-bottom: 6px; }
 
