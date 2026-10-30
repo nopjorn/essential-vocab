@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.108.0';
+const APP_VERSION = '1.109.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -111,7 +111,7 @@ const DEV = (() => {
 const gplayFix = (g) => (g && Object.values(g).some((v) => typeof v === 'number') ? { [DEV]: g } : g || {});
 const gamePlays = (id) => Object.values(S.gplay).reduce((n, dev) => n + ((dev && dev[id]) || 0), 0);
 // My word sets (js/decks.js). Everything read from storage, a backup or the cloud goes through cleanDecks()/cleanDprog().
-const DECK_MAX = { decks: 200, words: 500, name: 40, word: 40, icon: 8, tomb: 90 * 86400000 };
+const DECK_MAX = { decks: 200, words: 500, name: 40, word: 40, icon: 8, tomb: 90 * 86400000, own: 200, ownT: 80, ownE: 160 }; // own = words of my own (not in the list) per set, counted in `words` too
 const isNum = (n) => typeof n === 'number' && isFinite(n);
 function cleanDecks(a) {
   const byId = new Map();
@@ -123,6 +123,17 @@ function cleanDecks(a) {
     }
     const d = { id: x.id, name: typeof x.name === 'string' ? x.name.slice(0, DECK_MAX.name) : '', icon: typeof x.icon === 'string' && x.icon ? x.icon.slice(0, DECK_MAX.icon) : '📚',
       words, at: isNum(x.at) ? x.at : 0, used: isNum(x.used) ? x.used : 0 };
+    // Words of my own (1.109): [{w, t, e, et}] — an English word or phrase, its Thai meaning and an optional example with translation.
+    if (!del && Array.isArray(x.own)) {
+      const own = [], low = new Set(words.map((v) => v.toLowerCase())), str = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
+      for (const o of x.own) {
+        if (!o || typeof o !== 'object') continue;
+        const w = str(o.w, DECK_MAX.word), t = str(o.t, DECK_MAX.ownT);
+        if (!/^[A-Za-z][A-Za-z' .-]*$/.test(w) || !t || low.has(w.toLowerCase()) || own.length >= DECK_MAX.own || words.length + own.length >= DECK_MAX.words) continue;
+        low.add(w.toLowerCase()); own.push({ w, t, e: str(o.e, DECK_MAX.ownE), et: str(o.et, DECK_MAX.ownE) });
+      }
+      if (own.length) d.own = own;
+    }
     if (del) d.del = true;
     if (isNum(x.rst) && x.rst > 0) d.rst = x.rst; // when the set's progress was last restarted
     const o = byId.get(d.id);
@@ -753,7 +764,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const pick = (a) => a[Math.random() * a.length | 0];
 const view = $('#view');
-const lvBadge = (g) => `<span class="lv ${g}">${LV_LABEL[g]}</span>`;
+const lvBadge = (g) => (g === 'own' ? '<span class="lv own">คำของฉัน</span>' : `<span class="lv ${g}">${LV_LABEL[g]}</span>`);
 const thFirst = (t) => t.split(/[;,]/)[0].trim();
 const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // Example sentence with the word (and simple inflections like -s/-ed/-ing) highlighted.
@@ -811,7 +822,7 @@ function clozeOpt(o, w) {
 }
 // Example boxes: the main sentence (used by the games) plus extra sentences for the word's
 // other meanings (`w.xe`, optional trailing [[en, th], ...] field of a word row), one box each.
-const exParts = (w) => [[w.e, w.et], ...w.xe];
+const exParts = (w) => [[w.e, w.et], ...w.xe].filter(([e]) => e); // words of my own may have no example
 const exampleBox = (w) => exParts(w).map(([e, et]) => `<div class="example"><div class="en" lang="en">${hlExample({ ...w, e })} <button class="say-ex" data-sayex="${esc(e)}" aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(et)}</div></div>`).join('');
 // Each 🔊 in the example boxes reads its own sentence.
 const bindSayEx = (root, text) => root.querySelectorAll('[data-sayex]').forEach(b => { b.onclick = () => speak(b.dataset.sayex || text); });

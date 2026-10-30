@@ -18,9 +18,44 @@ function touchDeck(d) { d.at = Date.now(); d.used = d.at; save(); }
 // The list entries of a set (words no longer in the list are kept in the data but skipped here).
 function deckWords(d) {
   if (!DECK_BY.size) W.forEach((w) => { const k = w.w.toLowerCase(); if (!DECK_BY.has(k)) DECK_BY.set(k, w); });
-  return d.words.map((x) => DECK_BY.get(x.toLowerCase())).filter(Boolean);
+  return d.words.map((x) => DECK_BY.get(x.toLowerCase())).filter(Boolean).concat((d.own || []).map(ownWord));
 }
 const DECK_BY = new Map();
+// A word of my own as a word object like a list entry (same fields, idx -1, own: true). One object per text so queues and maps can compare them.
+const OWN_OBJ = new Map();
+function ownWord(o) {
+  const key = [o.w, o.t, o.e, o.et].join('\u0001');
+  let x = OWN_OBJ.get(key);
+  if (!x) { x = { w: o.w, p: '', g: 'own', i: '', t: o.t, e: o.e || '', et: o.et || '', tp: '', idx: -1, xe: [], own: true }; OWN_OBJ.set(key, x); }
+  return x;
+}
+// Reads pasted text or a CSV file: one word per line — `word, ความหมาย, example, คำแปลประโยค` (comma, tab or `word = ความหมาย`;
+// "quoted, cells" allowed; a first row starting with "word" is a header). Returns { own: [{w,t,e,et}], list: [list words], bad: n }.
+function parseOwn(text) {
+  const rows = [];
+  for (const line of String(text || '').replace(/^\uFEFF/, '').split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    let cells;
+    if (line.includes('\t')) cells = line.split('\t');
+    else if (line.includes(',')) { cells = []; const re = /\s*(?:"((?:[^"]|"")*)"|([^,]*))\s*(,|$)/g; let m; while ((m = re.exec(line)) && m.index < line.length + 1) { cells.push(m[1] != null ? m[1].replace(/""/g, '"') : m[2]); if (m[3] !== ',') break; } }
+    else if (line.includes('=')) cells = [line.slice(0, line.indexOf('=')), line.slice(line.indexOf('=') + 1)];
+    else cells = [line];
+    rows.push(cells.map((c) => c.trim()));
+  }
+  if (rows.length && /^(word|english|คำ|คำศัพท์)$/i.test(rows[0][0])) rows.shift();
+  deckWords({ words: [] });
+  const out = { own: [], list: [], bad: 0 }, seen = new Set();
+  for (const [w0, t = '', e = '', et = ''] of rows.slice(0, DECK_PASTE_MAX)) {
+    const w = (w0 || '').replace(/^\d+[.)]\s*/, '').trim().slice(0, DECK_MAX.word), k = w.toLowerCase();
+    if (!/^[A-Za-z][A-Za-z' .-]*$/.test(w) || seen.has(k)) { out.bad++; continue; }
+    seen.add(k);
+    const hit = DECK_BY.get(k);
+    if (hit) { out.list.push(hit.w); continue; }                 // already in the built-in list: use that entry
+    if (!t) { out.bad++; continue; }                              // a word of my own needs its Thai meaning
+    out.own.push({ w, t: t.slice(0, DECK_MAX.ownT), e: e.slice(0, DECK_MAX.ownE), et: et.slice(0, DECK_MAX.ownE) });
+  }
+  return out;
+}
 // Progress of one set (S.dprog[id], same shape as S.prog). Always pass it on as a parameter, never swap S.prog.
 const deckMap = (id) => S.dprog[id] || (S.dprog[id] = {});
 // Set status of a word: new / learning (interval < 7 days) / solid (7+ days). The main list's "จำได้แล้ว" (16+ days) is too far for weekly sets.
@@ -141,9 +176,10 @@ function renderDecks(openId) {
   });
 }
 // Create and store a set. Returns it, or null when the limit is reached.
-function addDeck(name, icon, words) {
+function addDeck(name, icon, words, own) {
   if (liveDecks().length >= DECK_MAX.decks) { toast(`มีชุดครบ ${DECK_MAX.decks} ชุดแล้ว ลบชุดที่ไม่ใช้ก่อนนะคะ`); return null; }
   const d = { id: newDeckId(), name: String(name).slice(0, DECK_MAX.name), icon, words: [...new Set(words)].slice(0, DECK_MAX.words), at: 0, used: 0 };
+  if (own && own.length) d.own = own.map((o) => ({ ...o })).slice(0, Math.max(0, DECK_MAX.words - d.words.length));
   S.decks.push(d); touchDeck(d);
   return d;
 }
@@ -167,7 +203,7 @@ function renderDeck(id) {
     <button class="btn block" id="dkPlay" style="margin-top:8px" ${st.n ? '' : 'disabled'}>🎮 เล่นเกมจากชุดนี้</button>
     <p class="small muted" style="margin:8px 4px 14px">ความคืบหน้าของชุดแยกจากสถิติหลัก (คำที่เรียน / จำได้แล้ว ในหน้าหลักไม่เปลี่ยน) แต่สตรีค XP และปฏิทินความขยันนับรวม · "แม่นแล้ว" = ทบทวนห่างตั้งแต่ 7 วันขึ้นไป</p>
     ${st.n ? '<button class="btn ghost block" id="dkRestart">🔄 เริ่มชุดนี้ใหม่</button>' : ''}
-    <div class="card-box" style="padding:4px 14px;margin-top:14px" id="dkList">${ws.map((w) => `<div class="wrow" data-i="${w.idx}"><span class="dot ${DECK_DOT[deckStatus(map[w.w])]}"></span>
+    <div class="card-box" style="padding:4px 14px;margin-top:14px" id="dkList">${ws.map((w) => `<div class="wrow" data-i="${w.idx}" data-w="${esc(w.w)}"><span class="dot ${DECK_DOT[deckStatus(map[w.w])]}"></span>
       <div class="grow dk-w"><div><span class="w" lang="en">${esc(w.w)}</span> <span class="pos">${esc(w.p)}</span></div><div class="t">${esc(w.t)}</div></div>
       <span class="star-mark">${leechIn(w, map) ? '🐢' : ''}${isStar(w) ? '⭐' : ''}</span></div>`).join('')}</div>`;
   $('#dkBack').onclick = () => go('decks');
@@ -183,7 +219,8 @@ function renderDeck(id) {
   };
   $('#dkList').onclick = (e) => {
     const r = e.target.closest('.wrow'); if (!r) return;
-    const w = W[+r.dataset.i]; speak(w.w);
+    const w = deckWords(d).find((x) => x.w === r.dataset.w); if (!w) return;
+    speak(w.w);
     openSheet(w, () => { r.querySelector('.star-mark').textContent = (leechIn(w, map) ? '🐢' : '') + (isStar(w) ? '⭐' : ''); }, { deck: id });
   };
 }
@@ -195,11 +232,11 @@ function renderDeckEdit(id) {
   const draft = d ? null : { id: newDeckId(), name: weekDeckName(), icon: '📚', words: [], at: 0, used: 0 }; // stored on the first change
   const cur = () => d || draft;
   const store = () => { if (!d) { if (liveDecks().length >= DECK_MAX.decks) { toast(`มีชุดครบ ${DECK_MAX.decks} ชุดแล้ว`); return false; } d = draft; S.decks.push(d); } touchDeck(d); return true; };
-  const persist = () => { if (d || cur().words.length) store(); }; // an empty new set is only kept once it gets a word
+  const persist = () => { if (d || cur().words.length || (cur().own || []).length) store(); }; // an empty new set is only kept once it gets a word
   let panel = 'paste', preview = null, defName = cur().name, seed = false; // seed: copy main progress once, only while creating
   const addWords = (list) => {
     const c = cur(), have = new Set(c.words), fresh = [...new Set(list)].filter((w) => !have.has(w));
-    const room = DECK_MAX.words - c.words.length;
+    const room = DECK_MAX.words - c.words.length - (c.own ? c.own.length : 0);
     if (!fresh.length) { toast('คำเหล่านี้อยู่ในชุดแล้ว'); return 0; }
     if (room <= 0) { toast(`ชุดเต็มแล้ว (สูงสุด ${DECK_MAX.words} คำ)`); return 0; }
     const take = fresh.slice(0, room);
@@ -226,7 +263,7 @@ function renderDeckEdit(id) {
       <div class="card-box">
         <b>เพิ่มคำ</b>
         ${d ? '' : '<label class="dk-g" id="dkSeedBox"><input type="checkbox" id="dkSeed"> เริ่มจากความคืบหน้าในหลัก (คัดลอกครั้งเดียว ไม่ผูกต่อ)</label>'}
-        <div class="seg" id="dkTabs" style="margin:8px 0">${[['paste', '📋 วางลิสต์'], ['find', '🔍 ค้นหา'], ['quick', '🎯 ทางลัด']].map(([v, t]) => `<button class="${panel === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div>
+        <div class="seg" id="dkTabs" style="margin:8px 0">${[['paste', '📋 วางลิสต์'], ['find', '🔍 ค้นหา'], ['quick', '🎯 ทางลัด'], ['own', '✍️ คำของฉัน']].map(([v, t]) => `<button class="${panel === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div>
         <div id="dkPanel"></div>
       </div>
       <div class="card-box" style="padding:10px 14px">
@@ -239,9 +276,10 @@ function renderDeckEdit(id) {
     if ($('#dkSeed')) $('#dkSeed').onchange = (e) => { seed = e.target.checked; };
     $('#dkWords').onclick = (e) => {
       const x = e.target.closest('[data-rm]');
-      if (x) { const c = cur(); c.words = c.words.filter((w) => w.toLowerCase() !== x.dataset.rm.toLowerCase()); touchDeck(c); paintWords(); return; }
+      if (x) { const c = cur(), k = x.dataset.rm.toLowerCase(); c.words = c.words.filter((w) => w.toLowerCase() !== k); if (c.own) { c.own = c.own.filter((o) => o.w.toLowerCase() !== k); if (!c.own.length) delete c.own; } touchDeck(c); paintWords(); return; }
       const r = e.target.closest('.wrow'); if (!r) return;
-      const w = W[+r.dataset.i]; speak(w.w); openSheet(w, null, { deck: cur().id });
+      const w = deckWords(cur()).find((x) => x.w === r.dataset.w); if (!w) return;
+      speak(w.w); openSheet(w, null, { deck: cur().id });
     };
     $('#dkIcons').onclick = (e) => {
       const b = e.target.closest('[data-ic]'); if (!b) return;
@@ -252,20 +290,20 @@ function renderDeckEdit(id) {
     $('#dkTabs').onclick = (e) => { const b = e.target.closest('[data-v]'); if (!b) return; panel = b.dataset.v; preview = null; view.querySelectorAll('#dkTabs button').forEach((x) => x.classList.toggle('on', x === b)); paintPanel(); };
     $('#dkCopy').onclick = () => {
       if (!d) return toast('ชุดนี้ยังไม่ได้บันทึก เพิ่มคำก่อนนะคะ');
-      const n = addDeck((d.name + ' (สำเนา)').slice(0, DECK_MAX.name), d.icon, d.words);
+      const n = addDeck((d.name + ' (สำเนา)').slice(0, DECK_MAX.name), d.icon, d.words, d.own);
       if (n) { toast('ทำสำเนาแล้ว ✅'); renderDeckEdit(n.id); }
     };
     $('#dkDel').onclick = () => {
       if (!d) return go('decks');
       if (!confirm(`ลบชุด "${d.name}" ใช่ไหม? (ความคืบหน้าของชุดนี้จะหายไปด้วย)`)) return;
-      d.del = true; d.words = []; delete S.dprog[d.id]; touchDeck(d);
+      d.del = true; d.words = []; delete d.own; delete S.dprog[d.id]; touchDeck(d);
       toast('ลบชุดแล้ว'); go('decks');
     };
   };
   const paintWords = () => {
     const c = cur(), ws = deckWords(c);
     $('#dkCount').textContent = `คำในชุด (${ws.length})`;
-    $('#dkWords').innerHTML = ws.length ? ws.map((w) => `<div class="wrow" data-i="${w.idx}"><div class="grow dk-w"><div><span class="w" lang="en">${esc(w.w)}</span> <span class="pos">${esc(w.p)}</span></div><div class="t">${esc(w.t)}</div></div>
+    $('#dkWords').innerHTML = ws.length ? ws.map((w) => `<div class="wrow" data-i="${w.idx}" data-w="${esc(w.w)}"><div class="grow dk-w"><div><span class="w" lang="en">${esc(w.w)}</span> <span class="pos">${esc(w.p)}</span></div><div class="t">${esc(w.t)}</div></div>
         <button class="chip dk-x" data-rm="${esc(w.w)}" aria-label="เอา ${esc(w.w)} ออกจากชุด">✕</button></div>`).join('')
       : emptyArt({ kind: 'empty', title: 'ยังไม่มีคำในชุดนี้', sub: 'ลองวางลิสต์ ค้นหา หรือใช้ทางลัดด้านบนได้เลยค่ะ', sm: true });
   };
@@ -312,6 +350,52 @@ function renderDeckEdit(id) {
       $('#dkRes').onclick = (e) => {
         const b = e.target.closest('[data-add]'); if (!b || b.classList.contains('on')) return;
         if (addWords([b.dataset.add])) { b.classList.add('on'); b.textContent = '✓'; paintWords(); }
+      };
+    } else if (panel === 'own') {
+      const total = () => cur().words.length + (cur().own || []).length;
+      box.innerHTML = `<div class="small muted" style="margin-bottom:6px">เพิ่มคำที่ไม่มีในคลัง เช่น ศัพท์จากที่ทำงานหรือในหนังสือที่อ่านอยู่ พร้อมความหมายไทย ใช้เรียนในแฟลชการ์ดของชุดนี้ด้วยรอบทบทวนเดียวกับคำอื่น (ยังไม่ใช้ในเกม เพราะเกมต้องมีคำตัวเลือกจากคลัง)</div>
+        <input class="search" id="ownW" lang="en" placeholder="คำอังกฤษ เช่น stakeholder" maxlength="${DECK_MAX.word}" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="คำอังกฤษ" style="margin:0 0 6px">
+        <input class="search" id="ownT" placeholder="ความหมายไทย เช่น ผู้มีส่วนได้ส่วนเสีย" maxlength="${DECK_MAX.ownT}" aria-label="ความหมายไทย" style="margin:0 0 6px">
+        <input class="search" id="ownE" lang="en" placeholder="ประโยคตัวอย่าง (ไม่ใส่ก็ได้)" maxlength="${DECK_MAX.ownE}" aria-label="ประโยคตัวอย่าง" autocapitalize="none" style="margin:0 0 6px">
+        <input class="search" id="ownEt" placeholder="คำแปลประโยค (ไม่ใส่ก็ได้)" maxlength="${DECK_MAX.ownE}" aria-label="คำแปลประโยค" style="margin:0 0 8px">
+        <button class="btn primary block" id="ownAdd">＋ เพิ่มคำนี้</button>
+        <div class="dk-sec" style="margin-top:14px"><b>📥 นำเข้าหลายคำ (CSV / วางข้อความ)</b>
+          <div class="small muted">แถวละ 1 คำ: <span lang="en">word, ความหมาย, ประโยค, คำแปลประโยค</span> (คั่นด้วยคอมมา แท็บ หรือ <span lang="en">word = ความหมาย</span>) คำที่มีในคลังอยู่แล้วจะใช้ข้อมูลของคลังแทน</div>
+          <textarea id="ownText" class="search" rows="5" style="margin-top:6px" aria-label="รายการคำของฉัน" placeholder="stakeholder, ผู้มีส่วนได้ส่วนเสีย&#10;onboarding = การปฐมนิเทศพนักงานใหม่"></textarea>
+          <div class="row" style="gap:10px;margin-top:6px"><label class="btn ghost" style="margin:0">📂 เลือกไฟล์ .csv / .txt<input type="file" id="ownFile" accept=".csv,.txt,text/csv,text/plain" hidden></label><button class="btn primary grow" id="ownImport">นำเข้า</button></div></div>
+        <div class="small muted" id="ownInfo" style="margin-top:8px"></div>`;
+      const info = () => { $('#ownInfo').textContent = `ชุดนี้มี ${total()} / ${DECK_MAX.words} คำ (คำของฉัน ${(cur().own || []).length} / ${DECK_MAX.own})`; };
+      info();
+      // adds parsed rows (own words + list words) to the set; returns what was added
+      const addRows = (res) => {
+        const c = cur(), low = new Set([...c.words, ...(c.own || []).map((o) => o.w)].map((x) => x.toLowerCase()));
+        const newOwn = res.own.filter((o) => !low.has(o.w.toLowerCase())), newList = res.list.filter((w) => !low.has(w.toLowerCase()));
+        let room = DECK_MAX.words - total();
+        const takeOwn = newOwn.slice(0, Math.max(0, Math.min(room, DECK_MAX.own - (c.own || []).length)));
+        room -= takeOwn.length;
+        const takeList = newList.slice(0, Math.max(0, room));
+        if (!takeOwn.length && !takeList.length) return null;
+        const creating = !d;
+        if (!store()) return null;
+        if (takeOwn.length) c.own = (c.own || []).concat(takeOwn);
+        c.words.push(...takeList);
+        if (creating) { const sb = $('#dkSeedBox'); if (sb) sb.remove(); }
+        touchDeck(c); paintWords(); info();
+        return { own: takeOwn.length, list: takeList.length, skipped: res.own.length + res.list.length - takeOwn.length - takeList.length };
+      };
+      const report = (r, bad) => toast(!r ? (bad ? 'อ่านรายการไม่ได้ ตรวจรูปแบบแถวละ 1 คำนะคะ' : 'คำเหล่านี้อยู่ในชุดแล้ว หรือชุดเต็ม') : `เพิ่ม ${r.own} คำของฉัน${r.list ? ` + ${r.list} คำจากคลัง` : ''}${r.skipped || bad ? ` (ข้าม ${r.skipped + (bad || 0)})` : ''} ✅`);
+      $('#ownAdd').onclick = () => {
+        const res = parseOwn([$('#ownW').value, $('#ownT').value, $('#ownE').value, $('#ownEt').value].map((x) => '"' + x.replace(/"/g, '""') + '"').join(','));
+        if (!res.own.length && !res.list.length) return toast('ใส่คำอังกฤษ (ตัวอักษร a–z) และความหมายไทยก่อนนะคะ');
+        const r = addRows(res); report(r, res.bad);
+        if (r) ['ownW', 'ownT', 'ownE', 'ownEt'].forEach((id) => { $('#' + id).value = ''; });
+        if (r) $('#ownW').focus();
+      };
+      $('#ownImport').onclick = () => { const res = parseOwn($('#ownText').value); const r = addRows(res); report(r, res.bad); if (r) $('#ownText').value = ''; };
+      $('#ownFile').onchange = (e) => {
+        const f = e.target.files && e.target.files[0]; if (!f) return;
+        if (f.size > 500000) return toast('ไฟล์ใหญ่เกินไป (ไม่เกิน 500 KB)');
+        const fr = new FileReader(); fr.onload = () => { $('#ownText').value = String(fr.result || ''); toast('อ่านไฟล์แล้ว ตรวจรายการแล้วกด นำเข้า'); }; fr.readAsText(f);
       };
     } else {
       const goals = [...TAGS.map((t) => [t.id, t.icon, t.th, t.note]), ['star', '⭐', 'คำติดดาว', 'คำที่คุณกดดาวไว้']].filter(([id]) => tagWords(id).length);

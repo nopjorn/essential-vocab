@@ -1527,3 +1527,5 @@ html.no-ans .streak.bump { animation: none; }
 .ear-dim span { color: #555; font-size: 14px; }
 .st-tools.ear-ctl { grid-template-columns: repeat(4, 1fr); }
 @media (min-width: 700px) { .st-tools.ear-ctl { grid-template-columns: repeat(4, 1fr); } }
+.lv.own { background: var(--primary); }
+.fc .face .ipa:empty { min-height: 1.3em; } /* words of my own have no IPA: keep the card layout (and what the middle of the card is) the same */

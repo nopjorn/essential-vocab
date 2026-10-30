@@ -350,7 +350,7 @@ function gamePool(id) {
     : gameSource === 'custom' ? customWords
     : gameSource === 'topic' ? W.filter((w) => topicMatch(gameTopic, w.tp))
     : gameSource === 'goal' ? W.filter((w) => hasTag(w, gameGoal))
-    : gameSource === 'deck' ? [...new Map(gameDecks.map(deckById).filter(Boolean).flatMap((d) => deckWords(d)).map((w) => [w.idx, w])).values()]
+    : gameSource === 'deck' ? [...new Map(gameDecks.map(deckById).filter(Boolean).flatMap((d) => deckWords(d)).filter((w) => !w.own).map((w) => [w.idx, w])).values()]
     : gameSource === 'all' ? W : pool();
   if (id === 'cloze' || id === 'dict') list = list.filter(hasCloze);
   if (id === 'order') list = list.filter((w) => { const n = w.e.split(/\s+/).length; return n >= 4 && n <= 12; });
