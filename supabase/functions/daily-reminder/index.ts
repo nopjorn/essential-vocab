@@ -18,7 +18,11 @@ const localParts = (tz: string) => {
   return { date: `${p.year}-${p.month}-${p.day}`, hour: p.hour };
 };
 
-Deno.serve(async () => {
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+Deno.serve(async (req) => {
+  // Supabase only checks that the caller holds *a* valid JWT, which every signed-in user does. Notifications are sent
+  // by the hourly cron job, which calls with the service-role key (SYNC-SETUP.md step 7): nobody else may trigger a send.
+  if (req.headers.get('Authorization') !== `Bearer ${SERVICE_KEY}`) return new Response('forbidden', { status: 403 });
   const { data: subs, error } = await sb.from('push_subs').select('endpoint, user_id, sub, remind, tz');
   if (error) return new Response(error.message, { status: 500 });
   let sent = 0;

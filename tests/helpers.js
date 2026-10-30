@@ -45,8 +45,14 @@ async function fakeSupabase(page, store, uid = 'user-1') {
   await page.route('**/config.js*', (r) => r.fulfill({ contentType: 'text/javascript', body: "window.SYNC_CONFIG = { url: 'http://localhost:8765', anonKey: 'x', requireLogin: false, leaderboard: false };" }));
   await page.route('**/rest/v1/progress*', (r) => {
     const req = r.request();
-    if (req.method() === 'GET') return r.fulfill({ contentType: 'application/json', body: JSON.stringify(store.data ? [{ data: store.data }] : []) });
-    store.data = JSON.parse(req.postData()).data; store.writes = (store.writes || 0) + 1;
+    if (req.method() === 'GET') {
+      store.reads = (store.reads || 0) + 1;
+      if (req.url().includes('select=updated_at')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify(store.data ? [{ updated_at: store.at }] : []) });
+      store.downloads = (store.downloads || 0) + 1;
+      return r.fulfill({ contentType: 'application/json', body: JSON.stringify(store.data ? [{ data: store.data, updated_at: store.at }] : []) });
+    }
+    const posted = JSON.parse(req.postData());
+    store.data = posted.data; store.at = posted.updated_at; store.writes = (store.writes || 0) + 1;
     return r.fulfill({ status: 201, body: '' });
   });
   await page.addInitScript((id) => localStorage.setItem('o3k.auth', JSON.stringify({ access_token: 't', refresh_token: 'r', user: { id, email: 'a@b.c' } })), uid);

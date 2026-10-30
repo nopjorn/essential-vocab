@@ -12,7 +12,7 @@ const AUTH_KEY = 'o3k.auth';
 let auth = null;
 try { auth = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null'); } catch (e) { /* ignore */ }
 const setAuth = (a) => { auth = a; try { a ? localStorage.setItem(AUTH_KEY, JSON.stringify(a)) : localStorage.removeItem(AUTH_KEY); } catch (e) { /* ignore */ } };
-let syncState = { busy: false, last: 0, error: '' };
+let syncState = { busy: false, last: 0, error: '', remoteAt: -1, pushed: '' };
 
 async function sbFetch(path, opts = {}, retry = true) {
   const headers = { apikey: SYNC.anonKey, 'Content-Type': 'application/json', ...(opts.headers || {}) };
@@ -26,7 +26,8 @@ async function sbFetch(path, opts = {}, retry = true) {
 async function refreshAuth() {
   try {
     const r = await sbFetch('/auth/v1/token?grant_type=refresh_token', { method: 'POST', noAuth: true, body: JSON.stringify({ refresh_token: auth.refresh_token }) }, false);
-    if (!r.ok) { setAuth(null); return false; }
+    // Only a refused token ends the login; a server hiccup (5xx, no network) keeps it so the next try can still work.
+    if (!r.ok) { if (r.status === 400 || r.status === 401 || r.status === 403) setAuth(null); return false; }
     const j = await r.json(); setAuth({ ...auth, ...j }); return true;
   } catch (e) { return false; }
 }
@@ -42,24 +43,43 @@ async function verifyCode(email, token) {
   setAuth({ access_token: j.access_token, refresh_token: j.refresh_token, user: { id: j.user.id, email: j.user.email } });
 }
 let pushTimer = null, pulling = false;
+// While the app is in use, changes go to the cloud at most once per PUSH_EVERY ms (the first change starts the clock; later ones
+// ride along). Leaving the app syncs at once (boot.js). Before 1.106.1 every answer re-uploaded the whole state ~4 s later.
+const PUSH_EVERY = 30000;
 function schedulePush() {
-  if (!syncOn() || !auth || pulling) return;
-  clearTimeout(pushTimer); pushTimer = setTimeout(() => syncNow(), 4000);
+  if (!syncOn() || !auth || pulling || pushTimer) return;
+  pushTimer = setTimeout(() => syncNow(), PUSH_EVERY);
 }
+const pushNow = () => { clearTimeout(pushTimer); pushTimer = null; return syncNow(); };
+// What the cloud row held after our last round: its updated_at (ms) and the exact state text we sent. A round that finds the row
+// untouched (same updated_at) downloads nothing, and one with nothing new to say uploads nothing.
 async function syncNow(manual, overwrite) {
   if (!syncOn() || !auth || syncState.busy) return false;
   syncState.busy = true; syncState.error = '';
+  clearTimeout(pushTimer); pushTimer = null;
   try {
-    const uid = auth.user.id;
-    const r = await sbFetch(`/rest/v1/progress?select=data&user_id=eq.${encodeURIComponent(uid)}`);
+    const uid = auth.user.id, q = encodeURIComponent(uid);
+    const r = await sbFetch(`/rest/v1/progress?select=updated_at&user_id=eq.${q}`);
     if (!r.ok) throw new Error('โหลดข้อมูลไม่สำเร็จ (' + r.status + ')');
-    const rows = await r.json();
-    if (!overwrite && rows[0] && rows[0].data) { pulling = true; try { mergeBackup(rows[0].data); } finally { pulling = false; } }
-    const w = await sbFetch('/rest/v1/progress', {
-      method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({ user_id: uid, data: S, updated_at: new Date().toISOString() }),
-    });
-    if (!w.ok) throw new Error('บันทึกขึ้นคลาวด์ไม่สำเร็จ (' + w.status + ')');
+    const head = (await r.json())[0], remoteAt = head && head.updated_at ? Date.parse(head.updated_at) : 0;
+    let pulled = false;
+    if (!overwrite && head && remoteAt !== syncState.remoteAt) { // someone else (or an older session) wrote: fetch and merge it
+      const d = await sbFetch(`/rest/v1/progress?select=data&user_id=eq.${q}`);
+      if (!d.ok) throw new Error('โหลดข้อมูลไม่สำเร็จ (' + d.status + ')');
+      const row = (await d.json())[0];
+      if (row && row.data) { pulling = true; try { mergeBackup(row.data); } finally { pulling = false; } pulled = true; }
+    }
+    flushSave(); // the merge (or the last answers) must be in S before it is compared and sent
+    const dataStr = JSON.stringify(S);
+    if (overwrite || !head || dataStr !== syncState.pushed) {
+      const at = new Date().toISOString();
+      const w = await sbFetch('/rest/v1/progress', {
+        method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: `{"user_id":${JSON.stringify(uid)},"data":${dataStr},"updated_at":${JSON.stringify(at)}}`,
+      });
+      if (!w.ok) throw new Error('บันทึกขึ้นคลาวด์ไม่สำเร็จ (' + w.status + ')');
+      syncState.remoteAt = Date.parse(at); syncState.pushed = dataStr;
+    } else if (pulled) syncState.remoteAt = remoteAt;
     syncState.last = Date.now();
     if (SYNC.leaderboard) pushBoard().catch(() => {});
     if (manual) toast('☁️ ซิงก์เรียบร้อย');
@@ -71,7 +91,9 @@ async function syncNow(manual, overwrite) {
   } finally { syncState.busy = false; }
 }
 // Friends leaderboard: one public-to-members row per user (see SYNC-SETUP.md for the table).
-const boardName = () => S.nick || ((auth && auth.user && auth.user.email) || '').split('@')[0];
+// Everyone in the group sees this name, so without a nickname it is a neutral label, not the start of the email address (1.106.1).
+const boardDefault = () => 'ผู้เรียน ' + ((auth && auth.user && auth.user.id) || '').replace(/-/g, '').slice(0, 4);
+const boardName = () => S.nick || boardDefault();
 async function pushBoard() {
   const sn = S.snap[today()] || [0, 0, 0, 0];
   await sbFetch('/rest/v1/leaderboard', {

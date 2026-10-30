@@ -36,7 +36,7 @@ setTimeout(() => loadEmoji().catch(() => {}), 900); // so the picture is ready o
 if (syncOn() && auth) syncNow().then((ok) => { if (ok && current === 'home') renderHome(); });
 document.addEventListener('visibilitychange', () => {
   if (!syncOn() || !auth) return;
-  if (document.hidden) { clearTimeout(pushTimer); syncNow(); } else syncNow().then((ok) => { if (ok && current === 'home') renderHome(); });
+  if (document.hidden) pushNow(); else syncNow().then((ok) => { if (ok && current === 'home') renderHome(); });
 });
 // Refresh counts when returning to the app after a while (e.g. next day).
 document.addEventListener('visibilitychange', () => { if (!document.hidden && S.settings.palAuto) applyTheme(); });

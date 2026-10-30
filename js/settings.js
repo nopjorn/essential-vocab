@@ -134,7 +134,7 @@ function renderSettings() {
     <details class="set-group" data-g="sync" ${setIsOpen('sync')}><summary>☁️ ซิงก์ข้อมูลอัตโนมัติ</summary><div class="card-box">${!syncOn()
       ? '<p class="small muted" style="margin:0">ยังไม่ได้เปิดใช้ ต้องตั้งค่า Supabase ในไฟล์ <code>config.js</code> ก่อน (ดูขั้นตอนใน SYNC-SETUP.md ใน GitHub) จากนั้นความคืบหน้าจะซิงก์ขึ้นคลาวด์เอง ลบแอปหรือเปลี่ยนเครื่องก็ไม่หาย</p>'
       : auth ? `<p class="small" style="margin-top:0">เข้าสู่ระบบเป็น <b>${esc(auth.user.email)}</b><br><span class="muted">ซิงก์ล่าสุด: ${syncState.last ? new Date(syncState.last).toLocaleTimeString('th-TH', { timeStyle: 'short' }) : 'ยังไม่ได้ซิงก์ในรอบนี้'}${syncState.error ? ' · ⚠️ ' + esc(syncState.error) : ''}</span></p>
-        ${SYNC.leaderboard ? `<div class="set-row"><span>ชื่อในอันดับเพื่อน</span><input class="sel" id="nick" maxlength="20" style="width:140px" value="${esc(boardName())}"></div>` : ''}
+        ${SYNC.leaderboard ? `<div class="set-row"><span>ชื่อในอันดับเพื่อน</span><input class="sel" id="nick" maxlength="20" style="width:140px" value="${esc(S.nick)}" placeholder="${esc(boardDefault())}"></div>` : ''}
         <div class="row"><button class="btn grow" id="syncNow">🔄 ซิงก์ตอนนี้</button><button class="btn grow" id="logout">ออกจากระบบ</button></div>`
       : '<p class="small muted" style="margin-top:0">เข้าสู่ระบบด้วยอีเมลที่ได้รับเชิญ แล้วความคืบหน้าจะซิงก์ขึ้นคลาวด์อัตโนมัติ ใช้ได้หลายเครื่อง</p><button class="btn primary block" id="login">เข้าสู่ระบบ</button>'}
     </div></details>

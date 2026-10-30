@@ -389,3 +389,22 @@ test('the manual states the real number of games', () => {
   expect(n).toBeGreaterThan(30);
   expect(read('data/guide.js')).toContain(`เกมทั้ง ${n} แบบ`);
 });
+
+test('content security policy: the inline theme script is allowed by hash, and nothing else inline is', () => {
+  const html = read('index.html');
+  const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)[1];
+  const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  expect(inline.length).toBe(1);
+  const hash = require('crypto').createHash('sha256').update(inline[0]).digest('base64');
+  expect(csp).toContain(`'sha256-${hash}'`);
+  expect(csp).toMatch(/object-src 'none'/);
+  expect(csp).not.toMatch(/unsafe-eval|script-src[^;]*unsafe-inline/);
+  expect(html).not.toMatch(/\son[a-z]+="/); // no inline event handlers
+});
+
+test('the reminder edge function only answers the cron job (service-role key)', () => {
+  const src = read('supabase/functions/daily-reminder/index.ts');
+  expect(src).toContain("req.headers.get('Authorization') !== `Bearer ${SERVICE_KEY}`");
+  expect(src.indexOf('forbidden')).toBeLessThan(src.indexOf(".from('push_subs')"));
+});
+
