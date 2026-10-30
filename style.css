@@ -531,7 +531,14 @@ body { touch-action: manipulation; }
 .chart .base { stroke: var(--border); stroke-width: 1; }
 .chart .ax { font-size: var(--fs-xs); fill: var(--muted); }
 .chart .lab { font-size: var(--fs-xs); fill: var(--text); font-weight: 700; }
+.chart .grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 4; opacity: .7; }
+.chart.big .ax, .chart.big .lab { font-size: var(--fs-sm); }
 .chart .hit { fill: transparent; }
+.trend-range { margin-bottom: 10px; }
+.trend-range .chip { padding: 5px 14px; font-size: var(--fs-sm); }
+.legend.trend-leg { font-size: var(--fs-sm); gap: 18px; }
+.trend-leg b { color: var(--text); font-size: var(--fs-md); }
+.trend-leg .up { color: var(--c-master); font-weight: 700; }
 .chart .xhair { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
 .s-card { fill: var(--c-card); background: var(--c-card); }
 .s-game { fill: var(--c-game); background: var(--c-game); }

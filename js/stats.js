@@ -144,7 +144,7 @@ function renderStats(from) {
       <div class="tile-s"><b>${h.active ? Math.round(h.games / h.active) : 0}</b><span>ข้อเกม/วัน</span></div>
       <div class="tile-s"><b>${Math.round(h.acc * 100)}<small>%</small></b><span>ตอบถูก</span></div>
     </div>
-    <div class="card-box"><div class="small muted" style="margin-bottom:6px">กิจกรรมต่อวัน (แตะแท่งเพื่อดูตัวเลข)</div>${activityChart(W_)}</div>
+    <div class="card-box"><div class="small muted" style="margin-bottom:6px">กิจกรรมต่อวัน (แตะแท่งเพื่อดูตัวเลข)</div><div class="chart-host" data-chart="act">${activityChart(W_)}</div></div>
     <div class="h2">🗓️ ปฏิทินการเล่น 12 เดือน</div>
     <div class="card-box" data-lz="heat" style="min-height:200px"></div>
 
@@ -164,7 +164,7 @@ function renderStats(from) {
     ${levelTestBox()}
 
     <div class="h2">แนวโน้มคำศัพท์</div>
-    <div class="card-box" data-lz="trend" style="min-height:190px"></div>
+    <div class="card-box chart-host" data-lz="trend" data-chart="trend" style="min-height:260px"></div>
 
     <div class="h2">คาดการณ์ว่าจะจำได้ครบเมื่อไร</div>
     ${rate > 0 ? `<p class="small muted" style="margin:-4px 4px 10px">คิดจากที่เรียนคำใหม่ได้ราว <b>${rate.toFixed(1)} คำ/วัน</b>${measured ? ' (วัดจากความคืบหน้าจริง)' : ` (ประมาณจากเป้า ${newGoal()} คำ × เล่น ${h.active}/${h.span} วัน)`} และความแม่นยำ ${Math.round(h.acc * 100)}%</p>` : ''}
@@ -185,7 +185,7 @@ function renderStats(from) {
   $('#sBack').onclick = () => go(from || 'home');
   startLazy({
     heat: [yearHeatmap, bindHeatmap],
-    trend: [() => trendChart(W_), (el) => bindChartTips(el)],
+    trend: [(el) => { el.dataset.w = hostW(el); return trendChart(+el.dataset.w); }, bindTrend],
     stk: [stickerBook, bindStickers],
     ach: [() => ACH.map((a) => { const hid = a.secret && !S.ach[a.id]; return `<button class="ach ${S.ach[a.id] ? 'on' : ''}" data-ach="${a.id}"><span>${hid ? '❓' : a.icon}</span><small>${hid ? 'เหรียญลับ' : a.name}</small></button>`; }).join('')],
   });
@@ -195,6 +195,7 @@ function renderStats(from) {
     toast(a.secret && !S.ach[a.id] ? '❓ เหรียญลับ: ไม่บอกเงื่อนไข ลองเรียนไปเรื่อยๆ แล้วจะเจอเอง' : `${a.icon} ${a.name}: ${a.desc}${S.ach[a.id] ? ' ✅' : ' 🔒'}`);
   };
   bindChartTips();
+  watchCharts();
   sectionize(view, '[data-lz="stk"]');
   masonry([view], '.row, .m-sec:has([data-lz="heat"], #ach), [data-lz="stk"]');
 }
@@ -210,7 +211,7 @@ function startLazy(defs) {
     const d = defs[el.dataset.lz];
     if (!d || el.dataset.done || !el.isConnected) return;
     el.dataset.done = '1'; el.style.minHeight = '';
-    el.innerHTML = d[0]();
+    el.innerHTML = d[0](el);
     if (d[1]) d[1](el);
   };
   if ('IntersectionObserver' in window) {
@@ -223,7 +224,7 @@ function startLazy(defs) {
 
 // Stacked bars: flashcards (bottom) + game/feed answers (top); days before 1.9.0 have no split.
 function activityChart(Wd) {
-  const H = 130, top = 8, bot = 22, n = 28, gap = 3;
+  const big = Wd >= 520, H = big ? 180 : 130, top = 8, bot = big ? 26 : 22, n = 28, gap = big ? 4 : 3;
   const bw = (Wd - gap * (n - 1)) / n;
   const days = Array.from({ length: n }, (_, i) => {
     const k = n - 1 - i, key = dayKey(k), all = S.hist[key] || 0;
@@ -246,39 +247,77 @@ function activityChart(Wd) {
     const lab = d.all ? `${thDate(Date.parse(d.key + 'T12:00:00'))}: การ์ด ${d.c} · เกม ${d.g}${d.u ? ` · ไม่แยกประเภท ${d.u}` : ''}` : `${thDate(Date.parse(d.key + 'T12:00:00'))}: ไม่ได้เล่น`;
     return `${out}<rect class="hit" data-tip="${lab}" x="${x - gap / 2}" y="0" width="${bw + gap}" height="${H}"/>`;
   }).join('');
-  const ticks = [0, 7, 14, 21, 27].map((i) => `<text class="ax" x="${i * (bw + gap) + bw / 2}" y="${H - 6}" text-anchor="middle">${i === 27 ? 'วันนี้' : `${27 - i} วันก่อน`}</text>`).join('');
-  return `<div class="chart"><svg viewBox="0 0 ${Wd} ${H}" width="100%" role="img" aria-label="กิจกรรมต่อวัน 28 วัน">
+  const ticks = [0, 7, 14, 21, 27].map((i) => `<text class="ax" x="${i * (bw + gap) + bw / 2}" y="${H - 7}" text-anchor="middle">${i === 27 ? 'วันนี้' : `${27 - i} วันก่อน`}</text>`).join('');
+  return `<div class="chart${big ? ' big' : ''}"><svg viewBox="0 0 ${Wd} ${H}" width="100%" role="img" aria-label="กิจกรรมต่อวัน 28 วัน">
     <line class="base" x1="0" x2="${Wd}" y1="${H - bot}" y2="${H - bot}"/>${bars}${ticks}</svg><div class="tip" hidden></div></div>
     <div class="legend"><span><i class="s-card"></i>แฟลชการ์ด</span><span><i class="s-game"></i>เกม + ไถศัพท์</span>${hasU ? '<span><i class="s-unk"></i>ก่อนเริ่มแยกประเภท</span>' : ''}</div>`;
 }
 
-// Lines: words learned and words mastered (all levels), from daily snapshots.
+// Lines: words learned and words mastered (all levels), from daily snapshots. The SVG is drawn at the width of its box
+// (1 unit = 1 px, so the text keeps its real size on a wide iPad column, 1.110); the latest numbers sit in the legend below.
+let trendRange = 'all';
+const TREND_RANGES = [['30', '30 วัน'], ['90', '90 วัน'], ['all', 'ทั้งหมด']];
+const niceStep = (range, n) => { const raw = Math.max(1, range) / n, p = 10 ** Math.floor(Math.log10(raw)), f = raw / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; };
 function trendChart(Wd) {
-  const keys = Object.keys(S.snap).sort();
-  if (keys.length < 2) {
+  const all = Object.keys(S.snap).sort();
+  if (all.length < 2) {
     return `<div class="small muted">📊 แอปเริ่มเก็บข้อมูลแนวโน้มตั้งแต่วันนี้ เล่นต่ออีกวันสองวันแล้วกราฟเส้นจะขึ้นตรงนี้</div>
       <div style="margin-top:8px">ตอนนี้: เรียนแล้ว <b>${S.snap[today()][2]}</b> คำ · จำได้แล้ว <b>${S.snap[today()][3]}</b> คำ</div>`;
   }
-  const H = 150, top = 14, bot = 22, left = 4, right = 64;
+  const canRange = all.length > 14;
+  const range = canRange ? trendRange : 'all';
+  let keys = all;
+  if (range !== 'all') { const cut = dayKey(+range - 1); keys = all.filter((k) => k >= cut); if (keys.length < 2) keys = all.slice(-2); }
+  const big = Wd >= 520;
+  const H = big ? 240 : 170, top = 14, bot = big ? 28 : 24, left = big ? 48 : 40, right = 14;
   const t0 = Date.parse(keys[0] + 'T12:00:00'), t1 = Date.parse(keys[keys.length - 1] + 'T12:00:00');
   const span = Math.max(DAY, t1 - t0);
-  const max = Math.max(10, ...keys.map((k) => S.snap[k][2])) * 1.1;
+  const hi0 = Math.max(10, ...keys.map((k) => S.snap[k][2])), lo0 = range === 'all' ? 0 : Math.min(...keys.map((k) => S.snap[k][3]));
+  const step = niceStep(hi0 - lo0, big ? 4 : 3);
+  const lo = Math.floor(lo0 / step) * step;
+  let hi = Math.ceil(hi0 / step) * step; if (hi <= lo) hi = lo + step;
   const px = (k) => left + (Wd - left - right) * (Date.parse(k + 'T12:00:00') - t0) / span;
-  const py = (v) => H - bot - (H - bot - top) * v / max;
+  const py = (v) => H - bot - (H - bot - top) * (v - lo) / (hi - lo);
+  const grid = [];
+  for (let v = lo; v <= hi; v += step) grid.push(`<line class="${v === lo ? 'base' : 'grid'}" x1="${left}" x2="${Wd - right}" y1="${py(v)}" y2="${py(v)}"/><text class="ax" x="${left - 8}" y="${py(v) + 4}" text-anchor="end">${v.toLocaleString()}</text>`);
   const line = (i, cls) => `<polyline class="${cls}" points="${keys.map((k) => `${px(k).toFixed(1)},${py(S.snap[k][i]).toFixed(1)}`).join(' ')}"/>`;
-  const last = keys[keys.length - 1], L = S.snap[last];
-  const endLab = (v, cls, txt, dy) => `<circle class="${cls}" cx="${px(last)}" cy="${py(v)}" r="4"/><text class="lab" x="${px(last) + 8}" y="${py(v) + dy}">${txt} ${v}</text>`;
-  const dl = Math.abs(py(L[2]) - py(L[3])) < 14 ? [-4, 12] : [4, 4];
+  const last = keys[keys.length - 1], F = S.snap[keys[0]], L = S.snap[last];
+  const dot = (v, cls) => `<circle class="${cls}" cx="${px(last)}" cy="${py(v)}" r="${big ? 5 : 4}"/>`;
   const hits = keys.map((k, i) => {
     const x0 = i ? (px(keys[i - 1]) + px(k)) / 2 : 0, x1 = i < keys.length - 1 ? (px(k) + px(keys[i + 1])) / 2 : Wd;
     return `<rect class="hit" data-x="${px(k)}" data-tip="${thDate(Date.parse(k + 'T12:00:00'))}: เรียนแล้ว ${S.snap[k][2]} · จำได้ ${S.snap[k][3]}" x="${x0}" y="0" width="${x1 - x0}" height="${H}"/>`;
   }).join('');
-  return `<div class="chart"><svg viewBox="0 0 ${Wd} ${H}" width="100%" role="img" aria-label="แนวโน้มจำนวนคำที่เรียนแล้วและจำได้แล้ว">
-    <line class="base" x1="0" x2="${Wd - right}" y1="${H - bot}" y2="${H - bot}"/>
-    ${line(2, 'ln-l')}${line(3, 'ln-m')}${endLab(L[2], 'dot-l', 'เรียน', dl[0])}${endLab(L[3], 'dot-m', 'จำได้', dl[1])}
-    <text class="ax" x="${left}" y="${H - 6}">${thDate(t0)}</text><text class="ax" x="${Wd - right}" y="${H - 6}" text-anchor="end">วันนี้</text>
+  const gain = (i) => { const d = L[i] - F[i]; return d > 0 ? ` <small class="up">+${d.toLocaleString()}</small>` : ''; };
+  const seg = canRange ? `<div class="chips trend-range" role="group" aria-label="ช่วงเวลาของกราฟ">${TREND_RANGES.map(([id, t]) => `<button class="chip${range === id ? ' on' : ''}" data-range="${id}" aria-pressed="${range === id}">${t}</button>`).join('')}</div>` : '';
+  return `${seg}<div class="chart${big ? ' big' : ''}"><svg viewBox="0 0 ${Wd} ${H}" width="100%" role="img" aria-label="แนวโน้มจำนวนคำที่เรียนแล้วและจำได้แล้ว: เรียนแล้ว ${L[2]} จำได้แล้ว ${L[3]}">
+    ${grid.join('')}${line(2, 'ln-l')}${line(3, 'ln-m')}${dot(L[2], 'dot-l')}${dot(L[3], 'dot-m')}
+    <text class="ax" x="${left}" y="${H - 7}">${thDate(t0)}</text><text class="ax" x="${Wd - right}" y="${H - 7}" text-anchor="end">วันนี้</text>
     <line class="xhair" x1="0" x2="0" y1="${top}" y2="${H - bot}" visibility="hidden"/>${hits}</svg><div class="tip" hidden></div></div>
-    <div class="legend"><span><i class="s-card"></i>เรียนแล้ว</span><span><i class="s-master"></i>จำได้แล้ว</span></div>`;
+    <div class="legend trend-leg"><span><i class="s-card"></i>เรียนแล้ว <b>${L[2].toLocaleString()}</b>${gain(2)}</span><span><i class="s-master"></i>จำได้แล้ว <b>${L[3].toLocaleString()}</b>${gain(3)}</span></div>`;
+}
+const hostW = (el) => { const cs = getComputedStyle(el); return Math.max(240, Math.floor(el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight))); };
+function bindTrend(el) {
+  bindChartTips(el);
+  el.querySelectorAll('[data-range]').forEach((b) => {
+    b.onclick = () => { trendRange = b.dataset.range; delete el.dataset.w; paintChart(el); };
+  });
+}
+// Redraw a chart box at its current width (skips when the width did not change).
+function paintChart(el) {
+  if (!el.isConnected || (el.dataset.lz && !el.dataset.done)) return;
+  const w = hostW(el);
+  if (el.dataset.w == w) return;
+  el.dataset.w = w;
+  el.innerHTML = el.dataset.chart === 'trend' ? trendChart(w) : activityChart(w);
+  bindTrend(el);
+}
+let chartRO = null;
+function watchCharts() {
+  if (chartRO) chartRO.disconnect();
+  const hosts = [...view.querySelectorAll('[data-chart]')];
+  if (!window.ResizeObserver) return hosts.forEach(paintChart);
+  chartRO = new ResizeObserver((es) => es.forEach((e) => paintChart(e.target)));
+  hosts.forEach((el) => chartRO.observe(el));
 }
 
 // Tap/hover on a chart shows the hovered mark's numbers in a small tooltip.
