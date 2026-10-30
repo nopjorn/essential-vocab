@@ -34,3 +34,14 @@ test('late reminder: only for a 3+ day streak without freezes that has not studi
   expect(buildMessage({ ...base, streak: { count: 2 } }, '2026-10-24', 'late', NOW)).toBeNull();
   expect(buildMessage({ ...base, hist: { '2026-10-24': 1 } }, '2026-10-24', 'late', NOW)).toBeNull();
 });
+
+test('a broken streak is not announced (no "about to break", no "keep your streak")', async () => {
+  const { buildMessage } = await load();
+  const d = { prog: prog(3), streak: { count: 45, last: '2026-10-14' }, freeze: 0 };
+  expect(buildMessage(d, '2026-10-24', 'late', NOW)).toBeNull();
+  expect(buildMessage(d, '2026-10-24', 'main', NOW).body).not.toContain('สตรีค');
+  // yesterday was the last day: still at risk
+  expect(buildMessage({ ...d, streak: { count: 45, last: '2026-10-23' } }, '2026-10-24', 'late', NOW).body).toContain('สตรีค 45 วันกำลังจะขาด');
+  // a missed day covered by a freeze keeps the streak in the main message
+  expect(buildMessage({ ...d, streak: { count: 45, last: '2026-10-22' }, freeze: 1 }, '2026-10-24', 'main', NOW).body).toContain('45 วัน');
+});

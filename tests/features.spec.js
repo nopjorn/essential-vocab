@@ -1608,7 +1608,7 @@ test('role play (1.103): pick a side, the app speaks the other lines, mic checks
     await expect(page.locator('#roleEn')).toBeHidden(); // text hidden
     const k = +(await page.locator('#title').textContent()).match(/(\d+)\/\d+/)[1] - 1;
     if (right === 0 || miss > 0) { // first my line right, the next one wrong (3 tries), the rest right
-      await page.evaluate((t) => { window.__heard = t; }, lines[k][1]); right++; await page.locator('#mic').click();
+      await page.evaluate((t) => { window.__heard = t; }, lines[k][1]); right++; await page.locator('#mic').click(); await expect(page.locator('#reveal')).toContainText('✅'); // wait for the result before the next line changes what the mic hears
     } else {
       await page.evaluate(() => { window.__heard = 'banana'; }); miss++;
       for (let t = 0; t < 3; t++) { await page.locator('#mic').click(); await page.waitForTimeout(120); }

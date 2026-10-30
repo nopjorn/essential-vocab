@@ -497,7 +497,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       bindSayEx(view, w.e);
       if ($('#saveMine')) $('#saveMine').onclick = () => {
         const old = (S.note[w.w] || '').split(' · ').filter((x) => x && !x.startsWith('✍️ ')).join(' · ');
-        S.note[w.w] = (old ? old + ' · ' : '') + '✍️ ' + mine; S.note[w.w] = S.note[w.w].slice(0, 200);
+        setNote(w.w, ((old ? old + ' · ' : '') + '✍️ ' + mine).slice(0, 200));
         save(); $('#saveMine').textContent = '✅ เก็บไว้ในโน้ตแล้ว'; $('#saveMine').disabled = true;
       };
       $('#nextQ').onclick = next;

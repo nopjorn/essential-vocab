@@ -72,7 +72,7 @@ function renderPlacement() {
         words.forEach((w) => {
           const i = INTERVALS[MASTERED];
           // Spread first reviews over 7–30 days so they don't all land on one day.
-          S.prog[w.w] = { b: MASTERED, i, e: EASE0, d: Date.now() + (7 + Math.random() * 23) * DAY, s: 1, c: 1, x: 0 };
+          S.prog[w.w] = { b: MASTERED, i, e: EASE0, d: Date.now() + (7 + Math.random() * 23) * DAY, s: 1, c: 1, x: 0, t: Date.now() };
         });
         // If every level being studied was skipped, move on to the first level that wasn't.
         const skipped = pick.map((r) => r.lv);

@@ -94,7 +94,7 @@ function editNote(w, onDone) {
     if (e.target === el) return close();
     const act = e.target.closest('[data-act]'); if (!act) return;
     const v = $('#noteIn', el).value.trim();
-    if (act.dataset.act === 'del' || !v) delete S.note[w.w]; else S.note[w.w] = v;
+    setNote(w.w, act.dataset.act === 'del' ? '' : v);
     save(); toast(S.note[w.w] ? 'บันทึกวิธีจำแล้ว 💡' : 'ลบวิธีจำแล้ว'); close();
   };
 }

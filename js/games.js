@@ -355,6 +355,9 @@ function simScore(a, b) {
   return k * 2 + e + Math.max(0, 3 - Math.abs(a.length - b.length));
 }
 // Harder wrong options: English ones that look like the answer, Thai ones from the same topic and part of speech.
+// Two words that share any Thai meaning (beside / alongside = ข้างๆ) must not be offered together: both would be right.
+const meaningSet = (x) => new Set(x.t.split(/[;,]/).map((m) => m.trim()).filter(Boolean));
+function sharesMeaning(a, b) { const m = meaningSet(a); for (const k of meaningSet(b)) if (m.has(k)) return true; return false; }
 function hardDistractors(w, n, field) {
   const pos = w.p.split('/')[0];
   const key = (x) => (field === 't' ? thFirst(x.t) : x.w.toLowerCase());
@@ -363,7 +366,7 @@ function hardDistractors(w, n, field) {
   const used = new Set([key(w)]), out = [];
   for (const x of W.filter((x) => x !== w && x.t !== w.t).map((x) => [score(x), x]).sort((a, b) => b[0] - a[0])) {
     const k = key(x[1]);
-    if (used.has(k)) continue;
+    if (used.has(k) || sharesMeaning(w, x[1])) continue;
     used.add(k); out.push(x[1]);
     if (out.length >= n) break;
   }
@@ -400,7 +403,7 @@ function distractors(w, n, field, hard) {
     for (const x of tier) {
       if (out.length >= n) return out;
       const k = key(x);
-      if (used.has(k) || x.t === w.t) continue;
+      if (used.has(k) || x.t === w.t || sharesMeaning(w, x)) continue;
       used.add(k); out.push(x);
     }
   }

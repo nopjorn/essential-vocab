@@ -382,3 +382,10 @@ test('grammar tied to words is valid practice data', () => {
   ['u', 'ing', 'to', 'bare', 'both'].forEach((k) => { if (!GRAMPAT.some((r) => r[0] === k)) bad.push(`kind ${k} is empty`); });
   expect(bad).toEqual([]);
 });
+
+test('the manual states the real number of games', () => {
+  const games = read('js/games.js'), body = games.slice(games.indexOf('const GAMES = {'));
+  const n = (body.slice(0, body.indexOf('\n};')).match(/^  [a-zA-Z0-9]+: \{/gm) || []).length;
+  expect(n).toBeGreaterThan(30);
+  expect(read('data/guide.js')).toContain(`เกมทั้ง ${n} แบบ`);
+});

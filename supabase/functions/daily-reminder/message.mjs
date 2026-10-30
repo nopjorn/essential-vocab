@@ -9,12 +9,16 @@ const hash = (s) => { let h = 7; for (const c of s) h = (h * 31 + c.charCodeAt(0
 export function buildMessage(d, date, kind, now = Date.now()) {
   d = d || {};
   if (d.hist?.[date]) return null; // already studied today
-  const streak = d.streak?.count ?? 0, freeze = d.freeze ?? 0;
+  const freeze = d.freeze ?? 0, last = d.streak?.last;
+  // The streak that is still alive (same rule as streakNow() in the app): days missed since `last` must be covered by freezes.
+  // Without `last` (older data) the stored count is trusted.
+  const missed = last ? Math.round((Date.parse(date + 'T12:00:00Z') - Date.parse(last + 'T12:00:00Z')) / 864e5) - 1 : 0;
+  const streak = missed <= freeze ? (d.streak?.count ?? 0) : 0;
   const dueEntries = Object.entries(d.prog ?? {}).filter(([, p]) => p && p.d <= now).sort((a, b) => a[1].d - b[1].d);
   const due = dueEntries.length;
   if (kind === 'late') {
     // streak.last must be yesterday: the streak is only at risk when today is still open
-    if (streak < 3 || freeze > 0) return null;
+    if (streak < 3 || freeze > 0 || missed > 0) return null; // only at risk when last = yesterday and no 🧊 to cover it
     return { title: TITLE, body: `🔥 สตรีค ${streak} วันกำลังจะขาด! ทำแค่ 5 ใบก็รักษาไว้ได้`, due, url: '' };
   }
   const gentle = d.settings?.gentle !== false, k = hash(date + (d.nick ?? '')) % 3;

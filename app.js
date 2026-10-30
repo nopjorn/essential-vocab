@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.105.3';
+const APP_VERSION = '1.105.4';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -140,7 +140,7 @@ function cleanDprog(o, live) {
     for (const [w, p] of Object.entries(m)) {
       if (!p || typeof p !== 'object' || !isNum(p.b)) continue;
       const e = { b: p.b };
-      for (const k of ['i', 'e', 'd', 's', 'c', 'x']) if (isNum(p[k])) e[k] = p[k];
+      for (const k of ['i', 'e', 'd', 's', 'c', 'x', 't', 'st', 'df', 'lr']) if (isNum(p[k])) e[k] = p[k];
       mm[w] = e;
     }
     out[id] = mm;
@@ -182,6 +182,8 @@ const defaults = () => ({
   snap: {},            // 'YYYY-MM-DD' -> [learned 3000, mastered 3000, learned all, mastered all]
   chistFrom: '',       // first day chist was recorded; earlier hist can't be split into cards/games
   note: {},            // word -> the user's own memory hook
+  noteAt: {},          // word -> ms of the last edit or delete of its hook (newest wins when syncing; 1.105.4)
+  starAt: {},          // word -> ms the star was last set or removed (1.105.4)
   miss: {},            // 'YYYY-MM-DD' -> { word: times wrong that day } (last 21 days)
   weekSeen: '',        // Monday key of the last weekly summary the user dismissed
   monthSeen: '',       // 'YYYY-MM' of the month whose summary card was dismissed
@@ -206,13 +208,16 @@ const defaults = () => ({
   decks: [],           // my word sets [{id, name, icon, words: [list words], at: last edit ms, used: last used ms, del: true = deleted}]
   dprog: {},           // deck id -> { word -> { b, i, e, d, s, c, x } } progress of each set (same shape as prog; kept apart from prog)
 });
+// Set when the saved state could not be read: the old text is copied to KEY + '.rescue' before anything new is written (1.105.4).
+let loadRescued = false;
 let S = load();
 // Users from before 1.8.0 get XP for the work they already did.
 if (S.xp == null) S.xp = Object.values(S.prog).reduce((a, p) => a + (p.s || 0) + (p.c || 0), 0);
 
 function load() {
+  let raw = null;
   try {
-    const raw = localStorage.getItem(KEY);
+    raw = localStorage.getItem(KEY);
     if (raw) {
       const d = defaults(), s = JSON.parse(raw);
       const r = { ...d, ...s, settings: { ...d.settings, ...(s.settings || {}) } };
@@ -227,7 +232,10 @@ function load() {
       else r.riddleStat = { ...d.riddleStat, ...r.riddleStat, dist: (Array.isArray(r.riddleStat.dist) ? r.riddleStat.dist : []).concat([0, 0, 0, 0, 0, 0]).slice(0, 6) };
       return topicMigrate(sanitizeDecks(r));
     }
-  } catch (e) { /* storage unavailable: start fresh */ }
+  } catch (e) {
+    // Unreadable (or a migration threw): keep the original text so the next save cannot destroy it. Never overwrite an earlier rescue copy.
+    if (raw) { try { if (!localStorage.getItem(KEY + '.rescue')) localStorage.setItem(KEY + '.rescue', raw); loadRescued = true; } catch (e2) { /* no room */ } }
+  }
   return defaults();
 }
 // Settings that are shared across devices: everything in settings + the home layout, except the voice
@@ -253,8 +261,13 @@ function flushSave() {
   saveDirty = false;
   if (typeof checkAch === 'function') checkAch(); // may call save() again (new medal): that one flushes in another 300 ms
   if (typeof takeSnap === 'function') takeSnap();
-  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ }
+  try { localStorage.setItem(KEY, JSON.stringify(S)); saveFailed = false; } catch (e) {
+    // Storage full or blocked: tell the person once, otherwise progress silently stops being saved.
+    if (!saveFailed && typeof toast === 'function') toast('⚠️ บันทึกข้อมูลลงเครื่องไม่ได้ (พื้นที่เต็มหรือถูกปิดไว้) ลองสำรองข้อมูลไว้ก่อนนะ');
+    saveFailed = true;
+  }
 }
+let saveFailed = false;
 document.addEventListener('visibilitychange', () => { if (document.hidden) flushSave(); });
 addEventListener('pagehide', flushSave);
 
@@ -284,6 +297,10 @@ const needsBackup = () => Object.keys(S.prog).length >= 10
 
 // Merge a backup into the current state, keeping whichever side is further along for each word.
 const progAhead = (a, b) => (a.b - b.b) || ((a.s || 0) - (b.s || 0)) || ((a.d || 0) - (b.d || 0));
+// Which copy of a card wins when two are merged (1.105.4). Every edit stamps `t` (ms): the newer edit wins, so "forgot", a wrong
+// game answer or "review again" on this device is not undone by an older copy that has a higher box. A card with a stamp beats one
+// without (older app version); two cards without stamps use the old "further ahead wins" rule.
+const cardWins = (inc, cur) => (inc.t && cur.t ? inc.t > cur.t || (inc.t === cur.t && progAhead(inc, cur) > 0) : inc.t || cur.t ? !!inc.t : progAhead(inc, cur) > 0);
 // My word sets: per set the newer edit (`at`) wins, deleted sets stay as tombstones for 90 days so a deletion also reaches
 // other devices and old backups; progress is merged per word like prog, and only for sets that still exist.
 function mergeDecks(d) {
@@ -310,7 +327,7 @@ function mergeDecks(d) {
     if (ir > lr && S.dprog[id]) for (const k of Object.keys(S.dprog[id])) delete S.dprog[id][k];
     if (ir < lr || !theirs[id]) continue;
     const cur = S.dprog[id] || (S.dprog[id] = {});
-    for (const [w, p] of Object.entries(theirs[id])) if (!cur[w] || progAhead(p, cur[w]) > 0) cur[w] = p;
+    for (const [w, p] of Object.entries(theirs[id])) if (!cur[w] || cardWins(p, cur[w])) cur[w] = p;
   }
   if (typeof current !== 'undefined' && current === 'decks' && before !== JSON.stringify([S.decks, S.dprog]) && !view.querySelector('#dkBack')) setTimeout(() => go('decks'), 0);
 }
@@ -322,11 +339,11 @@ function mergeBackup(d) {
     if (!p || typeof p.b !== 'number') continue;
     const cur = S.prog[w];
     if (!cur) { S.prog[w] = p; added++; }
-    else if (ahead(p, cur) > 0) { S.prog[w] = p; updated++; }
+    else if (cardWins(p, cur)) { S.prog[w] = p; updated++; }
   }
   for (const [k, p] of Object.entries(d.lex || {})) {
     if (!p || typeof p.b !== 'number' || typeof p.d !== 'number') continue;
-    if (!S.lex[k] || progAhead(p, S.lex[k]) > 0) S.lex[k] = p;
+    if (!S.lex[k] || cardWins(p, S.lex[k])) S.lex[k] = p;
   }
   for (const [k, v] of Object.entries(d.hist || {})) S.hist[k] = Math.max(S.hist[k] || 0, v);
   for (const [k, v] of Object.entries(d.best || {})) S.best[k] = Math.max(S.best[k] || 0, v);
@@ -349,7 +366,10 @@ function mergeBackup(d) {
     if (typeof current !== 'undefined' && current === 'settings') setTimeout(() => go(current), 0);
   }
   S.backupAt = Math.max(S.backupAt || 0, d.backupAt || 0);
-  Object.assign(S.star, d.star || {});
+  // Stars and memory hooks: the newer edit wins (also a delete / un-star, kept as a time stamp). Without stamps (older data) only additions come in.
+  for (const [w, at] of Object.entries(d.starAt || {})) if (isNum(at) && at > (S.starAt[w] || 0)) { S.starAt[w] = at; if (d.star && d.star[w]) S.star[w] = 1; else delete S.star[w]; }
+  for (const w of Object.keys(d.star || {})) if (!(w in (d.starAt || {})) && !(w in S.starAt)) S.star[w] = 1;
+  for (const [w, at] of Object.entries(d.noteAt || {})) if (isNum(at) && at > (S.noteAt[w] || 0)) { S.noteAt[w] = at; if (typeof (d.note || {})[w] === 'string' && d.note[w]) S.note[w] = d.note[w]; else delete S.note[w]; }
   for (const [k, v] of Object.entries(d.ach || {})) if (!S.ach[k]) S.ach[k] = v;
   if (d.mascot && d.mascot.equip && (d.mascot.at || 0) > (S.mascot.at || 0)) S.mascot = d.mascot;
   if (Array.isArray(d.owned)) S.owned = [...new Set([...S.owned, ...d.owned.filter((x) => typeof x === 'string')])];
@@ -374,7 +394,7 @@ function mergeBackup(d) {
   if ((d.monthSeen || '') > (S.monthSeen || '')) S.monthSeen = d.monthSeen;
   S.xp = Math.max(S.xp || 0, d.xp || 0);
   if (d.chistFrom && (!S.chistFrom || d.chistFrom < S.chistFrom)) S.chistFrom = d.chistFrom;
-  for (const [k, v] of Object.entries(d.note || {})) if (!S.note[k]) S.note[k] = v;
+  for (const [k, v] of Object.entries(d.note || {})) if (!S.note[k] && !(k in S.noteAt) && !(k in (d.noteAt || {}))) S.note[k] = v;
   for (const [k, v] of Object.entries(d.miss || {})) S.miss[k] = { ...v, ...(S.miss[k] || {}) };
   if (d.placedAt && !S.placedAt) S.placedAt = d.placedAt;
   for (const [k, v] of Object.entries(d.xpWeek || {})) S.xpWeek[k] = Math.max(S.xpWeek[k] || 0, v);
@@ -468,10 +488,17 @@ function streakNow() {
   return missed <= 0 || missed <= S.freeze ? S.streak.count : 0;
 }
 
+// The one place memory hooks are written (stamps the edit so a delete also reaches other devices).
+function setNote(word, text) {
+  if (text) S.note[word] = text; else delete S.note[word];
+  S.noteAt[word] = Date.now();
+}
+
 /* ---------- stars ---------- */
 const isStar = (w) => !!S.star[w.w];
 function toggleStar(w) {
   if (S.star[w.w]) delete S.star[w.w]; else S.star[w.w] = 1;
+  S.starAt[w.w] = Date.now();
   save();
   toast(isStar(w) ? `⭐ ติดดาว "${w.w}" แล้ว` : `เอาดาวออกจาก "${w.w}" แล้ว`);
   return isStar(w);
@@ -1129,6 +1156,7 @@ function grade(w, g, map = S.prog) {
     s: (p ? p.s : 0) + 1,
     c: (p ? p.c : 0) + (g > 0 ? 1 : 0),
     x: (p ? p.x || 0 : 0) + (g === 0 ? 1 : 0),
+    t: Date.now(),
   };
   if (g === 0) {
     if (main) logMiss(w);
@@ -1148,7 +1176,7 @@ function lexKey(game, w) {
 }
 function lexGrade(key, ok) {
   const p = S.lex[key], n = sched(p, ok ? 2 : 0);
-  S.lex[key] = { b: n.b, i: n.i, e: n.e, d: dueAt(n.i), ...fsFields(n), s: (p ? p.s : 0) + 1, c: (p ? p.c : 0) + (ok ? 1 : 0), x: (p ? p.x : 0) + (ok ? 0 : 1) };
+  S.lex[key] = { b: n.b, i: n.i, e: n.e, d: dueAt(n.i), ...fsFields(n), s: (p ? p.s : 0) + 1, c: (p ? p.c : 0) + (ok ? 1 : 0), x: (p ? p.x : 0) + (ok ? 0 : 1), t: Date.now() };
 }
 // Pick `n` questions: those due for review first (at most 7, oldest first), then ones never asked, then the rest.
 function lexPick(game, src, n) {
@@ -1174,10 +1202,10 @@ function gameResult(w, ok, map = S.prog) {
   const leechHit = ok && map === S.prog && p && (p.x || 0) >= LEECH;
   if (!p && map === S.prog) wnewAdd();
   if (ok) {
-    if (!p) map[w.w] = { b: 1, i: 1, e: EASE0, d: dueAt(1), s: 1, c: 1, x: 0 };
-    else { p.c++; p.s++; }
+    if (!p) map[w.w] = { b: 1, i: 1, e: EASE0, d: dueAt(1), s: 1, c: 1, x: 0, t: Date.now() };
+    else { p.c++; p.s++; p.t = Date.now(); }
   } else {
-    map[w.w] = { ...(p || {}), ...fsFields(sched(p, 0)), b: 0, i: 0, e: Math.max(EASE_MIN, ((p && p.e) || EASE0) - 0.2), d: Date.now(), s: (p ? p.s : 0) + 1, c: p ? p.c : 0, x: (p ? p.x || 0 : 0) + 1 };
+    map[w.w] = { ...(p || {}), ...fsFields(sched(p, 0)), b: 0, i: 0, e: Math.max(EASE_MIN, ((p && p.e) || EASE0) - 0.2), d: Date.now(), s: (p ? p.s : 0) + 1, c: p ? p.c : 0, x: (p ? p.x || 0 : 0) + 1, t: Date.now() };
     if (map === S.prog) logMiss(w);
   }
   if (leechHit) questEvent('leech'); else save();
@@ -1186,12 +1214,12 @@ function gameResult(w, ok, map = S.prog) {
 // "I already know this": jump straight to a long interval so it stops appearing as new.
 function markKnown(w, map = S.prog) {
   markActive();
-  map[w.w] = { b: MASTERED, i: INTERVALS[MASTERED], e: EASE0 + 0.2, d: dueAt(INTERVALS[MASTERED]), s: 1, c: 1, x: 0 };
+  map[w.w] = { b: MASTERED, i: INTERVALS[MASTERED], e: EASE0 + 0.2, d: dueAt(INTERVALS[MASTERED]), s: 1, c: 1, x: 0, t: Date.now() };
   save();
 }
 function markForReview(w, map = S.prog) {
   const p = map[w.w];
-  map[w.w] = { ...(p || {}), b: 0, i: 0, d: Date.now(), s: p ? p.s : 0, c: p ? p.c : 0, x: p ? p.x || 0 : 0 };
+  map[w.w] = { ...(p || {}), b: 0, i: 0, d: Date.now(), s: p ? p.s : 0, c: p ? p.c : 0, x: p ? p.x || 0 : 0, t: Date.now() };
   save();
 }
 

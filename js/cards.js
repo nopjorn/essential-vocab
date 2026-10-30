@@ -157,7 +157,7 @@ function renderCards(extra) {
   };
   $('#undo').onclick = () => {
     const h = history.pop(); if (!h) return;
-    if (h.prev) map[h.w] = h.prev; else delete map[h.w];
+    if (h.prev) map[h.w] = { ...h.prev, t: Date.now() }; else delete map[h.w]; // stamped now, so syncing does not bring back the undone answer
     if (!deck) S.daily = h.daily;
     relearn = new Set(h.relearn); save();
     queue.splice(0, queue.length, ...h.queue);
@@ -226,7 +226,7 @@ function renderCards(extra) {
       relearn.delete(card.w);
       markActive(); if (!deck) S.daily.reviews++;
       const i = g === 3 ? 3 : 1;
-      map[card.w] = { ...map[card.w], b: boxOf(i), i, d: dueAt(i), s: map[card.w].s + 1, c: map[card.w].c + 1 };
+      map[card.w] = { ...map[card.w], b: boxOf(i), i, d: dueAt(i), s: map[card.w].s + 1, c: map[card.w].c + 1, t: Date.now() };
       questEvent('card');
       stats.ok++; done++;
     } else {

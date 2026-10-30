@@ -47,7 +47,10 @@ function renderHome() {
       // Two-ring goal: outer = reviews done / (done + still due), inner = new words / what can still be learned today.
       const revTot = S.daily.reviews + due, rf = revTot ? S.daily.reviews / revTot : 1;
       const newTot = Math.min(goal, S.daily.fresh + Math.min(newLeft, unseen)), nf = newTot ? Math.min(1, S.daily.fresh / newTot) : 1;
-      const closed = rf >= 1 && nf >= 1 && (doneToday > 0 || todo === 0), pct = Math.round((rf + nf) / 2 * 100);
+      const closed = rf >= 1 && nf >= 1 && (doneToday > 0 || todo === 0);
+      // A ring with nothing to do counts for nothing (it used to count as 100%, so a new user saw 50% before starting): percent = done / all of today's work.
+      const allWork = revTot + newTot, pct = closed ? 100 : allWork ? Math.round((S.daily.reviews + Math.min(S.daily.fresh, newTot)) / allWork * 100) : 0;
+      const rfv = closed ? 1 : revTot ? rf : 0, nfv = closed ? 1 : newTot ? nf : 0;
       const arc = (r, f, cls) => `<circle class="rg ${cls}${f <= 0 ? ' z' : ''}" cx="50" cy="50" r="${r}" pathLength="100" style="stroke-dashoffset:${(100 - f * 100).toFixed(1)}" transform="rotate(-90 50 50)"/>`;
       const sk = heroSky();
       return `<div class="hero pop${closed ? ' ring-closed' : ''}${sk.cls}"${sk.style}>${sk.scene}
@@ -58,7 +61,7 @@ function renderHome() {
           <div>การ์ดที่รอวันนี้ (${lvNames(S.settings.levels)})</div>
         </div>
         <div class="ring" role="img" aria-label="ความคืบหน้าวันนี้ ${pct}% ทบทวน ${S.daily.reviews} จาก ${revTot} ใบ คำใหม่ ${S.daily.fresh} จาก ${goal} คำ">
-          ${sk.disc}<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="rt" cx="50" cy="50" r="43"/><circle class="rt" cx="50" cy="50" r="30"/>${arc(43, rf, 'r1')}${arc(30, nf, 'r2')}</svg>
+          ${sk.disc}<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="rt" cx="50" cy="50" r="43"/><circle class="rt" cx="50" cy="50" r="30"/>${arc(43, rfv, 'r1')}${arc(30, nfv, 'r2')}</svg>
           <span class="ring-c" aria-hidden="true">${closed ? '✓' : pct + '%'}</span>
         </div>
       </div>

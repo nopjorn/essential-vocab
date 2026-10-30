@@ -62,3 +62,18 @@ test('match game: right and wrong pairs, three rounds', async ({ page }) => {
   await expect(page.locator('#view')).toContainText(/พลาด|ผิด|วินาที|s/);
   expect(errors).toEqual([]);
 });
+
+test('multiple-choice options never include a second right answer (no shared Thai meaning)', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  const bad = await page.evaluate(() => {
+    const out = [];
+    for (const w of W) for (const hard of [false, true]) for (const field of ['w', 't']) {
+      const d = distractors(w, 3, field, hard);
+      if (d.length < 3) out.push(`${w.w}: only ${d.length} options`);
+      for (const x of d) if (sharesMeaning(w, x)) out.push(`${w.w} (${w.t}) ~ ${x.w} (${x.t})`);
+    }
+    return out;
+  });
+  expect(bad.slice(0, 10)).toEqual([]);
+  expect(errors).toEqual([]);
+});
