@@ -176,7 +176,7 @@ function renderFeed() {
         const blank = w.e.replace(clozeRe(w), (all, pre) => pre + '\u0000');
         prompt = `<div class="f-tag">📝 เติมคำในประโยค</div><div class="cloze" lang="en">${esc(blank).replace('\u0000', BLANK)}</div><div class="thx">${esc(w.et)}</div>`;
       }
-      opts = optBtns(list.map((o) => [o.idx, toTh ? o.t : o.w]));
+      opts = optBtns(list.map((o) => [o.idx, toTh ? o.t : type === 'cloze' ? clozeOpt(o, w) : o.w]));
     }
     const top = isBoss ? `<div class="f-boss">👾 บอสคำดื้อ <span class="f-hp">${hpBar(boss.hp)}</span><small>ตอบถูก ${boss.hp} ครั้งเพื่อปราบบอส</small></div>`
       : timed ? `<div class="f-timer"><i></i></div><div class="f-time small">⏱️ ตอบภายใน ${FEED_TIMER} วินาที ได้ XP x2</div>` : '';

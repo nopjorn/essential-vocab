@@ -49,7 +49,7 @@ function buildDeckQueue(d, extra) {
   const due = dueList(ws, map).slice(0, 200);
   let fresh = ws.filter((w) => !map[w.w]);
   if (S.settings.order === 'shuffle') fresh = shuffle(fresh);
-  fresh = fresh.slice(0, DECK_ROUND);
+  fresh = separateNew(fresh, DECK_ROUND, map);
   const q = [], step = fresh.length ? Math.max(1, Math.floor(due.length / fresh.length)) : 0;
   let di = 0;
   fresh.forEach((w) => { q.push(...due.slice(di, di + step)); di += step; q.push(w); });

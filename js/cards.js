@@ -19,18 +19,44 @@ function tomorrowBox() {
     <div style="margin-top:4px">ทบทวน ${rev} ใบ${nw ? ` + คำใหม่ ${nw} คำ` : ''}${leech ? ` · 🐢 คำดื้อ ${leech} คำกลับมาให้ฝึก` : ''}</div>
     <div class="small muted">ใช้เวลาประมาณ ${mins} นาที</div></div>`;
 }
-// Words of one family (decide / decision / decisive) shouldn't follow each other: the card before would give the answer
-// away. Take the earliest card that doesn't share a family with the last `gap` placed ones (needs data/families.js loaded).
+// Words that give each other away or get mixed up when they sit close together (1.107): the same family (decide / decision),
+// the same Thai meaning (afraid / scared, big / large) or a confusable pair (borrow / lend). Same kind of key = related.
+let CONF_OF = null;
+function relatedKeys(w) {
+  const ks = [];
+  const f = FAMILIES && familyOf(w.w); if (f) ks.push(f);
+  for (const m of String(w.t || '').split(/[;,]/)) { const x = m.trim(); if (x.length >= 2) ks.push('m:' + x); }
+  if (typeof CONFUSE !== 'undefined' && CONFUSE) {
+    if (!CONF_OF) { CONF_OF = new Map(); CONFUSE.forEach((c, k) => { CONF_OF.set(c.a.toLowerCase(), k); CONF_OF.set(c.b.toLowerCase(), k); }); }
+    if (CONF_OF.has(w.w.toLowerCase())) ks.push('c:' + CONF_OF.get(w.w.toLowerCase()));
+  }
+  return ks;
+}
+// Related words shouldn't follow each other: take the earliest card that shares no key with the last `gap` placed ones.
 function spreadFamilies(q, gap = 4) {
-  if (!FAMILIES || q.length < 2 || q.length > 400) return q;
-  const fam = (w) => familyOf(w.w), pool = q.slice(), out = [];
+  if (q.length < 2 || q.length > 400) return q;
+  const keys = new Map(q.map((w) => [w, relatedKeys(w)])), pool = q.slice(), out = [];
   while (pool.length) {
-    const recent = new Set(out.slice(-gap).map(fam).filter(Boolean));
-    let k = pool.findIndex((w) => { const f = fam(w); return !f || !recent.has(f); });
+    const recent = new Set(out.slice(-gap).flatMap((w) => keys.get(w)));
+    let k = pool.findIndex((w) => !keys.get(w).some((x) => recent.has(x)));
     if (k < 0) k = 0;
     out.push(pool.splice(k, 1)[0]);
   }
   return out;
+}
+// Today's new words: not related to each other, nor to a word started in the last days (still being learned), so two near
+// meanings aren't met at the same time. Falls back to related ones when there aren't enough others.
+function separateNew(fresh, n, map = S.prog) {
+  if (fresh.length <= 1) return fresh.slice(0, n);
+  const block = new Set(), picked = [], later = [];
+  for (const w of W) { const p = map[w.w]; if (p && (p.s || 0) <= 3 && ivlOf(p) < 7) relatedKeys(w).forEach((x) => block.add(x)); }
+  for (const w of fresh) {
+    if (picked.length >= n) break;
+    const ks = relatedKeys(w);
+    if (ks.some((x) => block.has(x))) { later.push(w); continue; }
+    picked.push(w); ks.forEach((x) => block.add(x));
+  }
+  return picked.concat(later).slice(0, n);
 }
 function buildQueue(extra) {
   return spreadFamilies(buildQueueRaw(extra));
@@ -55,7 +81,7 @@ function buildQueueRaw(extra) {
   if (extra === 'learning') return shuffle(W.filter((w) => status(w) === 'learning')).slice(0, 20);
   if (extra === 'ahead') return W.filter((w) => S.prog[w.w]).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d).slice(0, 20);
   const n = extra ? 10 : plan.on ? 0 : Math.max(0, newGoal() - S.daily.fresh);
-  fresh = fresh.slice(0, n);
+  fresh = separateNew(fresh, n);
   // Mix new cards in among reviews so a session doesn't end with only new words.
   const q = [];
   const step = fresh.length ? Math.max(1, Math.floor(due.length / fresh.length)) : 0;
@@ -113,7 +139,7 @@ function bindNextSteps() {
 // extra: undefined (today's cards), true (10 more new), 'ahead', 'mastered', 'learning' (random 20 learning words), 'leech' (stubborn words, 15), or { deck: id, ahead? } = study one of my word sets.
 // A set uses its own progress table `map` (S.dprog[id]); the main S.prog and the daily counts stay untouched.
 function renderCards(extra) {
-  if (!FAMILIES) { withLoading(loadFamilies()).then(() => renderCards(extra)); return; } // spreadFamilies() needs the family data
+  if (!FAMILIES || !CONFUSE) { withLoading(Promise.all([loadFamilies(), loadPairs()])).then(() => renderCards(extra)); return; } // spreadFamilies() needs the family and confusable-pair data
   const deck = extra && typeof extra === 'object' ? deckById(extra.deck) : null;
   if (extra && typeof extra === 'object' && !deck) return go('decks');
   const map = deck ? deckMap(deck.id) : S.prog;

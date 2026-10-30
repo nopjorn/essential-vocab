@@ -53,7 +53,7 @@ function duelQuestions(code) {
     const j = k + Math.floor(rnd() * (idx.length - k));
     [idx[k], idx[j]] = [idx[j], idx[k]];
     const w = pool[idx[k]];
-    const kinds = hasCloze(w) ? ['en2th', 'th2en', 'cloze'] : ['en2th', 'th2en'];
+    const kinds = hasClozeExact(w) ? ['en2th', 'th2en', 'cloze'] : ['en2th', 'th2en'];
     const kind = kinds[Math.floor(rnd() * kinds.length)];
     const near = pool.filter((x) => x !== w && posOf(x) === posOf(w));
     const from = near.length >= 12 ? near : W.filter((x) => x !== w && posOf(x) === posOf(w));

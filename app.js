@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.106.1';
+const APP_VERSION = '1.107.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -182,6 +182,7 @@ const defaults = () => ({
   snap: {},            // 'YYYY-MM-DD' -> [learned 3000, mastered 3000, learned all, mastered all]
   chistFrom: '',       // first day chist was recorded; earlier hist can't be split into cards/games
   note: {},            // word -> the user's own memory hook
+  ret: [[0, 0], [0, 0], [0, 0], [0, 0]], // due reviews by gap [1–2, 3–6, 7–20, 21+ days]: [reviewed, remembered] → real retention vs the target (1.107)
   noteAt: {},          // word -> ms of the last edit or delete of its hook (newest wins when syncing; 1.105.4)
   starAt: {},          // word -> ms the star was last set or removed (1.105.4)
   miss: {},            // 'YYYY-MM-DD' -> { word: times wrong that day } (last 21 days)
@@ -224,6 +225,7 @@ function load() {
       r.gplay = gplayFix(r.gplay);
       // A missing/odd riddle record (older backup, sync from another device) must never break the home screen.
       if (!r.mascot || typeof r.mascot !== 'object' || !r.mascot.equip || typeof r.mascot.equip !== 'object') r.mascot = d.mascot;
+      if (!Array.isArray(r.ret) || r.ret.length !== 4 || r.ret.some((x) => !Array.isArray(x) || !isNum(x[0]) || !isNum(x[1]))) r.ret = d.ret;
       if (!Array.isArray(r.owned)) r.owned = [];
       if (!r.evt || typeof r.evt !== 'object' || Array.isArray(r.evt)) r.evt = {};
       if (!r.box || typeof r.box !== 'object') r.box = d.box;
@@ -367,6 +369,7 @@ function mergeBackup(d) {
   }
   S.backupAt = Math.max(S.backupAt || 0, d.backupAt || 0);
   // Stars and memory hooks: the newer edit wins (also a delete / un-star, kept as a time stamp). Without stamps (older data) only additions come in.
+  if (Array.isArray(d.ret) && d.ret.length === 4) d.ret.forEach((x, b) => { if (Array.isArray(x) && isNum(x[0]) && isNum(x[1]) && x[0] > S.ret[b][0]) S.ret[b] = [x[0], Math.min(x[0], x[1])]; });
   for (const [w, at] of Object.entries(d.starAt || {})) if (isNum(at) && at > (S.starAt[w] || 0)) { S.starAt[w] = at; if (d.star && d.star[w]) S.star[w] = 1; else delete S.star[w]; }
   for (const w of Object.keys(d.star || {})) if (!(w in (d.starAt || {})) && !(w in S.starAt)) S.star[w] = 1;
   for (const [w, at] of Object.entries(d.noteAt || {})) if (isNum(at) && at > (S.noteAt[w] || 0)) { S.noteAt[w] = at; if (typeof (d.note || {})[w] === 'string' && d.note[w]) S.note[w] = d.note[w]; else delete S.note[w]; }
@@ -747,8 +750,51 @@ function hlExample(w) {
   return esc(w.e.slice(0, at)) + '<mark>' + esc(m[2]) + '</mark>' + esc(w.e.slice(at + m[2].length));
 }
 // Words whose example sentence contains the exact word, usable for fill-in-the-blank.
-const clozeRe = (w) => new RegExp('(^|[^A-Za-z])' + reEsc(w.w) + '(?![A-Za-z])', 'i');
-const hasCloze = (w) => clozeRe(w).test(w.e);
+// Fill-in-the-blank also works when the example has an inflected form (climb → climbed, egg → eggs): 677 sentences used to be skipped (1.107).
+// clozeForm(w) = { kind: 'base' | 's' | 'ed' | 'ing' | 'er' | 'est', tok } or null. Irregular forms (won, stole) are not covered.
+const clozeExact = (w) => new RegExp('(^|[^A-Za-z])' + reEsc(w.w) + '(?![A-Za-z])', 'i');
+const hasClozeExact = (w) => clozeExact(w).test(w.e); // the duel keeps this one: its questions must stay the same across app versions
+function inflections(b, kind) { // plausible spellings of base b (letters only) with this ending
+  const last = b.slice(-1), cy = /[^aeiou]y$/.test(b), dbl = last + '';
+  const y = cy ? b.slice(0, -1) + 'i' : null, e = /e$/.test(b) ? b.slice(0, -1) : null;
+  if (kind === 's') return [/(s|x|z|ch|sh|o)$/.test(b) ? b + 'es' : b + 's', b + 'es', b + 's', ...(y ? [y + 'es'] : [])];
+  if (kind === 'ing') return [b + 'ing', ...(e && !/(ee|oe|ye)$/.test(b) ? [e + 'ing'] : []), b + dbl + 'ing', ...(/ie$/.test(b) ? [b.slice(0, -2) + 'ying'] : [])];
+  const suf = kind === 'ed' ? 'ed' : kind === 'er' ? 'er' : 'est', short = kind === 'ed' ? 'd' : kind === 'er' ? 'r' : 'st';
+  return [b + suf, ...(e ? [b + short] : []), b + dbl + suf, ...(y ? [y + suf] : [])];
+}
+const doubles = (b) => /^[^aeiou]*[aeiou][^aeiouwxy]$/.test(b); // stop → stopped, visit → visited
+function inflect(b, kind) { // one proper form of b, for answer options next to an inflected blank
+  b = b.toLowerCase();
+  const last = b.slice(-1), cy = /[^aeiou]y$/.test(b), e = /e$/.test(b);
+  if (kind === 's') return /(s|x|z|ch|sh)$/.test(b) ? b + 'es' : cy ? b.slice(0, -1) + 'ies' : b + 's';
+  if (kind === 'ing') return /ie$/.test(b) ? b.slice(0, -2) + 'ying' : e && !/(ee|oe|ye)$/.test(b) ? b.slice(0, -1) + 'ing' : doubles(b) ? b + last + 'ing' : b + 'ing';
+  const suf = kind === 'ed' ? 'ed' : kind === 'er' ? 'er' : 'est', short = kind === 'ed' ? 'd' : kind === 'er' ? 'r' : 'st';
+  return e ? b + short : cy ? b.slice(0, -1) + 'i' + suf : doubles(b) ? b + last + suf : b + suf;
+}
+function clozeForm(w) {
+  if (w._cf && w._cf.e === w.e) return w._cf.r;
+  let r = null;
+  const m = clozeExact(w).exec(w.e);
+  if (m) r = { kind: 'base', tok: m[0].replace(/^[^A-Za-z]/, '') };
+  else if (/^[A-Za-z]+$/.test(w.w)) {
+    const b = w.w.toLowerCase(), toks = w.e.match(/[A-Za-z]+/g) || [];
+    for (const kind of ['s', 'ed', 'ing', 'er', 'est']) {
+      const forms = inflections(b, kind), t = toks.find((x) => forms.includes(x.toLowerCase()));
+      if (t) { r = { kind, tok: t }; break; }
+    }
+  }
+  w._cf = { e: w.e, r };
+  return r;
+}
+const clozeRe = (w) => { const f = clozeForm(w); return f && f.kind !== 'base' ? new RegExp('(^|[^A-Za-z])' + reEsc(f.tok) + '(?![A-Za-z])') : clozeExact(w); };
+const hasCloze = (w) => !!clozeForm(w);
+// The text of an answer option in a fill-in-the-blank question about w: the option word in the same form as the blank needs.
+function clozeOpt(o, w) {
+  const f = clozeForm(w);
+  if (!f || f.kind === 'base' || !/^[A-Za-z]+$/.test(o.w)) return o.w;
+  const t = inflect(o.w, f.kind);
+  return /^[A-Z]/.test(f.tok) ? t[0].toUpperCase() + t.slice(1) : t;
+}
 // Example boxes: the main sentence (used by the games) plus extra sentences for the word's
 // other meanings (`w.xe`, optional trailing [[en, th], ...] field of a word row), one box each.
 const exParts = (w) => [[w.e, w.et], ...w.xe];
@@ -1136,6 +1182,15 @@ function logMiss(w) {
   (S.miss[t] = S.miss[t] || {})[w.w] = (S.miss[t][w.w] || 0) + 1;
   for (const k of Object.keys(S.miss)) if (dayDiff(t, k) > 21) delete S.miss[k];
 }
+// Real retention (1.107): every review of a card that was due counts in a bucket by the gap it had (1–2, 3–6, 7–20, 21+ days):
+// [reviewed, remembered]. Cards pressed "forgot" are not remembered. Halved at 400 so it follows recent weeks.
+const RET_BUCKETS = ['1–2 วัน', '3–6 วัน', '7–20 วัน', '21 วันขึ้นไป'];
+function retLog(ivl, ok) {
+  if (ivl < 1) return;
+  const b = ivl < 3 ? 0 : ivl < 7 ? 1 : ivl < 21 ? 2 : 3, r = S.ret[b];
+  r[0]++; if (ok) r[1]++;
+  if (r[0] > 400) { r[0] = Math.round(r[0] / 2); r[1] = Math.round(r[1] / 2); }
+}
 // With another table (a word set) the daily new/review counts and the missed-word log are left alone: they belong to the main list.
 function grade(w, g, map = S.prog) {
   const main = map === S.prog;
@@ -1148,6 +1203,7 @@ function grade(w, g, map = S.prog) {
     S.daily.fresh++; wnewAdd();
     if (S.daily.fresh === newGoal()) setTimeout(() => { confetti(); toast('🎯 ครบเป้าคำใหม่วันนี้แล้ว เก่งมาก!'); }, 300);
   } else S.daily.reviews++;
+  if (main && p && (p.s || 0) > 0 && p.d <= Date.now()) retLog(ivlOf(p), g > 0); // a card that was due: did it come back?
   const n = sched(p, g);
   map[w.w] = {
     b: n.b, i: n.i, e: n.e,

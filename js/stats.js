@@ -66,6 +66,23 @@ function skillCard() {
     <div class="small muted" style="margin-top:8px">ข้อที่ตอบผิดจะกลับมาให้ทวนในรอบถัดไปของเกมนั้นเอง ข้อที่ตอบถูกจะห่างออกไปเรื่อยๆ</div></div>`;
 }
 
+// Real retention against the target (1.107): of the reviews of cards that were due, how many came back, by the gap they had.
+function retCard() {
+  const tot = S.ret.reduce((a, r) => [a[0] + r[0], a[1] + r[1]], [0, 0]), target = Math.round(retention() * 100);
+  if (!tot[0]) return '';
+  const pct = (r) => (r[0] ? Math.round(r[1] / r[0] * 100) + '%' : '–');
+  const actual = Math.round(tot[1] / tot[0] * 100), enough = tot[0] >= 30;
+  const advice = !enough ? 'ยังมีข้อมูลน้อย (ต้องทวนการ์ดที่ถึงกำหนดอีกสักพัก ราว 30 ใบ) ถึงจะบอกได้แม่น'
+    : S.settings.scheduler === 'sm2' ? 'ตอนนี้ใช้ตัวจัดรอบแบบเก่า (SM-2) ไม่มีเป้า % ให้เทียบ'
+    : actual < target - 5 ? '📉 จำได้น้อยกว่าเป้า: ลองตั้ง “อยากจำได้กี่ %” ให้สูงขึ้น (ทวนถี่ขึ้น) หรือลดคำใหม่ต่อวันลงสักพัก'
+    : actual > target + 5 ? '📈 จำได้เกินเป้ามาก: ลดเป้าความจำลงได้ (ใน ⚙️ ตั้งค่า → การเรียน) จะทวนน้อยลงโดยความจำยังดีอยู่'
+    : '✅ ใกล้เป้าที่ตั้งไว้ ตัวจัดรอบทำงานได้ดี';
+  return `<div class="h2">🎯 จำได้จริงเทียบกับเป้า</div><div class="card-box">
+    <div class="ret-sum"><b>${enough ? actual + '%' : '–'}</b> <span class="muted">จำได้จริง</span> <span class="muted">·</span> <b>${target}%</b> <span class="muted">เป้า (${tot[0]} ใบที่ทวน)</span></div>
+    <table class="g-table"><tr><th>ห่างจากรอบก่อน</th><th>ทวน</th><th>จำได้</th></tr>${S.ret.map((r, b) => `<tr><td>${RET_BUCKETS[b]}</td><td>${r[0]}</td><td>${r[0] >= 5 ? pct(r) : '–'}</td></tr>`).join('')}</table>
+    <div class="small muted" style="margin-top:8px">${advice}</div></div>`;
+}
+
 function renderStats(from) {
   takeSnap();
   const h = habits();
@@ -118,6 +135,7 @@ function renderStats(from) {
       <div class="small muted" style="margin-top:8px"><span class="key bl"></span>เรียนแล้ว &nbsp; <span class="key bm"></span>จำได้แล้ว (ทบทวนผ่านหลายรอบ)</div></div>
     <div class="h2">📅 การ์ดที่ต้องทบทวน 7 วันข้างหน้า</div>
     <div class="card-box">${forecastChart()}</div>
+    ${retCard()}
     ${skillCard()}
     <div class="h2">นิสัยการเล่น <span class="small muted">${h.span} วันล่าสุด</span></div>
     <div class="tiles">

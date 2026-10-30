@@ -135,7 +135,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     else prompt = `<button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:96px;height:96px;font-size:44px;margin:0">🔊</button><div class="muted small" style="margin-top:10px">แตะเพื่อฟังอีกครั้ง</div>${slowBtn(w.w)}`;
     view.innerHTML = `${header()}
       <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>${prompt}${limit ? `<div class="q-timer" aria-hidden="true"><i style="--t:${limit}s"></i></div>` : ''}</div>
-      <div class="options">${opts.map((o) => `<button class="opt" data-i="${o.idx}">${esc(toTh ? o.t : o.w)}</button>`).join('')}</div>
+      <div class="options">${opts.map((o) => `<button class="opt" data-i="${o.idx}">${esc(toTh ? o.t : m === 'cloze' ? clozeOpt(o, w) : o.w)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = quit;
     if ((m === 'en2th' || m === 'listen') && !TIMED) speak(w.w);
