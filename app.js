@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.110.2';
+const APP_VERSION = '1.110.3';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -23,18 +23,22 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) fixA
 
 // On-screen keyboard (iOS keeps the layout viewport and scrolls the page up, hiding the question):
 // while a text field is focused and the keyboard is up, hide the tab bar and fit #app into the visible area (html.kbd).
+let kbBase = window.innerHeight; // window height with no keyboard (iOS may shrink innerHeight too, so compare to this)
 function syncKeyboard() {
   const vv = window.visualViewport, el = document.activeElement;
   const typing = !!el && (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|range|color|file)$/.test(el.type)));
-  const open = !!vv && typing && window.innerHeight - vv.height > 120;
+  if (!typing) kbBase = Math.max(window.innerHeight, vv ? vv.height : 0);
+  const open = !!vv && typing && kbBase - vv.height > 120;
   const root = document.documentElement;
   root.classList.toggle('kbd', open);
   if (open) {
     root.style.setProperty('--kb-h', Math.round(vv.height) + 'px');
     root.style.setProperty('--kb-top', Math.round(vv.offsetTop) + 'px');
-    if (el.scrollIntoView && el.closest('.view')) el.scrollIntoView({ block: 'nearest' });
+    window.scrollTo(0, 0);
+    const v = el.closest('.view'); if (v) v.scrollTop = 0;
   }
 }
+addEventListener('orientationchange', () => { kbBase = 0; setTimeout(syncKeyboard, 400); });
 if (window.visualViewport) ['resize', 'scroll'].forEach(e => visualViewport.addEventListener(e, syncKeyboard));
 document.addEventListener('focusin', () => setTimeout(syncKeyboard, 50));
 document.addEventListener('focusout', () => setTimeout(syncKeyboard, 100));
