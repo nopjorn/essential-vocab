@@ -719,11 +719,11 @@ input.sel { color: var(--text); font: inherit; }
   .view:has(> .session-top) { --maxw: 900px; }
   .session-top { margin-bottom: 8px; }
   .icon-btn { width: 38px; height: 38px; font-size: 17px; }
-  /* flashcards: card left, grade buttons right */
-  .view:has(> #stage) { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 16px; }
+  /* flashcards: grade buttons left, card right (1.114.2) */
+  .view:has(> #stage) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); grid-template-rows: auto 1fr; column-gap: 16px; }
   .view:has(> #stage) > .session-top { grid-column: 1 / -1; }
-  .view:has(> #stage) > .stage { height: calc(100dvh - 128px - env(safe-area-inset-bottom)); min-height: 220px; margin: 0; }
-  .view:has(> #stage) > .grade { grid-template-columns: 1fr 1fr; align-content: center; }
+  .view:has(> #stage) > .stage { grid-column: 2; grid-row: 2; height: calc(100dvh - 128px - env(safe-area-inset-bottom)); min-height: 220px; margin: 0; }
+  .view:has(> #stage) > .grade { grid-column: 1; grid-row: 2; grid-template-columns: 1fr 1fr; align-content: center; }
   .view:has(> #stage) > .grade .btn { min-height: 72px; }
   .face { padding: 16px 20px; overflow-y: auto; justify-content: safe center; }
   .face .top { top: 12px; }
