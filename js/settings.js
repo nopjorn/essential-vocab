@@ -98,6 +98,10 @@ function renderSettings() {
         <label class="switch"><input type="checkbox" id="festSky" aria-label="ฉากเทศกาล" ${st.fest !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🐣 น้องคำในเกม<br><span class="small muted">น้องคำนั่งมุมบนตอนเล่นเกม ดีใจเมื่อตอบถูก เศร้านิดๆ เมื่อตอบผิด</span></span>
         <label class="switch"><input type="checkbox" id="qMascot" aria-label="น้องคำในเกม" ${st.qMascot !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>🔤 ฟอนต์หัวข้อ “อนุพันธ์”<br><span class="small muted">ใช้ฟอนต์ไทยแบบโค้งมนกับหัวข้อและชื่อหน้า (ปิด = ใช้ฟอนต์ของเครื่องทั้งหมด)</span></span>
+        <label class="switch"><input type="checkbox" id="headFont" aria-label="ฟอนต์หัวข้ออนุพันธ์" ${st.headFont !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>🪟 แถบเมนูกระจกลอย<br><span class="small muted">บนมือถือ แถบเมนูล่างเป็นแคปซูลใสลอยเหนือขอบจอ (ปิด = แถบเต็มขอบแบบเดิม)</span></span>
+        <label class="switch"><input type="checkbox" id="glassBar" aria-label="แถบเมนูกระจกลอย" ${st.glassBar !== false ? 'checked' : ''}><span></span></label></div>
       <details class="sky-more"><summary class="small muted">ดูท้องฟ้าทั้ง 6 ช่วงเวลา (เช้า สาย บ่าย เย็น มืด ดึก)</summary>${skyGallery()}</details>
       <div class="set-row" style="flex-wrap:wrap"><span>📱 ไอคอนแอป<br><span class="small muted" id="icoName"></span></span>
         <div class="pal ico" id="iconPick" role="group" aria-label="ไอคอนแอป">${ICONS.map(([id, name]) => `<button data-i="${id}" aria-label="ไอคอน${name}" aria-pressed="${(st.icon || 'purple') === id}" class="${(st.icon || 'purple') === id ? 'on' : ''}"><img src="${iconSrc(id)}" alt="" width="44" height="44"></button>`).join('')}</div></div>
@@ -255,6 +259,8 @@ function renderSettings() {
   $('#heroArt').onchange = (e) => { st.heroArt = e.target.checked; save(); };
   $('#festSky').onchange = (e) => { st.fest = e.target.checked; save(); };
   $('#qMascot').onchange = (e) => { st.qMascot = e.target.checked; save(); };
+  $('#headFont').onchange = (e) => { st.headFont = e.target.checked; save(); applyAnim(); };
+  $('#glassBar').onchange = (e) => { st.glassBar = e.target.checked; save(); applyAnim(); };
   $('#palette').onclick = (e) => {
     const b = e.target.closest('[data-p]'); if (!b) return;
     st.palette = b.dataset.p; st.palAuto = false; $('#palAuto').checked = false; save(); applyTheme(); palName();

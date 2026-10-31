@@ -3,45 +3,99 @@
 // Classic script sharing globals with app.js (load order: index.html).
 
 /* ---------- share card ---------- */
-// { title, sub, hero: big text, heroLabel, tiles: [[value, label] × 4], foot } → 1080×1350 canvas in the app's colours.
-function drawCard(o) {
+// { title, sub, hero: big text, heroLabel, tiles: [[value, label] × 4], foot } → 1080×1350 canvas.
+// tpl (1.117): 'classic' = app colours gradient · 'sky' = today's sky with hills, sun/moon and น้องคำ · 'clean' = light card with the main colour.
+// art = an already loaded น้องคำ image (mascotImage()), drawn on 'sky' and 'clean'.
+const SHARE_TPL = [['classic', '🎨 สีธีม'], ['sky', '🌅 ท้องฟ้า + น้องคำ'], ['clean', '🤍 เรียบๆ']];
+function drawCard(o, tpl = 'classic', art = null) {
   const c = document.createElement('canvas'); c.width = 1080; c.height = 1350;
   const g = c.getContext('2d'), cs = getComputedStyle(document.documentElement);
   const p1 = cs.getPropertyValue('--primary').trim() || '#6c5ce7', p2 = cs.getPropertyValue('--primary-2').trim() || '#a29bfe';
-  const grad = g.createLinearGradient(0, 0, 1080, 1350); grad.addColorStop(0, p1); grad.addColorStop(1, p2);
-  g.fillStyle = grad; g.fillRect(0, 0, 1080, 1350);
-  const font = (px, w = 700) => `${w} ${px}px ui-rounded, system-ui, -apple-system, "Sarabun", sans-serif`;
-  const text = (t, x, y, px, w, a = 1) => { g.font = font(px, w); g.fillStyle = `rgba(255,255,255,${a})`; g.textAlign = 'center'; g.fillText(t, x, y); };
+  const clean = tpl === 'clean', sky = tpl === 'sky' && typeof SKY !== 'undefined' ? SKY[skyId()] : null;
+  if (sky) {
+    const gr = g.createLinearGradient(0, 0, 0, 1350); gr.addColorStop(0, sky.g[0]); gr.addColorStop(0.55, sky.g[1]); gr.addColorStop(1, sky.g[2]);
+    g.fillStyle = gr; g.fillRect(0, 0, 1080, 1350);
+    const halo = g.createRadialGradient(170, 170, 20, 170, 170, 260); halo.addColorStop(0, `rgba(${sky.glow},.55)`); halo.addColorStop(1, `rgba(${sky.glow},0)`);
+    g.fillStyle = halo; g.fillRect(0, 0, 600, 600);
+    const disc = g.createLinearGradient(110, 110, 230, 230); disc.addColorStop(0, sky.d[0]); disc.addColorStop(1, sky.d[1]);
+    g.fillStyle = disc; g.beginPath(); g.arc(170, 170, 62, 0, Math.PI * 2); g.fill();
+    if (sky.stars) { let r = 7; for (let i = 0; i < sky.stars * 2; i++) { r = (r * 9301 + 49297) % 233280; const x = r / 233280 * 1080; r = (r * 9301 + 49297) % 233280; const y = r / 233280 * 700; g.fillStyle = 'rgba(255,255,255,.7)'; g.beginPath(); g.arc(x, y, 2.4, 0, Math.PI * 2); g.fill(); } }
+    const hill = (col, y0, a, b) => { g.fillStyle = col; g.beginPath(); g.moveTo(0, y0); g.bezierCurveTo(300, y0 - a, 700, y0 + b, 1080, y0 - a / 2); g.lineTo(1080, 1350); g.lineTo(0, 1350); g.fill(); };
+    hill(sky.h[0], 1040, 120, 60); hill(sky.h[1], 1130, 90, 70); hill(sky.h[2], 1230, 60, 40);
+  } else {
+    const grad = g.createLinearGradient(0, 0, 1080, 1350);
+    if (clean) { grad.addColorStop(0, '#ffffff'); grad.addColorStop(1, '#f3f1ff'); } else { grad.addColorStop(0, p1); grad.addColorStop(1, p2); }
+    g.fillStyle = grad; g.fillRect(0, 0, 1080, 1350);
+    if (clean) { g.fillStyle = p1; g.fillRect(0, 0, 1080, 18); }
+  }
+  const ink = clean ? '30,24,60' : '255,255,255', boxFill = clean ? 'rgba(108,92,231,0.08)' : sky ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.16)';
+  const font = (px, w = 700) => `${w} ${px}px "Anuphan", ui-rounded, system-ui, -apple-system, "Sarabun", sans-serif`;
+  const text = (t, x, y, px, w, a = 1, col = ink) => { g.font = font(px, w); g.fillStyle = `rgba(${col},${a})`; g.textAlign = 'center'; g.fillText(t, x, y); };
   const box = (x, y, w, h, r) => { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); g.fill(); };
+  if (art && (sky || clean)) g.drawImage(art, clean ? 800 : 830, 40, 210, 210);
   text(o.title, 540, 150, 64, 800);
   text(o.sub || '', 540, 215, 38, 500, 0.85);
-  g.fillStyle = 'rgba(255,255,255,0.16)'; box(90, 290, 900, 340, 48);
-  text(o.hero, 540, 480, 150, 800);
-  text(o.heroLabel, 540, 565, 44, 600, 0.9);
+  g.fillStyle = clean ? p1 : boxFill; box(90, 290, 900, 340, 48);
+  text(o.hero, 540, 480, 150, 800, 1, clean ? '255,255,255' : ink);
+  text(o.heroLabel, 540, 565, 44, 600, 0.9, clean ? '255,255,255' : ink);
   (o.tiles || []).slice(0, 4).forEach(([v, l], i) => {
     const x = 90 + (i % 2) * 460, y = 690 + Math.floor(i / 2) * 270;
-    g.fillStyle = 'rgba(255,255,255,0.16)'; box(x, y, 440, 245, 40);
+    g.fillStyle = boxFill; box(x, y, 440, 245, 40);
     text(String(v), x + 220, y + 130, 96, 800);
     text(l, x + 220, y + 205, 38, 500, 0.9);
   });
   text(o.foot || 'ศัพท์ต้องรู้ · nopjorn.github.io/essential-vocab', 540, 1285, 34, 500, 0.8);
   return c;
 }
+// น้องคำ (happy, in today's costume) as an image for the canvas; the CSS colour variables are filled in first.
+function mascotImage() {
+  const cs = getComputedStyle(document.documentElement), v = (k, d) => cs.getPropertyValue(k).trim() || d;
+  const svg = mascotSvg({ mood: 'happy', size: 240, equip: festEquip().equip })
+    .replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ')
+    .replace(/var\(--primary-text,([^)]+)\)/g, '$1').replace(/var\(--primary-2\)/g, v('--primary-2', '#a29bfe')).replace(/var\(--primary\)/g, v('--primary', '#6c5ce7'));
+  return new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); });
+}
+// Pick a template with live previews, then share/save. build(tpl, art) → canvas.
+async function shareWithPicker(build, name, title, done) {
+  const art = await mascotImage();
+  if (document.fonts && document.fonts.load) { try { await document.fonts.load('800 40px "Anuphan"', 'ก'); } catch (e) { /* system font */ } }
+  let tpl = SHARE_TPL.some(([id]) => id === S.settings.shareTpl) ? S.settings.shareTpl : 'classic';
+  const old = document.querySelector('.share-pick'); if (old) old.remove();
+  const el = document.createElement('div');
+  el.className = 'share-pick'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'เลือกแบบภาพที่จะแชร์');
+  el.innerHTML = `<div class="sp-box"><b class="sp-title">📤 เลือกแบบภาพ</b>
+    <div class="sp-list" role="radiogroup" aria-label="แบบภาพ">${SHARE_TPL.map(([id, name]) => `<button class="sp-opt" role="radio" data-tpl="${id}" aria-checked="${id === tpl}"><img alt="" src="${build(id, art).toDataURL('image/jpeg', 0.7)}"><span>${name}</span></button>`).join('')}</div>
+    <div class="row sp-nav"><button class="btn" data-sp="x">ยกเลิก</button><button class="btn primary grow" data-sp="go">📤 แชร์ภาพนี้</button></div></div>`;
+  document.body.appendChild(el);
+  const close = () => { el.remove(); document.removeEventListener('keydown', key); };
+  const key = (e) => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', key);
+  el.onclick = async (e) => {
+    const o = e.target.closest('[data-tpl]'), b = e.target.closest('[data-sp]');
+    if (e.target === el) return close();
+    if (o) { tpl = o.dataset.tpl; el.querySelectorAll('[data-tpl]').forEach((x) => x.setAttribute('aria-checked', x === o)); return; }
+    if (!b) return;
+    if (b.dataset.sp === 'x') return close();
+    S.settings.shareTpl = tpl; save(); close();
+    if (await shareCard(build(tpl, art), name, title) && done) done();
+  };
+  const first = el.querySelector('[aria-checked="true"]'); if (first) first.focus();
+}
 async function shareCard(canvas, name, title) {
   const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'));
   if (!blob) return false;
   return saveFile(new File([blob], name, { type: 'image/png' }), title);
 }
-function progressCard() {
+function progressCard(tpl, art) {
   const learned = W.filter((w) => S.prog[w.w]).length, mastered = masteredWords().length;
   return drawCard({
     title: 'ศัพท์ต้องรู้', sub: thDate(Date.now()),
     hero: `🔥 ${streakNow()}`, heroLabel: 'วันติดต่อกัน',
     tiles: [[learned.toLocaleString(), 'คำที่เรียนแล้ว'], [mastered.toLocaleString(), 'คำที่จำได้แล้ว'], ['Lv.' + levelOf(S.xp), (S.xp || 0).toLocaleString() + ' XP'], [ACH.filter((a) => S.ach[a.id]).length, 'เหรียญที่ได้']],
-  });
+  }, tpl, art);
 }
 async function shareProgress() {
-  if (await shareCard(progressCard(), `essential-vocab-${today()}.png`, 'ความก้าวหน้าของฉัน')) toast('บันทึกภาพสรุปแล้ว ✅');
+  await shareWithPicker(progressCard, `essential-vocab-${today()}.png`, 'ความก้าวหน้าของฉัน', () => toast('บันทึกภาพสรุปแล้ว ✅'));
 }
 
 /* ---------- year in review ---------- */
@@ -117,9 +171,9 @@ function renderYear(arg) {
     on('#yNext', () => { i++; show(); });
     on('#yDone', () => go('stats'));
     on('#yShare', async () => {
-      const card = drawCard({ title: `สรุปปี ${s.y + 543}`, sub: 'ศัพท์ต้องรู้', hero: `${s.days}`, heroLabel: 'วันที่มาเรียน',
-        tiles: [[s.longest, 'สตรีคยาวสุด (วัน)'], [s.total.toLocaleString(), 'ข้อที่ทำ'], [s.learned != null ? '+' + s.learned.toLocaleString() : '–', 'คำใหม่'], [s.stories, 'เรื่องสั้นที่อ่าน']] });
-      if (await shareCard(card, `essential-vocab-year-${s.y}.png`, `สรุปปี ${s.y + 543}`)) toast('บันทึกภาพสรุปปีแล้ว ✅');
+      const build = (tpl, art) => drawCard({ title: `สรุปปี ${s.y + 543}`, sub: 'ศัพท์ต้องรู้', hero: `${s.days}`, heroLabel: 'วันที่มาเรียน',
+        tiles: [[s.longest, 'สตรีคยาวสุด (วัน)'], [s.total.toLocaleString(), 'ข้อที่ทำ'], [s.learned != null ? '+' + s.learned.toLocaleString() : '–', 'คำใหม่'], [s.stories, 'เรื่องสั้นที่อ่าน']] }, tpl, art);
+      await shareWithPicker(build, `essential-vocab-year-${s.y}.png`, `สรุปปี ${s.y + 543}`, () => toast('บันทึกภาพสรุปปีแล้ว ✅'));
     });
   };
   show();

@@ -29,6 +29,18 @@ function welcomeBack(plan) {
     <div class="small" style="margin-top:4px">${msg}</div>
     <div class="small muted" style="margin-top:4px">⏸ พักคำใหม่ไว้ชั่วคราวจนกว่าการ์ดค้างจะเหลือไม่เกิน ${BACKLOG_PAUSE} ใบ (ปิดได้ที่ ⚙️ ตั้งค่า → การเรียน)</div></div>`;
 }
+// iPad landscape dashboard (1.117): ≥1000 px wide in landscape, the today card (and น้องคำ) sit in a sticky left panel and the
+// other blocks fill two columns on the right. Turning the iPad re-renders home.
+const DASH_MQ = matchMedia('(min-width: 1000px) and (min-height: 600px) and (orientation: landscape)');
+DASH_MQ.addEventListener && DASH_MQ.addEventListener('change', () => { if (view.dataset.route === 'home') renderHome(); });
+const DASH_SIDE = ['hero', 'mascot'];
+function homeGridHtml(blocks) {
+  const cell = (b) => `<div class="hb hw-${b.w}" data-hb="${b.id}">${b.html}</div>`;
+  const side = DASH_MQ.matches ? blocks.filter((b) => DASH_SIDE.includes(b.id)) : [];
+  if (!side.length) return `<div class="home-grid">${blocks.map(cell).join('')}</div>`;
+  const rest = blocks.filter((b) => !DASH_SIDE.includes(b.id));
+  return `<div class="home-dash"><div class="dash-side">${side.map((b) => cell({ ...b, w: 'full' })).join('')}</div><div class="home-grid">${rest.map(cell).join('')}</div></div>`;
+}
 function renderHome() {
   rollDay();
   const p = pool();
@@ -131,7 +143,7 @@ function renderHome() {
       <div><b>🎯 รู้ศัพท์อยู่แล้วบ้างไหม?</b><div class="small muted">วัดระดับ 3–5 นาที แล้วข้ามคำที่รู้แล้ว</div></div>
       <button class="btn primary" data-pl="go">วัดระดับ</button><button class="x" data-pl="no" aria-label="ไม่ต้อง">✕</button></div>` : ''}
     ${standalone || installHidden() ? '' : `<div class="card-box install-tip slim small" id="installTip">${installTipInner()}</div>`}
-    <div class="home-grid">${blocks.map((b) => `<div class="hb hw-${b.w}" data-hb="${b.id}">${b.html}</div>`).join('')}</div>
+    ${homeGridHtml(blocks)}
     ${blocks.length ? '' : '<div class="card-box center small muted">ซ่อนทุกกล่องอยู่ — เปิดกล่องที่ต้องการได้ที่ ⚙️ ตั้งค่า → จัดหน้าแรก</div>'}
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
   const click = (sel, fn) => { const el = $(sel); if (el) el.onclick = fn; };

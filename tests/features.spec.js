@@ -1085,7 +1085,14 @@ test('1.66: level test (gate, pass, medal), share card, year in review', async (
   await expect.poll(() => page.evaluate(() => !!S.ach.ltA1)).toBe(true); // medals are checked in the batched save
   // share card downloads a PNG
   await page.evaluate(() => go('stats'));
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('#shareProg').click()]);
+  // 1.117: a picker with three templates (previews) comes first
+  await page.locator('#shareProg').click();
+  await expect(page.locator('.share-pick .sp-opt img')).toHaveCount(3);
+  await page.locator('.share-pick [data-tpl="sky"]').click();
+  await expect(page.locator('.share-pick [data-tpl="sky"]')).toHaveAttribute('aria-checked', 'true');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('.share-pick [data-sp="go"]').click()]);
+  await expect(page.locator('.share-pick')).toHaveCount(0);
+  expect(await page.evaluate(() => S.settings.shareTpl)).toBe('sky');
   expect(dl.suggestedFilename()).toMatch(/\.png$/);
   // year in review
   await page.evaluate(() => { const y = new Date().getFullYear(); S.hist[`${y}-02-03`] = 12; S.hist[`${y}-02-04`] = 30; S.chist[`${y}-02-04`] = 10; go('year', y); });
@@ -1531,7 +1538,7 @@ test('wide screens (1.96): home, stats, settings, guide and reference pages pack
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   // number of distinct left edges among the boxes = columns in use
   const cols = (sel) => page.evaluate((s) => new Set([...document.querySelectorAll(s)].filter((e) => e.offsetHeight).map((e) => Math.round(e.getBoundingClientRect().left))).size, sel);
-  for (const [js, sel, min] of [["go('home')", '.home-grid > .hb', 3], ["go('stats')", '#view > *', 2], ["go('settings')", '#view > details', 2],
+  for (const [js, sel, min] of [["go('home')", '.home-grid > .hb, .dash-side > .hb', 3], ["go('stats')", '#view > *', 2], ["go('settings')", '#view > details', 2],
     ["go('guide')", '.g-group > .g-sec', 2], ['renderIrregular()', '#irList .col-row', 2], ['renderPairs()', '.pair-list > .pair-card', 2]]) {
     await page.evaluate(js);
     if (js === "go('guide')") await page.waitForFunction(() => guideOn); // the manual is lazy-loaded
@@ -1762,3 +1769,29 @@ test('games menu by skill (1.106): every game is in exactly one group, chips fil
   expect(errors).toEqual([]);
 });
 
+
+test('iPad landscape home dashboard (1.117): today card + น้องคำ in a sticky side panel, back to one grid in portrait', async ({ page }) => {
+  await page.setViewportSize({ width: 1376, height: 1032 });
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await expect(page.locator('.home-dash .dash-side [data-hb="hero"]')).toHaveCount(1);
+  await expect(page.locator('.home-dash .dash-side [data-hb="mascot"]')).toHaveCount(1);
+  expect(await page.locator('.dash-side').evaluate((e) => getComputedStyle(e).position)).toBe('sticky');
+  await page.setViewportSize({ width: 1032, height: 1376 });
+  await expect(page.locator('.home-dash')).toHaveCount(0);
+  await expect(page.locator('.home-grid [data-hb="hero"]')).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
+test('look 1.117: heading font and glass bar switches, ripple on a right answer', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  expect(await page.locator('#title').evaluate((e) => getComputedStyle(e).fontFamily)).toContain('Anuphan');
+  expect(await page.locator('.tabbar').evaluate((e) => getComputedStyle(e).borderTopLeftRadius)).not.toBe('0px');
+  await page.evaluate(() => { S.settings.headFont = false; S.settings.glassBar = false; applyAnim(); });
+  expect(await page.locator('#title').evaluate((e) => getComputedStyle(e).fontFamily)).not.toContain('Anuphan');
+  expect(await page.locator('.tabbar').evaluate((e) => getComputedStyle(e).borderTopLeftRadius)).toBe('0px');
+  await page.evaluate(() => startGame('en2th'));
+  await page.locator('.opt').first().click();
+  await expect(page.locator('.opt.correct')).toHaveCount(1);
+  expect(await page.locator('.opt.correct').evaluate((e) => getComputedStyle(e, '::after').content)).not.toBe('none');
+  expect(errors).toEqual([]);
+});

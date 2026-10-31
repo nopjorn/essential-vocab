@@ -1746,3 +1746,61 @@ html.no-ans .fx-rise { transform: translateY(-60px); }
   @keyframes stRise { from { transform: scaleY(0); } }
   @keyframes stDraw { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 }
+
+/* ---------- 1.117: heading font, floating glass tab bar, springy presses, right-answer ripple ---------- */
+@font-face { font-family: "Anuphan"; src: url("fonts/anuphan-thai-700.woff2") format("woff2"); font-weight: 600 900; font-display: swap; unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC; }
+:root { --head: "Anuphan", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Sukhumvit Set", "Noto Sans Thai", sans-serif; }
+html:not(.no-hf) :is(.topbar h1, .h2, details.set-group > summary, .quick-btn b, .card-box > b:first-child, .card-box > .row > b:first-child, .face .th, .mascot-card b, .st-h1, .hero .small:first-child, .cel-card h2, .onb h2, .year-slide h2) { font-family: var(--head); letter-spacing: 0; }
+
+/* springy press on the main controls */
+.btn, .quick-btn, .opt, .chip, .tile, .guide-link { transition: transform .32s cubic-bezier(.3, 1.7, .5, 1), background-color .15s, opacity .15s, box-shadow .2s; }
+.btn:active, .quick-btn:active { transform: scale(.95); transition-duration: .08s; }
+.chip:active, .opt:active, .tile:active, .guide-link:active { transition-duration: .08s; }
+/* right answer: a soft green ripple from the touch point */
+.opt { position: relative; overflow: hidden; isolation: isolate; }
+.opt.correct::after { content: ''; position: absolute; z-index: -1; left: var(--rx, 50%); top: var(--ry, 50%); width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; background: color-mix(in srgb, var(--good) 35%, transparent); transform: scale(0); opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: no-preference) {
+  html:not(.no-ans) .opt.correct::after { animation: okRipple .7s ease-out; }
+  @keyframes okRipple { from { transform: scale(0); opacity: 1; } to { transform: scale(28); opacity: 0; } }
+}
+@media (prefers-reduced-motion: reduce) { .btn, .quick-btn, .opt, .chip, .tile, .guide-link { transition: background-color .15s, opacity .15s; } }
+
+/* phones: the tab bar floats as a frosted glass pill */
+@media (max-width: 699.98px) {
+  html:not(.no-glass) .tabbar {
+    left: 10px; right: 10px; bottom: max(8px, calc(env(safe-area-inset-bottom) - 12px)); max-width: 620px;
+    padding: 6px; border-radius: 26px; border: 1px solid color-mix(in srgb, #fff 55%, transparent);
+    background: color-mix(in srgb, var(--surface) 72%, transparent);
+    -webkit-backdrop-filter: saturate(190%) blur(22px); backdrop-filter: saturate(190%) blur(22px);
+    box-shadow: 0 10px 30px -8px rgba(30, 20, 80, .28), inset 0 1px 0 color-mix(in srgb, #fff 70%, transparent), inset 0 -1px 0 rgba(0, 0, 0, .04);
+  }
+  html[data-theme="dark"]:not(.no-glass) .tabbar, html[data-theme="black"]:not(.no-glass) .tabbar { border-color: rgba(255, 255, 255, .12); box-shadow: 0 10px 30px -8px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .1); }
+}
+@media (max-width: 699.98px) and (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]):not(.no-glass) .tabbar { border-color: rgba(255, 255, 255, .12); box-shadow: 0 10px 30px -8px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .1); }
+  html:not(.no-glass) .tabbar button { border-radius: 20px; min-height: 52px; }
+  html:not(.no-glass) .tabbar button.active { background: color-mix(in srgb, var(--primary) 13%, transparent); }
+  html:not(.no-glass) .tabbar button.active .ti { transform: none; }
+  html:not(.no-glass) .tabbar button:active { opacity: 1; transform: scale(.9); }
+}
+
+/* iPad landscape home dashboard (1.117, homeGridHtml in js/home.js): sticky today panel left, blocks in two columns right */
+@media (min-width: 1000px) and (min-height: 600px) and (orientation: landscape) {
+  .home-dash { display: grid; grid-template-columns: minmax(340px, 5fr) 7fr; gap: 16px; align-items: start; margin-bottom: 14px; }
+  .dash-side { position: sticky; top: 4px; display: grid; gap: 12px; }
+  .dash-side .hero { margin-bottom: 0; }
+  .home-dash .home-grid { margin-bottom: 0; }
+  .home-dash .home-grid.masonry { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-dash .home-grid.masonry > .hb.hw-full { grid-column: 1 / -1; }
+}
+
+/* share template picker (1.117, shareWithPicker in js/share.js) */
+.share-pick { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: rgba(20, 14, 50, .45); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.sp-box { width: min(560px, 100%); max-height: 100%; overflow-y: auto; background: var(--surface); color: var(--text); border-radius: 24px; padding: 18px; box-shadow: var(--shadow); }
+.sp-title { display: block; font-size: 18px; margin-bottom: 12px; }
+.sp-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.sp-opt { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px; border: 2px solid transparent; border-radius: 16px; background: var(--surface-2); color: var(--text); font: inherit; font-size: var(--fs-sm); font-weight: 700; }
+.sp-opt img { width: 100%; aspect-ratio: 4 / 5; border-radius: 10px; display: block; box-shadow: 0 2px 8px rgba(0, 0, 0, .15); }
+.sp-opt[aria-checked="true"] { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, var(--surface)); }
+.sp-nav { margin-top: 14px; gap: 10px; }
+@media (max-height: 520px) { .sp-opt img { max-height: 46vh; width: auto; } }
