@@ -8,6 +8,7 @@ const GS_EXTRA = [ // pages that have no tab/sidebar entry: [icon, name, keyword
   ['🔤', 'ปริศนาศัพท์ประจำวัน', 'riddle wordle ทายคำ', 'riddle'],
   ['🗺️', 'แผนที่ด่าน', 'map ด่าน บอส', 'map'],
   ['🐣', 'น้องคำ', 'mascot ตู้เสื้อผ้า กล่องรางวัล', 'mascot'],
+  ['🗺️', 'ผจญภัยประจำสัปดาห์', 'adventure ด่าน ตราประทับ พาสปอร์ต', 'adv'],
   ['🎯', 'วัดระดับ', 'placement ทดสอบระดับ', 'placement'],
   ['🔎', 'ค้นหาคำในตาราง', 'word search ตารางคำ', 'wsearch'],
   ['⚔️', 'ท้าดวลเพื่อน', 'duel', 'duel'],

@@ -3,7 +3,7 @@
 const { test, expect } = require('@playwright/test');
 const { openApp } = require('./helpers');
 
-const ROUTES = ['home', 'cards', 'games', 'list', 'stats', 'settings', 'guide', 'read', 'mascot', 'decks', 'map', 'riddle', 'changelog'];
+const ROUTES = ['home', 'cards', 'games', 'list', 'stats', 'settings', 'guide', 'read', 'mascot', 'decks', 'adv', 'map', 'riddle', 'changelog'];
 const REFS = ['pairs', 'fams', 'syn', 'affix', 'roots', 'ukus', 'phrasal', 'idiom', 'sit', 'irr', 'dprep', 'mis', 'gpat', 'ipa'];
 const now = Date.now();
 const prog = {};
