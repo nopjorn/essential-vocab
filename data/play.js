@@ -135,7 +135,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     }
     else prompt = `<button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:96px;height:96px;font-size:44px;margin:0">🔊</button><div class="muted small" style="margin-top:10px">แตะเพื่อฟังอีกครั้ง</div>${slowBtn(w.w)}`;
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>${prompt}${limit ? `<div class="q-timer" aria-hidden="true"><i style="--t:${limit}s"></i></div>` : ''}</div>
+      <div class="card-box q-prompt fit pop">${lvBadge(w.g)}<div style="height:8px"></div>${prompt}${limit ? `<div class="q-timer" aria-hidden="true"><i style="--t:${limit}s"></i></div>` : ''}</div>
       <div class="options">${opts.map((o) => `<button class="opt" data-i="${o.idx}">${esc(toTh ? o.t : m === 'cloze' ? clozeOpt(o, w) : o.w)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = quit;
@@ -174,7 +174,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   // Dictation of one word: hear it, type all of it (no meaning shown, so it tests ear and spelling together).
   function qDictW(w) {
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+      <div class="card-box q-prompt fit pop">${lvBadge(w.g)}<div style="height:8px"></div>
         <button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:96px;height:96px;font-size:44px;margin:0">🔊</button>
         <div class="muted small" style="margin-top:10px">ฟังแล้วพิมพ์คำที่ได้ยินให้ครบทั้งคำ</div>${slowBtn(w.w)}
         <div style="margin-top:12px;font-size:22px;letter-spacing:4px;font-weight:700" id="hint" aria-live="polite"></div></div>
@@ -220,7 +220,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   function qDictS(w) {
     const target = dictTokens(w.e);
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+      <div class="card-box q-prompt fit pop">${lvBadge(w.g)}<div style="height:8px"></div>
         <button class="speak" data-say aria-label="ฟังประโยค" style="width:76px;height:76px;font-size:34px;margin:0">🔊</button>
         <div>${slowBtn(w.e)}</div>
         <div class="muted small" style="margin-top:10px">ฟังแล้วพิมพ์ประโยคให้ครบ (${target.length} คำ) · ไม่ต้องใส่เครื่องหมายวรรคตอน</div>
@@ -267,7 +267,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   function qSpell(w) {
     const hint = w.w[0] + w.w.slice(1).replace(/[a-zA-Z]/g, '_');
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+      <div class="card-box q-prompt fit pop">${lvBadge(w.g)}<div style="height:8px"></div>
         <div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>
         <div style="margin-top:12px;font-size:22px;letter-spacing:4px;font-weight:700" id="hint">${esc(hint)}</div>
       </div>
@@ -313,7 +313,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     const guessed = new Set([word[0]]), misses = [];
     let answered = false;
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+      <div class="card-box q-prompt fit pop">${lvBadge(w.g)}<div style="height:8px"></div>
         <div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>
         <div class="hg-word" id="hgWord" lang="en" role="img"></div>
         <div class="hg-lives" id="hgLives"></div></div>
@@ -368,7 +368,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     for (let n = 0; n < 8 && (order.every((x, k) => x === k) || order.map((k) => letters[k]).join('') === w.w.toLowerCase()); n++) order = shuffle(order);
     const picked = [];
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+      <div class="card-box q-prompt fit pop">${lvBadge(w.g)}<div style="height:8px"></div>
         <div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)} · ${letters.length} ตัวอักษร</div></div>
       <div class="ord-ans" id="oAns" lang="en"></div>
       <div class="ord-pool" id="oPool" lang="en">${order.map((k) => `<button class="ord-chip" data-k="${k}">${esc(letters[k])}</button>`).join('')}</div>
@@ -413,7 +413,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   function qSpeak(w, sentence) {
     const target = sentence ? w.e : w.w;
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+      <div class="card-box q-prompt fit pop">${lvBadge(w.g)}<div style="height:8px"></div>
         ${sentence ? `<div class="cloze" lang="en">${hlExample(w)}</div><div class="thx" style="margin-top:6px">${esc(w.et)}</div>`
           : `<div class="word" lang="en">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
         <div class="muted" style="margin-top:6px">${esc(w.t)}</div>`}
@@ -473,7 +473,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     const stem = w.w.split(/\s+/)[0].replace(/[^A-Za-z'-]/g, ''), cut = stem.length > 3 ? stem.replace(/(e|y)$/i, '') : stem;
     const re = new RegExp('(^|[^A-Za-z])(' + reEsc(w.w) + '|' + reEsc(cut) + '[A-Za-z]*)(?![A-Za-z])', 'i');
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+      <div class="card-box q-prompt fit pop">${lvBadge(w.g)}<div style="height:8px"></div>
         <div class="small muted">แต่งประโยคภาษาอังกฤษด้วยคำนี้ (อย่างน้อย 3 คำ)</div>
         <div class="word" lang="en" style="margin-top:6px">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>
         <div class="muted" style="margin-top:6px">${esc(w.t)}</div></div>
@@ -519,7 +519,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   function qDict(w) {
     const blank = w.e.replace(clozeRe(w), (all, pre) => pre + '\u0000');
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+      <div class="card-box q-prompt fit pop">${lvBadge(w.g)}<div style="height:8px"></div>
         <button class="speak" data-say aria-label="ฟังประโยค" style="width:76px;height:76px;font-size:34px;margin:0">🔊</button>
         <div>${slowBtn(w.e)}</div>
         <div class="cloze" lang="en" style="margin-top:12px">${esc(blank).replace('\u0000', '<span class="blank" id="hint">_____</span>')}</div>
@@ -570,7 +570,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     for (let n = 0; n < 5 && order.every((x, k) => x === k); n++) order = shuffle(order);
     const picked = [];
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+      <div class="card-box q-prompt fit pop">${lvBadge(w.g)}<div style="height:8px"></div>
         ${th ? `<div class="ord-th">${esc(th)}</div>` : `<div class="small muted">จากเรื่อง <b>${esc(from)}</b></div>`}
         <button class="hint-btn" id="oSay">🔊 ฟังประโยค (ตัวช่วย)</button></div>
       <div class="ord-ans" id="oAns"><span class="muted small">แตะคำด้านล่างเรียงตามลำดับ</span></div>
@@ -612,7 +612,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     const blank = w._s.replace(re, '\u0000');
     const opts = shuffle([w._tok, ...w._opts]);
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop"><div class="small muted">จากเรื่อง <b>${esc(w._st)}</b></div>
+      <div class="card-box q-prompt fit pop"><div class="small muted">จากเรื่อง <b>${esc(w._st)}</b></div>
         <div class="cloze" lang="en" style="margin-top:8px">${esc(blank).replace('\u0000', '<span class="blank">_____</span>')}</div></div>
       <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
@@ -637,7 +637,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   function qColloc(w) {
     const { phrase, th, shown, opts } = collocQ(w);
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop">${lvBadge(w.g)}<div style="height:8px"></div>
+      <div class="card-box q-prompt fit pop">${lvBadge(w.g)}<div style="height:8px"></div>
         <div class="cloze" lang="en">${esc(shown).replace('\u0000', '<span class="blank">_____</span>')}</div>
         <div class="muted" style="margin-top:6px">${esc(th)}</div></div>
       <div class="options">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
@@ -666,7 +666,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     const opts = shuffle([right, bad]);
     const full = sent.replace('___', right);
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop"><div class="small muted">${esc(c.a)} หรือ ${esc(c.b)}?</div>
+      <div class="card-box q-prompt fit pop"><div class="small muted">${esc(c.a)} หรือ ${esc(c.b)}?</div>
         <div class="cloze" lang="en" style="margin-top:8px">${esc(sent).replace('___', '<span class="blank">_____</span>')}</div>
         <button class="hint-btn" id="cHint">💡 ดูคำแปลประโยค</button><div class="thx" id="cTh" hidden>${esc(th)}</div></div>
       <div class="options two">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
@@ -697,7 +697,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     const opts = shuffle([right, ...shuffle(f.f.map((x) => x[0]).filter((x) => x !== right)).slice(0, 3)]);
     const full = sent.replace('___', right);
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop"><div class="small muted">เลือกรูปคำที่เข้ากับประโยค</div>
+      <div class="card-box q-prompt fit pop"><div class="small muted">เลือกรูปคำที่เข้ากับประโยค</div>
         <div class="cloze" lang="en" style="margin-top:8px">${esc(sent).replace('___', '<span class="blank">_____</span>')}</div>
         <button class="hint-btn" id="fHint">💡 ดูคำแปลประโยค</button><div class="thx" id="fTh" hidden>${esc(th)}</div></div>
       <div class="options${opts.length === 2 ? ' two' : ''}">${opts.map((o) => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
@@ -1081,7 +1081,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   function qNum(w) {
     const n = w._num, opts = shuffle([n.right, ...n.opts]);
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop"><span class="pos">${NUM_KINDS[n.kind]}</span><div style="height:8px"></div>
+      <div class="card-box q-prompt fit pop"><span class="pos">${NUM_KINDS[n.kind]}</span><div style="height:8px"></div>
         <button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:96px;height:96px;font-size:44px;margin:0">🔊</button>
         <div class="muted small" style="margin-top:10px">ได้ยินเป็นอะไร? แตะเพื่อฟังอีกครั้ง</div>${slowBtn(n.say)}</div>
       <div class="options two">${opts.map((o) => `<button class="opt mp" data-o="${esc(o)}"><b>${esc(o)}</b></button>`).join('')}</div>
@@ -1112,7 +1112,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     const target = Math.random() < 0.5 ? a : b;
     const ipa = (x) => { const e = WORD_BY[x]; return e && e.i ? ` <span class="muted">${esc(e.i)}</span>` : ''; };
     view.innerHTML = `${header()}
-      <div class="card-box q-prompt pop">
+      <div class="card-box q-prompt fit pop">
         <button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:96px;height:96px;font-size:44px;margin:0">🔊</button>
         <div class="muted small" style="margin-top:10px">ได้ยินคำไหน? แตะเพื่อฟังอีกครั้ง</div>${slowBtn(target)}</div>
       <div class="options two">${[[a, aTh], [b, bTh]].map(([x, t]) => `<button class="opt mp" data-o="${esc(x)}"><b>${esc(x)}</b><small>${esc(t)}</small></button>`).join('')}</div>
