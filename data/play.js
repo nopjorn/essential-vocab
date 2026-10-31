@@ -37,7 +37,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       $('#title').textContent = `${GNAME} · ข้อ ${i + 1}`;
       const bar = TIMED ? timeLeft / TIME_LIMIT * 100 : SURV ? asked % 5 * 20 : combo % 10 * 10;
       return `<div class="session-top">
-      <button class="icon-btn" id="quit" aria-label="จบรอบ">✕</button>
+      <button class="icon-btn" id="quit" aria-label="จบรอบ">✕</button>${qmHtml()}
       <div class="progress"><div id="tBar" style="width:${bar}%"></div></div>
       <span class="small" id="runStat">${runStat()}</span></div>`;
     }
@@ -52,12 +52,19 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     }
     if (i < items.length) $('#title').textContent = `${GNAME} · ${i + 1}/${items.length}`;
     return `<div class="session-top">
-      <button class="icon-btn" id="quit" aria-label="ออก">✕</button>
+      <button class="icon-btn" id="quit" aria-label="ออก">✕</button>${qmHtml()}
       <div class="progress"><div style="width:${i / items.length * 100}%"></div></div>
       <span class="small"><b>${score}</b> แต้ม</span></div>`;
   }
 
   const quit = () => (ENDLESS && asked ? result() : leave());
+  // น้องคำ in the corner of the question header (1.115, settings.qMascot): cheers a right answer, looks sad on a wrong one.
+  let lastOk = null;
+  const qmHtml = (anim = '') => (S.settings.qMascot !== false ? `<span class="q-m${anim}" aria-hidden="true">${mascotSvg({ mood: lastOk == null ? 'normal' : lastOk ? 'happy' : 'miss', size: 42, equip: festEquip().equip })}</span>` : '');
+  function qmReact(ok) {
+    lastOk = ok;
+    const el = view.querySelector('.q-m'); if (el) el.outerHTML = qmHtml(ok ? ' yay' : ' oops');
+  }
   // Survival: the level climbs every 5 questions (A1 → C1); falls back to the nearest level the word source has.
   function survivalPick() {
     const want = Math.min(LEVELS.length - 1, Math.floor(i / 5));
@@ -1150,6 +1157,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     sfx(ok ? 'ok' : 'bad');
     if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); S.counts.maxCombo = Math.max(S.counts.maxCombo || 0, combo); score += 10 + Math.min(combo - 1, 5) * 2; addXP(comboXP(combo)); if (combo >= 5 && combo % 5 === 0) mascotCheer(combo); }
     else { combo = 0; wrong.push(w); if (SURV || BOSS) hearts--; }
+    qmReact(ok);
   }
   function next() { if ((SURV || BOSS) && hearts <= 0) return result(); i++; q(); }
 

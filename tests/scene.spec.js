@@ -30,7 +30,7 @@ test('home hero: theme colours by default with the scene, time mode paints the s
   const hero = page.locator('.hero');
   await expect(hero).toHaveClass(/sky-art/);
   await expect(hero).not.toHaveClass(/sky-time/);
-  await expect(hero.locator('.hero-scene svg')).toHaveCount(3); // sky, hills, palm (evening)
+  await expect(hero.locator('.hero-scene > svg')).toHaveCount(3); // sky, hills, palm (evening)
   await expect(hero.locator('.ring-disc')).toHaveCount(1);
   expect(await page.locator('.hero .small').first().innerText()).toContain('สวัสดีตอนเย็น');
   // time mode
@@ -92,5 +92,36 @@ test('main colour follows the time of day (palAuto): palette per sky, picking a 
   expect(st.palAuto).toBe(false); expect(st.palette).toBe('mint');
   await page.locator('label.switch:has(#palAuto)').click();
   expect(await pal()).toBe('sakura');
+  expect(errors).toEqual([]);
+});
+
+test('festive sky (1.115): every event draws its layer, mascot tries the costume on, switch turns both off', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  for (const id of await page.evaluate(() => EVENTS.map((e) => e.id))) {
+    await page.evaluate((id) => { window.eventOn = () => EVENTS.find((e) => e.id === id); go('home'); }, id);
+    await expect(page.locator(`.hero .fest.fest-${id}`), id).toHaveCount(1);
+    await expect(page.locator('.hero.fest-on')).toHaveCount(1);
+  }
+  await page.evaluate(() => { window.eventOn = () => EVENTS.find((e) => e.id === 'halloween'); go('home'); });
+  expect(await page.evaluate(() => festEquip({}).equip.head)).toBe('pumpkin');
+  await expect(page.locator('.mascot-card .m-fest')).toContainText('ชั่วคราว');
+  await page.evaluate(() => { S.settings.fest = false; go('home'); });
+  await expect(page.locator('.hero .fest')).toHaveCount(0);
+  expect(await page.evaluate(() => festEquip({}).equip.head)).toBeUndefined();
+  await page.evaluate(() => { window.eventOn = () => null; S.settings.fest = true; go('home'); });
+  await expect(page.locator('.hero .fest')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('น้องคำ in the game header (1.115): happy after a right answer, sad after a wrong one, can be switched off', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => startGame('en2th'));
+  await expect(page.locator('.session-top .q-m .mascot')).toHaveCount(1);
+  await page.locator('.opt').first().click();
+  const label = await page.locator('.session-top .q-m .mascot').getAttribute('aria-label');
+  expect(label).toMatch(/ดีใจ|คิดถึง/);
+  expect(await page.locator('.q-m.yay, .q-m.oops').count()).toBe(1);
+  await page.evaluate(() => { S.settings.qMascot = false; startGame('en2th'); });
+  await expect(page.locator('.q-m')).toHaveCount(0);
   expect(errors).toEqual([]);
 });

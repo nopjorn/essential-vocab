@@ -1661,3 +1661,49 @@ html.no-ans .dance, html.no-ans .confetti.burst i { animation: none; }
 @media (min-width: 1200px) and (min-height: 600px) {
   .view:has(> .q-prompt) > .q-prompt, .view:has(> .q-prompt) > .q-prompt.fit { min-height: min(62dvh, 560px); max-height: none; gap: 14px; }
 }
+
+/* ---------- 1.115: festive sky (js/scene.js festScene) + lively น้องคำ ---------- */
+.fest, .fest svg { position: absolute; pointer-events: none; }
+.fest { inset: 0; }
+.fx-sky { left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
+.fx-prop { left: 42%; top: 17%; height: 58px; aspect-ratio: 2 / 1; }
+.hb.hw-half .fx-prop { display: none; }
+.fest g[class^="fx-"], .fest .fx-fall, .fest .fx-rise { transform-box: view-box; }
+.fx-glow { filter: drop-shadow(0 0 3px #ffd34d); }
+@media (prefers-reduced-motion: no-preference) {
+  html:not(.no-ans) .fx-fall { animation: fxFall 9s linear infinite; }
+  html:not(.no-ans) .fx-rise { animation: fxRise 12s linear infinite; }
+  html:not(.no-ans) .fx-bat { animation: fxBat 5s ease-in-out infinite alternate; }
+  html:not(.no-ans) .fx-bat .fx-wing { animation: fxFlap .35s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+  html:not(.no-ans) .fx-burst { animation: fxBurst 3.6s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+  html:not(.no-ans) .fx-swing { animation: fxSwing 3.2s ease-in-out infinite alternate; transform-origin: 0 -30px; }
+  html:not(.no-ans) .fx-tw, html:not(.no-ans) .fx-tw2 { animation: skyTwinkle 3s ease-in-out infinite; }
+  html:not(.no-ans) .fx-glow { animation: fxGlow 2.4s ease-in-out infinite alternate; }
+  @keyframes fxFall { from { transform: translate(0, -30px); } 50% { transform: translate(8px, 160px); } to { transform: translate(0, 330px); } }
+  @keyframes fxRise { from { transform: translateY(80px); opacity: 0; } 15% { opacity: 1; } 85% { opacity: .9; } to { transform: translateY(-300px); opacity: 0; } }
+  @keyframes fxBat { from { transform: translate(-16px, 6px); } to { transform: translate(18px, -8px); } }
+  @keyframes fxFlap { from { transform: scaleY(1); } to { transform: scaleY(.35); } }
+  @keyframes fxBurst { 0% { transform: scale(.1); opacity: 0; } 12% { opacity: 1; } 55% { transform: scale(1); opacity: .9; } 80%, 100% { transform: scale(1.15); opacity: 0; } }
+  @keyframes fxSwing { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
+  @keyframes fxGlow { from { opacity: .7; } to { opacity: 1; } }
+}
+/* without motion the falling/rising things still sit somewhere visible */
+@media (prefers-reduced-motion: reduce) { .fx-fall { transform: translateY(90px); } .fx-rise { transform: translateY(-60px); } .fx-burst { opacity: .8; } }
+html.no-ans .fx-fall { transform: translateY(90px); }
+html.no-ans .fx-rise { transform: translateY(-60px); }
+.m-fest { margin: -4px 0 8px; }
+
+/* น้องคำ breathes and blinks; the game header one jumps on a right answer and droops on a wrong one */
+.mascot .m-live { transform-box: fill-box; transform-origin: 50% 100%; }
+.mascot .m-eyes { transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: no-preference) {
+  html:not(.no-ans) .mascot .m-live { animation: mBreathe 3.6s ease-in-out infinite; }
+  html:not(.no-ans) .mascot .m-eyes { animation: mBlink 5.2s infinite; }
+  html:not(.no-ans) .q-m.yay .mascot { animation: mYay .55s cubic-bezier(.3, 1.6, .5, 1); }
+  html:not(.no-ans) .q-m.oops .mascot { animation: mOops .5s ease-in-out; }
+  @keyframes mBreathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.025, .975); } }
+  @keyframes mBlink { 0%, 93%, 100% { transform: scaleY(1); } 95.5% { transform: scaleY(.12); } }
+  @keyframes mYay { 0% { transform: translateY(0) scale(1); } 40% { transform: translateY(-9px) scale(1.12) rotate(-6deg); } 100% { transform: none; } }
+  @keyframes mOops { 0%, 100% { transform: none; } 25% { transform: translateX(-3px) rotate(-6deg); } 75% { transform: translateX(3px) rotate(6deg); } }
+}
+.q-m { flex: none; line-height: 0; margin: -6px -4px -6px -2px; }

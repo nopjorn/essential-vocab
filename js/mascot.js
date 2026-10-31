@@ -98,13 +98,21 @@ function mascotSvg({ mood = 'normal', size = 96, equip = S.mascot && S.mascot.eq
   const body = { garland: '<g stroke="#fff" stroke-width="1.2"><circle cx="40" cy="82" r="5" fill="#ff6b9b"/><circle cx="50" cy="86" r="5" fill="#ffd34d"/><circle cx="60" cy="88" r="5" fill="#ff8c42"/><circle cx="70" cy="86" r="5" fill="#ffd34d"/><circle cx="80" cy="82" r="5" fill="#ff6b9b"/></g>', compass: '<path d="M52 82l8 12 8-12" fill="none" stroke="#8f6a33" stroke-width="2.2" stroke-linecap="round"/><circle cx="60" cy="100" r="9" fill="#ffd34d" stroke="#d9a400" stroke-width="2.5"/><circle cx="60" cy="100" r="5.6" fill="#fff"/><path d="M60 95l2.6 5-2.6 5-2.6-5z" fill="#e8504a"/><path d="M60 95l2.6 5h-5.2z" fill="#4a90e8"/>', redpacket: '<path d="M48 82q12 9 24 0" stroke="#ffd34d" stroke-width="2.4" fill="none" stroke-linecap="round"/><rect x="50" y="88" width="20" height="26" rx="3" fill="#e8504a" stroke="#b8312d" stroke-width="2"/><path d="M50 92l10 7 10-7" stroke="#b8312d" stroke-width="1.8" fill="none"/><circle cx="60" cy="102" r="4.2" fill="#ffd34d" stroke="#d9a400" stroke-width="1.5"/>', jasmine: '<g stroke="#c9c2e8" stroke-width="1.2"><circle cx="40" cy="82" r="5" fill="#fff"/><circle cx="50" cy="86" r="5" fill="#fff"/><circle cx="60" cy="88" r="5" fill="#fff"/><circle cx="70" cy="86" r="5" fill="#fff"/><circle cx="80" cy="82" r="5" fill="#fff"/></g><g fill="#ffd34d"><circle cx="40" cy="82" r="1.6"/><circle cx="50" cy="86" r="1.6"/><circle cx="60" cy="88" r="1.6"/><circle cx="70" cy="86" r="1.6"/><circle cx="80" cy="82" r="1.6"/></g>', bow: '<path d="M60 84l-14-8v14zM60 84l14-8v14z" fill="#ff6b9b"/><circle cx="60" cy="84" r="4" fill="#e04c80"/>', medal: '<path d="M52 82l8 14 8-14" fill="#4a90e8" stroke="#2f6bbd" stroke-width="2" stroke-linejoin="round"/><circle cx="60" cy="98" r="8" fill="#ffd34d" stroke="#d9a400" stroke-width="2.5"/><path d="M60 93l2 4 4 .6-3 3 .8 4.2-3.8-2-3.8 2 .8-4.2-3-3 4-.6z" fill="#d9a400"/>' }[(eq.body || '')] || '';
   const cape = eq.body === 'cape' ? '<path d="M34 50Q20 80 24 98q18-8 36-6 18-2 36 6 4-18-10-48z" fill="#e8504a" opacity=".95"/>' : '';
   return `<svg class="mascot" viewBox="-6 -12 132 136" width="${size}" height="${size}" role="img" aria-label="น้องคำ มาสคอต อารมณ์${{ happy: 'ดีใจ', normal: 'ปกติ', miss: 'คิดถึง', sleepy: 'ง่วง' }[mood]}">
-    ${aura}${cape}
+    ${aura}<g class="m-live">${cape}
     <path d="M30 30Q30 18 44 18H78Q92 18 92 32V70Q92 84 78 84H54L38 102L40 84Q30 82 30 70Z" fill="var(--primary-2)" stroke="var(--primary)" stroke-width="3.5" stroke-linejoin="round"/>
     <ellipse cx="46" cy="28" rx="12" ry="5" fill="#fff" opacity=".3"/>
     <ellipse cx="42" cy="60" rx="5.5" ry="3.5" fill="#ff8fa3" opacity=".6"/><ellipse cx="78" cy="60" rx="5.5" ry="3.5" fill="#ff8fa3" opacity=".6"/>
-    ${eyes}${face}${mouth}${body}${head}${sprout}${extra}
-    <ellipse cx="46" cy="104" rx="9" ry="4" fill="var(--primary)" opacity=".85"/><ellipse cx="74" cy="104" rx="9" ry="4" fill="var(--primary)" opacity=".85"/>
+    <g class="m-eyes">${eyes}</g>${face}${mouth}${body}${head}${sprout}${extra}
+    <ellipse cx="46" cy="104" rx="9" ry="4" fill="var(--primary)" opacity=".85"/><ellipse cx="74" cy="104" rx="9" ry="4" fill="var(--primary)" opacity=".85"/></g>
   </svg>`;
+}
+
+// Seasonal costume (1.115): while an event is on (settings.fest), น้องคำ tries its item on, in its slot, until the event ends.
+// Passing the event quiz keeps the item for good (wardrobe). Returns the equip to draw and the event (or null).
+function festEquip(eq = S.mascot && S.mascot.equip) {
+  const e = typeof festOn === 'function' ? festOn() : null, it = e && ITEMS.find((x) => x.id === e.item);
+  if (!it) return { equip: eq, e: null };
+  return { equip: { ...(eq || {}), [it.slot]: it.id.slice(4) }, e, it };
 }
 
 /* ---------- mystery box (once a day, when the goal ring is closed) ---------- */
@@ -134,7 +142,7 @@ function mascotPop(text, moods = ['happy'], ms = 2400) {
   clearTimeout(mascotPopTimer);
   const el = document.createElement('div');
   el.className = 'm-cheer'; el.setAttribute('aria-hidden', 'true');
-  const paint = (mood) => { el.innerHTML = `<div class="m-say">${text}</div>${mascotSvg({ mood, size: 72 })}`; };
+  const paint = (mood) => { el.innerHTML = `<div class="m-say">${text}</div>${mascotSvg({ mood, size: 72, equip: festEquip().equip })}`; };
   paint(moods[0]);
   document.body.appendChild(el);
   if (moods[1]) setTimeout(() => { if (el.isConnected) paint(moods[1]); }, 1100);
@@ -170,8 +178,10 @@ function emptyArt({ kind = 'empty', title, sub = '', btn = '', go = '', sm = fal
 function mascotCard() {
   const mood = mascotMood(), st = mascotStage();
   const box = boxReady() ? '<button class="btn primary" id="boxOpen">🎁 เปิดกล่องรางวัลวันนี้</button>' : S.box && S.box.date === today() ? `<div class="small muted">🎁 วันนี้ได้: ${esc(S.box.got)}</div>` : '';
-  return `<div class="card-box mascot-card"><button class="mascot-pic" data-go="mascot" aria-label="แต่งตัวน้องคำ">${mascotSvg({ mood, size: 88 })}</button>
-    <div class="grow"><b>น้องคำ <span class="small muted">· ${st.name}</span></b><div class="small" style="margin:2px 0 8px">${mascotSay(mood)}</div>
+  const fe = festEquip(), kept = fe.e && (S.owned || []).includes(fe.it.id);
+  const festLine = fe.e ? `<div class="small muted m-fest">${fe.it.ic} ใส่ชุด${fe.e.name}${kept ? '' : ' ชั่วคราว · ผ่านควิซกิจกรรมเพื่อเก็บไว้ตลอด'}</div>` : '';
+  return `<div class="card-box mascot-card"><button class="mascot-pic" data-go="mascot" aria-label="แต่งตัวน้องคำ">${mascotSvg({ mood, size: 88, equip: fe.equip })}</button>
+    <div class="grow"><b>น้องคำ <span class="small muted">· ${st.name}</span></b><div class="small" style="margin:2px 0 8px">${mascotSay(mood)}</div>${festLine}
     ${box}</div></div>`;
 }
 function renderMascot() {

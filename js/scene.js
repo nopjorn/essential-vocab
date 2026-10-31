@@ -56,8 +56,8 @@ function skyVars(id, time) {
 function heroSky() {
   const time = S.settings.heroBg === 'time', art = S.settings.heroArt !== false;
   if (!time && !art) return { cls: '', style: '', scene: '', disc: '' };
-  const id = skyId();
-  return { cls: ` sk-${id}${time ? ' sky-time' : ''}${art ? ' sky-art' : ''}`, style: ` style="${skyVars(id, time)}"`, scene: art ? skyScene(id) : '', disc: art ? '<i class="ring-disc" aria-hidden="true"></i>' : '' };
+  const id = skyId(), fe = art ? festOn() : null, fx = fe ? festScene(fe) : '';
+  return { cls: ` sk-${id}${time ? ' sky-time' : ''}${art ? ' sky-art' : ''}${fx ? ' fest-on' : ''}`, style: ` style="${skyVars(id, time)}"`, scene: art ? skyScene(id).replace(/<\/div>$/, `${fx}</div>`) : '', disc: art ? '<i class="ring-disc" aria-hidden="true"></i>' : '' };
 }
 // Settings: a small card per time of day (always the full time-of-day look) so every sky can be seen.
 function skyGallery() {
@@ -66,4 +66,48 @@ function skyGallery() {
     const k = SKY[id];
     return `<div class="sk-mini sk-${id}${id === now ? ' now' : ''}" role="listitem" style="${skyVars(id, true)}">${skyScene(id)}<i class="ring-disc" aria-hidden="true"></i><div class="sk-cap"><b>${k.emo} ${k.name}</b><span>${k.hrs}</span>${id === now ? '<em class="sk-now">ตอนนี้</em>' : ''}</div></div>`;
   }).join('')}</div>`;
+}
+
+/* ---------- festive sky (1.115) ---------- */
+// While a seasonal event (js/events.js) is on, the hero sky gets an extra hand-drawn layer: bats and jack-o'-lanterns,
+// rising sky lanterns and a krathong, water drops, snow and a tree, fireworks, hearts, red lanterns, jasmine.
+// settings.fest (default on) also lets น้องคำ try the event costume on (festEquip in js/mascot.js). Decorative only (aria-hidden).
+const festOn = () => (S.settings.fest !== false && typeof eventOn === 'function' ? eventOn() : null);
+function festRand(seed) { let s = seed; return () => (s = (s * 1664525 + 1013904223) % 4294967296) / 4294967296; }
+// n moving things spread across the sky: f(x, y, size, delay, duration) → markup
+function festMany(n, seed, f) {
+  const r = festRand(seed);
+  let out = '';
+  for (let i = 0; i < n; i++) out += f((r() * 390 + 5).toFixed(0), (r() * 200).toFixed(0), 0.6 + r() * 0.7, (r() * 8).toFixed(1), (6 + r() * 6).toFixed(1));
+  return out;
+}
+const FX_A = (cls, x, y, s, d, t, inner) => `<g transform="translate(${x} ${y})"><g class="${cls}" style="animation-delay:-${d}s;animation-duration:${t}s"><g transform="scale(${s.toFixed(2)})">${inner}</g></g></g>`;
+const FX_HEART = '<path d="M0 6C-9-1-6-9 0-4 6-9 9-1 0 6z"/>';
+const FX_FLOWER = '<g fill="#fff"><circle cx="0" cy="-3.2" r="2.6"/><circle cx="3" cy="-1" r="2.6"/><circle cx="1.9" cy="2.6" r="2.6"/><circle cx="-1.9" cy="2.6" r="2.6"/><circle cx="-3" cy="-1" r="2.6"/></g><circle r="1.4" fill="#ffd34d"/>';
+const FX_BAT = '<path class="fx-wing" d="M0 0C-4-4-10-5-15-2-12-1-11 1-12 3-9 1-6 2-5 4-3 2-1 2 0 3 1 2 3 2 5 4 6 2 9 1 12 3 11 1 12-1 15-2 10-5 4-4 0 0z"/>';
+const FX_LANTERN = '<path d="M-6-9h12l-2 16h-8z" fill="#ffb347"/><path d="M-4 7h8" stroke="#ffe08a" stroke-width="2"/><ellipse cy="5" rx="3" ry="2" fill="#fff3b0"/>';
+const FX_DROP = '<path d="M0-7C3-2 5 1 5 3A5 5 0 0 1-5 3C-5 1-3-2 0-7z" fill="#bfe8ff" stroke="#fff" stroke-width=".8" opacity=".9"/>';
+const FX_BURST = (c) => `<g stroke="${c}" stroke-width="2" stroke-linecap="round">${Array.from({ length: 12 }, (_, i) => { const a = i * Math.PI / 6, x1 = (Math.cos(a) * 6).toFixed(1), y1 = (Math.sin(a) * 6).toFixed(1), x2 = (Math.cos(a) * 20).toFixed(1), y2 = (Math.sin(a) * 20).toFixed(1); return `<path d="M${x1} ${y1}L${x2} ${y2}"/>`; }).join('')}</g><circle r="2.5" fill="#fff"/>`;
+const FX_REDLANTERN = '<path d="M0-30V-12" stroke="#ffd34d" stroke-width="1.6"/><rect x="-5" y="-14" width="10" height="4" rx="1" fill="#d9a400"/><ellipse rx="15" ry="12" fill="#e8322d"/><path d="M-9-10Q-14 0-9 10M0-12V12M9-10Q14 0 9 10" stroke="#b81f1b" stroke-width="1.4" fill="none"/><rect x="-5" y="10" width="10" height="4" rx="1" fill="#d9a400"/><path d="M-2 14v10M0 14v12M2 14v10" stroke="#ffd34d" stroke-width="1.2"/>';
+const FEST_SKY = {
+  halloween: () => [[300, 34, 1.5], [340, 60, 1.1], [100, 44, 1.2], [200, 24, .9]].map(([x, y, s], i) => FX_A('fx-bat', x, y, s, i * 1.3, 4 + i, `<g fill="#1b1030">${FX_BAT}</g>`)).join(''),
+  loy: () => festMany(12, 31, (x, y, s, d, t) => FX_A('fx-rise', x, +y + 80, s * 1.6, d * 2, +t + 8, FX_LANTERN)),
+  songkran: () => festMany(18, 47, (x, y, s, d, t) => FX_A('fx-fall', x, -20, s * 1.2, d, +t / 2, FX_DROP)),
+  christmas: () => festMany(34, 59, (x, y, s, d, t) => FX_A('fx-fall', x, -10, s, d, t, `<circle r="${(1.4 + s).toFixed(1)}" fill="#fff" opacity=".9"/>`)),
+  newyear: () => [[300, 46, 1, '#ffd34d'], [356, 92, .7, '#ff8fb8'], [70, 40, .8, '#8fe0ff'], [230, 80, .6, '#b6ff8f']].map(([x, y, s, c], i) => FX_A('fx-burst', x, y, s, i * 0.9, 3.6, FX_BURST(c))).join(''),
+  valentine: () => festMany(12, 71, (x, y, s, d, t) => FX_A('fx-rise', x, +y + 80, s, d, t, `<g fill="${+x % 2 ? '#ff5c8a' : '#ff9cc0'}" opacity=".9">${FX_HEART}</g>`)),
+  cny: () => [[236, 30, .8], [380, 34, .9]].map(([x, y, s], i) => FX_A('fx-swing', x, y, s, i * 1.1, 3.2, FX_REDLANTERN)).join('') + festMany(10, 83, (x, y, s, d, t) => FX_A('fx-tw', x, y, s, d, 3, '<path d="M0-4L1 -1 4 0 1 1 0 4-1 1-4 0-1-1z" fill="#ffd34d"/>')),
+  mother: () => festMany(14, 97, (x, y, s, d, t) => FX_A('fx-fall fx-sway', x, -12, s * 0.9, d, +t + 3, FX_FLOWER)),
+};
+// A prop in the open space between the big number and the goal ring (viewBox 120×60).
+const FEST_GROUND = {
+  halloween: '<g transform="translate(26 44)"><ellipse rx="17" ry="13" fill="#f28c28" stroke="#b85c0c" stroke-width="2"/><path d="M0-13q-5 13 0 26M-9-11q-6 11 0 23M9-11q6 11 0 23" stroke="#b85c0c" stroke-width="1.5" fill="none"/><path d="M-1-13q1-6 5-7" stroke="#3f6d2a" stroke-width="3" stroke-linecap="round" fill="none"/><g class="fx-glow" fill="#ffe36b"><path d="M-10-4l4-4 3 4zM10-4l-4-4-3 4zM-9 4q9 8 18 0l-3 2-3-2-3 2-3-2-3 2z"/></g></g><g transform="translate(58 50) scale(.62)"><ellipse rx="17" ry="13" fill="#e9761b" stroke="#b85c0c" stroke-width="2"/><path d="M-1-13q1-6 5-7" stroke="#3f6d2a" stroke-width="3" stroke-linecap="round" fill="none"/><g class="fx-glow" fill="#ffe36b"><circle cx="-6" cy="-3" r="3"/><circle cx="6" cy="-3" r="3"/><path d="M-7 5q7 5 14 0z"/></g></g>',
+  loy: '<g transform="translate(34 48)"><path d="M-22 4q22 10 44 0l-4 6h-36z" fill="#3f8f4f"/><path d="M-18 4l4-10 4 8 4-11 4 11 4-8 4 10z" fill="#5fbf6a" stroke="#2f7a3e" stroke-width="1"/><circle cx="-8" cy="-4" r="3" fill="#ffd34d"/><circle cx="8" cy="-4" r="3" fill="#ff8fb8"/><path d="M0-6v-12" stroke="#fff" stroke-width="2.4"/><path class="fx-glow" d="M0-24q-3 3 0 6 3-3 0-6z" fill="#ffd34d"/></g><path d="M0 58q30-6 60 0t60 0" stroke="rgba(255,255,255,.45)" stroke-width="2" fill="none"/>',
+  songkran: '<g transform="translate(30 46)"><path d="M-18-6h36l-5 16h-26z" fill="#d7dbe6" stroke="#9aa3b2" stroke-width="1.6"/><path d="M-18-6h36" stroke="#eef1f8" stroke-width="3"/><ellipse cy="-6" rx="16" ry="3" fill="#8fd3ff"/><path d="M-6-12q2-6 6-10M4-12q3-5 8-8" stroke="#bfe8ff" stroke-width="2" stroke-linecap="round" fill="none"/></g>',
+  christmas: '<g transform="translate(30 58)"><path d="M0-52l14 20h-6l12 16h-7l13 16h-52l13-16h-7l12-16h-6z" fill="#2f8a5a" stroke="#1f6a42" stroke-width="1.5" stroke-linejoin="round"/><rect x="-4" y="0" width="8" height="2" fill="#7a4a2a"/><path class="fx-glow" d="M0-58l2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1z" fill="#ffd34d"/><g class="fx-tw2"><circle cx="-6" cy="-30" r="2" fill="#ff5c5c"/><circle cx="7" cy="-20" r="2" fill="#ffd34d"/><circle cx="-10" cy="-10" r="2" fill="#5cb8ff"/><circle cx="12" cy="-6" r="2" fill="#ff8fb8"/></g></g>',
+};
+function festScene(e) {
+  const sky = FEST_SKY[e.id], ground = FEST_GROUND[e.id];
+  if (!sky && !ground) return '';
+  return `<div class="fest fest-${e.id}" aria-hidden="true">${sky ? `<svg class="fx-sky" viewBox="0 0 400 300" preserveAspectRatio="xMidYMin slice" focusable="false">${sky()}</svg>` : ''}${ground ? `<svg class="fx-prop" viewBox="0 0 120 60" focusable="false">${ground}</svg>` : ''}</div>`;
 }

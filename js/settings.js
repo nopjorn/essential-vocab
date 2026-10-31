@@ -94,6 +94,10 @@ function renderSettings() {
         <div class="seg" id="heroBg" role="group" aria-label="พื้นหลังการ์ดวันนี้">${[['theme', '🎨 ตามธีม'], ['time', '🕒 ตามเวลา']].map(([v, t]) => `<button class="${(st.heroBg === 'time' ? 'time' : 'theme') === v ? 'on' : ''}" data-v="${v}" aria-pressed="${(st.heroBg === 'time' ? 'time' : 'theme') === v}">${t}</button>`).join('')}</div></div>
       <div class="set-row"><span>🖼️ ภาพวาดพื้นหลัง<br><span class="small muted">ท้องฟ้า เมฆ ภูเขา พระอาทิตย์/พระจันทร์ที่วงแหวนวนรอบ (วาดเอง เปลี่ยนตามช่วงเวลา)</span></span>
         <label class="switch"><input type="checkbox" id="heroArt" aria-label="ภาพวาดพื้นหลังการ์ดวันนี้" ${st.heroArt !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>🎃 ฉากเทศกาล<br><span class="small muted">ช่วงกิจกรรมเทศกาล ท้องฟ้ามีค้างคาว โคมลอย หิมะ พลุ ฯลฯ และน้องคำใส่ชุดเทศกาลให้ลองก่อน</span></span>
+        <label class="switch"><input type="checkbox" id="festSky" aria-label="ฉากเทศกาล" ${st.fest !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>🐣 น้องคำในเกม<br><span class="small muted">น้องคำนั่งมุมบนตอนเล่นเกม ดีใจเมื่อตอบถูก เศร้านิดๆ เมื่อตอบผิด</span></span>
+        <label class="switch"><input type="checkbox" id="qMascot" aria-label="น้องคำในเกม" ${st.qMascot !== false ? 'checked' : ''}><span></span></label></div>
       <details class="sky-more"><summary class="small muted">ดูท้องฟ้าทั้ง 6 ช่วงเวลา (เช้า สาย บ่าย เย็น มืด ดึก)</summary>${skyGallery()}</details>
       <div class="set-row" style="flex-wrap:wrap"><span>📱 ไอคอนแอป<br><span class="small muted" id="icoName"></span></span>
         <div class="pal ico" id="iconPick" role="group" aria-label="ไอคอนแอป">${ICONS.map(([id, name]) => `<button data-i="${id}" aria-label="ไอคอน${name}" aria-pressed="${(st.icon || 'purple') === id}" class="${(st.icon || 'purple') === id ? 'on' : ''}"><img src="${iconSrc(id)}" alt="" width="44" height="44"></button>`).join('')}</div></div>
@@ -249,6 +253,8 @@ function renderSettings() {
     view.querySelectorAll('#heroBg button').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
   };
   $('#heroArt').onchange = (e) => { st.heroArt = e.target.checked; save(); };
+  $('#festSky').onchange = (e) => { st.fest = e.target.checked; save(); };
+  $('#qMascot').onchange = (e) => { st.qMascot = e.target.checked; save(); };
   $('#palette').onclick = (e) => {
     const b = e.target.closest('[data-p]'); if (!b) return;
     st.palette = b.dataset.p; st.palAuto = false; $('#palAuto').checked = false; save(); applyTheme(); palName();
