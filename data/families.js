@@ -779,4 +779,717 @@ window.FAMILIES = [
   { f: [['mix', 'v', 'ผสม'], ['mixture', 'n', 'ส่วนผสม'], ['mixed', 'adj', 'ผสม, ปนกัน']], q: [
     ['Pour the ___ into a baking dish.', 'mixture', 'เทส่วนผสมลงในถาดอบ'],
   ] },
+  { f: [['absorb', 'v', 'ดูดซับ'], ['absorption', 'n', 'การดูดซับ'], ['absorbent', 'adj', 'ซึมซับได้ดี']], q: [
+    ['Use an ___ cloth to wipe up the spill.', 'absorbent', 'ใช้ผ้าที่ซับน้ำได้ดีเช็ดน้ำที่หก'],
+    ['Plants take in water through a process called ___.', 'absorption', 'พืชรับน้ำผ่านกระบวนการที่เรียกว่าการดูดซึม'],
+  ] },
+  { f: [['accommodate', 'v', 'รองรับ, จัดที่พัก'], ['accommodation', 'n', 'ที่พัก']], q: [
+    ['The hall can ___ five hundred people.', 'accommodate', 'ห้องโถงนี้รองรับคนได้ห้าร้อยคน'],
+    ['We booked our ___ online.', 'accommodation', 'เราจองที่พักทางออนไลน์'],
+  ] },
+  { f: [['adequate', 'adj', 'เพียงพอ'], ['adequately', 'adv', 'อย่างเพียงพอ'], ['inadequate', 'adj', 'ไม่เพียงพอ']], q: [
+    ['The staff were not ___ trained.', 'adequately', 'พนักงานได้รับการฝึกไม่เพียงพอ'],
+  ] },
+  { f: [['agriculture', 'n', 'การเกษตร'], ['agricultural', 'adj', 'เกี่ยวกับการเกษตร']], q: [
+    ['Rice is a major ___ product.', 'agricultural', 'ข้าวเป็นผลิตภัณฑ์เกษตรสำคัญ'],
+    ['Modern ___ uses a lot of machines.', 'agriculture', 'การเกษตรสมัยใหม่ใช้เครื่องจักรมาก'],
+  ] },
+  { f: [['anticipate', 'v', 'คาดการณ์'], ['anticipation', 'n', 'ความคาดหวัง'], ['unanticipated', 'adj', 'ที่คาดไม่ถึง']], q: [
+    ['We waited in ___ for the results.', 'anticipation', 'เรารอผลด้วยความคาดหวัง'],
+    ['We did not ___ so many guests.', 'anticipate', 'เราไม่ได้คาดว่าจะมีแขกมากขนาดนั้น'],
+  ] },
+  { f: [['anxious', 'adj', 'กังวล'], ['anxiety', 'n', 'ความวิตกกังวล'], ['anxiously', 'adv', 'อย่างกังวล']], q: [
+    ['She felt ___ before the exam.', 'anxious', 'เธอรู้สึกกังวลก่อนสอบ'],
+    ['He waited ___ by the phone.', 'anxiously', 'เขารออย่างกระวนกระวายข้างโทรศัพท์'],
+  ] },
+  { f: [['apologize', 'v', 'ขอโทษ'], ['apology', 'n', 'คำขอโทษ'], ['apologetic', 'adj', 'ที่รู้สึกผิด']], q: [
+    ['I must ___ for being late.', 'apologize', 'ฉันต้องขอโทษที่มาสาย'],
+    ['Please accept my ___.', 'apology', 'ขอให้รับคำขอโทษของฉัน'],
+  ] },
+  { f: [['appropriate', 'adj', 'เหมาะสม'], ['appropriately', 'adv', 'อย่างเหมาะสม'], ['inappropriate', 'adj', 'ไม่เหมาะสม']], q: [
+    ['Wear ___ clothes for the interview.', 'appropriate', 'แต่งตัวให้เหมาะสมสำหรับการสัมภาษณ์'],
+    ['She was ___ dressed for the cold.', 'appropriately', 'เธอแต่งตัวได้เหมาะกับอากาศหนาว'],
+    ['That joke was ___ for a funeral.', 'inappropriate', 'มุกนั้นไม่เหมาะกับงานศพ'],
+  ] },
+  { f: [['assume', 'v', 'สันนิษฐาน'], ['assumption', 'n', 'ข้อสันนิษฐาน']], q: [
+    ['Don\'t ___ that everyone agrees.', 'assume', 'อย่าคิดไปเองว่าทุกคนเห็นด้วย'],
+    ['That is a dangerous ___.', 'assumption', 'นั่นเป็นข้อสันนิษฐานที่อันตราย'],
+  ] },
+  { f: [['attach', 'v', 'แนบ, ติด'], ['attachment', 'n', 'ไฟล์แนบ, ความผูกพัน']], q: [
+    ['Please ___ your photo to the form.', 'attach', 'กรุณาแนบรูปถ่ายกับแบบฟอร์ม'],
+    ['I could not open the ___ in your email.', 'attachment', 'ฉันเปิดไฟล์แนบในอีเมลของคุณไม่ได้'],
+  ] },
+  { f: [['aware', 'adj', 'ตระหนัก'], ['awareness', 'n', 'ความตระหนักรู้']], q: [
+    ['Are you ___ of the risks?', 'aware', 'คุณตระหนักถึงความเสี่ยงไหม'],
+    ['The campaign raises ___ about health.', 'awareness', 'แคมเปญนี้สร้างความตระหนักเรื่องสุขภาพ'],
+  ] },
+  { f: [['benefit', 'n', 'ประโยชน์'], ['beneficial', 'adj', 'เป็นประโยชน์'], ['beneficiary', 'n', 'ผู้ได้รับประโยชน์']], q: [
+    ['Exercise is ___ to your health.', 'beneficial', 'การออกกำลังกายเป็นประโยชน์ต่อสุขภาพ'],
+    ['The ___ of the will inherits the house.', 'beneficiary', 'ผู้รับพินัยกรรมได้รับบ้านเป็นมรดก'],
+  ] },
+  { f: [['biology', 'n', 'ชีววิทยา'], ['biological', 'adj', 'ทางชีววิทยา'], ['biologist', 'n', 'นักชีววิทยา']], q: [
+    ['She is a famous marine ___.', 'biologist', 'เธอเป็นนักชีววิทยาทางทะเลที่มีชื่อเสียง'],
+    ['I studied ___ at school.', 'biology', 'ฉันเรียนวิชาชีววิทยาที่โรงเรียน'],
+    ['They study ___ clocks in animals.', 'biological', 'พวกเขาศึกษานาฬิกาชีวภาพในสัตว์'],
+  ] },
+  { f: [['broad', 'adj', 'กว้าง'], ['broaden', 'v', 'ทำให้กว้างขึ้น'], ['broadly', 'adv', 'โดยกว้างๆ']], q: [
+    ['Travel can ___ your mind.', 'broaden', 'การเดินทางทำให้ใจกว้างขึ้นได้'],
+    ['The two plans are ___ similar.', 'broadly', 'แผนทั้งสองคล้ายกันโดยรวม'],
+  ] },
+  { f: [['calculate', 'v', 'คำนวณ'], ['calculation', 'n', 'การคำนวณ'], ['calculator', 'n', 'เครื่องคิดเลข']], q: [
+    ['Use a ___ to check the sum.', 'calculator', 'ใช้เครื่องคิดเลขตรวจผลรวม'],
+    ['Can you ___ the total cost?', 'calculate', 'คุณคิดค่าใช้จ่ายรวมได้ไหม'],
+    ['I made a mistake in my ___.', 'calculation', 'ฉันคำนวณผิดพลาด'],
+  ] },
+  { f: [['capable', 'adj', 'มีความสามารถ'], ['capability', 'n', 'ความสามารถ'], ['incapable', 'adj', 'ไม่สามารถ']], q: [
+    ['She is ___ of running a marathon.', 'capable', 'เธอสามารถวิ่งมาราธอนได้'],
+    ['The phone has a powerful camera ___.', 'capability', 'โทรศัพท์นี้มีความสามารถของกล้องที่ทรงพลัง'],
+  ] },
+  { f: [['caution', 'n', 'ความระมัดระวัง'], ['cautious', 'adj', 'ระมัดระวัง'], ['cautiously', 'adv', 'อย่างระมัดระวัง']], q: [
+    ['He is ___ about spending money.', 'cautious', 'เขาระมัดระวังเรื่องการใช้เงิน'],
+    ['She stepped ___ onto the ice.', 'cautiously', 'เธอก้าวอย่างระมัดระวังลงบนน้ำแข็ง'],
+    ['Proceed with ___.', 'caution', 'ดำเนินการด้วยความระมัดระวัง'],
+  ] },
+  { f: [['chaos', 'n', 'ความวุ่นวาย'], ['chaotic', 'adj', 'วุ่นวาย']], q: [
+    ['The city was in ___ after the storm.', 'chaos', 'เมืองวุ่นวายหลังพายุ'],
+    ['Rush hour is ___ here.', 'chaotic', 'ชั่วโมงเร่งด่วนที่นี่วุ่นวายมาก'],
+  ] },
+  { f: [['characteristic', 'n', 'ลักษณะเฉพาะ'], ['characterize', 'v', 'แสดงลักษณะเฉพาะ'], ['characteristically', 'adv', 'เป็นลักษณะเฉพาะ']], q: [
+    ['Kindness is her best ___.', 'characteristic', 'ความใจดีคือลักษณะเด่นของเธอ'],
+  ] },
+  { f: [['circulate', 'v', 'หมุนเวียน'], ['circulation', 'n', 'การหมุนเวียน'], ['circular', 'adj', 'เป็นวงกลม']], q: [
+    ['Poor ___ makes my hands cold.', 'circulation', 'การไหลเวียนเลือดไม่ดีทำให้มือฉันเย็น'],
+    ['We sat at a ___ table.', 'circular', 'เรานั่งที่โต๊ะกลม'],
+  ] },
+  { f: [['citizen', 'n', 'พลเมือง'], ['citizenship', 'n', 'สัญชาติ'], ['civic', 'adj', 'ที่เกี่ยวกับพลเมือง']], q: [
+    ['He applied for British ___.', 'citizenship', 'เขาสมัครขอสัญชาติอังกฤษ'],
+    ['Every ___ has the right to vote.', 'citizen', 'พลเมืองทุกคนมีสิทธิ์ลงคะแนนเสียง'],
+  ] },
+  { f: [['classify', 'v', 'จัดประเภท'], ['classification', 'n', 'การจัดประเภท'], ['classified', 'adj', 'ที่เป็นความลับ']], q: [
+    ['Scientists ___ animals into groups.', 'classify', 'นักวิทยาศาสตร์จัดสัตว์เป็นกลุ่ม'],
+    ['This document is ___.', 'classified', 'เอกสารนี้เป็นความลับ'],
+  ] },
+  { f: [['collaborate', 'v', 'ร่วมมือ'], ['collaboration', 'n', 'ความร่วมมือ'], ['collaborative', 'adj', 'ซึ่งร่วมมือกัน']], q: [
+    ['The two firms agreed to ___.', 'collaborate', 'สองบริษัทตกลงร่วมมือกัน'],
+    ['The book was a ___ project.', 'collaborative', 'หนังสือเล่มนี้เป็นโครงการที่ทำร่วมกัน'],
+  ] },
+  { f: [['commerce', 'n', 'การพาณิชย์'], ['commercial', 'adj', 'ทางการค้า'], ['commercially', 'adv', 'ในเชิงการค้า']], q: [
+    ['The film was a ___ success.', 'commercial', 'ภาพยนตร์ประสบความสำเร็จทางการค้า'],
+    ['This drug is now ___ available.', 'commercially', 'ยานี้มีวางขายแล้ว'],
+  ] },
+  { f: [['compensate', 'v', 'ชดเชย'], ['compensation', 'n', 'ค่าชดเชย']], q: [
+    ['The firm will ___ you for the delay.', 'compensate', 'บริษัทจะชดเชยความล่าช้าให้คุณ'],
+    ['He received ___ for his injury.', 'compensation', 'เขาได้รับค่าชดเชยจากการบาดเจ็บ'],
+  ] },
+  { f: [['competent', 'adj', 'มีความสามารถ'], ['competence', 'n', 'ความสามารถ'], ['incompetent', 'adj', 'ไร้ความสามารถ']], q: [
+    ['His ___ in maths is clear.', 'competence', 'ความเชี่ยวชาญด้านคณิตศาสตร์ของเขาเห็นได้ชัด'],
+  ] },
+  { f: [['complex', 'adj', 'ซับซ้อน'], ['complexity', 'n', 'ความซับซ้อน']], q: [
+    ['The rules are very ___.', 'complex', 'กฎซับซ้อนมาก'],
+    ['Nobody understood the ___ of the problem.', 'complexity', 'ไม่มีใครเข้าใจความซับซ้อนของปัญหา'],
+  ] },
+  { f: [['comply', 'v', 'ปฏิบัติตาม'], ['compliance', 'n', 'การปฏิบัติตามกฎ'], ['compliant', 'adj', 'ที่ปฏิบัติตาม']], q: [
+    ['All drivers must ___ with the law.', 'comply', 'คนขับทุกคนต้องปฏิบัติตามกฎหมาย'],
+    ['The factory is in full ___ with safety rules.', 'compliance', 'โรงงานปฏิบัติตามกฎความปลอดภัยครบถ้วน'],
+  ] },
+  { f: [['conserve', 'v', 'อนุรักษ์'], ['conservation', 'n', 'การอนุรักษ์'], ['conservative', 'adj', 'อนุรักษ์นิยม']], q: [
+    ['We must ___ water in the dry season.', 'conserve', 'เราต้องประหยัดน้ำในหน้าแล้ง'],
+    ['She has a ___ view on art.', 'conservative', 'เธอมีมุมมองอนุรักษ์นิยมเรื่องศิลปะ'],
+  ] },
+  { f: [['consistent', 'adj', 'สม่ำเสมอ'], ['consistently', 'adv', 'อย่างสม่ำเสมอ'], ['consistency', 'n', 'ความสม่ำเสมอ']], q: [
+    ['Her grades are ___ high.', 'consistently', 'เกรดของเธอสูงอย่างสม่ำเสมอ'],
+    ['Good ___ is the key to learning.', 'consistency', 'ความสม่ำเสมอเป็นหัวใจของการเรียนรู้'],
+  ] },
+  { f: [['consume', 'v', 'บริโภค'], ['consumption', 'n', 'การบริโภค'], ['consumer', 'n', 'ผู้บริโภค']], q: [
+    ['Cars ___ a lot of fuel.', 'consume', 'รถยนต์ใช้เชื้อเพลิงมาก'],
+    ['Today\'s ___ wants low prices.', 'consumer', 'ผู้บริโภคสมัยนี้ต้องการราคาถูก'],
+    ['Sugar ___ has risen.', 'consumption', 'การบริโภคน้ำตาลเพิ่มขึ้น'],
+  ] },
+  { f: [['contribute', 'v', 'มีส่วนร่วม'], ['contribution', 'n', 'การมีส่วนร่วม'], ['contributor', 'n', 'ผู้ร่วมสมทบ']], q: [
+    ['Everyone should ___ to the project.', 'contribute', 'ทุกคนควรมีส่วนร่วมกับโครงการ'],
+    ['Thank you for your ___.', 'contribution', 'ขอบคุณสำหรับการมีส่วนร่วมของคุณ'],
+  ] },
+  { f: [['controversy', 'n', 'ข้อถกเถียง'], ['controversial', 'adj', 'ที่เป็นที่ถกเถียง']], q: [
+    ['The new law caused a lot of ___.', 'controversy', 'กฎหมายใหม่ก่อให้เกิดข้อถกเถียงมาก'],
+    ['It is a ___ topic.', 'controversial', 'เป็นหัวข้อที่ถกเถียงกันมาก'],
+  ] },
+  { f: [['convenient', 'adj', 'สะดวก'], ['convenience', 'n', 'ความสะดวก'], ['conveniently', 'adv', 'อย่างสะดวก']], q: [
+    ['The hotel is ___ located near the station.', 'conveniently', 'โรงแรมตั้งอยู่ใกล้สถานีอย่างสะดวก'],
+    ['Is Friday ___ for you?', 'convenient', 'วันศุกร์สะดวกสำหรับคุณไหม'],
+    ['I bought it for ___.', 'convenience', 'ฉันซื้อเพื่อความสะดวก'],
+  ] },
+  { f: [['convince', 'v', 'ทำให้เชื่อ'], ['convincing', 'adj', 'น่าเชื่อถือ'], ['convinced', 'adj', 'มั่นใจ']], q: [
+    ['I could not ___ him to stay.', 'convince', 'ฉันโน้มน้าวให้เขาอยู่ไม่ได้'],
+    ['Her argument was ___.', 'convincing', 'ข้อโต้แย้งของเธอน่าเชื่อ'],
+    ['I am ___ that he is right.', 'convinced', 'ฉันมั่นใจว่าเขาถูก'],
+  ] },
+  { f: [['cooperate', 'v', 'ร่วมมือ'], ['cooperation', 'n', 'ความร่วมมือ'], ['cooperative', 'adj', 'ให้ความร่วมมือ']], q: [
+    ['Please ___ with the police.', 'cooperate', 'กรุณาร่วมมือกับตำรวจ'],
+    ['Thanks for your ___.', 'cooperation', 'ขอบคุณสำหรับความร่วมมือ'],
+    ['The witness was very ___.', 'cooperative', 'พยานให้ความร่วมมือเป็นอย่างดี'],
+  ] },
+  { f: [['coordinate', 'v', 'ประสานงาน'], ['coordination', 'n', 'การประสานงาน'], ['coordinator', 'n', 'ผู้ประสานงาน']], q: [
+    ['She will ___ the event.', 'coordinate', 'เธอจะประสานงานการจัดงาน'],
+    ['Good ___ saves time.', 'coordination', 'การประสานงานที่ดีช่วยประหยัดเวลา'],
+    ['The ___ called everyone.', 'coordinator', 'ผู้ประสานงานโทรหาทุกคน'],
+  ] },
+  { f: [['corrupt', 'adj', 'ทุจริต'], ['corruption', 'n', 'การทุจริต']], q: [
+    ['The mayor was ___.', 'corrupt', 'นายกเทศมนตรีทุจริต'],
+    ['The government is fighting ___.', 'corruption', 'รัฐบาลกำลังต่อสู้กับการทุจริต'],
+  ] },
+  { f: [['credit', 'n', 'เครดิต, ความดี'], ['credible', 'adj', 'น่าเชื่อถือ'], ['credibility', 'n', 'ความน่าเชื่อถือ']], q: [
+    ['The witness was not ___.', 'credible', 'พยานไม่น่าเชื่อถือ'],
+    ['The scandal damaged his ___.', 'credibility', 'เรื่องอื้อฉาวทำลายความน่าเชื่อถือของเขา'],
+  ] },
+  { f: [['critic', 'n', 'นักวิจารณ์'], ['critique', 'n', 'บทวิจารณ์'], ['critical', 'adj', 'สำคัญยิ่ง, วิพากษ์'], ['critically', 'adv', 'อย่างวิพากษ์']], q: [
+    ['The film ___ praised it.', 'critic', 'นักวิจารณ์ภาพยนตร์ชื่นชมมัน'],
+    ['Water is ___ for life.', 'critical', 'น้ำสำคัญยิ่งต่อชีวิต'],
+    ['Think ___ about the news.', 'critically', 'คิดวิเคราะห์ข่าวอย่างมีวิจารณญาณ'],
+  ] },
+  { f: [['cultivate', 'v', 'เพาะปลูก, บ่มเพาะ'], ['cultivation', 'n', 'การเพาะปลูก']], q: [
+    ['Farmers ___ rice here.', 'cultivate', 'ชาวนาปลูกข้าวที่นี่'],
+    ['The land is under ___.', 'cultivation', 'ที่ดินนี้ใช้เพาะปลูกอยู่'],
+  ] },
+  { f: [['dedicate', 'v', 'อุทิศ'], ['dedication', 'n', 'ความทุ่มเท'], ['dedicated', 'adj', 'ทุ่มเท']], q: [
+    ['She ___ her life to teaching.', 'dedicated', 'เธออุทิศชีวิตให้การสอน'],
+    ['Thanks for your hard work and ___.', 'dedication', 'ขอบคุณสำหรับความขยันและความทุ่มเท'],
+  ] },
+  { f: [['democracy', 'n', 'ประชาธิปไตย'], ['democratic', 'adj', 'เป็นประชาธิปไตย'], ['democratically', 'adv', 'อย่างเป็นประชาธิปไตย']], q: [
+    ['The leader was ___ elected.', 'democratically', 'ผู้นำได้รับเลือกตามระบอบประชาธิปไตย'],
+    ['It is a ___ country.', 'democratic', 'เป็นประเทศประชาธิปไตย'],
+  ] },
+  { f: [['deteriorate', 'v', 'เสื่อมลง'], ['deterioration', 'n', 'ความเสื่อมลง']], q: [
+    ['His health began to ___.', 'deteriorate', 'สุขภาพของเขาเริ่มทรุดลง'],
+    ['There was a rapid ___ in the weather.', 'deterioration', 'อากาศแย่ลงอย่างรวดเร็ว'],
+  ] },
+  { f: [['diagnose', 'v', 'วินิจฉัย'], ['diagnosis', 'n', 'การวินิจฉัย']], q: [
+    ['Early ___ saves lives.', 'diagnosis', 'การวินิจฉัยเร็วช่วยชีวิตคน'],
+  ] },
+  { f: [['dignity', 'n', 'ศักดิ์ศรี'], ['dignified', 'adj', 'สง่างาม']], q: [
+    ['He left with ___.', 'dignity', 'เขาจากไปอย่างมีศักดิ์ศรี'],
+    ['She gave a ___ reply.', 'dignified', 'เธอตอบอย่างสง่างาม'],
+  ] },
+  { f: [['disaster', 'n', 'ภัยพิบัติ'], ['disastrous', 'adj', 'เลวร้าย'], ['disastrously', 'adv', 'อย่างเลวร้าย']], q: [
+    ['The flood was a natural ___.', 'disaster', 'น้ำท่วมเป็นภัยธรรมชาติ'],
+    ['It was a ___ mistake.', 'disastrous', 'เป็นความผิดพลาดที่เลวร้าย'],
+  ] },
+  { f: [['discriminate', 'v', 'เลือกปฏิบัติ'], ['discrimination', 'n', 'การเลือกปฏิบัติ']], q: [
+    ['It is illegal to ___ against workers.', 'discriminate', 'การเลือกปฏิบัติต่อลูกจ้างผิดกฎหมาย'],
+    ['Age ___ is unfair.', 'discrimination', 'การเลือกปฏิบัติเรื่องอายุไม่เป็นธรรม'],
+  ] },
+  { f: [['disrupt', 'v', 'ขัดขวาง'], ['disruption', 'n', 'การหยุดชะงัก'], ['disruptive', 'adj', 'ที่ก่อกวน']], q: [
+    ['Snow can ___ trains.', 'disrupt', 'หิมะอาจทำให้รถไฟเดินทางติดขัด'],
+    ['The strike caused ___ to flights.', 'disruption', 'การหยุดงานทำให้เที่ยวบินติดขัด'],
+  ] },
+  { f: [['distinct', 'adj', 'ชัดเจน'], ['distinction', 'n', 'ความแตกต่าง'], ['distinctive', 'adj', 'มีเอกลักษณ์'], ['distinguish', 'v', 'แยกแยะ']], q: [
+    ['Can you ___ the twins?', 'distinguish', 'คุณแยกแฝดสองคนออกไหม'],
+    ['There is a clear ___ between them.', 'distinction', 'มีความแตกต่างชัดเจนระหว่างสองสิ่งนี้'],
+  ] },
+  { f: [['diverse', 'adj', 'หลากหลาย'], ['diversity', 'n', 'ความหลากหลาย'], ['diversify', 'v', 'ทำให้หลากหลาย']], q: [
+    ['We value cultural ___.', 'diversity', 'เราให้คุณค่ากับความหลากหลายทางวัฒนธรรม'],
+    ['The class is very ___.', 'diverse', 'ชั้นเรียนนี้หลากหลายมาก'],
+  ] },
+  { f: [['dominate', 'v', 'ครอบงำ'], ['dominant', 'adj', 'เด่น'], ['dominance', 'n', 'ความเหนือกว่า']], q: [
+    ['Big firms ___ the market.', 'dominate', 'บริษัทใหญ่ครองตลาด'],
+    ['Spanish is the ___ language here.', 'dominant', 'ภาษาสเปนเป็นภาษาหลักที่นี่'],
+  ] },
+  { f: [['donate', 'v', 'บริจาค'], ['donation', 'n', 'เงินบริจาค'], ['donor', 'n', 'ผู้บริจาค']], q: [
+    ['Please ___ blood if you can.', 'donate', 'กรุณาบริจาคเลือดถ้าทำได้'],
+    ['Every ___ helps.', 'donation', 'เงินบริจาคทุกบาทช่วยได้'],
+    ['She is a regular blood ___.', 'donor', 'เธอเป็นผู้บริจาคเลือดประจำ'],
+  ] },
+  { f: [['effect', 'n', 'ผล'], ['effective', 'adj', 'มีประสิทธิภาพ'], ['effectively', 'adv', 'อย่างมีประสิทธิภาพ'], ['effectiveness', 'n', 'ประสิทธิผล']], q: [
+    ['This medicine is very ___.', 'effective', 'ยานี้ได้ผลมาก'],
+    ['She used her time ___.', 'effectively', 'เธอใช้เวลาอย่างมีประสิทธิภาพ'],
+  ] },
+  { f: [['elect', 'v', 'เลือกตั้ง'], ['election', 'n', 'การเลือกตั้ง'], ['electoral', 'adj', 'เกี่ยวกับการเลือกตั้ง'], ['elected', 'adj', 'ที่ได้รับเลือก']], q: [
+    ['The ___ is next month.', 'election', 'การเลือกตั้งจะมีเดือนหน้า'],
+    ['They will ___ a new leader.', 'elect', 'พวกเขาจะเลือกผู้นำคนใหม่'],
+  ] },
+  { f: [['eligible', 'adj', 'มีสิทธิ์'], ['eligibility', 'n', 'คุณสมบัติที่มีสิทธิ์']], q: [
+    ['You are ___ to vote at eighteen.', 'eligible', 'คุณมีสิทธิ์ลงคะแนนเมื่ออายุสิบแปด'],
+    ['Check your ___ before applying.', 'eligibility', 'ตรวจสอบคุณสมบัติก่อนสมัคร'],
+  ] },
+  { f: [['emerge', 'v', 'โผล่ออกมา'], ['emergence', 'n', 'การเกิดขึ้น'], ['emerging', 'adj', 'ที่กำลังเกิดขึ้น']], q: [
+    ['The sun began to ___ from the clouds.', 'emerge', 'ดวงอาทิตย์เริ่มโผล่ออกจากเมฆ'],
+    ['The ___ of new technology changed work.', 'emergence', 'การเกิดขึ้นของเทคโนโลยีใหม่เปลี่ยนการทำงาน'],
+  ] },
+  { f: [['encourage', 'v', 'ให้กำลังใจ'], ['encouragement', 'n', 'กำลังใจ'], ['encouraging', 'adj', 'ที่ให้กำลังใจ']], q: [
+    ['Teachers ___ students to read.', 'encourage', 'ครูส่งเสริมให้นักเรียนอ่าน'],
+    ['Thanks for your ___.', 'encouragement', 'ขอบคุณสำหรับกำลังใจ'],
+    ['The results are ___.', 'encouraging', 'ผลลัพธ์น่าชื่นใจ'],
+  ] },
+  { f: [['engage', 'v', 'ดึงดูด, ร่วม'], ['engagement', 'n', 'การหมั้น, การมีส่วนร่วม'], ['engaging', 'adj', 'น่าสนใจ']], q: [
+    ['They announced their ___.', 'engagement', 'พวกเขาประกาศหมั้น'],
+    ['She is an ___ speaker.', 'engaging', 'เธอเป็นผู้พูดที่น่าสนใจ'],
+  ] },
+  { f: [['enrich', 'v', 'ทำให้อุดมสมบูรณ์'], ['enrichment', 'n', 'การเพิ่มพูน']], q: [
+    ['Reading will ___ your vocabulary.', 'enrich', 'การอ่านจะเพิ่มพูนคำศัพท์ของคุณ'],
+    ['Cultural ___ matters for kids.', 'enrichment', 'การเสริมประสบการณ์ทางวัฒนธรรมสำคัญสำหรับเด็ก'],
+  ] },
+  { f: [['enthusiasm', 'n', 'ความกระตือรือร้น'], ['enthusiastic', 'adj', 'กระตือรือร้น'], ['enthusiast', 'n', 'ผู้คลั่งไคล้']], q: [
+    ['He showed great ___.', 'enthusiasm', 'เขาแสดงความกระตือรือร้นอย่างมาก'],
+    ['The fans were ___.', 'enthusiastic', 'แฟนๆ กระตือรือร้น'],
+    ['She is a football ___.', 'enthusiast', 'เธอเป็นแฟนบอลตัวยง'],
+  ] },
+  { f: [['essence', 'n', 'สาระสำคัญ'], ['essential', 'adj', 'จำเป็น'], ['essentially', 'adv', 'โดยแก่นแท้']], q: [
+    ['Water is ___ for life.', 'essential', 'น้ำจำเป็นต่อชีวิต'],
+    ['That is the ___ of the plan.', 'essence', 'นั่นคือสาระสำคัญของแผน'],
+  ] },
+  { f: [['establish', 'v', 'ก่อตั้ง'], ['establishment', 'n', 'การก่อตั้ง, สถาบัน'], ['established', 'adj', 'ที่ก่อตั้งมานาน']], q: [
+    ['They ___ the company in 1990.', 'established', 'พวกเขาก่อตั้งบริษัทในปี 1990'],
+    ['The ___ of the school took years.', 'establishment', 'การก่อตั้งโรงเรียนใช้เวลาหลายปี'],
+  ] },
+  { f: [['evaluate', 'v', 'ประเมิน'], ['evaluation', 'n', 'การประเมิน']], q: [
+    ['Teachers ___ each essay.', 'evaluate', 'ครูประเมินเรียงความทุกเรื่อง'],
+    ['The ___ takes two weeks.', 'evaluation', 'การประเมินใช้เวลาสองสัปดาห์'],
+  ] },
+  { f: [['evolve', 'v', 'วิวัฒนาการ'], ['evolution', 'n', 'วิวัฒนาการ'], ['evolutionary', 'adj', 'เกี่ยวกับวิวัฒนาการ']], q: [
+    ['Species ___ over millions of years.', 'evolve', 'สิ่งมีชีวิตวิวัฒนาการตลอดหลายล้านปี'],
+    ['Darwin explained ___.', 'evolution', 'ดาร์วินอธิบายเรื่องวิวัฒนาการ'],
+  ] },
+  { f: [['exaggerate', 'v', 'พูดเกินจริง'], ['exaggeration', 'n', 'การพูดเกินจริง'], ['exaggerated', 'adj', 'เกินจริง']], q: [
+    ['Don\'t ___ the problem.', 'exaggerate', 'อย่าพูดเกินจริงเรื่องปัญหา'],
+    ['That\'s a bit of an ___.', 'exaggeration', 'นั่นดูเกินจริงไปหน่อย'],
+  ] },
+  { f: [['exclude', 'v', 'ไม่รวม'], ['exclusion', 'n', 'การกีดกัน'], ['exclusive', 'adj', 'เฉพาะกลุ่ม'], ['exclusively', 'adv', 'เฉพาะ']], q: [
+    ['The price does ___ tax.', 'exclude', 'ราคานี้ไม่รวมภาษี'],
+    ['It is an ___ club.', 'exclusive', 'เป็นสโมสรเฉพาะสมาชิก'],
+    ['The room is ___ for staff.', 'exclusively', 'ห้องนี้ใช้เฉพาะพนักงาน'],
+  ] },
+  { f: [['execute', 'v', 'ดำเนินการ, ประหาร'], ['execution', 'n', 'การดำเนินการ'], ['executive', 'n', 'ผู้บริหาร']], q: [
+    ['She is a senior ___.', 'executive', 'เธอเป็นผู้บริหารระดับสูง'],
+    ['The ___ of the plan failed.', 'execution', 'การลงมือทำตามแผนล้มเหลว'],
+  ] },
+  { f: [['expand', 'v', 'ขยาย'], ['expansion', 'n', 'การขยายตัว'], ['expansive', 'adj', 'กว้างขวาง']], q: [
+    ['The firm plans to ___ overseas.', 'expand', 'บริษัทวางแผนขยายไปต่างประเทศ'],
+    ['The ___ of the city continues.', 'expansion', 'การขยายตัวของเมืองยังดำเนินต่อไป'],
+  ] },
+  { f: [['explicit', 'adj', 'ชัดเจน, ตรงไปตรงมา'], ['explicitly', 'adv', 'อย่างชัดเจน']], q: [
+    ['The rules are ___ about this.', 'explicit', 'กฎระบุเรื่องนี้ไว้ชัดเจน'],
+    ['He ___ said no.', 'explicitly', 'เขาปฏิเสธอย่างชัดเจน'],
+  ] },
+  { f: [['exploit', 'v', 'ฉวยประโยชน์, ใช้ประโยชน์'], ['exploitation', 'n', 'การเอาเปรียบ']], q: [
+    ['Some firms ___ their workers.', 'exploit', 'บางบริษัทเอาเปรียบคนงาน'],
+    ['Child ___ is illegal.', 'exploitation', 'การเอาเปรียบเด็กผิดกฎหมาย'],
+  ] },
+  { f: [['explode', 'v', 'ระเบิด'], ['explosion', 'n', 'การระเบิด'], ['explosive', 'adj', 'ที่ระเบิดได้']], q: [
+    ['We heard a loud ___.', 'explosion', 'เราได้ยินเสียงระเบิดดัง'],
+    ['The bomb may ___.', 'explode', 'ระเบิดลูกนี้อาจระเบิด'],
+    ['Gas is highly ___.', 'explosive', 'แก๊สระเบิดง่ายมาก'],
+  ] },
+  { f: [['extend', 'v', 'ขยาย, ต่อเวลา'], ['extension', 'n', 'การต่อเวลา'], ['extensive', 'adj', 'กว้างขวาง'], ['extensively', 'adv', 'อย่างกว้างขวาง']], q: [
+    ['Can we ___ the deadline?', 'extend', 'เราขยายกำหนดส่งได้ไหม'],
+    ['She has travelled ___.', 'extensively', 'เธอเดินทางมาอย่างกว้างขวาง'],
+  ] },
+  { f: [['found', 'v', 'ก่อตั้ง'], ['founder', 'n', 'ผู้ก่อตั้ง'], ['foundation', 'n', 'รากฐาน, มูลนิธิ']], q: [
+    ['He is the ___ of the firm.', 'founder', 'เขาเป็นผู้ก่อตั้งบริษัท'],
+    ['Trust is the ___ of friendship.', 'foundation', 'ความไว้ใจคือรากฐานของมิตรภาพ'],
+  ] },
+  { f: [['frustrate', 'v', 'ทำให้หงุดหงิด'], ['frustration', 'n', 'ความหงุดหงิด'], ['frustrated', 'adj', 'หงุดหงิด'], ['frustrating', 'adj', 'น่าหงุดหงิด']], q: [
+    ['I feel ___ with my progress.', 'frustrated', 'ฉันหงุดหงิดกับความคืบหน้า'],
+    ['Waiting is ___.', 'frustrating', 'การรอน่าหงุดหงิด'],
+    ['He shouted in ___.', 'frustration', 'เขาตะโกนด้วยความหงุดหงิด'],
+  ] },
+  { f: [['function', 'n', 'หน้าที่'], ['functional', 'adj', 'ใช้งานได้'], ['functionality', 'n', 'ฟังก์ชัน']], q: [
+    ['The design is simple and ___.', 'functional', 'การออกแบบเรียบง่ายและใช้งานได้จริง'],
+    ['What is the ___ of this button?', 'function', 'ปุ่มนี้มีหน้าที่อะไร'],
+  ] },
+  { f: [['genetic', 'adj', 'ทางพันธุกรรม'], ['genetics', 'n', 'พันธุศาสตร์'], ['genetically', 'adv', 'ทางพันธุกรรม']], q: [
+    ['Eye colour is ___.', 'genetic', 'สีตาเป็นเรื่องพันธุกรรม'],
+    ['She studies ___ at university.', 'genetics', 'เธอเรียนพันธุศาสตร์ที่มหาวิทยาลัย'],
+  ] },
+  { f: [['guide', 'v', 'นำทาง'], ['guidance', 'n', 'คำแนะนำ'], ['guideline', 'n', 'แนวทางปฏิบัติ']], q: [
+    ['Teachers give students ___.', 'guidance', 'ครูให้คำแนะนำแก่นักเรียน'],
+  ] },
+  { f: [['humble', 'adj', 'ถ่อมตัว'], ['humbly', 'adv', 'อย่างถ่อมตัว'], ['humility', 'n', 'ความถ่อมตน']], q: [
+    ['Despite his fame, he stayed ___.', 'humble', 'แม้มีชื่อเสียง เขายังถ่อมตัว'],
+    ['She accepted the prize with ___.', 'humility', 'เธอรับรางวัลด้วยความถ่อมตน'],
+  ] },
+  { f: [['identify', 'v', 'ระบุ'], ['identification', 'n', 'การระบุตัวตน'], ['identity', 'n', 'เอกลักษณ์'], ['identical', 'adj', 'เหมือนกัน']], q: [
+    ['Please show some ___.', 'identification', 'กรุณาแสดงบัตรประจำตัว'],
+    ['Can you ___ the man in the photo?', 'identify', 'คุณระบุตัวชายในรูปได้ไหม'],
+    ['The twins look ___.', 'identical', 'แฝดสองคนดูเหมือนกัน'],
+  ] },
+  { f: [['ideology', 'n', 'อุดมการณ์'], ['ideological', 'adj', 'ทางอุดมการณ์']], q: [
+    ['It was an ___ dispute.', 'ideological', 'เป็นข้อพิพาททางอุดมการณ์'],
+  ] },
+  { f: [['ignore', 'v', 'เพิกเฉย'], ['ignorance', 'n', 'ความไม่รู้'], ['ignorant', 'adj', 'ไม่รู้']], q: [
+    ['Don\'t ___ the warning.', 'ignore', 'อย่าเพิกเฉยต่อคำเตือน'],
+    ['He acted out of ___.', 'ignorance', 'เขาทำไปเพราะความไม่รู้'],
+    ['She was ___ of the law.', 'ignorant', 'เธอไม่รู้เรื่องกฎหมาย'],
+  ] },
+  { f: [['inflate', 'v', 'พองตัว'], ['inflation', 'n', 'เงินเฟ้อ']], q: [
+    ['Please ___ the tyre.', 'inflate', 'กรุณาสูบลมยาง'],
+  ] },
+  { f: [['influence', 'n', 'อิทธิพล'], ['influential', 'adj', 'มีอิทธิพล']], q: [
+    ['She is a very ___ writer.', 'influential', 'เธอเป็นนักเขียนที่มีอิทธิพลมาก'],
+    ['Parents have a big ___ on children.', 'influence', 'พ่อแม่มีอิทธิพลต่อลูกมาก'],
+  ] },
+  { f: [['innovate', 'v', 'สร้างนวัตกรรม'], ['innovation', 'n', 'นวัตกรรม'], ['innovative', 'adj', 'เป็นนวัตกรรม'], ['innovator', 'n', 'นักประดิษฐ์']], q: [
+    ['Companies must ___ to survive.', 'innovate', 'บริษัทต้องสร้างสิ่งใหม่เพื่อให้อยู่รอด'],
+    ['It is an ___ design.', 'innovative', 'เป็นการออกแบบที่เป็นนวัตกรรม'],
+    ['Technology drives ___.', 'innovation', 'เทคโนโลยีขับเคลื่อนนวัตกรรม'],
+  ] },
+  { f: [['institute', 'n', 'สถาบัน'], ['institution', 'n', 'สถาบัน'], ['institutional', 'adj', 'เชิงสถาบัน']], q: [
+    ['The bank is a financial ___.', 'institution', 'ธนาคารเป็นสถาบันการเงิน'],
+  ] },
+  { f: [['integrate', 'v', 'ผสมผสาน'], ['integration', 'n', 'การผสมผสาน'], ['integrated', 'adj', 'ที่ผสมผสาน'], ['integral', 'adj', 'สำคัญที่ขาดไม่ได้']], q: [
+    ['Music is an ___ part of the festival.', 'integral', 'ดนตรีเป็นส่วนสำคัญของเทศกาล'],
+    ['Immigrants ___ into society.', 'integrate', 'ผู้อพยพผสมกลมกลืนเข้ากับสังคม'],
+    ['Social ___ takes time.', 'integration', 'การผสมผสานทางสังคมใช้เวลา'],
+  ] },
+  { f: [['intense', 'adj', 'รุนแรง'], ['intensity', 'n', 'ความเข้มข้น'], ['intensify', 'v', 'ทวีความรุนแรง'], ['intensive', 'adj', 'เข้มข้น']], q: [
+    ['The heat was ___.', 'intense', 'ความร้อนรุนแรงมาก'],
+    ['The storm will ___ tonight.', 'intensify', 'พายุจะรุนแรงขึ้นคืนนี้'],
+  ] },
+  { f: [['interfere', 'v', 'แทรกแซง'], ['interference', 'n', 'การแทรกแซง']], q: [
+    ['Don\'t ___ in my business.', 'interfere', 'อย่ามายุ่งเรื่องของฉัน'],
+    ['The radio picks up ___.', 'interference', 'วิทยุจับสัญญาณรบกวน'],
+  ] },
+  { f: [['interpret', 'v', 'ตีความ'], ['interpretation', 'n', 'การตีความ'], ['interpreter', 'n', 'ล่าม']], q: [
+    ['She works as an ___.', 'interpreter', 'เธอทำงานเป็นล่าม'],
+    ['How do you ___ this poem?', 'interpret', 'คุณตีความบทกวีนี้อย่างไร'],
+  ] },
+  { f: [['invade', 'v', 'รุกราน'], ['invasion', 'n', 'การรุกราน'], ['invader', 'n', 'ผู้รุกราน']], q: [
+    ['The army will ___ the island.', 'invade', 'กองทัพจะบุกเกาะ'],
+  ] },
+  { f: [['invest', 'v', 'ลงทุน'], ['investment', 'n', 'การลงทุน'], ['investor', 'n', 'นักลงทุน']], q: [
+    ['She decided to ___ in property.', 'invest', 'เธอตัดสินใจลงทุนในอสังหาริมทรัพย์'],
+    ['Education is a good ___.', 'investment', 'การศึกษาเป็นการลงทุนที่ดี'],
+    ['The ___ lost money.', 'investor', 'นักลงทุนขาดทุน'],
+  ] },
+  { f: [['investigate', 'v', 'สอบสวน'], ['investigation', 'n', 'การสอบสวน'], ['investigator', 'n', 'ผู้สืบสวน']], q: [
+    ['Police will ___ the crime.', 'investigate', 'ตำรวจจะสอบสวนคดี'],
+    ['A private ___ was hired.', 'investigator', 'มีการจ้างนักสืบเอกชน'],
+    ['The ___ continues.', 'investigation', 'การสอบสวนยังดำเนินต่อไป'],
+  ] },
+  { f: [['isolate', 'v', 'แยกตัว'], ['isolation', 'n', 'การแยกตัว'], ['isolated', 'adj', 'ห่างไกล']], q: [
+    ['Patients must ___ at home.', 'isolate', 'ผู้ป่วยต้องแยกตัวอยู่บ้าน'],
+    ['He lives in complete ___.', 'isolation', 'เขาอาศัยอยู่โดดเดี่ยวโดยสิ้นเชิง'],
+    ['It\'s an ___ village.', 'isolated', 'เป็นหมู่บ้านห่างไกล'],
+  ] },
+  { f: [['justify', 'v', 'แสดงเหตุผล'], ['justification', 'n', 'เหตุผลรองรับ'], ['justified', 'adj', 'สมเหตุสมผล']], q: [
+    ['How can you ___ the cost?', 'justify', 'คุณจะอธิบายความสมเหตุสมผลของค่าใช้จ่ายได้อย่างไร'],
+    ['There is no ___ for such anger.', 'justification', 'ไม่มีเหตุผลรองรับความโกรธเช่นนี้'],
+  ] },
+  { f: [['legal', 'adj', 'ถูกกฎหมาย'], ['legally', 'adv', 'ตามกฎหมาย'], ['legislation', 'n', 'กฎหมาย'], ['legitimate', 'adj', 'ชอบธรรม'], ['illegal', 'adj', 'ผิดกฎหมาย']], q: [
+    ['New ___ will be passed.', 'legislation', 'จะมีการผ่านกฎหมายใหม่'],
+  ] },
+  { f: [['liberal', 'adj', 'เสรีนิยม'], ['liberty', 'n', 'เสรีภาพ'], ['liberate', 'v', 'ปลดปล่อย'], ['liberation', 'n', 'การปลดปล่อย']], q: [
+    ['They fight for ___.', 'liberty', 'พวกเขาต่อสู้เพื่อเสรีภาพ'],
+    ['The army came to ___ the town.', 'liberate', 'กองทัพมาปลดปล่อยเมือง'],
+  ] },
+  { f: [['maintain', 'v', 'บำรุงรักษา'], ['maintenance', 'n', 'การบำรุงรักษา']], q: [
+    ['We ___ the equipment weekly.', 'maintain', 'เราบำรุงรักษาอุปกรณ์ทุกสัปดาห์'],
+    ['Road ___ is costly.', 'maintenance', 'การซ่อมบำรุงถนนมีราคาแพง'],
+  ] },
+  { f: [['manipulate', 'v', 'บงการ, ควบคุม'], ['manipulation', 'n', 'การบงการ'], ['manipulative', 'adj', 'ที่ชอบบงการ']], q: [
+    ['Don\'t let him ___ you.', 'manipulate', 'อย่าให้เขาบงการคุณ'],
+    ['Media ___ is dangerous.', 'manipulation', 'การชักใยสื่ออันตราย'],
+  ] },
+  { f: [['mature', 'adj', 'เป็นผู้ใหญ่'], ['maturity', 'n', 'วุฒิภาวะ'], ['immature', 'adj', 'ไม่โต']], q: [
+    ['He showed great ___.', 'maturity', 'เขาแสดงวุฒิภาวะอย่างมาก'],
+  ] },
+  { f: [['mechanic', 'n', 'ช่างเครื่อง'], ['mechanical', 'adj', 'ทางกลไก'], ['mechanism', 'n', 'กลไก']], q: [
+    ['The ___ fixed my car.', 'mechanic', 'ช่างซ่อมรถของฉัน'],
+    ['This is a ___ problem.', 'mechanical', 'เป็นปัญหาทางกลไก'],
+    ['A strange ___ opens the door.', 'mechanism', 'กลไกแปลกๆ เปิดประตู'],
+  ] },
+  { f: [['migrate', 'v', 'อพยพ'], ['migration', 'n', 'การย้ายถิ่น'], ['migrant', 'n', 'ผู้ย้ายถิ่น']], q: [
+    ['Birds ___ south in winter.', 'migrate', 'นกอพยพไปทางใต้ในหน้าหนาว'],
+    ['Seasonal ___ is common.', 'migration', 'การย้ายถิ่นตามฤดูกาลเป็นเรื่องปกติ'],
+    ['Many ___ workers came.', 'migrant', 'แรงงานย้ายถิ่นจำนวนมากมา'],
+  ] },
+  { f: [['minimal', 'adj', 'น้อยที่สุด'], ['minimize', 'v', 'ลดให้น้อยที่สุด'], ['minimum', 'n', 'ขั้นต่ำ']], q: [
+    ['We try to ___ waste.', 'minimize', 'เราพยายามลดของเสียให้น้อยที่สุด'],
+    ['The damage was ___.', 'minimal', 'ความเสียหายน้อยมาก'],
+    ['The ___ age is eighteen.', 'minimum', 'อายุขั้นต่ำคือสิบแปดปี'],
+  ] },
+  { f: [['mobile', 'adj', 'เคลื่อนที่ได้'], ['mobility', 'n', 'ความคล่องตัว'], ['mobilize', 'v', 'ระดมพล']], q: [
+    ['The patient has limited ___.', 'mobility', 'ผู้ป่วยเคลื่อนไหวได้จำกัด'],
+    ['The group tried to ___ support.', 'mobilize', 'กลุ่มพยายามระดมการสนับสนุน'],
+  ] },
+  { f: [['moral', 'adj', 'ทางศีลธรรม'], ['morality', 'n', 'ศีลธรรม'], ['morally', 'adv', 'ในด้านศีลธรรม']], q: [
+    ['It is ___ wrong to lie.', 'morally', 'การโกหกผิดในเชิงศีลธรรม'],
+    ['They argued about ___.', 'morality', 'พวกเขาเถียงกันเรื่องศีลธรรม'],
+  ] },
+  { f: [['negotiate', 'v', 'เจรจา'], ['negotiation', 'n', 'การเจรจา'], ['negotiator', 'n', 'ผู้เจรจา']], q: [
+    ['They will ___ a new contract.', 'negotiate', 'พวกเขาจะเจรจาสัญญาใหม่'],
+    ['He is a skilled ___.', 'negotiator', 'เขาเป็นนักเจรจาฝีมือดี'],
+  ] },
+  { f: [['nutrition', 'n', 'โภชนาการ'], ['nutritious', 'adj', 'มีคุณค่าทางอาหาร'], ['nutrient', 'n', 'สารอาหาร'], ['nutritional', 'adj', 'ทางโภชนาการ']], q: [
+    ['Proper ___ is vital for growing children.', 'nutrition', 'โภชนาการที่เหมาะสมสำคัญมากสำหรับเด็กที่กำลังโต'],
+  ] },
+  { f: [['object', 'v', 'คัดค้าน'], ['objection', 'n', 'ข้อคัดค้าน'], ['objective', 'n', 'วัตถุประสงค์']], q: [
+    ['Does anyone ___ to the plan?', 'object', 'มีใครคัดค้านแผนไหม'],
+    ['The ___ of the game is to win.', 'objective', 'วัตถุประสงค์ของเกมคือชนะ'],
+    ['I have no ___.', 'objection', 'ฉันไม่มีข้อคัดค้าน'],
+  ] },
+  { f: [['oblige', 'v', 'บังคับ'], ['obligation', 'n', 'ภาระหน้าที่'], ['obligatory', 'adj', 'บังคับ']], q: [
+    ['I felt under no ___.', 'obligation', 'ฉันไม่รู้สึกว่ามีพันธะ'],
+    ['Attendance is ___.', 'obligatory', 'การเข้าร่วมเป็นข้อบังคับ'],
+  ] },
+  { f: [['obsess', 'v', 'หมกมุ่น'], ['obsession', 'n', 'ความหมกมุ่น'], ['obsessive', 'adj', 'หมกมุ่น']], q: [
+    ['He has an ___ with cleaning.', 'obsession', 'เขาหมกมุ่นกับการทำความสะอาด'],
+  ] },
+  { f: [['optimist', 'n', 'คนมองโลกในแง่ดี'], ['optimism', 'n', 'การมองโลกในแง่ดี'], ['optimistic', 'adj', 'มองในแง่ดี']], q: [
+    ['I am ___ about the future.', 'optimistic', 'ฉันมองอนาคตในแง่ดี'],
+    ['She faced it with ___.', 'optimism', 'เธอเผชิญมันด้วยความมองโลกในแง่ดี'],
+  ] },
+  { f: [['participate', 'v', 'มีส่วนร่วม'], ['participation', 'n', 'การมีส่วนร่วม'], ['participant', 'n', 'ผู้เข้าร่วม']], q: [
+    ['Everyone can ___ in the game.', 'participate', 'ทุกคนเข้าร่วมเกมได้'],
+    ['Each ___ gets a prize.', 'participant', 'ผู้เข้าร่วมทุกคนได้รางวัล'],
+  ] },
+  { f: [['partner', 'n', 'หุ้นส่วน'], ['partnership', 'n', 'ห้างหุ้นส่วน']], q: [
+    ['He started a ___ with his friend.', 'partnership', 'เขาตั้งห้างหุ้นส่วนกับเพื่อน'],
+    ['She is my business ___.', 'partner', 'เธอเป็นหุ้นส่วนทางธุรกิจของฉัน'],
+  ] },
+  { f: [['perceive', 'v', 'รับรู้'], ['perception', 'n', 'การรับรู้'], ['perceptive', 'adj', 'เฉียบแหลม']], q: [
+    ['How do you ___ the problem?', 'perceive', 'คุณมองปัญหานี้อย่างไร'],
+    ['Public ___ is changing.', 'perception', 'การรับรู้ของสาธารณชนกำลังเปลี่ยน'],
+  ] },
+  { f: [['persist', 'v', 'ยืนหยัด'], ['persistent', 'adj', 'ต่อเนื่อง, ดื้อดึง'], ['persistence', 'n', 'ความมุ่งมั่น'], ['persistently', 'adv', 'อย่างต่อเนื่อง']], q: [
+    ['Rain will ___ all week.', 'persist', 'ฝนจะตกต่อเนื่องทั้งสัปดาห์'],
+    ['Success needs ___.', 'persistence', 'ความสำเร็จต้องอาศัยความอดทนมุ่งมั่น'],
+    ['I have a ___ cough.', 'persistent', 'ฉันไอไม่หายสักที'],
+  ] },
+  { f: [['philosophy', 'n', 'ปรัชญา'], ['philosopher', 'n', 'นักปรัชญา'], ['philosophical', 'adj', 'เชิงปรัชญา']], q: [
+    ['He studied ___.', 'philosophy', 'เขาเรียนปรัชญา'],
+    ['Plato was a Greek ___.', 'philosopher', 'เพลโตเป็นนักปรัชญากรีก'],
+  ] },
+  { f: [['physical', 'adj', 'ทางร่างกาย'], ['physician', 'n', 'แพทย์'], ['physics', 'n', 'ฟิสิกส์'], ['physicist', 'n', 'นักฟิสิกส์']], q: [
+    ['A ___ explained the theory.', 'physicist', 'นักฟิสิกส์อธิบายทฤษฎี'],
+    ['She studies ___.', 'physics', 'เธอเรียนฟิสิกส์'],
+  ] },
+  { f: [['potential', 'adj', 'เป็นไปได้'], ['potentially', 'adv', 'อาจจะ']], q: [
+    ['Everyone has the ___ to learn.', 'potential', 'ทุกคนมีศักยภาพในการเรียนรู้'],
+    ['It is ___ dangerous.', 'potentially', 'มันอาจเป็นอันตราย'],
+  ] },
+  { f: [['prejudice', 'n', 'อคติ'], ['prejudiced', 'adj', 'มีอคติ']], q: [
+    ['He has no ___ against anyone.', 'prejudice', 'เขาไม่มีอคติต่อใคร'],
+    ['Don\'t be so ___.', 'prejudiced', 'อย่าเป็นคนมีอคติ'],
+  ] },
+  { f: [['preserve', 'v', 'รักษา'], ['preservation', 'n', 'การรักษา'], ['preservative', 'n', 'สารกันเสีย']], q: [
+    ['Salt can ___ meat.', 'preserve', 'เกลือช่วยถนอมเนื้อ'],
+    ['Wildlife ___ is important.', 'preservation', 'การอนุรักษ์สัตว์ป่าสำคัญ'],
+  ] },
+  { f: [['prevent', 'v', 'ป้องกัน'], ['prevention', 'n', 'การป้องกัน'], ['preventive', 'adj', 'เชิงป้องกัน']], q: [
+    ['Exercise can ___ illness.', 'prevent', 'การออกกำลังกายป้องกันโรคได้'],
+  ] },
+  { f: [['profit', 'n', 'กำไร'], ['profitable', 'adj', 'ทำกำไร'], ['profitability', 'n', 'ความสามารถในการทำกำไร']], q: [
+    ['The shop made a small ___.', 'profit', 'ร้านได้กำไรเล็กน้อย'],
+    ['It is a ___ business.', 'profitable', 'เป็นธุรกิจที่ทำกำไร'],
+  ] },
+  { f: [['prohibit', 'v', 'ห้าม'], ['prohibition', 'n', 'การห้าม']], q: [
+    ['There is a ___ on alcohol.', 'prohibition', 'มีการห้ามแอลกอฮอล์'],
+  ] },
+  { f: [['prominent', 'adj', 'โดดเด่น'], ['prominence', 'n', 'ความโดดเด่น'], ['prominently', 'adv', 'อย่างเด่นชัด']], q: [
+    ['She is a ___ lawyer.', 'prominent', 'เธอเป็นทนายความที่มีชื่อเสียง'],
+    ['The sign was ___ displayed.', 'prominently', 'ป้ายถูกติดไว้อย่างเด่นชัด'],
+  ] },
+  { f: [['promote', 'v', 'ส่งเสริม'], ['promotion', 'n', 'การเลื่อนตำแหน่ง'], ['promotional', 'adj', 'เพื่อการส่งเสริม']], q: [
+    ['The ad aims to ___ tourism.', 'promote', 'โฆษณานี้มุ่งส่งเสริมการท่องเที่ยว'],
+    ['He got a ___ at work.', 'promotion', 'เขาได้เลื่อนตำแหน่งที่ทำงาน'],
+  ] },
+  { f: [['propose', 'v', 'เสนอ'], ['proposal', 'n', 'ข้อเสนอ'], ['proposition', 'n', 'ข้อเสนอ']], q: [
+    ['I\'d like to ___ a toast.', 'propose', 'ฉันขอเสนอให้ดื่มอวยพร'],
+    ['The board rejected the ___.', 'proposal', 'คณะกรรมการปฏิเสธข้อเสนอ'],
+  ] },
+  { f: [['provoke', 'v', 'ยั่วยุ'], ['provocation', 'n', 'การยั่วยุ'], ['provocative', 'adj', 'ที่ยั่วยุ']], q: [
+    ['Don\'t ___ the dog.', 'provoke', 'อย่ายั่วสุนัข'],
+    ['It was a ___ remark.', 'provocative', 'เป็นคำพูดที่ยั่วยุ'],
+  ] },
+  { f: [['psychology', 'n', 'จิตวิทยา'], ['psychological', 'adj', 'ทางจิตวิทยา'], ['psychologist', 'n', 'นักจิตวิทยา'], ['psychiatric', 'adj', 'ทางจิตเวช']], q: [
+    ['She wants to be a ___.', 'psychologist', 'เธออยากเป็นนักจิตวิทยา'],
+    ['He studies child ___.', 'psychology', 'เขาศึกษาจิตวิทยาเด็ก'],
+  ] },
+  { f: [['rational', 'adj', 'มีเหตุผล'], ['rationally', 'adv', 'อย่างมีเหตุผล'], ['irrational', 'adj', 'ไร้เหตุผล']], q: [
+    ['Think ___ before you decide.', 'rationally', 'คิดอย่างมีเหตุผลก่อนตัดสินใจ'],
+  ] },
+  { f: [['realization', 'n', 'การตระหนักรู้'], ['realistic', 'adj', 'สมจริง'], ['realism', 'n', 'สัจนิยม']], q: [
+    ['Be ___ about your goals.', 'realistic', 'จงตั้งเป้าหมายอย่างสมเหตุสมผล'],
+  ] },
+  { f: [['recruit', 'v', 'สรรหา'], ['recruitment', 'n', 'การรับสมัครงาน'], ['recruiter', 'n', 'ผู้สรรหา']], q: [
+    ['We need to ___ more staff.', 'recruit', 'เราต้องรับพนักงานเพิ่ม'],
+  ] },
+  { f: [['reform', 'v', 'ปฏิรูป'], ['reformer', 'n', 'ผู้ปฏิรูป']], q: [
+    ['The tax system needs ___.', 'reform', 'ระบบภาษีต้องปฏิรูป'],
+    ['The ___ changed the school system.', 'reformer', 'นักปฏิรูปเปลี่ยนระบบโรงเรียน'],
+  ] },
+  { f: [['regulate', 'v', 'ควบคุม'], ['regulation', 'n', 'กฎระเบียบ'], ['regulator', 'n', 'ผู้กำกับดูแล'], ['regulatory', 'adj', 'ที่กำกับดูแล']], q: [
+    ['The ___ fined the bank.', 'regulator', 'หน่วยกำกับดูแลปรับธนาคาร'],
+  ] },
+  { f: [['reinforce', 'v', 'เสริมกำลัง'], ['reinforcement', 'n', 'การเสริมกำลัง']], q: [
+    ['Steel will ___ the wall.', 'reinforce', 'เหล็กจะเสริมกำแพงให้แข็งแรง'],
+  ] },
+  { f: [['relevant', 'adj', 'เกี่ยวข้อง'], ['relevance', 'n', 'ความเกี่ยวข้อง'], ['irrelevant', 'adj', 'ไม่เกี่ยวข้อง']], q: [
+    ['Your answer is not ___.', 'relevant', 'คำตอบของคุณไม่เกี่ยวข้อง'],
+    ['The ___ of the study is clear.', 'relevance', 'ความเกี่ยวข้องของงานศึกษาชัดเจน'],
+  ] },
+  { f: [['reluctant', 'adj', 'ไม่เต็มใจ'], ['reluctance', 'n', 'ความไม่เต็มใจ'], ['reluctantly', 'adv', 'อย่างไม่เต็มใจ']], q: [
+    ['He was ___ to speak.', 'reluctant', 'เขาไม่เต็มใจพูด'],
+    ['She agreed ___.', 'reluctantly', 'เธอตกลงอย่างไม่เต็มใจ'],
+  ] },
+  { f: [['represent', 'v', 'เป็นตัวแทน'], ['representation', 'n', 'การเป็นตัวแทน'], ['representative', 'n', 'ตัวแทน']], q: [
+    ['Who will ___ the school?', 'represent', 'ใครจะเป็นตัวแทนโรงเรียน'],
+    ['A sales ___ called me.', 'representative', 'ตัวแทนฝ่ายขายโทรหาฉัน'],
+  ] },
+  { f: [['reproduce', 'v', 'สืบพันธุ์, ทำซ้ำ'], ['reproduction', 'n', 'การสืบพันธุ์'], ['reproductive', 'adj', 'เกี่ยวกับการสืบพันธุ์']], q: [
+    ['Rabbits ___ quickly.', 'reproduce', 'กระต่ายสืบพันธุ์เร็ว'],
+    ['The painting is a ___.', 'reproduction', 'ภาพวาดนี้เป็นของจำลอง'],
+  ] },
+  { f: [['reside', 'v', 'พำนัก'], ['residence', 'n', 'ที่พักอาศัย'], ['resident', 'n', 'ผู้อยู่อาศัย'], ['residential', 'adj', 'เกี่ยวกับที่อยู่อาศัย']], q: [
+    ['It is a quiet ___ area.', 'residential', 'เป็นย่านที่อยู่อาศัยที่เงียบสงบ'],
+  ] },
+  { f: [['resist', 'v', 'ต่อต้าน'], ['resistance', 'n', 'การต่อต้าน'], ['resistant', 'adj', 'ทนทาน']], q: [
+    ['I can\'t ___ chocolate.', 'resist', 'ฉันอดช็อกโกแลตไม่ได้'],
+    ['The plan met strong ___.', 'resistance', 'แผนนี้ถูกต่อต้านอย่างหนัก'],
+    ['The material is water-___.', 'resistant', 'วัสดุนี้กันน้ำได้'],
+  ] },
+  { f: [['resolve', 'v', 'แก้ไข, ตัดสินใจ'], ['resolution', 'n', 'การแก้ไข, มติ']], q: [
+    ['We must ___ this problem.', 'resolve', 'เราต้องแก้ปัญหานี้'],
+    ['The ___ was passed.', 'resolution', 'มติได้รับการผ่าน'],
+  ] },
+  { f: [['restrict', 'v', 'จำกัด'], ['restriction', 'n', 'ข้อจำกัด'], ['restrictive', 'adj', 'เข้มงวด'], ['restricted', 'adj', 'ถูกจำกัด']], q: [
+    ['Access is ___ to staff.', 'restricted', 'การเข้าถึงจำกัดเฉพาะพนักงาน'],
+  ] },
+  { f: [['retire', 'v', 'เกษียณ'], ['retirement', 'n', 'การเกษียณ'], ['retired', 'adj', 'เกษียณแล้ว']], q: [
+    ['He will ___ next year.', 'retire', 'เขาจะเกษียณปีหน้า'],
+    ['She enjoys her ___.', 'retirement', 'เธอเพลิดเพลินกับชีวิตหลังเกษียณ'],
+    ['My father is ___.', 'retired', 'พ่อของฉันเกษียณแล้ว'],
+  ] },
+  { f: [['reveal', 'v', 'เปิดเผย'], ['revelation', 'n', 'การเปิดเผย']], q: [
+    ['The test will ___ the truth.', 'reveal', 'การทดสอบจะเปิดเผยความจริง'],
+    ['The report was a ___.', 'revelation', 'รายงานนี้เป็นการเปิดเผยที่น่าตกใจ'],
+  ] },
+  { f: [['revolution', 'n', 'การปฏิวัติ'], ['revolutionary', 'adj', 'ปฏิวัติ'], ['revolutionize', 'v', 'ปฏิวัติ']], q: [
+    ['The phone was a ___ invention.', 'revolutionary', 'โทรศัพท์เป็นสิ่งประดิษฐ์ที่ปฏิวัติวงการ'],
+    ['The ___ began in 1789.', 'revolution', 'การปฏิวัติเริ่มในปี 1789'],
+  ] },
+  { f: [['ridiculous', 'adj', 'น่าขัน'], ['ridicule', 'n', 'การเยาะเย้ย']], q: [
+    ['They faced public ___.', 'ridicule', 'พวกเขาเผชิญการเยาะเย้ยของสาธารณชน'],
+    ['That\'s a ___ idea.', 'ridiculous', 'นั่นเป็นความคิดที่ไร้สาระ'],
+  ] },
+  { f: [['scholar', 'n', 'นักวิชาการ'], ['scholarship', 'n', 'ทุนการศึกษา'], ['scholarly', 'adj', 'เชิงวิชาการ']], q: [
+    ['She won a ___ to study abroad.', 'scholarship', 'เธอได้ทุนเรียนต่อต่างประเทศ'],
+    ['He is a respected ___.', 'scholar', 'เขาเป็นนักวิชาการที่ได้รับความเคารพ'],
+  ] },
+  { f: [['significant', 'adj', 'สำคัญ'], ['significance', 'n', 'ความสำคัญ'], ['significantly', 'adv', 'อย่างมีนัยสำคัญ'], ['signify', 'v', 'หมายถึง']], q: [
+    ['Prices fell ___.', 'significantly', 'ราคาลดลงอย่างมีนัยสำคัญ'],
+    ['This is a ___ discovery.', 'significant', 'นี่เป็นการค้นพบที่สำคัญ'],
+  ] },
+  { f: [['simulate', 'v', 'จำลอง'], ['simulation', 'n', 'การจำลอง'], ['simulator', 'n', 'เครื่องจำลอง']], q: [
+    ['Pilots train on a flight ___.', 'simulator', 'นักบินฝึกกับเครื่องจำลองการบิน'],
+    ['The ___ showed the result.', 'simulation', 'การจำลองแสดงผล'],
+  ] },
+  { f: [['solid', 'adj', 'แข็ง, มั่นคง'], ['solidarity', 'n', 'ความเป็นหนึ่งเดียว'], ['solidify', 'v', 'แข็งตัว']], q: [
+    ['Water becomes ___ as ice.', 'solid', 'น้ำกลายเป็นของแข็งเมื่อเป็นน้ำแข็ง'],
+    ['They showed ___ with workers.', 'solidarity', 'พวกเขาแสดงความเป็นปึกแผ่นกับคนงาน'],
+  ] },
+  { f: [['specialize', 'v', 'เชี่ยวชาญเฉพาะ'], ['specialist', 'n', 'ผู้เชี่ยวชาญ'], ['speciality', 'n', 'ความเชี่ยวชาญ'], ['specialized', 'adj', 'เฉพาะทาง']], q: [
+    ['She is a heart ___.', 'specialist', 'เธอเป็นผู้เชี่ยวชาญด้านหัวใจ'],
+    ['It needs ___ training.', 'specialized', 'ต้องการการฝึกเฉพาะทาง'],
+  ] },
+  { f: [['speculate', 'v', 'คาดเดา'], ['speculation', 'n', 'การคาดเดา'], ['speculative', 'adj', 'เป็นการเก็งกำไร']], q: [
+    ['I won\'t ___ about the cause.', 'speculate', 'ฉันจะไม่คาดเดาถึงสาเหตุ'],
+    ['There is much ___ about the result.', 'speculation', 'มีการคาดเดามากมายเกี่ยวกับผล'],
+  ] },
+  { f: [['stable', 'adj', 'มั่นคง'], ['stability', 'n', 'ความมั่นคง'], ['stabilize', 'v', 'ทำให้มั่นคง'], ['unstable', 'adj', 'ไม่มั่นคง']], q: [
+    ['The ladder is not ___.', 'stable', 'บันไดไม่มั่นคง'],
+    ['Political ___ matters.', 'stability', 'เสถียรภาพทางการเมืองสำคัญ'],
+  ] },
+  { f: [['statistic', 'n', 'สถิติ(ตัวเลข)'], ['statistics', 'n', 'สถิติ'], ['statistical', 'adj', 'เชิงสถิติ'], ['statistically', 'adv', 'ทางสถิติ']], q: [
+    ['The ___ look good.', 'statistics', 'ตัวเลขสถิติดูดี'],
+    ['It is a ___ fact.', 'statistical', 'เป็นข้อเท็จจริงเชิงสถิติ'],
+  ] },
+  { f: [['strategy', 'n', 'กลยุทธ์'], ['strategic', 'adj', 'เชิงกลยุทธ์'], ['strategically', 'adv', 'อย่างมีกลยุทธ์']], q: [
+    ['We need a new ___.', 'strategy', 'เราต้องการกลยุทธ์ใหม่'],
+    ['The base is ___ placed.', 'strategically', 'ฐานทัพตั้งในจุดยุทธศาสตร์'],
+  ] },
+  { f: [['structure', 'n', 'โครงสร้าง'], ['structural', 'adj', 'เชิงโครงสร้าง'], ['structured', 'adj', 'มีโครงสร้าง']], q: [
+    ['The ___ of the bridge is strong.', 'structure', 'โครงสร้างของสะพานแข็งแรง'],
+    ['There was ___ damage to the building.', 'structural', 'อาคารเสียหายที่โครงสร้าง'],
+  ] },
+  { f: [['subscribe', 'v', 'สมัครสมาชิก'], ['subscription', 'n', 'การสมัครสมาชิก'], ['subscriber', 'n', 'สมาชิก']], q: [
+    ['Please ___ to our channel.', 'subscribe', 'กรุณากดติดตามช่องของเรา'],
+    ['A yearly ___ costs 500 baht.', 'subscription', 'สมาชิกรายปีราคา 500 บาท'],
+  ] },
+  { f: [['substitute', 'v', 'แทนที่'], ['substitution', 'n', 'การแทนที่']], q: [
+    ['You can ___ honey for sugar.', 'substitute', 'คุณใช้น้ำผึ้งแทนน้ำตาลได้'],
+    ['The ___ of one player changed the game.', 'substitution', 'การเปลี่ยนตัวผู้เล่นเปลี่ยนเกม'],
+  ] },
+  { f: [['succession', 'n', 'ความต่อเนื่อง'], ['successive', 'adj', 'ติดต่อกัน'], ['successor', 'n', 'ผู้สืบทอด']], q: [
+    ['He won three ___ games.', 'successive', 'เขาชนะสามเกมติดต่อกัน'],
+    ['She is the ___ to the manager.', 'successor', 'เธอเป็นผู้สืบทอดตำแหน่งผู้จัดการ'],
+  ] },
+  { f: [['suffer', 'v', 'ทนทุกข์'], ['suffering', 'n', 'ความทุกข์ทรมาน']], q: [
+    ['Many people ___ from stress.', 'suffer', 'หลายคนทุกข์จากความเครียด'],
+    ['War causes great ___.', 'suffering', 'สงครามก่อให้เกิดความทุกข์ทรมานอย่างมาก'],
+  ] },
+  { f: [['sufficient', 'adj', 'เพียงพอ'], ['sufficiently', 'adv', 'เพียงพอ'], ['insufficient', 'adj', 'ไม่เพียงพอ']], q: [
+    ['Is the room ___ large?', 'sufficiently', 'ห้องใหญ่พอไหม'],
+  ] },
+  { f: [['suppress', 'v', 'ปราบปราม'], ['suppression', 'n', 'การปราบปราม']], q: [
+    ['The army tried to ___ the protest.', 'suppress', 'กองทัพพยายามปราบการประท้วง'],
+    ['The ___ of free speech is wrong.', 'suppression', 'การปิดกั้นเสรีภาพการพูดเป็นสิ่งผิด'],
+  ] },
+  { f: [['sustain', 'v', 'รักษาไว้'], ['sustainable', 'adj', 'ยั่งยืน'], ['sustainability', 'n', 'ความยั่งยืน']], q: [
+    ['The farm uses ___ methods.', 'sustainable', 'ฟาร์มใช้วิธีที่ยั่งยืน'],
+    ['Food can ___ life.', 'sustain', 'อาหารหล่อเลี้ยงชีวิตได้'],
+    ['We care about ___.', 'sustainability', 'เราใส่ใจเรื่องความยั่งยืน'],
+  ] },
+  { f: [['technique', 'n', 'เทคนิค'], ['technical', 'adj', 'ทางเทคนิค'], ['technician', 'n', 'ช่างเทคนิค'], ['technological', 'adj', 'ทางเทคโนโลยี']], q: [
+    ['He is a lab ___.', 'technician', 'เขาเป็นช่างเทคนิคห้องแล็บ'],
+  ] },
+  { f: [['transform', 'v', 'เปลี่ยนแปลง'], ['transformation', 'n', 'การเปลี่ยนแปลง']], q: [
+    ['Technology can ___ lives.', 'transform', 'เทคโนโลยีเปลี่ยนชีวิตได้'],
+    ['The ___ was amazing.', 'transformation', 'การเปลี่ยนแปลงน่าทึ่ง'],
+  ] },
+  { f: [['transmit', 'v', 'ส่งผ่าน'], ['transmission', 'n', 'การส่งผ่าน'], ['transmitter', 'n', 'เครื่องส่ง']], q: [
+    ['Mosquitoes ___ the disease.', 'transmit', 'ยุงแพร่เชื้อโรค'],
+    ['The ___ was clear.', 'transmission', 'การส่งสัญญาณชัดเจน'],
+  ] },
+  { f: [['transparent', 'adj', 'โปร่งใส'], ['transparency', 'n', 'ความโปร่งใส']], q: [
+    ['Glass is ___.', 'transparent', 'แก้วโปร่งใส'],
+    ['We demand more ___.', 'transparency', 'เราเรียกร้องความโปร่งใสมากขึ้น'],
+  ] },
+  { f: [['tremendous', 'adj', 'มหาศาล'], ['tremendously', 'adv', 'อย่างมาก']], q: [
+    ['She made a ___ effort.', 'tremendous', 'เธอพยายามอย่างมหาศาล'],
+    ['I enjoyed it ___.', 'tremendously', 'ฉันสนุกกับมันมาก'],
+  ] },
+  { f: [['unify', 'v', 'รวมเป็นหนึ่ง'], ['unity', 'n', 'ความเป็นเอกภาพ'], ['unification', 'n', 'การรวมเป็นหนึ่ง'], ['unified', 'adj', 'ที่เป็นหนึ่งเดียว']], q: [
+    ['The goal is to ___ the country.', 'unify', 'เป้าหมายคือรวมประเทศเป็นหนึ่ง'],
+    ['We need ___ now.', 'unity', 'ตอนนี้เราต้องการความสามัคคี'],
+  ] },
+  { f: [['utilize', 'v', 'ใช้ประโยชน์'], ['utility', 'n', 'สาธารณูปโภค, ประโยชน์'], ['utilization', 'n', 'การใช้ประโยชน์']], q: [
+    ['The bills include the ___ costs.', 'utility', 'ใบแจ้งหนี้รวมค่าสาธารณูปโภค'],
+    ['We ___ all our resources.', 'utilize', 'เราใช้ทรัพยากรทุกอย่างให้เป็นประโยชน์'],
+  ] },
+  { f: [['variation', 'n', 'ความแปรผัน'], ['varied', 'adj', 'หลากหลาย']], q: [
+    ['He has a ___ diet.', 'varied', 'เขากินอาหารหลากหลาย'],
+  ] },
+  { f: [['verify', 'v', 'ตรวจสอบ'], ['verification', 'n', 'การตรวจสอบ']], q: [
+    ['Please ___ your email.', 'verify', 'กรุณายืนยันอีเมลของคุณ'],
+    ['The ___ takes a day.', 'verification', 'การตรวจสอบใช้เวลาหนึ่งวัน'],
+  ] },
+  { f: [['violate', 'v', 'ฝ่าฝืน'], ['violation', 'n', 'การละเมิด']], q: [
+    ['Drivers who ___ the law pay fines.', 'violate', 'คนขับที่ฝ่าฝืนกฎหมายถูกปรับ'],
+  ] },
+  { f: [['visibly', 'adv', 'เห็นได้ชัด'], ['invisible', 'adj', 'มองไม่เห็น']], q: [
+    ['She was ___ upset.', 'visibly', 'เธอเสียใจอย่างเห็นได้ชัด'],
+    ['Air is ___.', 'invisible', 'อากาศมองไม่เห็น'],
+  ] },
+  { f: [['volunteer', 'n', 'อาสาสมัคร'], ['voluntary', 'adj', 'โดยสมัครใจ'], ['voluntarily', 'adv', 'โดยสมัครใจ']], q: [
+    ['He left the job ___.', 'voluntarily', 'เขาลาออกจากงานโดยสมัครใจ'],
+    ['She works as a ___ at the shelter.', 'volunteer', 'เธอเป็นอาสาสมัครที่ศูนย์พักพิง'],
+  ] },
+  { f: [['vulnerable', 'adj', 'เปราะบาง'], ['vulnerability', 'n', 'ความเปราะบาง']], q: [
+    ['Old people are more ___.', 'vulnerable', 'ผู้สูงอายุเปราะบางกว่า'],
+    ['Hackers target the ___.', 'vulnerability', 'แฮกเกอร์เล็งไปที่จุดอ่อน'],
+  ] },
+  { f: [['welfare', 'n', 'สวัสดิการ'], ['well-being', 'n', 'ความเป็นอยู่ที่ดี']], q: [
+    ['Exercise improves mental ___.', 'well-being', 'การออกกำลังกายทำให้สุขภาพจิตดีขึ้น'],
+    ['Child ___ is a priority.', 'welfare', 'สวัสดิการเด็กเป็นเรื่องสำคัญ'],
+  ] },
 ];
