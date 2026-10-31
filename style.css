@@ -1804,3 +1804,33 @@ html:not(.no-hf) :is(.topbar h1, .h2, details.set-group > summary, .quick-btn b,
 .sp-opt[aria-checked="true"] { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, var(--surface)); }
 .sp-nav { margin-top: 14px; gap: 10px; }
 @media (max-height: 520px) { .sp-opt img { max-height: 46vh; width: auto; } }
+/* ---------- fun zone (1.115): hub, coins, power-ups, coin shop, tower ---------- */
+.coin-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 99px; background: var(--surface-2); border: 1.5px solid var(--border); color: var(--text); font-size: var(--fs-sm); font-weight: 700; white-space: nowrap; vertical-align: middle; }
+.coin-fly { position: fixed; left: 50%; top: 42%; transform: translate(-50%, 0); z-index: 60; padding: 6px 14px; border-radius: 99px; background: #ffd34d; color: #3b2a00; font-weight: 800; pointer-events: none; animation: coinfly 1.3s ease-out forwards; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
+@keyframes coinfly { 0% { opacity: 0; transform: translate(-50%, 10px) scale(.8); } 20% { opacity: 1; transform: translate(-50%, 0) scale(1.05); } 100% { opacity: 0; transform: translate(-50%, -60px) scale(1); } }
+.pw-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+.pw-btn { border: 1.5px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: var(--fs-sm); font-weight: 700; border-radius: 99px; padding: 6px 12px; cursor: pointer; }
+.pw-btn small { color: var(--muted); font-weight: 600; }
+.pw-btn:disabled { opacity: .45; cursor: default; }
+.opt.gone { opacity: .25; text-decoration: line-through; }
+.fun-head { display: flex; align-items: center; gap: 10px; }
+.fun-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+.fun-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-height: 108px; padding: 12px; border: 2px solid var(--border); border-radius: 18px; background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.fun-tile b { font-size: var(--fs-md, 16px); }
+.fun-tile small { color: var(--muted); font-size: var(--fs-xs); line-height: 1.35; }
+.fun-ic { font-size: 30px; line-height: 1; }
+.fun-tile:active { transform: scale(.97); }
+@media (min-width: 700px) { .fun-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1000px) { .fun-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.fun-card .coin-pill { margin-left: 6px; font-size: var(--fs-xs); padding: 1px 8px; }
+.shop-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+.shop-row + .shop-row { border-top: 1px solid var(--border); }
+.shop-ic { font-size: 28px; width: 36px; text-align: center; flex: none; }
+.tw-map { display: grid; gap: 6px; }
+.tw-zone { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; border: 2px solid transparent; }
+.tw-zone > span:first-child { font-size: 24px; width: 32px; text-align: center; flex: none; }
+.tw-zone.got { background: var(--surface-2); }
+.tw-zone.now { border-color: var(--primary); }
+.tw-banner { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 50vh; text-align: center; }
+.tw-up { font-size: 64px; line-height: 1; animation: twup .7s ease-out; }
+@keyframes twup { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }

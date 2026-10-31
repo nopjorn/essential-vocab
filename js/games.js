@@ -188,6 +188,7 @@ function renderGames() {
       ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
     </div>
     ${gameEdit ? '' : gameSections()}
+    <button class="card-box guide-link" data-go="fun"><span>🎪</span><div class="grow"><b>โซนสนุก</b><div class="small muted">หอคอยไม่รู้จบ ปริศนาประจำวัน การ์ดสะสม สวนคำศัพท์ ร้านค้าเหรียญ · 🪙 ${coinBal()}</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="toRiddle"><span>🔤</span><div class="grow"><b>ปริศนาศัพท์ประจำวัน</b><div class="small muted">ทายคำ 5 ตัวอักษรใน 6 ครั้ง · คำใหม่ทุกวัน${riddleToday().over ? ' · ทำแล้ววันนี้ ✅' : ''}</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="toWs"><span>🔎</span><div class="grow"><b>ค้นหาคำในตาราง</b><div class="small muted">หาคำที่ซ่อนในตาราง 10×10 โดยดูคำแปลไทยเป็นคำใบ้ · เลือกหมวดได้</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="toMap"><span>🗺️</span><div class="grow"><b>แผนที่ด่าน</b><div class="small muted">เดินทางผ่านด่านของแต่ละหมวด ด่านละ 8 ข้อ ได้ ★ 1–3 · ผ่าน ${stageTotals()} ด่าน</div></div><span class="muted">›</span></button>

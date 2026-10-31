@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.117.0';
+const APP_VERSION = '1.118.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -208,6 +208,8 @@ const defaults = () => ({
   mascot: { equip: { head: '', face: '', body: '' }, at: 0 }, // น้องคำ outfit (1.67)
   owned: [],           // item ids won early from the daily box (1.67)
   box: { date: '', got: '' }, // today's mystery box
+  coin: {},            // fun zone coins (1.115): device id -> [earned, spent]; balance = coinBal() (js/fun.js)
+  tower: { best: 0, cp: 0, runs: 0 }, // endless tower (1.115): highest floor cleared, highest boss floor (checkpoint), runs (js/tower.js)
   adv: {},             // weekly adventure book (1.114): Monday -> { t: tag id, s: '0101100' stamps, done, perfect } (js/adventure.js)
   evt: {},             // 'eventId-year' -> { r, n, pass, at } seasonal event quiz results (1.72)
   wnew: { key: '', n: 0 }, // new words started this week (1.62)
@@ -269,6 +271,7 @@ function load() {
       if (!Array.isArray(r.owned)) r.owned = [];
       if (!r.evt || typeof r.evt !== 'object' || Array.isArray(r.evt)) r.evt = {};
       r.adv = cleanAdv(r.adv);
+      r.coin = cleanCoin(r.coin); r.tower = cleanTower(r.tower);
       if (!r.box || typeof r.box !== 'object') r.box = d.box;
       if (!r.riddle || typeof r.riddle !== 'object' || !Array.isArray(r.riddle.g)) r.riddle = d.riddle;
       if (!r.riddleStat || typeof r.riddleStat !== 'object') r.riddleStat = d.riddleStat;
@@ -419,6 +422,8 @@ function mergeBackup(d) {
   if (Array.isArray(d.owned)) S.owned = [...new Set([...S.owned, ...d.owned.filter((x) => typeof x === 'string')])];
   for (const [k, v] of Object.entries(d.evt || {})) if (v && v.n) { const m = S.evt[k]; S.evt[k] = !m ? v : { ...(v.r > m.r ? v : m), pass: !!(m.pass || v.pass) }; }
   if (d.adv) mergeAdv(d.adv);
+  for (const [dev, v] of Object.entries(cleanCoin(d.coin))) { const m = S.coin[dev] || [0, 0]; S.coin[dev] = [Math.max(m[0], v[0]), Math.max(m[1], v[1])]; }
+  if (d.tower) { const t = cleanTower(d.tower); S.tower = { best: Math.max(S.tower.best, t.best), cp: Math.max(S.tower.cp, t.cp), runs: Math.max(S.tower.runs, t.runs) }; }
   if (d.box && d.box.date && d.box.date > (S.box.date || '')) S.box = d.box;
   if (d.wnew && d.wnew.key) {
     if (d.wnew.key > (S.wnew.key || '')) S.wnew = d.wnew; else if (d.wnew.key === S.wnew.key) S.wnew.n = Math.max(S.wnew.n, d.wnew.n || 0);
@@ -465,6 +470,18 @@ function mergeBackup(d) {
   topicMigrate(S);
   save();
   return { added, updated };
+}
+
+/* ---------- fun zone (1.115): storage helpers (pages: js/fun.js, js/tower.js) ---------- */
+// Coins: one [earned, spent] bucket per device (only that device writes it), so a merge keeps the larger numbers.
+function cleanCoin(c) {
+  const out = {};
+  if (c && typeof c === 'object' && !Array.isArray(c)) for (const [k, v] of Object.entries(c)) if (Array.isArray(v) && isNum(v[0]) && isNum(v[1])) out[k] = [Math.max(0, Math.floor(v[0])), Math.max(0, Math.floor(v[1]))];
+  return out;
+}
+function cleanTower(t) {
+  const n = (x) => (isNum(x) && x > 0 ? Math.floor(x) : 0);
+  return t && typeof t === 'object' ? { best: n(t.best), cp: Math.floor(n(t.cp) / 10) * 10, runs: n(t.runs) } : { best: 0, cp: 0, runs: 0 };
 }
 
 /* ---------- weekly adventure book (1.114): storage helpers (the page is js/adventure.js) ---------- */
@@ -528,6 +545,7 @@ function markActive() {
   if (hr === 5) S.counts.early = 1;
   if (hr < 3) S.counts.owl = 1;
   if (now.getMonth() === 0 && now.getDate() === 1) S.counts.newyear = 1;
+  if (now.getDay() === 5 && now.getDate() === 13) S.counts.f13 = 1;
   if (S.streak.last === t) return repairCheck();
   const missed = S.streak.last ? dayDiff(t, S.streak.last) - 1 : Infinity;
   if (missed === 0) S.streak.count++;
@@ -741,6 +759,13 @@ const ACH = [
   { id: 'early', icon: '🌅', name: 'นกที่ตื่นเช้า', desc: 'เรียนตอนตี 5', secret: true, ok: (s) => s.early },
   { id: 'owl', icon: '🦉', name: 'นกฮูกยามดึก', desc: 'เรียนหลังเที่ยงคืนถึงตีสาม', secret: true, ok: (s) => s.owl },
   { id: 'newyear', icon: '🎆', name: 'เริ่มปีด้วยศัพท์', desc: 'เรียนในวันปีใหม่ 1 มกราคม', secret: true, ok: (s) => s.newyear },
+  { id: 'tower10', icon: '🏯', name: 'นักปีนหอคอย', desc: 'ผ่านหอคอยไม่รู้จบถึงชั้น 10', ok: (s) => s.tower >= 10 },
+  { id: 'tower50', icon: '🧙', name: 'พ่อมดบนยอดหอ', desc: 'ผ่านหอคอยไม่รู้จบถึงชั้น 50', ok: (s) => s.tower >= 50 },
+  { id: 'sTower', icon: '🌌', name: 'แตะขอบฟ้า', desc: 'ผ่านหอคอยไม่รู้จบถึงชั้น 100', secret: true, ok: (s) => s.tower >= 100 },
+  { id: 'sRich', icon: '💰', name: 'เศรษฐีน้อย', desc: 'มีเหรียญสะสมพร้อมกัน 500 เหรียญ', secret: true, ok: (s) => s.maxCoin >= 500 },
+  { id: 'sShop', icon: '🛍️', name: 'ขาช้อป', desc: 'ซื้อของที่ร้านค้าเหรียญ 5 ชิ้น', secret: true, ok: (s) => s.buys >= 5 },
+  { id: 'sF13', icon: '🐈‍⬛', name: 'ไม่กลัวโชคร้าย', desc: 'เรียนในวันศุกร์ที่ 13', secret: true, ok: (s) => s.f13 },
+  { id: 'sSpeed', icon: '⚡', name: 'สายฟ้าแลบ', desc: 'จับเวลา 60 วินาทีตอบถูก 30 ข้อ', secret: true, ok: (s) => s.speed >= 30 },
   { id: 'comeback', icon: '🦋', name: 'กลับมาอีกครั้ง', desc: 'กลับมาเรียนหลังหายไปเกิน 30 วัน', secret: true, ok: (s) => s.comeback },
   ...LEVELS.map((l) => ({ id: 'lt' + l, icon: '🎓', name: `ผ่านทดสอบ ${LV_LABEL[l]}`, desc: `ผ่านแบบทดสอบจบระดับ ${LV_LABEL[l]} (ตั้งแต่ 80%)`, ok: (s) => s.lt[l] })),
   ...LEVELS.map((l) => ({ id: 'lv' + l, icon: '🎓', name: `จบ ${LV_LABEL[l]}`, desc: `เรียนครบทุกคำในระดับ ${LV_LABEL[l]}`, ok: (s) => s.lv[l] })),
@@ -772,6 +797,7 @@ function checkAch() {
     early: S.counts.early, owl: S.counts.owl, newyear: S.counts.newyear, comeback: S.counts.comeback,
     allGames: typeof GAMES !== 'undefined' && Object.keys(GAMES).every((g) => gamePlays(g) > 0 || (!canListen && /^speak/.test(g))),
     lt: Object.fromEntries(LEVELS.map((l) => [l, ((m) => !!(m && m.n && m.r / m.n >= 0.8))(S.ltest[l])])),
+    tower: (S.tower && S.tower.best) || 0, maxCoin: S.counts.maxCoin || 0, buys: S.counts.buys || 0, f13: S.counts.f13, speed: S.best.timeAttack || 0,
     advs: Object.values(S.adv || {}).filter((a) => a && a.done).length,
     events: new Set(Object.entries(S.evt).filter(([, v]) => v && v.pass).map(([k]) => k.replace(/-\d+$/, ''))).size,
     mtestFull: Object.values(S.mtest).some((m) => m && m.n && m.r === m.n),
@@ -1468,7 +1494,7 @@ function sectionize(box, brk) {
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { adv: 'ผจญภัยสัปดาห์', ear: 'ฟังทบทวน', wsearch: 'ค้นหาคำในตาราง', map: 'แผนที่ด่าน', duel: 'ท้าดวลเพื่อน', event: 'กิจกรรมเทศกาล', mascot: 'น้องคำ', year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
+const TITLES = { fun: 'โซนสนุก', tower: 'หอคอยไม่รู้จบ', coinshop: 'ร้านค้าเหรียญ', adv: 'ผจญภัยสัปดาห์', ear: 'ฟังทบทวน', wsearch: 'ค้นหาคำในตาราง', map: 'แผนที่ด่าน', duel: 'ท้าดวลเพื่อน', event: 'กิจกรรมเทศกาล', mascot: 'น้องคำ', year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
 function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
@@ -1482,7 +1508,7 @@ function go(tab, ...args) {
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab || (tab === 'decks' && !wide && b.dataset.tab === 'list')));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, ear: renderEar, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, mascot: renderMascot, event: renderEvent, riddle: renderRiddle, duel: renderDuel, map: renderMap, wsearch: renderWSearch, decks: renderDecks, adv: renderAdventure }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, ear: renderEar, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, mascot: renderMascot, event: renderEvent, riddle: renderRiddle, duel: renderDuel, map: renderMap, wsearch: renderWSearch, decks: renderDecks, adv: renderAdventure, fun: renderFun, tower: renderTower, coinshop: renderCoinShop }[tab])(...args);
   updateStreak();
   const a = TAB_ORDER.indexOf(prev), b = TAB_ORDER.indexOf(tab);
   animView(a < 0 || b < 0 || a === b ? 'vin' : b > a ? 'vin-l' : 'vin-r');

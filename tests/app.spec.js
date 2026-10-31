@@ -2,7 +2,7 @@
 const { test, expect } = require('@playwright/test');
 const { openApp, readState } = require('./helpers');
 
-const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read', 'placement', 'changelog', 'mtest', 'ltest', 'year', 'mascot', 'event', 'riddle', 'duel', 'map', 'wsearch', 'decks'];
+const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read', 'placement', 'changelog', 'mtest', 'ltest', 'year', 'mascot', 'event', 'riddle', 'duel', 'map', 'wsearch', 'decks', 'adv', 'fun', 'tower', 'coinshop'];
 
 test('every screen renders without errors and shows the version', async ({ page }) => {
   const errors = await openApp(page);
@@ -280,12 +280,14 @@ test('home layout: hide, reorder and resize blocks from settings', async ({ page
   await page.locator('.hc-row[data-id="wotd"] [data-act="tog"]').evaluate((el) => el.click());
   await page.locator('.hc-row[data-id="riddle"] [data-act="tog"]').evaluate((el) => el.click());
   await page.locator('.hc-row[data-id="adv"] [data-act="tog"]').evaluate((el) => el.click()); // 1.114: hide the adventure card too, or it sits between quest and level
+  await page.locator('.hc-row[data-id="fun"] [data-act="tog"]').evaluate((el) => el.click()); // 1.115: and the fun zone card
   await page.locator('.hc-row[data-id="mascot"] [data-act="tog"]').evaluate((el) => el.click()); // 1.76.3: the mascot sits right before level, so hide it to let quest + level share a row
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click();
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click();
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click(); // hidden blocks still take a slot
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click(); // 1.56: the sets block (hidden without sets) is one more slot above it
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click(); // 1.114: the weekly adventure block is one more slot above it
+  await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click(); // 1.115: and the fun zone block
   await page.locator('.hc-row[data-id="quest"] [data-act="w"][data-v="half"]').click();
   await page.locator('.hc-row[data-id="level"] [data-act="tog"]').evaluate((el) => el.click());
   await page.evaluate(() => go('home'));

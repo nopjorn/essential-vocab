@@ -102,6 +102,7 @@ function renderHome() {
     week: () => S.weekSeen !== mondayKey() && weekStats(1).total ? `<div class="card-box week-card" id="weekCard"><b>📊 สรุปสัปดาห์ที่แล้ว</b>${weekBox(1, true)}</div>` : '',
     quest: questCard,
     adv: adventureCard,
+    fun: funCard,
     riddle: () => { const r = riddleToday(); return `<button class="card-box guide-link" id="qRiddle"><span>🔤</span><div class="grow"><b>ปริศนาศัพท์ประจำวัน</b><div class="small muted">${r.over ? (r.win ? `✅ ทายถูกใน ${r.g.length}/6 ครั้ง · ` : '❌ วันนี้ไม่ผ่าน · ') + 'พรุ่งนี้มีคำใหม่' : r.g.length ? `ทายไปแล้ว ${r.g.length}/6 ครั้ง · เล่นต่อ` : 'ทายคำ 5 ตัวอักษรใน 6 ครั้ง'}${S.riddleStat.streak ? ` · 🔥 ${S.riddleStat.streak} วัน` : ''}</div></div><span class="muted">›</span></button>`; },
     decks: () => {
       const ds = liveDecks().slice(0, 3);
@@ -220,6 +221,7 @@ const HOME_BLOCKS = [
   { id: 'wgoal', ic: '🎯', name: 'เป้าคำใหม่ประจำสัปดาห์ (ตั้งในตั้งค่า)', w: 'full', on: true },
   { id: 'quest', ic: '🎯', name: 'ภารกิจวันนี้', w: 'full', on: true },
   { id: 'adv', ic: '🗺️', name: 'ผจญภัยประจำสัปดาห์', w: 'full', on: true },
+  { id: 'fun', ic: '🎪', name: 'โซนสนุก (หอคอย ปริศนา การ์ด สวน)', w: 'full', on: true },
   { id: 'riddle', ic: '🔤', name: 'ปริศนาศัพท์ประจำวัน', w: 'full', on: true },
   { id: 'decks', ic: '📚', name: 'ชุดของฉัน', w: 'full', on: true },
   { id: 'wotd', ic: '✨', name: 'คำประจำวัน', w: 'full', on: true },
