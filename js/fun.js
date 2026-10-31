@@ -96,7 +96,7 @@ function renderFun() {
   view.innerHTML = `<div class="card-box fun-head"><div class="grow"><b>🎪 โซนสนุก</b><div class="small muted">เล่นคนเดียวได้ทุกอย่าง · ได้ทั้ง XP และ 🪙 เหรียญ</div></div>${coinPill()}</div>
     <div class="fun-grid">${funTiles().map((t) => `<button class="fun-tile" data-fun="${t.id}"><span class="fun-ic" aria-hidden="true">${t.ic}</span><b>${t.name}</b><small>${t.sub()}</small></button>`).join('')}</div>
     <button class="card-box guide-link" id="funSecret"><span>🥚</span><div class="grow"><b>เหรียญลับ ${found}/${secret.length}</b><div class="small muted">ไม่บอกเงื่อนไข ลองเล่นทุกอย่างแล้วจะเจอเอง · ดูได้ที่หน้าสถิติ</div></div><span class="muted">›</span></button>
-    <p class="small muted" style="margin:10px 4px">🪙 เหรียญได้จากหอคอย ปริศนาประจำวัน คดีนักสืบ ร้านน้องคำ และกล่องรางวัล ใช้ซื้อตัวช่วยในเกม (✂️ 50:50 · ⏭️ ข้าม · ❤️ หัวใจ) หรือของแต่งตัวน้องคำที่ร้านค้า</p>`;
+    <p class="small muted" style="margin:10px 4px">🪙 เหรียญได้จากกิจกรรมในโซนสนุกและ 🎁 กล่องรางวัล ใช้ซื้อตัวช่วยในเกม (✂️ 50:50 · ⏭️ ข้าม · ❤️ หัวใจ) หรือของแต่งตัวน้องคำที่ร้านค้า</p>`;
   view.querySelector('.fun-grid').onclick = (e) => {
     const b = e.target.closest('[data-fun]'); if (!b) return;
     const t = FUN_TILES.find((x) => x.id === b.dataset.fun); if (t) t.go();

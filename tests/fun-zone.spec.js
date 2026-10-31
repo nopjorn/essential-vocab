@@ -103,3 +103,101 @@ test('secret medals: new ones exist, are hidden until earned, and unlock from th
   expect(await page.evaluate(() => ACH.filter((a) => a.secret).length)).toBeGreaterThanOrEqual(9);
   expect(errors).toEqual([]);
 });
+
+/* ---------- 1.119: daily puzzles, album, garden ---------- */
+test('crossword generator: same grid for the same day on every call, words cross, fit 9×9, clues numbered; ladder has a valid path', async ({ page }) => {
+  const errors = await openApp(page, base);
+  const r = await page.evaluate(() => {
+    const out = [];
+    for (let k = 0; k < 40; k++) {
+      const day = ymd(new Date(Date.UTC(2026, 0, 1) + k * DAY));
+      const cw = makeCrossword(day), L = makeLadder(day), g = ladGraph();
+      // every word's letters agree with the grid; the grid has no stray letters
+      const okWords = cw.words.every((x) => cwCells(x).every(([r, c], i) => cw.grid[r][c] === x.w.w[i]));
+      const cells = cw.grid.flat().filter(Boolean).length, used = new Set(cw.words.flatMap((x) => cwCells(x).map(([r, c]) => r + ',' + c))).size;
+      const crossing = cw.words.every((x) => cw.words.some((y) => y !== x && y.d !== x.d && cwCells(y).some(([r, c]) => cwCells(x).some(([r2, c2]) => r === r2 && c === c2))));
+      const path = L && L.path.every((s, i) => g.set.has(s) && (i === 0 || ladDiff(L.path[i - 1], s))) && L.path.length >= 4 && L.path.length <= 6;
+      out.push(okWords && cells === used && crossing && cw.rows <= 9 && cw.cols <= 9 && cw.words.length >= 4 && path && JSON.stringify(makeCrossword(day).grid) === JSON.stringify(cw.grid));
+    }
+    return out;
+  });
+  expect(r.every(Boolean)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('daily puzzle: crossword wrong answer refused, right answers fill it; ladder checks steps; both solved = coins, streak, foil', async ({ page }) => {
+  const now = Date.now();
+  const prog = Object.fromEntries(['apple', 'water', 'house', 'happy', 'green'].map((w) => [w, { b: 5, i: 35, e: 2.5, d: now + 20 * 86400000, s: 6, c: 6, x: 0 }]));
+  const errors = await openApp(page, { ...base, prog });
+  await page.evaluate(() => go('puzzle', 'cw'));
+  const words = await page.evaluate(() => makeCrossword(today()).words.map((x) => x.w.w));
+  await page.locator('#cwIn').fill('zzzz');
+  await page.locator('#cwForm button').click();
+  expect(await page.evaluate(() => S.puz.cw.length)).toBe(0);
+  for (let i = 0; i < words.length; i++) {
+    const sel = await page.evaluate(() => cwSel);
+    const w = words[sel];
+    await page.locator('#cwIn').fill(w.toUpperCase());
+    await page.locator('#cwForm button').click();
+  }
+  await expect(page.locator('#pzBody')).toContainText('ครอสเวิร์ดวันนี้เสร็จแล้ว');
+  expect(await page.evaluate(() => coinBal())).toBe(15);
+  // ladder
+  await page.locator('[data-tab="lad"]').click();
+  const L = await page.evaluate(() => makeLadder(today()));
+  await page.locator('#ladIn').fill(L.from); // same word: refused
+  await page.locator('#ladForm button').click();
+  expect(await page.evaluate(() => S.puz.lad.length)).toBe(0);
+  for (const s of L.path.slice(1)) { await page.locator('#ladIn').fill(s); await page.locator('#ladForm button').click(); }
+  await expect(page.locator('#pzBody')).toContainText('สั้นสุดเลย');
+  const st = await page.evaluate(() => [coinBal(), S.puz.streak, S.puz.n, Object.keys(S.foil).length]);
+  expect(st).toEqual([30, 1, 1, 1]);
+  // sync merge of the same day keeps solved words; a newer day replaces
+  expect(await page.evaluate(() => { mergePuz({ d: today(), cw: [0], lad: ['aaaa'], ladDone: false, streak: 0, best: 3, last: '2026-01-01', n: 9 }); return [S.puz.cw.length > 0, S.puz.ladDone, S.puz.best, S.puz.n, S.puz.streak]; })).toEqual([true, true, 3, 9, 1]);
+  expect(errors).toEqual([]);
+});
+
+test('ladder: hint costs coins and names the next word, give up shows the path and keeps the streak at 0', async ({ page }) => {
+  const errors = await openApp(page, { ...base, coin: { x: [10, 0] } });
+  await page.evaluate(() => go('puzzle', 'lad'));
+  await page.locator('#ladHint').click();
+  await expect(page.locator('#ladTip')).toContainText('เปลี่ยนตัวที่');
+  expect(await page.evaluate(() => coinBal())).toBe(7);
+  await page.locator('#ladIn').fill('qqqq');
+  await page.locator('#ladForm button').click();
+  expect(await page.evaluate(() => S.puz.lad.length)).toBe(0);
+  await page.locator('#ladGive').click();
+  await expect(page.locator('#pzBody')).toContainText('เฉลย');
+  expect(await page.evaluate(() => [S.puz.ladDone, S.puz.ladGave, S.puz.streak])).toEqual([true, true, 0]);
+  expect(errors).toEqual([]);
+});
+
+test('album: mastered words are cards with rarity, foil filter, opens the word sheet; garden grows, wilts and waters', async ({ page }) => {
+  const errors = await openApp(page, base);
+  const animals = await page.evaluate(() => {
+    const now = Date.now(), ws = W.filter((w) => w.tp === 'animal' && w.g === 'A1').map((w) => w.w);
+    ws.forEach((w, k) => { S.prog[w] = { b: 5, i: 35, e: 2.5, d: k < 6 ? now - 3600000 : now + 9 * 86400000, s: 5, c: 5, x: 0 }; });
+    S.foil = { [ws[0]]: '2026-10-01' }; S.settings.levels = ['A1']; save();
+    return ws;
+  });
+  await page.evaluate(() => go('album'));
+  await expect(page.locator('.al-card')).toHaveCount(animals.length);
+  await expect(page.locator('.al-card.foil')).toHaveCount(1);
+  await page.locator('[data-foil]').click();
+  await expect(page.locator('.al-card')).toHaveCount(1);
+  await page.locator('.al-card').first().click();
+  await expect(page.locator('.sheet-word')).toBeVisible();
+  await page.evaluate(() => document.querySelectorAll('.sheet-wrap').forEach((e) => e.remove()));
+  expect(await page.evaluate(() => { const w = foilGive(); return [typeof w, Object.keys(S.foil).length]; })).toEqual(['string', 2]);
+  // garden: the animal plant is in bloom (all A1 animal words mastered) but wilting (6 due)
+  await page.evaluate(() => go('garden'));
+  const p = await page.evaluate(() => plantOf('animal'));
+  expect(p.stage).toBe(5); expect(p.wilt).toBe(true); expect(p.due).toBe(6);
+  await expect(page.locator('[data-water="animal"]')).toContainText('(6)');
+  await page.locator('[data-water="animal"]').click();
+  await expect(page.locator('#fc')).toBeVisible();
+  expect(await page.evaluate(() => buildQueueRaw('tp:animal').length)).toBe(6);
+  await page.evaluate(() => { flushSave(); });
+  expect(await page.evaluate(() => !!S.ach.sBloom)).toBe(true);
+  expect(errors).toEqual([]);
+});

@@ -69,7 +69,7 @@ function runTower(start) {
     const boss = twBoss(f), c = boss ? 10 : 1;
     coins += c; addCoins(c);
     S.tower.best = Math.max(S.tower.best, f);
-    if (boss) { S.tower.cp = Math.max(S.tower.cp, f); confetti(); toast(`🐲 ชนะชั้นบอส ${f}! บันทึกจุดเริ่มใหม่ที่ชั้น ${f + 1} (+🪙 10)`); }
+    if (boss) { S.tower.cp = Math.max(S.tower.cp, f); const fw = typeof foilGive === 'function' ? foilGive() : null; confetti(); toast(`🐲 ชนะชั้นบอส ${f}! บันทึกจุดเริ่มใหม่ที่ชั้น ${f + 1} (+🪙 10)${fw ? ` · การ์ดฟอยล์ ✨ ${fw}` : ''}`); }
     if (S.tower.best >= TW_WIZARD && !(S.owned || []).includes('acc:wizard')) { (S.owned = S.owned || []).push('acc:wizard'); setTimeout(() => toast('🧙 ได้หมวกพ่อมดสำหรับน้องคำ!'), 1200); }
     save();
     f++; qn = 0;
