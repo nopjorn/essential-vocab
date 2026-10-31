@@ -136,21 +136,29 @@ function openSheet(w, onChange, opt = {}) {
   });
   lexisBoxes(el, w);
   const close = () => { el.classList.remove('open'); setTimeout(() => el.remove(), 250); };
-  // Swipe the card down to close it. Only starts when the card is scrolled to the top, so reading a long card still scrolls.
-  const sheet = el.querySelector('.sheet');
-  let y0 = null, dy = 0;
-  sheet.addEventListener('touchstart', (e) => { y0 = sheet.scrollTop <= 0 ? e.touches[0].clientY : null; dy = 0; sheet.style.transition = 'none'; }, { passive: true });
+  // Swipe the card down to close it. The scroll container is .sheet-body (the sheet itself never scrolls), so the swipe only
+  // arms when the body is at the top, and drops out as soon as the finger moves up or the body starts scrolling.
+  const sheet = el.querySelector('.sheet'), body = el.querySelector('.sheet-body');
+  let y0 = null, dy = 0, drag = false;
+  sheet.addEventListener('touchstart', (e) => { y0 = body.scrollTop <= 0 ? e.touches[0].clientY : null; dy = 0; drag = false; }, { passive: true });
   sheet.addEventListener('touchmove', (e) => {
     if (y0 == null) return;
-    dy = Math.max(0, e.touches[0].clientY - y0);
+    const d = e.touches[0].clientY - y0;
+    if (!drag) {
+      if (d < -4 || body.scrollTop > 0) { y0 = null; return; } // scrolling the content, not closing
+      if (d < 8) return;
+      drag = true; sheet.style.transition = 'none';
+    }
+    dy = Math.max(0, d);
     sheet.style.transform = `translateY(${dy}px)`; // follows the finger
   }, { passive: true });
   sheet.addEventListener('touchend', () => {
-    if (y0 == null) return;
-    y0 = null; sheet.style.transition = '';
+    if (!drag) { y0 = null; return; }
+    y0 = null; drag = false; sheet.style.transition = '';
     if (dy > 90) { sheet.style.transform = 'translateY(100%)'; close(); }
     else sheet.style.transform = '';
   });
+  sheet.addEventListener('touchcancel', () => { if (drag) { drag = false; y0 = null; sheet.style.transition = ''; sheet.style.transform = ''; } });
   el.onclick = (e) => {
     if (e.target === el) return close();
     const col = e.target.closest('[data-col]'); if (col) return speak(col.dataset.col);
