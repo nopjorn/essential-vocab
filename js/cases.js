@@ -78,6 +78,7 @@ function runCase(id) {
   };
   const result = (k) => {
     const ok = k === c.ans, first = ok && !rec.ok;
+    funEvent('case');
     let msg = '';
     if (ok) {
       if (first) {

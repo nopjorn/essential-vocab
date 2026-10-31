@@ -1908,3 +1908,21 @@ button.sus:active { transform: scale(.97); }
 .ghost { font-weight: 700; white-space: nowrap; }
 .ghost.lead::after { content: ' ▲'; color: var(--good); }
 .ghost.behind::after { content: ' ▼'; color: var(--bad-ink); }
+
+/* ---------- 1.121: fun quests, weekly tower, cafe quantities, card sets ---------- */
+.fq-box { margin-bottom: 12px; }
+.fq-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; }
+.fq-row + .fq-row { border-top: 1px solid var(--border); }
+.fq-row > span:first-child { font-size: 20px; width: 26px; text-align: center; flex: none; }
+.fq-row.ok .small { text-decoration: line-through; color: var(--muted); }
+.fq-row .qbar { height: 6px; margin-top: 4px; }
+.tw-week { border: 2px dashed var(--primary); }
+.cf-item { position: relative; }
+.cf-n { position: absolute; top: 4px; right: 6px; font-style: normal; font-size: 13px; font-weight: 800; background: var(--primary); color: #fff; border-radius: 99px; padding: 1px 7px; line-height: 1.4; }
+.sets-box summary { cursor: pointer; list-style: none; }
+.sets-box summary::-webkit-details-marker { display: none; }
+.set-row2 { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); }
+.set-row2 > span:first-child { font-size: 24px; flex: none; }
+.set-pics { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 3px; }
+.set-pics i { font-style: normal; font-size: 16px; opacity: .25; filter: grayscale(1); }
+.set-pics i.on { opacity: 1; filter: none; }

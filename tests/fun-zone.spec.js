@@ -129,6 +129,7 @@ test('daily puzzle: crossword wrong answer refused, right answers fill it; ladde
   const now = Date.now();
   const prog = Object.fromEntries(['apple', 'water', 'house', 'happy', 'green'].map((w) => [w, { b: 5, i: 35, e: 2.5, d: now + 20 * 86400000, s: 6, c: 6, x: 0 }]));
   const errors = await openApp(page, { ...base, prog });
+  await page.evaluate(() => { window.fqList = () => []; }); // keep today's fun quests from paying extra coins
   await page.evaluate(() => go('puzzle', 'cw'));
   const words = await page.evaluate(() => makeCrossword(today()).words.map((x) => x.w.w));
   await page.locator('#cwIn').fill('zzzz');
@@ -223,6 +224,7 @@ test('cases data: every case has 3 suspects with notes, Thai for every clue, 2 r
 
 test('detective: read clues, answer questions, a wrong guess then the right one; coins once; hat after 3 cases', async ({ page }) => {
   const errors = await openApp(page, { ...base, cases: { cake: { ok: true, t: 0 }, book: { ok: true, t: 1 } } });
+  await page.evaluate(() => { window.fqList = () => []; }); // keep today's fun quests from paying extra coins
   await page.evaluate(() => go('cases'));
   await expect(page.locator('[data-case]')).toHaveCount(8);
   await page.locator('[data-case="flowers"]').click();
@@ -255,7 +257,7 @@ test('ร้านน้องคำ: serving the right food earns a tip, wrong 
   await page.locator('#cfGo').click();
   const serve = async (ok) => {
     await expect(page.locator('.cf-item').first()).toBeEnabled();
-    const ks = await page.evaluate((ok) => { const want = cafeRun.shelf.map((w, k) => (cafeRun.order.includes(w) ? k : -1)).filter((k) => k >= 0); return ok ? want : [cafeRun.shelf.findIndex((w) => !cafeRun.order.includes(w))]; }, ok);
+    const ks = await page.evaluate((ok) => { const want = cafeRun.order.flatMap((w, i) => Array(cafeRun.qty[i]).fill(cafeRun.shelf.indexOf(w))); return ok ? want : [cafeRun.shelf.findIndex((w) => !cafeRun.order.includes(w))]; }, ok);
     for (const k of ks) await page.locator(`.cf-item[data-k="${k}"]`).click();
     await page.locator('#cfServe').click();
     await expect(page.locator('#reveal')).not.toBeEmpty();
@@ -310,5 +312,68 @@ test('saved state with every fun-zone field loads as is (no rescue, nothing rese
   const errors = await openApp(page, { ...base, xp: 1234, coin: { a: [5, 1] }, tower: { best: 12, cp: 10, runs: 2 }, puz: { d: '2026-10-30', cw: [0], rv: [], lad: [], ladDone: false, ladGave: false, streak: 2, best: 4, last: '2026-10-29', n: 5 }, foil: { cat: '2026-10-01' }, cases: { cake: { ok: true, t: 0 } }, cafe: { best: 5, total: 9 }, ghost: { survival: [1, 2] } });
   const r = await page.evaluate(() => [loadRescued, S.xp, coinBal(), S.tower.best, S.puz.best, Object.keys(S.foil).length, S.cases.cake.ok, S.cafe.total, S.ghost.survival.length]);
   expect(r).toEqual([false, 1234, 4, 12, 4, 1, true, 9, 2]);
+  expect(errors).toEqual([]);
+});
+
+/* ---------- 1.121: fun quests, weekly tower, cafe branches + quantities, card sets ---------- */
+test('fun quests: 3 different quests a day, events count up, each pays once, all 3 = bonus; merge keeps the higher counts', async ({ page }) => {
+  const errors = await openApp(page, base);
+  const q = await page.evaluate(() => { const l = fqList(); return { n: l.length, types: new Set(l.map((i) => FQ_POOL[i][0])).size, same: JSON.stringify(fqList()) === JSON.stringify(l) }; });
+  expect(q).toEqual({ n: 3, types: 3, same: true });
+  await page.evaluate(() => go('fun'));
+  await expect(page.locator('.fq-row')).toHaveCount(3);
+  const coins = await page.evaluate(() => { fqList().forEach((i) => { const [t, need] = FQ_POOL[i]; funEvent(t, need); funEvent(t, need); }); return coinBal(); });
+  expect(coins).toBe(3 * 10 + 20 + (await page.evaluate(() => S.fq.c.spend ? 0 : 0)));
+  expect(await page.evaluate(() => S.fq.got.length)).toBe(3);
+  expect(await page.evaluate(() => { mergeBackup({ fq: { d: today(), c: { floor: 99 }, got: [0] } }); return [S.fq.c.floor >= 99, S.fq.got.length >= 3]; })).toEqual([true, true]);
+  expect(errors).toEqual([]);
+});
+
+test('weekly special tower: rule rotates by week, runs from floor 1 with its own best, coins x2, one-heart rule ends on the first miss', async ({ page }) => {
+  const errors = await openApp(page, base);
+  const ids = await page.evaluate(() => [0, 1, 2, 3].map((k) => twRule(ymd(new Date(Date.parse('2026-11-02T12:00:00') + k * 7 * DAY))).id));
+  expect(new Set(ids).size).toBe(4);
+  await page.evaluate(() => go('tower'));
+  await expect(page.locator('.tw-week')).toContainText('หอคอยพิเศษ');
+  await page.locator('#twWk').click();
+  for (let k = 0; k < 3; k++) await funAnswer(page, true);
+  await expect.poll(() => page.evaluate(() => twWkBest())).toBe(1);
+  expect(await page.evaluate(() => [S.tower.best, coinBal()])).toEqual([0, 2]);
+  // force the one-heart rule: a single wrong answer ends the run
+  await page.evaluate(() => { const one = { ...TW_RULES.find((r) => r.id === 'one') }; TW_RULES.forEach((r) => Object.assign(r, one)); runTower(1, true); });
+  await expect(page.locator('#twH')).toHaveText('❤️');
+  await funAnswer(page, false);
+  await expect(page.locator('#twAgain')).toBeVisible();
+  expect(await page.evaluate(() => { mergeBackup({ tower: { best: 0, cp: 0, runs: 0, wk: { k: mondayKey(), best: 30 } } }); return twWkBest(); })).toBe(30);
+  expect(errors).toEqual([]);
+});
+
+test('cafe: branches unlock by guests served, plurals and pairs are spoken right, an order for two needs two taps', async ({ page }) => {
+  const errors = await openApp(page, { ...base, cafe: { best: 3, total: 12 } });
+  await page.evaluate(() => go('cafe'));
+  await expect(page.locator('[data-br="clothes"]')).toBeEnabled();
+  await expect(page.locator('[data-br="home"]')).toBeDisabled();
+  expect(await page.evaluate(() => ['food', 'clothes', 'home'].map((b) => cafeItems(b).length >= 12))).toEqual([true, true, true]);
+  expect(await page.evaluate(() => [cafeArt('apple', 2), cafeArt('potato', 3), cafeArt('boot'), cafeArt('battery', 2), cafeArt('dress', 2), cafeArt('trousers')])).toEqual(['two apples', 'three potatoes', 'a pair of boots', 'two batteries', 'two dresses', 'a pair of trousers']);
+  await page.locator('[data-br="clothes"]').click();
+  await page.locator('#cfGo').click();
+  await expect(page.locator('.cf-item').first()).toBeVisible();
+  // make this guest order 2 of the first item, then serve only 1: wrong; the next guest served right
+  const k = await page.evaluate(() => cafeRun.shelf.indexOf(cafeRun.order[0]));
+  await page.locator(`.cf-item[data-k="${k}"]`).click();
+  await page.locator(`.cf-item[data-k="${k}"]`).click();
+  await expect(page.locator(`.cf-item[data-k="${k}"] .cf-n`)).toHaveText('×2');
+  await page.locator('#cfServe').click();
+  await expect(page.locator('#reveal')).toContainText('ไม่ตรงกับที่สั่ง'); // the order was 1 piece (first guests), 2 is wrong
+  expect(errors).toEqual([]);
+});
+
+test('card sets: a topic\'s picture words all mastered can be claimed once for coins', async ({ page }) => {
+  const errors = await openApp(page, base);
+  const id = await page.evaluate(() => loadEmoji().then(() => { const s = cardSets().find((x) => x.id === 'clothes'); const now = Date.now(); s.ws.forEach((w) => { S.prog[w.w] = { b: 5, i: 35, e: 2.5, d: now + 9e8, s: 5, c: 5, x: 0 }; }); save(); return s.id; }));
+  await page.evaluate(() => { albumSets = true; go('album'); });
+  await page.locator(`[data-claim="${id}"]`).click();
+  expect(await page.evaluate(() => [coinBal(), !!S.sets.clothes])).toEqual([50, true]);
+  await expect(page.locator(`[data-claim="${id}"]`)).toHaveCount(0);
   expect(errors).toEqual([]);
 });

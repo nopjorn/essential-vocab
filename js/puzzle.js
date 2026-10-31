@@ -110,7 +110,7 @@ function puzToday() {
 const cwDone = (p = puzToday()) => p.cw.length >= makeCrossword(p.d).words.length;
 function puzSolved(which) {
   const p = puzToday();
-  addCoins(PUZ_COINS); addXP(PUZ_XP); sfx('win');
+  addCoins(PUZ_COINS); addXP(PUZ_XP); sfx('win'); funEvent('puzzle');
   if (cwDone(p) && p.ladDone && !p.ladGave) {
     const y = ymd(new Date(Date.now() - DAY));
     p.streak = p.last === y ? p.streak + 1 : p.last === p.d ? p.streak : 1;

@@ -21,6 +21,22 @@ function foilGive() {
   S.foil[w.w] = today(); save();
   return w.w;
 }
+// 📦 Card sets (1.121): picture words of a topic (words with an emoji) form a set; all mastered → claim SET_COINS once.
+// S.sets = { topic: date claimed } (union merge, cleanSets in app.js).
+const SET_COINS = 50, SET_MIN = 8;
+function cardSets() {
+  if (!EMOJI) return [];
+  return TOPICS.map(([id, ic, name]) => { const seen = new Set(), ws = W.filter((w) => w.tp === id && EMOJI[w.w] && !seen.has(w.w) && seen.add(w.w)); return { id, ic, name, ws, got: ws.filter((w) => status(w) === 'mastered').length }; }).filter((s) => s.ws.length >= SET_MIN);
+}
+function setsBox() {
+  const sets = cardSets();
+  if (!sets.length) return '';
+  return `<details class="card-box sets-box"${albumSets ? ' open' : ''}><summary><b>📦 ชุดสะสมการ์ด</b> <span class="small muted">ครบชุดรับ 🪙 ${SET_COINS} · ${Object.keys(S.sets || {}).length}/${sets.length} ชุด</span></summary>
+    ${sets.map((s) => { const done = s.got >= s.ws.length, claimed = !!(S.sets || {})[s.id];
+      return `<div class="set-row2"><span aria-hidden="true">${s.ic}</span><div class="grow"><div class="small"><b>${esc(s.name)}</b> · ${s.got}/${s.ws.length} ใบ</div><div class="set-pics" aria-hidden="true">${s.ws.map((w) => `<i class="${status(w) === 'mastered' ? 'on' : ''}">${EMOJI[w.w]}</i>`).join('')}</div></div>
+        ${claimed ? '<span class="small">🏆 ครบแล้ว</span>' : done ? `<button class="btn primary" data-claim="${s.id}">🎁 รับ 🪙 ${SET_COINS}</button>` : ''}</div>`; }).join('')}</details>`;
+}
+let albumSets = false;
 function albumCard(w) {
   const [ic] = RARITY[w.g] || RARITY.A1, em = typeof emojiOf === 'function' ? emojiOf(w) : '';
   return `<button class="al-card r-${w.g}${isFoil(w) ? ' foil' : ''}" data-w="${w.idx}" aria-label="${esc(w.w)} ${RARITY[w.g][1]}${isFoil(w) ? ' ฟอยล์' : ''}">
@@ -36,11 +52,23 @@ function renderAlbum() {
   view.innerHTML = `<div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="alBack">‹ กลับ</button></div>
     <div class="card-box"><b>🃏 อัลบั้มการ์ดคำศัพท์</b><div class="small muted" style="margin:2px 0 8px">คำที่ “จำได้แล้ว” กลายเป็นการ์ดสะสม · มีแล้ว ${mine.length.toLocaleString()} ใบ · ✨ ฟอยล์ ${foils} ใบ</div>
       <div class="al-stat">${stat.map(([l, n, t]) => `<div><span aria-hidden="true">${RARITY[l][0]}</span><b>${RARITY[l][1]}</b><small>${LV_LABEL[l]} · ${n}/${t}</small><span class="qbar"><span style="width:${t ? n / t * 100 : 0}%"></span></span></div>`).join('')}</div></div>
+    ${setsBox()}
     <div class="chips" id="alF" style="margin:10px 0"><button class="chip${!albumLv && !albumFoil ? ' on' : ''}" data-lv="">ทั้งหมด</button>${LEVELS.map((l) => `<button class="chip${albumLv === l ? ' on' : ''}" data-lv="${l}">${RARITY[l][0]} ${LV_LABEL[l]}</button>`).join('')}<button class="chip${albumFoil ? ' on' : ''}" data-foil="1">✨ ฟอยล์</button></div>
     ${list.length ? `<div class="al-grid">${list.slice(0, albumN).map(albumCard).join('')}</div>${list.length > albumN ? `<button class="btn block" id="alMore" style="margin-top:10px">ดูเพิ่ม (${list.length - albumN})</button>` : ''}`
       : emptyArt({ kind: 'empty', title: mine.length ? 'ยังไม่มีการ์ดในกลุ่มนี้' : 'ยังไม่มีการ์ด', sub: 'ทบทวนคำจนขึ้นสถานะ “จำได้แล้ว” (ทบทวนห่างกัน 16 วันขึ้นไป) แล้วการ์ดจะมาอยู่ที่นี่', btn: 'ไปทบทวน', go: 'cards' })}
     <p class="small muted" style="margin:10px 4px">✨ การ์ดฟอยล์ได้จากการทำปริศนาประจำวันครบทั้ง 2 อย่าง และจากการชนะชั้นบอสของหอคอย · แตะการ์ดเพื่อดูรายละเอียดคำ</p>`;
   $('#alBack').onclick = () => go('fun');
+  const sb = view.querySelector('.sets-box');
+  if (sb) {
+    sb.ontoggle = () => { albumSets = sb.open; };
+    sb.onclick = (e) => {
+      const b = e.target.closest('[data-claim]'); if (!b) return;
+      const s = cardSets().find((x) => x.id === b.dataset.claim);
+      if (!s || s.got < s.ws.length || (S.sets || {})[s.id]) return;
+      S.sets[s.id] = today(); addCoins(SET_COINS); confetti('burst'); toast(`🏆 ครบชุด ${s.ic} ${s.name}! +🪙 ${SET_COINS}`);
+      save(); const top = view.scrollTop; renderAlbum(); view.scrollTop = top;
+    };
+  }
   $('#alF').onclick = (e) => {
     const b = e.target.closest('.chip'); if (!b) return;
     if (b.dataset.foil) { albumFoil = !albumFoil; albumLv = ''; } else { albumLv = b.dataset.lv; albumFoil = false; }

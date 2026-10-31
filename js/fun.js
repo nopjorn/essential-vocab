@@ -18,6 +18,7 @@ function spendCoins(n) {
   if (coinBal() < n) { toast(`🪙 เหรียญไม่พอ (มี ${coinBal()} ต้องใช้ ${n})`); return false; }
   const m = (S.coin[DEV] = S.coin[DEV] || [0, 0]);
   m[1] += n;
+  funEvent('spend', n);
   save();
   return true;
 }
@@ -61,6 +62,7 @@ function funAsk(w, kind, o) {
     view.querySelectorAll('.opt').forEach((b) => { if (opts[+b.dataset.k] === w) b.classList.add('correct'); b.disabled = true; });
     view.querySelectorAll('.pw-btn').forEach((b) => { b.disabled = true; });
     if (how !== 'skip') { if (o.practice) markActive(); else gameResult(w, ok); }
+    if (ok) funEvent('right');
     else markActive();
     sfx(ok ? 'ok' : 'bad');
     if (!ok) $('#reveal').innerHTML = `❌ ที่ถูกคือ <b lang="en">${esc(w.w)}</b> = ${esc(w.t)}`;
@@ -87,6 +89,43 @@ function funAsk(w, kind, o) {
   };
 }
 
+/* ---------- daily fun quests (1.121) ---------- */
+// 3 quests a day, the same on every device (picked from the date), each worth FQ_COINS; all 3 done = FQ_BONUS more.
+// Progress comes from funEvent(type, n) calls in the fun pages. State: S.fq = { d, c: { type: count }, got: [quest index] } (cleanFq/mergeFq in app.js).
+const FQ_COINS = 10, FQ_BONUS = 20;
+const FQ_POOL = [
+  ['floor', 5, '🏯', 'ปีนหอคอยผ่าน 5 ชั้น'], ['floor', 12, '🏯', 'ปีนหอคอยผ่าน 12 ชั้น'], ['boss', 1, '🐲', 'ชนะชั้นบอสในหอคอย 1 ครั้ง'],
+  ['guest', 4, '🍜', 'เสิร์ฟลูกค้าร้านน้องคำ 4 คน'], ['guest', 8, '🍜', 'เสิร์ฟลูกค้าร้านน้องคำ 8 คน'], ['puzzle', 1, '🧩', 'ทำปริศนาประจำวันสำเร็จ 1 อย่าง'],
+  ['puzzle', 2, '🧩', 'ทำปริศนาประจำวันครบ 2 อย่าง'], ['case', 1, '🕵️', 'เล่นคดีนักสืบจนชี้ตัวคนร้าย 1 ครั้ง'], ['right', 15, '✅', 'ตอบถูกในหอคอย/กิจกรรมโซนสนุก 15 ข้อ'],
+  ['right', 30, '✅', 'ตอบถูกในหอคอย/กิจกรรมโซนสนุก 30 ข้อ'], ['spend', 20, '🪙', 'ใช้เหรียญ 20 เหรียญ (ตัวช่วยหรือร้านค้า)'],
+];
+function fqList(d = today()) {
+  const rnd = typeof puzRng === 'function' ? puzRng('fq' + d) : Math.random, out = [], types = new Set();
+  const order = FQ_POOL.map((q, i) => [rnd(), i]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+  for (const i of order) { if (out.length >= 3) break; if (!types.has(FQ_POOL[i][0])) { types.add(FQ_POOL[i][0]); out.push(i); } }
+  return out;
+}
+function fqToday() { if (S.fq.d !== today()) S.fq = { d: today(), c: {}, got: [] }; return S.fq; }
+function funEvent(type, n = 1) {
+  const fq = fqToday();
+  fq.c[type] = (fq.c[type] || 0) + n;
+  const list = fqList(fq.d);
+  list.forEach((i) => {
+    const [t, need, ic, name] = FQ_POOL[i];
+    if (t !== type || fq.got.includes(i) || fq.c[t] < need) return;
+    fq.got.push(i); addCoins(FQ_COINS);
+    setTimeout(() => toast(`${ic} ภารกิจโซนสนุกสำเร็จ: ${name} (+🪙 ${FQ_COINS})`), 700);
+    if (list.every((x) => fq.got.includes(x))) { addCoins(FQ_BONUS); S.counts.fqAll = (S.counts.fqAll || 0) + 1; setTimeout(() => { confetti(); toast(`🎉 ครบ 3 ภารกิจโซนสนุกวันนี้! โบนัส +🪙 ${FQ_BONUS}`); }, 2200); }
+  });
+  save();
+}
+function fqBox() {
+  const fq = fqToday(), list = fqList(fq.d);
+  return `<div class="card-box fq-box"><b>📅 ภารกิจโซนสนุกวันนี้</b> <span class="small muted">ข้อละ 🪙 ${FQ_COINS} · ครบ 3 ข้อโบนัส 🪙 ${FQ_BONUS}</span>
+    ${list.map((i) => { const [t, need, ic, name] = FQ_POOL[i], have = Math.min(need, fq.c[t] || 0), ok = fq.got.includes(i);
+      return `<div class="fq-row${ok ? ' ok' : ''}"><span aria-hidden="true">${ok ? '✅' : ic}</span><div class="grow"><div class="small">${name}</div><span class="qbar" role="img" aria-label="${have} จาก ${need}"><span style="width:${have / need * 100}%"></span></span></div><span class="small muted">${have}/${need}</span></div>`; }).join('')}</div>`;
+}
+
 /* ---------- hub ---------- */
 // Each fun page adds { id, ic, name, sub: () => status text, go: () => open it } (in load order).
 const FUN_TILES = [];
@@ -94,6 +133,7 @@ const funTiles = () => FUN_TILES.slice().sort((a, b) => a.o - b.o); // o = posit
 function renderFun() {
   const secret = ACH.filter((a) => a.secret), found = secret.filter((a) => S.ach[a.id]).length;
   view.innerHTML = `<div class="card-box fun-head"><div class="grow"><b>🎪 โซนสนุก</b><div class="small muted">เล่นคนเดียวได้ทุกอย่าง · ได้ทั้ง XP และ 🪙 เหรียญ</div></div>${coinPill()}</div>
+    ${fqBox()}
     <div class="fun-grid">${funTiles().map((t) => `<button class="fun-tile" data-fun="${t.id}"><span class="fun-ic" aria-hidden="true">${t.ic}</span><b>${t.name}</b><small>${t.sub()}</small></button>`).join('')}</div>
     <button class="card-box guide-link" id="funSecret"><span>🥚</span><div class="grow"><b>เหรียญลับ ${found}/${secret.length}</b><div class="small muted">ไม่บอกเงื่อนไข ลองเล่นทุกอย่างแล้วจะเจอเอง · ดูได้ที่หน้าสถิติ</div></div><span class="muted">›</span></button>
     <p class="small muted" style="margin:10px 4px">🪙 เหรียญได้จากหอคอย ปริศนาประจำวัน คดีนักสืบ ร้านน้องคำ และ 🎁 กล่องรางวัล ใช้ซื้อตัวช่วยในเกม (✂️ 50:50 · ⏭️ ข้าม · ❤️ หัวใจ) หรือของแต่งตัวน้องคำที่ร้านค้า</p>`;

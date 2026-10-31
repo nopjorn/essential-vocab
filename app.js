@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.120.0';
+const APP_VERSION = '1.121.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -210,6 +210,8 @@ const defaults = () => ({
   box: { date: '', got: '' }, // today's mystery box
   coin: {},            // fun zone coins (1.115): device id -> [earned, spent]; balance = coinBal() (js/fun.js)
   puz: { d: '', cw: [], rv: [], lad: [], ladDone: false, ladGave: false, streak: 0, best: 0, last: '', n: 0 }, // daily puzzles (1.119, js/puzzle.js)
+  fq: { d: '', c: {}, got: [] }, // daily fun-zone quests (1.121): day, counts per event type, quest indexes done (js/fun.js)
+  sets: {},            // card sets claimed in the album (1.121): topic -> date (js/collect.js)
   cases: {},           // detective cases (1.120): id -> { ok: solved, t: wrong guesses } (js/cases.js)
   cafe: { best: 0, total: 0 }, // ร้านน้องคำ (1.120): most guests served in a day, guests served in total (js/cafe.js)
   ghost: {},           // ghost race (1.120): game id -> best run (time attack: seconds of each right answer; survival: right answers after each question)
@@ -277,6 +279,7 @@ function load() {
       if (!r.evt || typeof r.evt !== 'object' || Array.isArray(r.evt)) r.evt = {};
       r.adv = cleanAdv(r.adv);
       r.coin = cleanCoin(r.coin); r.tower = cleanTower(r.tower); r.puz = cleanPuz(r.puz); r.foil = cleanFoil(r.foil);
+      r.fq = cleanFq(r.fq); r.sets = cleanFoil(r.sets);
       r.cases = cleanCases(r.cases); r.cafe = cleanCafe(r.cafe); r.ghost = cleanGhost(r.ghost);
       if (!r.box || typeof r.box !== 'object') r.box = d.box;
       if (!r.riddle || typeof r.riddle !== 'object' || !Array.isArray(r.riddle.g)) r.riddle = d.riddle;
@@ -434,7 +437,13 @@ function mergeBackup(d) {
   if (d.cafe) { const c = cleanCafe(d.cafe); S.cafe = { best: Math.max(S.cafe.best, c.best), total: Math.max(S.cafe.total, c.total) }; }
   for (const [k, v] of Object.entries(cleanGhost(d.ghost))) if (ghostScore(k, v) > ghostScore(k, S.ghost[k] || [])) S.ghost[k] = v;
   Object.assign(S.foil, cleanFoil(d.foil), S.foil);
-  if (d.tower) { const t = cleanTower(d.tower); S.tower = { best: Math.max(S.tower.best, t.best), cp: Math.max(S.tower.cp, t.cp), runs: Math.max(S.tower.runs, t.runs) }; }
+  if (d.tower) {
+    const t = cleanTower(d.tower), a = S.tower.wk, b = t.wk;
+    const wk = !a ? b : !b ? a : a.k === b.k ? { k: a.k, best: Math.max(a.best, b.best) } : a.k > b.k ? a : b;
+    S.tower = { best: Math.max(S.tower.best, t.best), cp: Math.max(S.tower.cp, t.cp), runs: Math.max(S.tower.runs, t.runs), ...(wk ? { wk } : {}) };
+  }
+  if (d.fq) { const o = cleanFq(d.fq); if (o.d > S.fq.d) S.fq = o; else if (o.d === S.fq.d) { for (const [k, v] of Object.entries(o.c)) S.fq.c[k] = Math.max(S.fq.c[k] || 0, v); S.fq.got = [...new Set([...S.fq.got, ...o.got])]; } }
+  Object.assign(S.sets, cleanFoil(d.sets), S.sets);
   if (d.box && d.box.date && d.box.date > (S.box.date || '')) S.box = d.box;
   if (d.wnew && d.wnew.key) {
     if (d.wnew.key > (S.wnew.key || '')) S.wnew = d.wnew; else if (d.wnew.key === S.wnew.key) S.wnew.n = Math.max(S.wnew.n, d.wnew.n || 0);
@@ -527,7 +536,17 @@ function cleanFoil(f) {
 }
 function cleanTower(t) {
   const n = (x) => (isNum(x) && x > 0 ? Math.floor(x) : 0);
-  return t && typeof t === 'object' ? { best: n(t.best), cp: Math.floor(n(t.cp) / 10) * 10, runs: n(t.runs) } : { best: 0, cp: 0, runs: 0 };
+  if (!t || typeof t !== 'object') return { best: 0, cp: 0, runs: 0 };
+  const out = { best: n(t.best), cp: Math.floor(n(t.cp) / 10) * 10, runs: n(t.runs) };
+  if (t.wk && typeof t.wk === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(t.wk.k || '')) out.wk = { k: t.wk.k, best: n(t.wk.best) }; // weekly special tower (1.121)
+  return out;
+}
+function cleanFq(q) {
+  const ok = q && typeof q === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(q.d || '');
+  if (!ok) return { d: '', c: {}, got: [] };
+  const c = {};
+  for (const [k, v] of Object.entries(q.c && typeof q.c === 'object' ? q.c : {})) if (/^[a-z]{2,10}$/.test(k) && isNum(v) && v > 0) c[k] = Math.floor(v);
+  return { d: q.d, c, got: [...new Set((Array.isArray(q.got) ? q.got : []).filter((x) => Number.isInteger(x) && x >= 0 && x < 40))] };
 }
 
 /* ---------- weekly adventure book (1.114): storage helpers (the page is js/adventure.js) ---------- */
