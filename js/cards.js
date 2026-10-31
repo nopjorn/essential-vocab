@@ -214,6 +214,7 @@ function renderCards(extra) {
       <div class="small muted">อีก ${(b - S.xp).toLocaleString()} XP ถึง Lv.${L + 1}</div>`;
   }
 
+  const landMQ = matchMedia('(min-width: 700px) and (orientation: landscape)');
   let frontEn = true; // side shown first for the current card (settings.front: en, th or mix)
   function show() {
     if (!queue.length) return finish();
@@ -247,7 +248,7 @@ function renderCards(extra) {
     gradeBox.innerHTML = [
       ['g-again', 'ลืม', 0], ['g-hard', 'ยาก', 1], ['g-good', 'จำได้', 2], ['g-easy', 'ง่าย', 3],
     ].map(([c, t, g]) => `<button class="btn ${c}" data-g="${g}">${t}<small>${gradeLabel(p, g)}</small></button>`).join('');
-    gradeBox.style.visibility = 'hidden';
+    gradeBox.style.visibility = landMQ.matches ? 'visible' : 'hidden'; // landscape: the 4 buttons are there from the start
     $('#undo').style.visibility = history.length ? 'visible' : 'hidden';
     if (enFront && S.settings.autoSpeak) speak(card.w);
     bindCard();
