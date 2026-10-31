@@ -383,6 +383,30 @@ test('grammar tied to words is valid practice data', () => {
   expect(bad).toEqual([]);
 });
 
+test('real-life texts are valid practice data', () => {
+  const { REALTEXT } = load('data/realtext.js');
+  const { WORDS } = load(...WORD_FILES);
+  const words = new Set(WORDS.map((r) => r[0]));
+  expect(REALTEXT.length).toBeGreaterThanOrEqual(70);
+  const kinds = {}, bad = [], texts = new Set();
+  REALTEXT.forEach(([kind, sit, text, right, wrong, th, lemma], i) => {
+    const id = `#${i} ${right}`;
+    kinds[kind] = (kinds[kind] || 0) + 1;
+    if (!['sign', 'announce', 'menu', 'bill', 'label', 'notice', 'plan'].includes(kind)) bad.push(`${id}: kind ${kind}`);
+    if (!sit || !th || !/[\u0E00-\u0E7F]/.test(th)) bad.push(`${id}: needs a Thai situation and translation`);
+    if ((text.match(/___/g) || []).length !== 1) bad.push(`${id}: needs exactly one ___`);
+    if (!Array.isArray(wrong) || wrong.length !== 3 || new Set([right, ...wrong].map((x) => x.toLowerCase())).size !== 4) bad.push(`${id}: needs the answer + 3 different wrong words`);
+    if (!words.has((lemma || right).toLowerCase())) bad.push(`${id}: ${lemma || right} is not a list word (give the list word as the 7th field)`);
+    if (lemma && !words.has(lemma)) bad.push(`${id}: lemma ${lemma}`);
+    if (texts.has(text)) bad.push(`${id}: duplicate text`);
+    texts.add(text);
+    if (text.includes('Oxford')) bad.push(`${id}: no Oxford in app text`);
+  });
+  Object.entries(kinds).forEach(([k, n]) => { if (n < 8) bad.push(`kind ${k} has only ${n}`); });
+  expect(Object.keys(kinds).length).toBe(7);
+  expect(bad).toEqual([]);
+});
+
 test('the manual states the real number of games', () => {
   const games = read('js/games.js'), body = games.slice(games.indexOf('const GAMES = {'));
   const n = (body.slice(0, body.indexOf('\n};')).match(/^  [a-zA-Z0-9]+: \{/gm) || []).length;

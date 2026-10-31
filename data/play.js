@@ -118,6 +118,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'dprep') return qDprep(w);
     if (m === 'thaierr') return qMistake(w);
     if (m === 'gpat') return qGpat(w);
+    if (m === 'real') return qReal(w);
     const toTh = m !== 'th2en' && m !== 'cloze' && m !== 'ipa';
     const diff = gameDiff();
     const opts = shuffle([w, ...(m === 'ipa' ? ipaDistractors(w) : distractors(w, 3, toTh ? 't' : 'w', diff >= 2))]);
@@ -962,6 +963,35 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       view.querySelector('[data-sayex]').onclick = () => speak(gpPlain(r));
       $('#nextQ').onclick = next;
       speak(gpPlain(r));
+    };
+  }
+
+  // Real-life texts: a sign / announcement / menu / bill / label with one word missing - pick it (wrong options never fit the context).
+  function qReal(w) {
+    const r = w._rt, K = RT_KIND[r.kind], opts = shuffle([r.right, ...r.wrong]);
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit pop"><div class="small muted">${K.icon} ${K.name} · ${esc(r.sit)}</div>
+        <div class="rt-paper rt-${r.kind}" lang="en">${esc(r.text).replace('___', '<span class="blank">_____</span>')}</div>
+        <button class="hint-btn" id="rtHint">💡 ดูคำแปล</button><div class="thx" id="rtTh" hidden>${esc(r.th)}</div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" lang="en" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    $('#rtHint').onclick = () => { $('#rtTh').hidden = false; $('#rtHint').remove(); };
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === r.right;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === r.right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ที่ถูกคือ'} <b lang="en">${esc(r.right)}</b>
+        <div class="example"><div class="rt-paper rt-${r.kind} done" lang="en">${esc(r.text).replace('___', `<mark>${esc(r.right)}</mark>`)}</div>
+          <button class="say-ex" data-sayex aria-label="ฟังข้อความ">🔊</button><div class="thx">${esc(r.th)}</div></div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('[data-sayex]').onclick = () => speak(rtPlain(r));
+      $('#nextQ').onclick = next;
+      speak(rtPlain(r));
     };
   }
 

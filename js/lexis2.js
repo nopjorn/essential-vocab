@@ -87,6 +87,20 @@ function renderUkUs() {
   $('#ukList').onclick = (e) => { const b = e.target.closest('[data-uk]'); if (b) speakBoth(b.dataset.uk, b.dataset.us); };
 }
 
+/* ---------- real-life texts (1.113) ---------- */
+// data/realtext.js rows: [kind, Thai situation, text with ___, answer, [3 wrong words], Thai translation, list word?]. Game `real` (qReal in data/play.js).
+let REALTEXT = null;
+const RT_KIND = {
+  sign: { icon: '🚧', name: 'ป้าย' }, announce: { icon: '📢', name: 'ประกาศ' }, menu: { icon: '🍽️', name: 'เมนู' },
+  bill: { icon: '🧾', name: 'ใบเสร็จ / ใบแจ้งหนี้' }, label: { icon: '🏷️', name: 'ฉลาก' }, notice: { icon: '📋', name: 'ข้อความแจ้ง' }, plan: { icon: '🕒', name: 'ตาราง / ตั๋ว' },
+};
+const loadRealText = () => loadData('data/realtext.js', 'REALTEXT').then((rows) => {
+  if (!REALTEXT) REALTEXT = rows.map(([kind, sit, text, right, wrong, th, lemma]) => ({ kind, sit, text, right, wrong, th, key: (lemma || right).toLowerCase() }));
+  return REALTEXT;
+});
+const rtPlain = (r) => r.text.replace(/\n/g, ' ').replace('___', r.right);
+const rtItems = () => REALTEXT.map((r) => ({ idx: -1, w: r.key, t: r.th, p: '', g: '', _rt: r, _q: [r.text.replace(/\n/g, ' '), r.right, '', r.th] }));
+
 /* ---------- word sheet boxes ---------- */
 function lexis2Boxes(el, w) {
   loadUkUs().then(() => {

@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.112.1';
+const APP_VERSION = '1.113.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -701,7 +701,8 @@ const ACH = [
   { id: 'wq4', icon: '🗓️', name: 'สัปดาห์สำเร็จ', desc: 'ทำภารกิจประจำสัปดาห์สำเร็จ 4 ครั้ง', ok: (s) => s.wquests >= 4 },
   { id: 'repair', icon: '🩹', name: 'ซ่อมสตรีค', desc: 'ซ่อมสตรีคที่ขาดสำเร็จ', ok: (s) => s.repairs >= 1 },
   { id: 'evt1', icon: '🏷️', name: 'นักสะสมเทศกาล', desc: 'ผ่านควิซกิจกรรมเทศกาล 1 ครั้ง', ok: (s) => s.events >= 1 },
-  { id: 'evt4', icon: '🎊', name: 'ครบทุกเทศกาล', desc: 'ผ่านควิซกิจกรรมครบทั้ง 4 เทศกาล (ฮาโลวีน สงกรานต์ ลอยกระทง ปีใหม่)', ok: (s) => s.events >= 4 },
+  { id: 'evt4', icon: '🎊', name: 'สี่เทศกาล', desc: 'ผ่านควิซกิจกรรมเทศกาลครบ 4 งานที่ต่างกัน', ok: (s) => s.events >= 4 },
+  { id: 'evt8', icon: '🏮', name: 'ครบทุกเทศกาล', desc: 'ผ่านควิซกิจกรรมครบทั้ง 8 เทศกาล (ฮาโลวีน สงกรานต์ ลอยกระทง ปีใหม่ คริสต์มาส ตรุษจีน วาเลนไทน์ วันแม่)', ok: (s) => s.events >= 8 },
   { id: 'early', icon: '🌅', name: 'นกที่ตื่นเช้า', desc: 'เรียนตอนตี 5', secret: true, ok: (s) => s.early },
   { id: 'owl', icon: '🦉', name: 'นกฮูกยามดึก', desc: 'เรียนหลังเที่ยงคืนถึงตีสาม', secret: true, ok: (s) => s.owl },
   { id: 'newyear', icon: '🎆', name: 'เริ่มปีด้วยศัพท์', desc: 'เรียนในวันปีใหม่ 1 มกราคม', secret: true, ok: (s) => s.newyear },

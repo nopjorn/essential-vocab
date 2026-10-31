@@ -1621,3 +1621,16 @@ html.no-ans .dance, html.no-ans .confetti.burst i { animation: none; }
   .ss-grid span { font-size: var(--fs-xs, 12px); color: var(--muted); }
   .ss-row { display: flex; justify-content: space-between; padding: 4px 0; }
 }
+
+/* ---------- 1.113: real-life texts (game "ข้อความจริง") ---------- */
+.rt-paper { margin-top: 10px; padding: 14px 16px; border-radius: 14px; background: var(--surface-2); border-left: 6px solid var(--primary); white-space: pre-line; text-align: left; line-height: 1.55; font-size: var(--fs-md); }
+.rt-paper mark { background: none; color: var(--pink-ink); font-weight: 800; }
+.rt-paper .blank { display: inline-block; min-width: 3.4em; text-align: center; border-bottom: 3px solid var(--primary); color: transparent; user-select: none; }
+.rt-sign { text-align: center; font-weight: 800; letter-spacing: .3px; text-transform: uppercase; border-left-width: 0; border: 4px solid var(--warn); }
+.rt-announce { border-left-color: var(--a2); font-style: italic; }
+.rt-menu { text-align: center; font-family: Georgia, "Times New Roman", serif; border-left-width: 0; border-top: 4px double var(--muted); border-bottom: 4px double var(--muted); border-radius: 4px; }
+.rt-bill { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; border-left-width: 0; border-top: 3px dashed var(--muted); border-bottom: 3px dashed var(--muted); border-radius: 2px; }
+.rt-label { border-left-color: var(--good); border-radius: 4px 14px 14px 4px; }
+.rt-notice { border-left-color: var(--pink); }
+.rt-plan { border-left-color: var(--b1); font-variant-numeric: tabular-nums; border-style: dotted; border-width: 0 0 0 6px; }
+.rt-paper.done { margin: 8px 0; font-size: var(--fs-sm); }
