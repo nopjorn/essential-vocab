@@ -994,7 +994,7 @@ html.no-ans .f-pop { display: none; }
   .view:has(> #stage), .view:has(> .q-prompt) { display: flex; flex-direction: column; }
   .view:has(> #stage) > *, .view:has(> .q-prompt) > * { flex-shrink: 0; }
   .view:has(> #stage) > .stage { flex: 1 1 auto; height: auto; min-height: 280px; max-height: 640px; }
-  .view:has(> .q-prompt) > .q-prompt { flex: 1 1 auto; flex-shrink: 1; min-height: 120px; max-height: 46dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .view:has(> .q-prompt) > .q-prompt { flex: 1 1 auto; flex-shrink: 1; min-height: 120px; max-height: 46dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(8px, 1.8dvh, 18px); }
   .view:has(> .q-prompt) > .options { margin-top: auto; }
   .opt { min-height: 60px; font-size: 18px; }
 }
@@ -1651,3 +1651,13 @@ html.no-ans .dance, html.no-ans .confetti.burst i { animation: none; }
 .adv-stamp { flex: none; font-size: 22px; }
 .adv-past { align-items: center; gap: 10px; }
 @media (min-width: 900px) { .adv-trail { grid-template-columns: 1fr 1fr; } .adv-stop:last-child { grid-column: 1 / -1; } }
+
+/* quiz question card (1.114.4): portrait = airier spacing (gap above); landscape = the card fills the height beside the answers instead of hugging its text */
+@media (min-width: 700px) and (max-height: 520px) {
+  .view:has(> .q-prompt) > .q-prompt, .view:has(> .q-prompt) > .q-prompt.fit {
+    min-height: calc(100dvh - 128px - env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  }
+}
+@media (min-width: 1200px) and (min-height: 600px) {
+  .view:has(> .q-prompt) > .q-prompt, .view:has(> .q-prompt) > .q-prompt.fit { min-height: min(62dvh, 560px); max-height: none; gap: 14px; }
+}
