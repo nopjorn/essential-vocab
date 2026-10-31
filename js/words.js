@@ -71,7 +71,7 @@ function renderList() {
 // Card/sheet snippet: the user's own memory hook, or a prompt to write one for leeches.
 function noteBox(w) {
   if (S.note[w.w]) return `<button class="note-box" data-note>💡 <b>วิธีจำของฉัน:</b> ${esc(S.note[w.w])} <span class="muted">✏️</span></button>`;
-  return isLeech(w) ? '<button class="note-box empty leech" data-note>🐢 คำนี้ลืมบ่อย แตะเพื่อเขียนวิธีจำของตัวเอง <span>✏️</span></button>'
+  return isLeech(w) ? '<div class="note-pair" data-note><div class="note-box empty leech">🐢 คำนี้ลืมบ่อย</div><button class="note-box empty plain">✏️ แตะเพื่อเขียนวิธีจำของตัวเอง</button></div>'
     : '<button class="note-box empty plain" data-note>✏️ แตะเพื่อเขียนวิธีจำของตัวเอง</button>';
 }
 // Read-only memory hook shown in game feedback (1.64); '' for words without one and for skill-game items (idx < 0).

@@ -564,6 +564,8 @@ body { touch-action: manipulation; }
 .note-box { display: block; width: 100%; margin-top: 12px; padding: 10px 12px; border: 0; border-radius: 14px; background: color-mix(in srgb, var(--warn) 22%, var(--surface)); color: var(--text); font: inherit; font-size: var(--fs-sm); text-align: left; line-height: 1.5; }
 .note-box.empty { background: var(--surface-2); color: var(--muted); }
 .note-box.empty.plain { background: none; border: 2px dashed var(--border); padding: 8px 12px; }
+.note-pair { width: 100%; display: grid; gap: 8px; margin-top: 12px; }
+.note-pair .note-box { margin-top: 0; }
 .note-box.empty.leech { background: color-mix(in srgb, var(--warn) 22%, var(--surface)); color: var(--text); border: 2px solid color-mix(in srgb, var(--warn) 55%, var(--surface)); padding: 8px 12px; }
 .note-add { display: inline-block; margin-top: 10px; border: 0; background: none; color: var(--muted); font: inherit; font-size: var(--fs-sm); text-decoration: underline; }
 .note-in { width: 100%; box-sizing: border-box; min-height: 96px; margin: 12px 0 6px; padding: 12px; border: 2px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); font: inherit; font-size: var(--fs-md); resize: vertical; }
