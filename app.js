@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.111.0';
+const APP_VERSION = '1.112.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -870,12 +870,27 @@ function sfx(kind) {
     });
   } catch (e) { /* audio unavailable */ }
 }
-function confetti() {
+function confetti(kind) {
   if (confettiOff()) { sfx('win'); return; }
   const box = document.createElement('div');
   box.className = 'confetti';
+  if (kind === 'burst') {
+    // Big moments (level up, 3-star stage, boss): paper pieces fly out from the middle, then drop.
+    const cols = ['#6c5ce7', '#ff6b9d', '#ffc145', '#2ecc71', '#4aa8ff', '#ff7a45'];
+    for (let k = 0; k < 56; k++) {
+      const b = document.createElement('i'), a = Math.random() * Math.PI * 2, r = 90 + Math.random() * Math.min(innerWidth, 520) * 0.5;
+      b.style.setProperty('--dx', Math.round(Math.cos(a) * r) + 'px');
+      b.style.setProperty('--dy', Math.round(Math.sin(a) * r * 0.8 - 40) + 'px');
+      b.style.setProperty('--r', Math.round(Math.random() * 720 - 360) + 'deg');
+      b.style.background = cols[k % cols.length];
+      b.style.animationDelay = Math.random() * 0.12 + 's';
+      if (k % 3 === 0) b.style.borderRadius = '50%';
+      box.appendChild(b);
+    }
+    box.classList.add('burst');
+  }
   const bits = ['🎉', '⭐', '✨', '💜', '🎊', '🔥'];
-  for (let k = 0; k < 36; k++) {
+  for (let k = 0; k < (kind === 'burst' ? 18 : 36); k++) {
     const b = document.createElement('span');
     b.textContent = pick(bits);
     b.style.left = Math.random() * 100 + 'vw';
@@ -942,14 +957,14 @@ function streakFlash(count) {
 }
 // Level-up: full screen with what was unlocked (level medals) and the XP to the next level. Tap or the button closes it.
 function levelUpScreen(L, before = L - 1) {
-  confetti();
+  confetti('burst');
   if (confettiOff()) { toast(`⬆️ เลเวลอัป! ตอนนี้ Lv.${L}`); return; }
   document.querySelectorAll('.lvlup').forEach((x) => x.remove());
   const medals = ACH.filter((a) => /^lvl/.test(a.id)).filter((a) => { try { return a.ok({ level: L }) && !a.ok({ level: L - 1 }); } catch (e) { return false; } });
   const newItems = typeof ITEMS !== 'undefined' ? ITEMS.filter((x) => x.lv > before && x.lv <= L) : [];
   const el = document.createElement('div');
   el.className = 'celebrate lvlup'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'เลเวลอัป');
-  el.innerHTML = `<div class="cel-card"><div class="cel-badge" aria-hidden="true">Lv.<b>${L}</b></div><div class="h2">เลเวลอัป!</div>
+  el.innerHTML = `<div class="cel-card">${typeof mascotSvg === 'function' ? `<div class="dance cel-mascot" aria-hidden="true">${mascotSvg({ mood: 'happy', size: 84 })}</div>` : ''}<div class="cel-badge" aria-hidden="true">Lv.<b>${L}</b></div><div class="h2">เลเวลอัป!</div>
     <p>เก่งมาก! ตอนนี้ถึง Lv.${L} แล้ว</p>
     ${medals.length ? `<div class="cel-unlock">🏅 ปลดล็อกเหรียญ ${medals.map((a) => `${a.icon} ${esc(a.name)}`).join(' · ')}</div>` : ''}
     ${newItems.length ? `<div class="cel-unlock">🎁 ปลดล็อกของใหม่ ${newItems.map((x) => `${x.ic} ${esc(x.name)}`).join(' · ')} (ดูที่ น้องคำ)</div>` : ''}

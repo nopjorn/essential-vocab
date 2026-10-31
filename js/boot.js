@@ -31,6 +31,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadSW) showUpdate(); });
 }
 setTimeout(whatsNew, 600);
+onboard(); // first-run welcome (js/onboard.js), only on a brand-new device
 if (loadRescued) setTimeout(() => toast('⚠️ อ่านข้อมูลเดิมในเครื่องไม่ได้ เก็บสำเนาไว้ให้แล้ว (ถ้าเปิดซิงก์ไว้ ข้อมูลจากคลาวด์จะกลับมา) · ติดต่อผู้ดูแลก่อนล้างข้อมูลแอปนะคะ'), 1500);
 setTimeout(() => loadEmoji().catch(() => {}), 900); // so the picture is ready on the first flashcard / word sheet
 if (syncOn() && auth) syncNow().then((ok) => { if (ok && current === 'home') renderHome(); });

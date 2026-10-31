@@ -167,7 +167,8 @@ function renderCards(extra) {
       <button class="icon-btn" id="undo" aria-label="ย้อนกลับ" style="visibility:hidden">↩︎</button>
     </div>
     <div class="stage" id="stage"></div>
-    <div class="grade" id="grade"></div>`;
+    <div class="grade" id="grade"></div>
+    <aside class="side-stats" id="sideStats" aria-label="สถิติวันนี้"></aside>`;
   $('#quit').onclick = () => (deck ? go('decks', deck.id) : go('home'));
 
   let card = null, flipped = false;
@@ -192,10 +193,31 @@ function renderCards(extra) {
     show();
   };
 
+  // iPad landscape (CSS shows it from 1100×700): today's numbers beside the card, refreshed with every card.
+  function updSide() {
+    const el = $('#sideStats'); if (!el) return;
+    const goal = newGoal(), n = stats.ok + stats.again, acc = n ? Math.round(stats.ok / n * 100) : null;
+    const L = levelOf(S.xp), a = levelStart(L), b = levelStart(L + 1), pc = Math.max(0, Math.min(100, Math.round((S.xp - a) / (b - a) * 100)));
+    el.innerHTML = `<div class="ss-h">รอบนี้</div>
+      <div class="ss-big"><b>${done}</b><span>/ ${total} ใบ</span></div>
+      <div class="qbar"><span style="width:${total ? done / total * 100 : 0}%"></span></div>
+      <div class="ss-grid">
+        <div><b>${acc == null ? '–' : acc + '%'}</b><span>จำได้</span></div>
+        <div><b>${Math.max(0, total - done)}</b><span>เหลือ</span></div>
+        <div><b>${S.streak.count || 0}</b><span>🔥 วัน</span></div></div>
+      ${deck ? '' : `<div class="ss-h">วันนี้ทั้งหมด</div>
+      <div class="ss-row"><span>ทบทวนแล้ว</span><b>${S.daily.reviews}</b></div>
+      <div class="ss-row"><span>คำใหม่</span><b>${S.daily.fresh}/${goal}</b></div>`}
+      <div class="ss-h">Lv.${L}</div>
+      <div class="qbar"><span style="width:${pc}%"></span></div>
+      <div class="small muted">อีก ${(b - S.xp).toLocaleString()} XP ถึง Lv.${L + 1}</div>`;
+  }
+
   let frontEn = true; // side shown first for the current card (settings.front: en, th or mix)
   function show() {
     if (!queue.length) return finish();
     card = queue[0]; flipped = false;
+    updSide();
     $('#pbar').style.width = (done / total * 100) + '%';
     $('#pcount').textContent = `${done}/${total}`;
     const p = map[card.w];

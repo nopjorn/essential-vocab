@@ -4,12 +4,13 @@ const { expect } = require('@playwright/test');
 const KEY = 'oxford3000.v1';
 
 // Opens the app with sync disabled. `state` (optional) is merged into a fresh localStorage save.
-async function openApp(page, state) {
+async function openApp(page, state, opts = {}) {
   if (state && state.seenVer === undefined) state = { ...state, seenVer: '99.0.0' }; // keep the what's-new bar out of other tests
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.route('**/config.js*', (r) => r.fulfill({ contentType: 'text/javascript', body: "window.SYNC_CONFIG = { url: '', anonKey: '' };" }));
-  await page.addInitScript(([key, st]) => {
+  await page.addInitScript(([key, st, onb]) => {
+    if (!onb) localStorage.setItem('o3k.onb', '1'); // the first-run welcome (1.112) is tested on its own
     if (st && !sessionStorage.getItem('seeded')) { localStorage.setItem(key, JSON.stringify(st)); sessionStorage.setItem('seeded', '1'); }
     // Speech synthesis: record what was said, finish each utterance right away.
     window.__said = [];
@@ -28,7 +29,7 @@ async function openApp(page, state) {
     }
     window.SpeechRecognition = FakeRec;
     window.webkitSpeechRecognition = FakeRec;
-  }, [KEY, state || null]);
+  }, [KEY, state || null, !!opts.onboarding]);
   await page.goto('index.html');
   await page.waitForFunction(() => typeof playOn !== 'undefined' && playOn); // the game engine is idle-prefetched at boot (1.101); games start synchronously once it is in
   await expect(page.locator('#view')).not.toBeEmpty();

@@ -1138,8 +1138,8 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     const correct = total - wrong.length;
     if (!ENDLESS && correct === items.length && items.length >= 10) S.counts.perfect = (S.counts.perfect || 0) + 1;
     questEvent('round', { game: gameId, correct, bestCombo, perfect: !ENDLESS && correct === items.length && items.length >= 10 });
-    if (STAGE ? done.stars >= 2 : SURV || TIMED ? right_ >= 20 : ENDLESS ? bestCombo >= 10 : correct >= 8) confetti();
-    const emoji = STAGE ? (done.stars === 3 ? '🏆' : done.stars ? '🎉' : '💪') : SURV || TIMED ? (right_ >= 30 ? '🏆' : right_ >= 15 ? '🎉' : '💪') : ENDLESS ? (bestCombo >= 20 ? '🏆' : bestCombo >= 10 ? '🎉' : '💪') : correct === items.length ? '🏆' : correct >= 7 ? '🎉' : correct >= 4 ? '💪' : '📚';
+    if (STAGE ? done.stars >= 2 : SURV || TIMED ? right_ >= 20 : ENDLESS ? bestCombo >= 10 : correct >= 8) confetti(STAGE && done.stars === 3 ? 'burst' : undefined);
+    const emoji = STAGE && done.stars === 3 && typeof mascotSvg === 'function' ? `<div class="dance">${mascotSvg({ mood: 'happy', size: 104 })}</div>` : STAGE ? (done.stars === 3 ? '🏆' : done.stars ? '🎉' : '💪') : SURV || TIMED ? (right_ >= 30 ? '🏆' : right_ >= 15 ? '🎉' : '💪') : ENDLESS ? (bestCombo >= 20 ? '🏆' : bestCombo >= 10 ? '🎉' : '💪') : correct === items.length ? '🏆' : correct >= 7 ? '🎉' : correct >= 4 ? '💪' : '📚';
     view.innerHTML = `<div class="card-box center pop">
         <div class="result-emoji">${emoji}</div>
         ${STAGE ? `<div class="h2" aria-label="${done.stars} ดาว">${starRow(done.stars)}</div>
