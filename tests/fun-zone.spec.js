@@ -201,3 +201,114 @@ test('album: mastered words are cards with rarity, foil filter, opens the word s
   expect(await page.evaluate(() => !!S.ach.sBloom)).toBe(true);
   expect(errors).toEqual([]);
 });
+
+/* ---------- 1.120: detective cases, ร้านน้องคำ, ghost race ---------- */
+test('cases data: every case has 3 suspects with notes, Thai for every clue, 2 reading questions with valid answers', async () => {
+  const fs = require('fs'), vm = require('vm'), ctx = { window: {} };
+  vm.runInNewContext(fs.readFileSync(require('path').join(__dirname, '..', 'data', 'cases.js'), 'utf8'), ctx);
+  const C = ctx.window.CASES;
+  expect(C.length).toBeGreaterThanOrEqual(8);
+  expect(new Set(C.map((c) => c.id)).size).toBe(C.length);
+  for (const c of C) {
+    expect(c.suspects.length, c.id).toBe(3);
+    expect(c.suspects.every((s) => s.length === 4 && s.every((x) => typeof x === 'string' && x)), c.id).toBe(true);
+    expect(c.clues.length, c.id).toBeGreaterThanOrEqual(5);
+    expect(c.clues.every(([en, th]) => /^[\x20-\x7e’]+$/.test(en) && /[฀-๿]/.test(th)), c.id).toBe(true);
+    expect(c.q.length, c.id).toBe(2);
+    expect(c.q.every(([q, o, a]) => o.length === 3 && a >= 0 && a < 3), c.id).toBe(true);
+    expect(c.ans >= 0 && c.ans < 3 && c.why && c.intro && c.title, c.id).toBeTruthy();
+    expect(/^[a-z0-9]{1,20}$/.test(c.id)).toBe(true);
+  }
+});
+
+test('detective: read clues, answer questions, a wrong guess then the right one; coins once; hat after 3 cases', async ({ page }) => {
+  const errors = await openApp(page, { ...base, cases: { cake: { ok: true, t: 0 }, book: { ok: true, t: 1 } } });
+  await page.evaluate(() => go('cases'));
+  await expect(page.locator('[data-case]')).toHaveCount(8);
+  await page.locator('[data-case="flowers"]').click();
+  await page.locator('#caseNext').click(); // intro → clues
+  await page.locator('[data-th="0"]').click();
+  await expect(page.locator('#cth0')).toBeVisible();
+  await page.locator('#caseNext').click(); // clues → questions
+  for (const right of [1, 0]) { // flowers: answers 1 and 1; answer the first right, the second wrong
+    const a = await page.evaluate(() => CASES.find((c) => c.id === 'flowers').q.map((x) => x[2]));
+    const k = right ? a[0] : (a[1] + 1) % 3;
+    await page.locator(`.opt[data-k="${k}"]`).click();
+    await page.waitForTimeout(right ? 800 : 1600);
+  }
+  await page.locator('[data-sus="1"]').click(); // wrong
+  await expect(page.locator('#caseRetry')).toBeVisible();
+  expect(await page.evaluate(() => [S.cases.flowers.t, coinBal()])).toEqual([1, 0]);
+  await page.locator('#caseRetry').click();
+  await page.locator('#caseNext').click();
+  for (let i = 0; i < 2; i++) { await page.locator('.opt').first().click(); await page.waitForTimeout(1600); }
+  await page.locator('[data-sus="0"]').click(); // Jack: right
+  await expect(page.locator('#view')).toContainText('ใช่แล้ว');
+  expect(await page.evaluate(() => [S.cases.flowers.ok, coinBal(), S.owned.includes('acc:detective')])).toEqual([true, 10, true]);
+  expect(await page.evaluate(() => { mergeBackup({ cases: { pizza: { ok: true, t: 2 }, flowers: { ok: false, t: 5 } } }); return [S.cases.flowers, S.cases.pizza]; })).toEqual([{ ok: true, t: 5 }, { ok: true, t: 2 }]);
+  expect(errors).toEqual([]);
+});
+
+test('ร้านน้องคำ: serving the right food earns a tip, wrong food is a strike, 3 strikes close the day', async ({ page }) => {
+  const errors = await openApp(page, base);
+  await page.evaluate(() => go('cafe'));
+  await page.locator('#cfGo').click();
+  const serve = async (ok) => {
+    await expect(page.locator('.cf-item').first()).toBeEnabled();
+    const ks = await page.evaluate((ok) => { const want = cafeRun.shelf.map((w, k) => (cafeRun.order.includes(w) ? k : -1)).filter((k) => k >= 0); return ok ? want : [cafeRun.shelf.findIndex((w) => !cafeRun.order.includes(w))]; }, ok);
+    for (const k of ks) await page.locator(`.cf-item[data-k="${k}"]`).click();
+    await page.locator('#cfServe').click();
+    await expect(page.locator('#reveal')).not.toBeEmpty();
+    await page.waitForTimeout(ok ? 1200 : 2700);
+  };
+  expect(await page.evaluate(() => /^(Can I have|I'd like|Could I get|Hello!) .+(\?|\.)$/.test(window.__said.at(-1)))).toBe(true);
+  await serve(true);
+  expect(await page.evaluate(() => coinBal())).toBeGreaterThanOrEqual(1);
+  for (let i = 0; i < 3; i++) await serve(false);
+  await expect(page.locator('#cfAgain')).toBeVisible();
+  expect(await page.evaluate(() => S.cafe)).toEqual({ best: 1, total: 1 });
+  expect(await page.evaluate(() => cafeItems().length)).toBeGreaterThanOrEqual(16);
+  expect(await page.evaluate(() => [cafeArt('apple'), cafeArt('milk'), cafeArt('banana'), cafeList(['a', 'b', 'c'])])).toEqual(['an apple', 'some milk', 'a banana', 'a, b and c']);
+  expect(errors).toEqual([]);
+});
+
+test('ghost race: survival shows the best run and saves a new one; time attack ghost counts by time', async ({ page }) => {
+  const errors = await openApp(page, { ...base, ghost: { survival: [1, 2, 3, 4], timeAttack: [1.5, 3, 4, 60] }, best: { survival: 4, timeAttack: 4 } });
+  const step = async (ok) => {
+    await expect(page.locator('.opt').first()).toBeVisible();
+    const k = await page.evaluate(() => { // the right option of a survival question (en2th / th2en / listen / cloze)
+      const words = [...document.querySelectorAll('.opt')].map((o) => W[+o.dataset.i]);
+      const wd = document.querySelector('.q-prompt .word'), th = document.querySelector('.q-prompt .th'), cz = document.querySelector('.q-prompt .cloze');
+      if (wd) return words.findIndex((w) => w.w === wd.textContent.trim());
+      if (th) return words.findIndex((w) => w.t === th.textContent.trim());
+      if (cz) { const pre = cz.textContent.split('_____')[0]; return words.findIndex((w) => w.e && w.e.startsWith(pre)); }
+      return words.findIndex((w) => w.w === window.__said.at(-1));
+    });
+    await page.locator('.opt').nth(ok ? k : (k + 1) % 4).click();
+    await expect(page.locator('#reveal')).not.toBeEmpty();
+    const n = page.locator('#nextQ'); if (await n.count()) await n.click().catch(() => {});
+    await page.waitForTimeout(1000);
+  };
+  await page.evaluate(() => startGame('survival'));
+  await expect(page.locator('#ghN')).toBeVisible();
+  for (let i = 0; i < 3; i++) await step(false);
+  await expect(page.locator('#view')).toContainText('เงาตัวเองยังนำอยู่ 4 ข้อ');
+  expect(await page.evaluate(() => S.ghost.survival)).toEqual([1, 2, 3, 4]);
+  await page.evaluate(() => { S.ghost = {}; S.best = {}; startGame('survival'); });
+  await expect(page.locator('#ghN')).toHaveCount(0); // no best run yet: no ghost
+  await step(true);
+  for (let i = 0; i < 3; i++) await step(false);
+  await expect(page.locator('.result-emoji')).toBeVisible();
+  expect(await page.evaluate(() => S.ghost.survival)).toEqual([1, 1, 1, 1]);
+  await page.evaluate(() => { S.ghost.timeAttack = [0.1, 0.2, 500]; startGame('timeAttack'); });
+  await expect(page.locator('#ghN')).toContainText('👻 2');
+  expect(await page.evaluate(() => { mergeBackup({ ghost: { survival: [1, 2, 3, 4, 5, 6] } }); return S.ghost.survival.length; })).toBe(6);
+  expect(errors).toEqual([]);
+});
+
+test('saved state with every fun-zone field loads as is (no rescue, nothing reset)', async ({ page }) => {
+  const errors = await openApp(page, { ...base, xp: 1234, coin: { a: [5, 1] }, tower: { best: 12, cp: 10, runs: 2 }, puz: { d: '2026-10-30', cw: [0], rv: [], lad: [], ladDone: false, ladGave: false, streak: 2, best: 4, last: '2026-10-29', n: 5 }, foil: { cat: '2026-10-01' }, cases: { cake: { ok: true, t: 0 } }, cafe: { best: 5, total: 9 }, ghost: { survival: [1, 2] } });
+  const r = await page.evaluate(() => [loadRescued, S.xp, coinBal(), S.tower.best, S.puz.best, Object.keys(S.foil).length, S.cases.cake.ok, S.cafe.total, S.ghost.survival.length]);
+  expect(r).toEqual([false, 1234, 4, 12, 4, 1, true, 9, 2]);
+  expect(errors).toEqual([]);
+});

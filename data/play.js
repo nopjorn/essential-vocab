@@ -28,9 +28,15 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   const wrong = [];
   $('#title').textContent = GNAME;
 
+  // 👻 Ghost race (1.120): survival / time attack show the best run so far next to this one (S.ghost[gameId]:
+  // time attack = seconds at each right answer, survival = right answers after each question). Shown only when a best run exists.
+  const GHOST = (SURV || TIMED) && Array.isArray((S.ghost || {})[gameId]) && S.ghost[gameId].length ? S.ghost[gameId] : null;
+  const runT0 = Date.now(), ghostRun = [];
+  const ghostAt = () => (TIMED ? GHOST.filter((t) => t <= (Date.now() - runT0) / 1000).length : asked ? GHOST[Math.min(asked, GHOST.length) - 1] : 0);
+  const ghostTag = () => { if (!GHOST) return ''; const g = ghostAt(), me = asked - wrong.length; return ` · <span class="ghost${me > g ? ' lead' : me < g ? ' behind' : ''}" id="ghN" aria-label="เงาสถิติเดิม ${g} ข้อ">👻 ${g}</span>`; };
   // Top-right status of an endless run (rebuilt after every answer).
-  const runStat = () => (SURV ? `${'❤️'.repeat(hearts)}${'🖤'.repeat(3 - hearts)} · ✅ <b>${asked - wrong.length}</b>`
-    : TIMED ? `⏱ <b id="tLeft">${Math.ceil(timeLeft)}</b> · ✅ <b>${asked - wrong.length}</b>`
+  const runStat = () => (SURV ? `${'❤️'.repeat(hearts)}${'🖤'.repeat(3 - hearts)} · ✅ <b>${asked - wrong.length}</b>${ghostTag()}`
+    : TIMED ? `⏱ <b id="tLeft">${Math.ceil(timeLeft)}</b> · ✅ <b>${asked - wrong.length}</b>${ghostTag()}`
     : `🔥 <b>${combo}</b> · 🏅 ${Math.max(S.best[gameId] || 0, bestCombo)}`);
   function header() {
     if (ENDLESS) {
@@ -83,6 +89,8 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       timeLeft = Math.max(0, TIME_LIMIT - (Date.now() - t0) / 1000);
       const l = $('#tLeft'), b = $('#tBar');
       if (l) l.textContent = Math.ceil(timeLeft);
+      const gh = GHOST && $('#ghN');
+      if (gh) gh.outerHTML = ghostTag().slice(3);
       if (b) b.style.width = timeLeft / TIME_LIMIT * 100 + '%';
       if (timeLeft <= 0) result();
     }, 100);
@@ -1157,6 +1165,8 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     sfx(ok ? 'ok' : 'bad');
     if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); S.counts.maxCombo = Math.max(S.counts.maxCombo || 0, combo); score += 10 + Math.min(combo - 1, 5) * 2; addXP(comboXP(combo)); if (combo >= 5 && combo % 5 === 0) mascotCheer(combo); }
     else { combo = 0; wrong.push(w); if (SURV || BOSS) hearts--; }
+    if (TIMED && ok) ghostRun.push(Math.round((Date.now() - runT0) / 100) / 10);
+    if (SURV) ghostRun.push(asked - wrong.length);
     qmReact(ok);
   }
   function next() { if ((SURV || BOSS) && hearts <= 0) return result(); i++; q(); }
@@ -1172,6 +1182,9 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     const mark_ = SURV || TIMED ? right_ : ENDLESS ? bestCombo : score;
     const isBest = !STAGE && (prev == null || mark_ > prev) && (mark_ > 0 || !ENDLESS);
     if (isBest) { S.best[gameId] = mark_; save(); }
+    if ((SURV || TIMED) && isBest && ghostRun.length) { S.ghost = S.ghost || {}; S.ghost[gameId] = ghostRun.slice(0, 400); save(); }
+    const ghostEnd = GHOST ? (TIMED ? GHOST.length : GHOST[GHOST.length - 1]) : null;
+    const ghostMsg = ghostEnd == null ? '' : `<p class="small">${right_ > ghostEnd ? `👻 แซงเงาตัวเองได้ ${right_ - ghostEnd} ข้อ!` : right_ === ghostEnd ? '👻 เสมอกับเงาตัวเอง' : `👻 เงาตัวเองยังนำอยู่ ${ghostEnd - right_} ข้อ`}</p>`;
     const total = ENDLESS || (BOSS && hearts <= 0) ? asked : items.length;
     const correct = total - wrong.length;
     if (!ENDLESS && correct === items.length && items.length >= 10) S.counts.perfect = (S.counts.perfect || 0) + 1;
@@ -1183,9 +1196,9 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
         ${STAGE ? `<div class="h2" aria-label="${done.stars} ดาว">${starRow(done.stars)}</div>
         <p>${BOSS ? (done.stars ? `🐲 ชนะบอสแล้ว!${done.badge ? ' ได้ 🏅 ตราบอสหมวดนี้ (+25 XP)' : ''}` : '💔 หัวใจหมด บอสชนะรอบนี้ ลองใหม่นะ') : done.stars ? (done.first ? 'ผ่านด่านแล้ว! ปลดล็อกด่านต่อไป 🔓' : 'ผ่านด่านแล้ว') : `ยังไม่ผ่าน ต้องถูกอย่างน้อย ${needFor(items.length)} ข้อ ลองใหม่นะ`} · ถูก ${correct}/${items.length}</p>`
         : SURV ? `<div class="h2">❤️ รอดมาได้ ${right_} ข้อ ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
-        <p>ไปถึงคำระดับ ${LV_LABEL[LEVELS[reach]]} · คอมโบสูงสุด ${bestCombo}${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>`
+        <p>ไปถึงคำระดับ ${LV_LABEL[LEVELS[reach]]} · คอมโบสูงสุด ${bestCombo}${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>${ghostMsg}`
         : TIMED ? `<div class="h2">⏱️ ตอบถูก ${right_} ข้อใน ${TIME_LIMIT} วินาที ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
-        <p>ตอบไป ${asked} ข้อ · คอมโบสูงสุด ${bestCombo}${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>`
+        <p>ตอบไป ${asked} ข้อ · คอมโบสูงสุด ${bestCombo}${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>${ghostMsg}`
         : ENDLESS ? `<div class="h2">🔥 ถูกติดต่อกันสูงสุด ${bestCombo} ข้อ ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
         <p>เล่นไป ${total} ข้อ · ถูก ${correct} · ${score} แต้ม${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>`
         : `<div class="h2">${score} แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>

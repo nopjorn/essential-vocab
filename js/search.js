@@ -13,6 +13,8 @@ const GS_EXTRA = [ // pages that have no tab/sidebar entry: [icon, name, keyword
   ['🧩', 'ปริศนาประจำวัน', 'puzzle crossword ครอสเวิร์ด บันไดคำ word ladder', 'puzzle'],
   ['🃏', 'อัลบั้มการ์ด', 'album card การ์ดสะสม ฟอยล์ foil', 'album'],
   ['🌱', 'สวนคำศัพท์', 'garden สวน ต้นไม้ รดน้ำ', 'garden'],
+  ['🕵️', 'คดีนักสืบ', 'detective case คดี นักสืบ อ่าน', 'cases'],
+  ['🍜', 'ร้านน้องคำ', 'cafe ร้านอาหาร สั่งอาหาร ฟัง', 'cafe'],
   ['🛍️', 'ร้านค้าเหรียญ', 'shop coin เหรียญ ซื้อ', 'coinshop'],
   ['🗺️', 'ผจญภัยประจำสัปดาห์', 'adventure ด่าน ตราประทับ พาสปอร์ต', 'adv'],
   ['🎯', 'วัดระดับ', 'placement ทดสอบระดับ', 'placement'],
