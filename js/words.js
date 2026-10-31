@@ -184,14 +184,14 @@ function openSheet(w, onChange, opt = {}) {
 function mondayKey(off = 0) {
   const d = new Date(); d.setHours(12, 0, 0, 0);
   d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - off * 7);
-  return d.toLocaleDateString('en-CA');
+  return ymd(d);
 }
 function weekStats(off) {
   const mon = mondayKey(off), days = [];
-  for (let k = 0; k < 7; k++) { const d = new Date(Date.parse(mon + 'T12:00:00') + k * DAY).toLocaleDateString('en-CA'); if (d <= today()) days.push(d); }
+  for (let k = 0; k < 7; k++) { const d = ymd(new Date(Date.parse(mon + 'T12:00:00') + k * DAY)); if (d <= today()) days.push(d); }
   const end = days[days.length - 1];
   const snapAt = (key) => { const ks = Object.keys(S.snap).filter((k) => k <= key).sort(); return ks.length ? S.snap[ks[ks.length - 1]] : null; };
-  const before = new Date(Date.parse(mon + 'T12:00:00') - DAY).toLocaleDateString('en-CA');
+  const before = ymd(new Date(Date.parse(mon + 'T12:00:00') - DAY));
   const a = snapAt(before) || (Object.keys(S.snap).sort()[0] >= mon ? [0, 0, 0, 0] : null), b = snapAt(end);
   const missed = {};
   days.forEach((d) => Object.entries(S.miss[d] || {}).forEach(([w, n]) => (missed[w] = (missed[w] || 0) + n)));
@@ -220,16 +220,16 @@ function weekBox(off, withActions) {
     ${withActions ? `<div class="row" style="margin-top:12px">${w.top.length >= 4 ? `<button class="btn primary grow" data-wk="drill" data-off="${off}">🎯 ฝึกคำที่ผิดบ่อย</button>` : ''}<button class="btn grow" data-wk="close">ปิด</button></div>` : ''}`;
 }
 // Monthly summary: same idea as the weekly one, per calendar month ('YYYY-MM').
-const monthKey = (off = 0) => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - off); return d.toLocaleDateString('en-CA').slice(0, 7); };
+const monthKey = (off = 0) => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - off); return ymd(d).slice(0, 7); };
 const TH_MONTH = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 const monthName = (key) => `${TH_MONTH[+key.slice(5) - 1]} ${+key.slice(0, 4) + 543}`;
 function monthStats(off) {
   const key = monthKey(off), days = [];
-  for (let d = new Date(key + '-01T12:00:00'); d.toLocaleDateString('en-CA').startsWith(key); d = new Date(d.getTime() + DAY)) {
-    const k = d.toLocaleDateString('en-CA'); if (k <= today()) days.push(k);
+  for (let d = new Date(key + '-01T12:00:00'); ymd(d).startsWith(key); d = new Date(d.getTime() + DAY)) {
+    const k = ymd(d); if (k <= today()) days.push(k);
   }
   const snapAt = (k) => { const ks = Object.keys(S.snap).filter((x) => x <= k).sort(); return ks.length ? S.snap[ks[ks.length - 1]] : null; };
-  const first = key + '-01', before = new Date(Date.parse(first + 'T12:00:00') - DAY).toLocaleDateString('en-CA');
+  const first = key + '-01', before = ymd(new Date(Date.parse(first + 'T12:00:00') - DAY));
   const a = snapAt(before) || (Object.keys(S.snap).sort()[0] >= first ? [0, 0, 0, 0] : null), b = days.length ? snapAt(days[days.length - 1]) : null;
   const best = days.reduce((m, d) => ((S.hist[d] || 0) > m.n ? { d, n: S.hist[d] } : m), { d: '', n: 0 });
   let streak = 0, run = 0;

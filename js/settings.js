@@ -397,7 +397,7 @@ const STATUS_TH = { new: 'ยังไม่เรียน', learning: 'กำ�
 function exportWords(which, fmt) {
   const list = W.filter(EXPORT_SETS[which][1]);
   if (!list.length) return toast('ยังไม่มีคำในกลุ่มนี้');
-  const due = (p) => (p && p.d ? new Date(p.d).toLocaleDateString('en-CA') : '');
+  const due = (p) => (p && p.d ? ymd(new Date(p.d)) : '');
   let text, name, type;
   if (fmt === 'csv') {
     const q = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;

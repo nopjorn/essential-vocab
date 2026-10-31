@@ -15,7 +15,7 @@ function takeSnap() {
   }
   S.snap[today()] = [l3, m3, la, ma];
 }
-const dayKey = (k) => new Date(Date.now() - k * DAY).toLocaleDateString('en-CA'); // k days ago
+const dayKey = (k) => ymd(new Date(Date.now() - k * DAY)); // k days ago
 const thDate = (ms) => new Date(ms).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
 const durTxt = (d) => (d < 45 ? `${Math.round(d)} วัน` : d < 365 * 1.5 ? `${Math.round(d / 30)} เดือน` : `${(d / 365).toFixed(1)} ปี`);
 
@@ -352,7 +352,7 @@ function yearHeatmap() {
   for (let wk = 0; wk < 53; wk++) {
     for (let dow = 0; dow < 7; dow++) {
       const d = new Date(start); d.setDate(start.getDate() + wk * 7 + dow);
-      const key = d.toLocaleDateString('en-CA');
+      const key = ymd(d);
       if (key > tKey) { cells.push('<i class="hm-c hm-x"></i>'); continue; }
       if (dow === 0 && d.getMonth() !== lastMonth) {
         lastMonth = d.getMonth();

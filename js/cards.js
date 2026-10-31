@@ -194,8 +194,9 @@ function renderCards(extra) {
   };
 
   // iPad landscape (CSS shows it from 1100×700): today's numbers beside the card, refreshed with every card.
+  const sideMQ = matchMedia('(min-width: 1100px) and (min-height: 700px) and (orientation: landscape)'); // same query as the CSS that shows the panel
   function updSide() {
-    const el = $('#sideStats'); if (!el) return;
+    const el = $('#sideStats'); if (!el || !sideMQ.matches) return; // hidden on phones: don't build it
     const goal = newGoal(), n = stats.ok + stats.again, acc = n ? Math.round(stats.ok / n * 100) : null;
     const L = levelOf(S.xp), a = levelStart(L), b = levelStart(L + 1), pc = Math.max(0, Math.min(100, Math.round((S.xp - a) / (b - a) * 100)));
     el.innerHTML = `<div class="ss-h">รอบนี้</div>

@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.112.0';
+const APP_VERSION = '1.112.1';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -458,7 +458,9 @@ function mergeBackup(d) {
   return { added, updated };
 }
 
-const today = () => new Date().toLocaleDateString('en-CA');
+// 'YYYY-MM-DD' in local time (same text as toLocaleDateString('en-CA'), but ~50x faster: Intl formatting showed up as 84 ms of boot at 4x CPU).
+const ymd = (d) => { const m = d.getMonth() + 1, k = d.getDate(); return d.getFullYear() + (m < 10 ? '-0' : '-') + m + (k < 10 ? '-0' : '-') + k; };
+const today = () => ymd(new Date());
 function rollDay() {
   if (S.daily.date !== today()) S.daily = { date: today(), fresh: 0, reviews: 0 };
 }
@@ -471,7 +473,7 @@ const REPAIR_MS = 48 * 3600 * 1000;
 function repairInfo() {
   const r = S.repair;
   if (!r || r.done || !r.at || Date.now() - r.at > REPAIR_MS) return null;
-  const from = new Date(r.at).toLocaleDateString('en-CA');
+  const from = ymd(new Date(r.at));
   let n = 0; for (const k of Object.keys(S.hist)) if (k >= from) n += S.hist[k];
   return { r, n: Math.max(0, n - (r.base || 0)), left: REPAIR_MS - (Date.now() - r.at) };
 }
@@ -1347,12 +1349,13 @@ function markForReview(w, map = S.prog) {
 // each box how many 4px grid rows it covers (--rs) and keeps that up to date when a box grows, shrinks or lazy-loads.
 const MASONRY_ROW = 4, MASONRY_GAP = 14;
 let masonryRO = null, masonryMO = null;
-function fitMasonry(el) { el.style.setProperty('--rs', Math.max(1, Math.ceil((el.offsetHeight + MASONRY_GAP) / MASONRY_ROW))); }
+// h = height from the ResizeObserver entry (no layout read); reading offsetHeight per box between style writes forced a layout every time (257 ms at 4x CPU on boot).
+function fitMasonry(el, h) { el.style.setProperty('--rs', Math.max(1, Math.ceil(((h == null ? el.offsetHeight : h) + MASONRY_GAP) / MASONRY_ROW))); }
 // `full` = selector for children that take the whole row. Children added later (a list re-rendered by a filter) are picked up too.
 function masonry(boxes, full) {
   if (!window.ResizeObserver) return;
   if (!masonryRO) {
-    masonryRO = new ResizeObserver((es) => es.forEach((e) => fitMasonry(e.target)));
+    masonryRO = new ResizeObserver((es) => es.forEach((e) => fitMasonry(e.target, e.borderBoxSize && e.borderBoxSize[0] ? e.borderBoxSize[0].blockSize : undefined)));
     masonryMO = new MutationObserver((ms) => ms.forEach((m) => masonryKids(m.target)));
   }
   masonryRO.disconnect(); masonryMO.disconnect();
@@ -1367,7 +1370,7 @@ function masonry(boxes, full) {
 function masonryKids(box) {
   for (const el of box.children) {
     if (box.dataset.mfull && el.matches(box.dataset.mfull)) el.classList.add('m-full');
-    fitMasonry(el); masonryRO.observe(el);
+    masonryRO.observe(el); // observing fires once right away (before paint), which sets --rs
   }
 }
 // The reference pages (pairs, families, irregular verbs, idioms, …) all list their cards in a .pair-list.
