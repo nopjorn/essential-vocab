@@ -228,20 +228,21 @@ function renderCards(extra) {
     const enFront = frontEn = S.settings.front === 'en' || (S.settings.front === 'mix' && (isNew || p.b < MASTERED || Math.random() < 0.5));
     const star = `<button class="star-btn" data-star aria-label="ติดดาว">${starIcon(card)}</button>`;
     const enFace = `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
-      <div class="word" lang="en">${esc(card.w)}</div><div class="ipa">${esc(card.i)}</div>
+      <div class="word" lang="en">${esc(card.w)}</div><div class="ipa">${ipaHtml(card.i)}</div>
       <button class="speak" data-say aria-label="ฟังเสียง">🔊</button>`;
     const thFace = `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
       <div class="th">${esc(card.t)}</div>`;
     const backExtra = emojiBox(card) + noteBox(card) + exampleBox(card) + `<a class="oxl" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(card.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">📖 ดูใน Oxford ↗</a>`;
     $('#stage').innerHTML = `
-      <div class="fc${tintStyle(card) ? ' tint' : ''}${S.settings.frame === 'gold' && itemOpen('frame:gold') ? ' gold' : ''}" id="fc"${tintStyle(card)}>
+      ${queue.length > 1 ? `<div class="fc-stack n${Math.min(queue.length - 1, 2)}" aria-hidden="true"><i></i><i></i></div>` : ''}
+      <div class="fc lvc-${card.g}${tintStyle(card) ? ' tint' : ''}${S.settings.frame === 'gold' && itemOpen('frame:gold') ? ' gold' : ''}" id="fc"${tintStyle(card)}>
         <div class="swipe-tag l">ลืม</div><div class="swipe-tag r">จำได้</div>
         <div class="fc-inner">
           <div class="face front">${enFront ? enFace : thFace}
             ${isNew ? '<button class="know-btn" data-know>✓ รู้คำนี้แล้ว ข้ามเลย</button>' : ''}
             <div class="hint">${isNew ? '✨ คำใหม่ · ' : ''}${leechIn(card, map) ? '🐢 คำดื้อ · ' : ''}<span class="tap-hint">แตะเพื่อพลิก · ปัดซ้าย/ขวา</span><span class="kb-hint">คลิกหรือกด Space เพื่อพลิก · ปุ่ม 1–4 ให้คะแนน</span></div></div>
-          <div class="face back">${enFront ? `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
-            <div class="th">${esc(card.t)}</div><div class="ipa" style="margin-top:8px">${esc(card.w)} ${esc(card.i)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>${backExtra}`
+          <div class="face back"><span class="fc-wm" aria-hidden="true">${TOPIC_IC[card.tp] || ''}</span>${enFront ? `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
+            <div class="th">${esc(card.t)}</div><div class="ipa" style="margin-top:8px">${esc(card.w)} ${ipaHtml(card.i)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button></div>${backExtra}`
             : enFace + backExtra}</div>
         </div>
       </div>`;

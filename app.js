@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.115.0';
+const APP_VERSION = '1.116.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -101,6 +101,12 @@ function topicMigrate(r) {
   }
   return r;
 }
+const TOPIC_IC = Object.fromEntries(TOPICS.map(([id, ic]) => [id, ic]));
+// IPA with the stressed syllable marked (1.116): after ˈ take the onset, the vowel(s) and the coda consonants that are not the
+// onset of the next syllable (a consonant right before a vowel starts the next one). Returns escaped HTML.
+const IPA_V = 'aeiouæɑɒɔəɜɪʊʌɛɐ';
+const IPA_STRESS = new RegExp(`ˈ([^${IPA_V}ˈˌ./\\s()]*[${IPA_V}][${IPA_V}ːˑ̃]*(?:[^${IPA_V}ˈˌ./\\s()ː](?![${IPA_V}ː]))*)`);
+const ipaHtml = (i) => esc(i || '').replace(IPA_STRESS, 'ˈ<b class="ipa-str">$1</b>');
 const TOPIC_LABEL = Object.fromEntries([...TOPICS, ...TOPIC_GROUPS].map(([id, ic, th]) => [id, `${ic} ${th}`]));
 const W = window.WORDS.slice().sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
   .map(([w, p, l, i, t, e, et, tp, ...more], idx) => ({ idx, w, p, l, i, t, e, et, g: more.includes(5) ? (l === 'B2' ? 'B2x' : 'C1') : l, tp: tp || '', xe: more.find(Array.isArray) || [] }));
@@ -740,6 +746,20 @@ const ACH = [
   ...LEVELS.map((l) => ({ id: 'lv' + l, icon: '🎓', name: `จบ ${LV_LABEL[l]}`, desc: `เรียนครบทุกคำในระดับ ${LV_LABEL[l]}`, ok: (s) => s.lv[l] })),
 ];
 const GROUP = Object.fromEntries(LEVELS.map((l) => [l, W.filter((w) => w.g === l)]));
+// Medal look (1.116): each achievement is a bronze / silver / gold medal by how hard it is; secret ones are purple.
+const MEDAL_GOLD = new Set(['l3000', 'm1000', 's100', 'readall', 'boss10', 'allgames', 'mtest', 'combo30', 'evt8', 'adv5', 'ltC1', 'lvC1']);
+const MEDAL_SILVER = new Set(['l1000', 'm500', 's30', 'read50', 'lvl10', 'qsets10', 'wq4', 'evt4', 'leech25', 'speak50', 'notes20']);
+const MEDAL_NAME = { b: 'ทองแดง', s: 'เงิน', g: 'ทอง', x: 'เหรียญลับ' };
+const medalTier = (a) => (a.secret ? 'x' : MEDAL_GOLD.has(a.id) ? 'g' : MEDAL_SILVER.has(a.id) || /^l[tv]/.test(a.id) ? 's' : 'b');
+const MEDAL_COL = { b: ['#f3b27a', '#b8692e', '#7a3f14'], s: ['#f4f6fb', '#aeb6c6', '#69728a'], g: ['#ffe58a', '#e8a817', '#9a6400'], x: ['#d9c8ff', '#8f6be8', '#4e2fa8'] };
+// Ribbon + disc drawn behind the emoji (the emoji stays a text span on top). Locked = grey.
+function medalSvg(t, on) {
+  const [l, m, d] = on ? MEDAL_COL[t] : ['#e6e6ee', '#c4c4d0', '#9a9aa8'], id = `md${t}${on ? 1 : 0}`;
+  return `<svg class="medal" viewBox="0 0 60 66" aria-hidden="true" focusable="false"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${l}"/><stop offset=".55" stop-color="${m}"/><stop offset="1" stop-color="${d}"/></linearGradient></defs>
+    <path d="M16 0h11l6 18-9 6zM44 0H33l-6 18 9 6z" fill="${on ? 'var(--primary)' : '#c4c4d0'}" opacity="${on ? '.85' : '.6'}"/><path d="M21 0h3l6 17-3 2zM39 0h-3l-6 17 3 2z" fill="#fff" opacity=".35"/>
+    <circle cx="30" cy="40" r="23" fill="url(#${id})"/><circle cx="30" cy="40" r="18.5" fill="none" stroke="${d}" stroke-width="1.2" opacity=".55"/><circle cx="30" cy="40" r="17" fill="${l}" opacity="${on ? '.35' : '.6'}"/>
+    <path d="M14 30a19 19 0 0 1 14-9" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".6"/></svg>`;
+}
 function checkAch() {
   const progs = Object.values(S.prog);
   const s = {
@@ -1161,6 +1181,25 @@ function applyAnim() {
   document.documentElement.classList.toggle('no-ans', S.settings.animAnswer === false);
 }
 applyAnim();
+// Numbers count up from 0 the first time they scroll into view (1.116). Only the element's first text node is a number
+// ("1,234" or "87"); <small> units stay. Nothing moves with reduced motion or the answer animations off.
+function countUp(els) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || S.settings.animAnswer === false || !('IntersectionObserver' in window)) return;
+  const run = (el) => {
+    const t = el.firstChild; if (!t || t.nodeType !== 3) return;
+    const txt = t.nodeValue, n = +txt.replace(/,/g, ''); if (!(n > 1) || !/^[\d,]+$/.test(txt.trim())) return;
+    const comma = txt.includes(','), t0 = performance.now(), dur = Math.min(900, 400 + n * 4);
+    const step = (now) => {
+      if (!t.isConnected) return;
+      const k = Math.min(1, (now - t0) / dur), v = Math.round(n * (1 - (1 - k) ** 3));
+      t.nodeValue = comma ? v.toLocaleString() : String(v);
+      if (k < 1) requestAnimationFrame(step); else t.nodeValue = txt;
+    };
+    t.nodeValue = '0'; requestAnimationFrame(step);
+  };
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { io.unobserve(e.target); run(e.target); } }), { root: view });
+  els.forEach((el) => io.observe(el));
+}
 const confettiOff = () => S.settings.confetti === false || matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Slow speech: speak(text, { slow: true }) (🐢 buttons), or tapping 🔊 again for the same text within
 // SLOW_AGAIN ms plays it slower (alternating), unless settings.slowRepeat is false.

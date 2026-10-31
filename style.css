@@ -1707,3 +1707,42 @@ html.no-ans .fx-rise { transform: translateY(-60px); }
   @keyframes mOops { 0%, 100% { transform: none; } 25% { transform: translateX(-3px) rotate(-6deg); } 75% { transform: translateX(3px) rotate(6deg); } }
 }
 .q-m { flex: none; line-height: 0; margin: -6px -4px -6px -2px; }
+
+/* ---------- 1.116: flashcard look — level colour edge, card stack, back pattern + topic watermark, stressed syllable ---------- */
+.fc { --lvc: var(--primary); }
+.fc.lvc-A1 { --lvc: var(--a1); } .fc.lvc-A2 { --lvc: var(--a2); } .fc.lvc-B1 { --lvc: var(--b1); } .fc.lvc-B2 { --lvc: var(--b2); } .fc.lvc-B2x { --lvc: var(--b2x); } .fc.lvc-C1 { --lvc: var(--c1); }
+.fc .face { box-shadow: var(--shadow), inset 0 6px 0 var(--lvc); }
+.fc.gold .face { box-shadow: var(--shadow), inset 0 6px 0 var(--lvc), 0 0 0 3px #e0a82e inset, 0 0 18px rgba(224, 168, 46, .45); }
+.fc .face.back { background-image: radial-gradient(circle, color-mix(in srgb, var(--lvc) 18%, transparent) 1.3px, transparent 1.8px); background-size: 18px 18px; background-position: 9px 9px; }
+.fc.tint .face.back { background: radial-gradient(circle, color-mix(in srgb, hsl(var(--hue) 70% 50%) 20%, transparent) 1.3px, transparent 1.8px) 9px 9px / 18px 18px, linear-gradient(165deg, color-mix(in srgb, hsl(var(--hue) 75% 55%) 14%, var(--surface)) 0%, var(--surface) 62%); }
+.fc-wm { position: absolute; right: 14px; bottom: 6px; font-size: 96px; line-height: 1; opacity: .09; pointer-events: none; filter: saturate(.6); }
+.face.back > :not(.fc-wm) { position: relative; }
+.face.back > .top { position: absolute; }
+.fc-stack { position: absolute; inset: 0; pointer-events: none; }
+.fc-stack i { position: absolute; inset: 0; border-radius: 28px; background: var(--surface); box-shadow: var(--shadow); transform-origin: 50% 100%; }
+.fc-stack i:first-child { transform: translateY(14px) scale(.9); opacity: .45; }
+.fc-stack i:last-child { transform: translateY(7px) scale(.95); opacity: .75; }
+.fc-stack.n1 i:first-child { display: none; }
+.ipa-str { font-weight: 800; color: var(--text); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--primary) 55%, transparent); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+
+/* medals (1.116, medalSvg in app.js): drawn ribbon + disc behind the emoji; new ones (≤ 3 days) shine */
+.ach { position: relative; overflow: hidden; }
+.ach .medal { width: 46px; height: 50px; display: block; margin-bottom: -38px; }
+.ach > span { position: relative; z-index: 1; font-size: 20px; line-height: 1; margin-bottom: 6px; }
+.ach.on { background: color-mix(in srgb, var(--primary) 10%, var(--surface)); }
+.ach.on .medal { filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .18)); }
+.ach:not(.on) .medal { opacity: .55; }
+.ach.fresh::after { content: ''; position: absolute; inset: -20% auto -20% -60%; width: 40%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .75), transparent); transform: skewX(-18deg); pointer-events: none; }
+@media (prefers-reduced-motion: no-preference) { html:not(.no-ans) .ach.fresh::after { animation: mdShine 2.8s ease-in-out infinite; } @keyframes mdShine { from { left: -60%; } 55%, to { left: 130%; } } }
+@media (prefers-reduced-motion: reduce) { .ach.fresh::after { display: none; } }
+
+/* stats page (1.116): bars grow, chart columns rise, line charts draw from left to right (first paint only) */
+@media (prefers-reduced-motion: no-preference) {
+  html:not(.no-ans) .view[data-route="stats"] .bar > div { transform-origin: 0 50%; animation: stGrow .8s cubic-bezier(.2, .8, .3, 1) both; }
+  html:not(.no-ans) .view[data-route="stats"] .bar > .m { animation-delay: .15s; }
+  html:not(.no-ans) .view[data-route="stats"] .chart svg rect:not(.hit) { transform-box: fill-box; transform-origin: 50% 100%; animation: stRise .6s cubic-bezier(.2, .8, .3, 1) both; }
+  html:not(.no-ans) .view[data-route="stats"] .chart svg:has(polyline) { animation: stDraw 1.1s cubic-bezier(.3, .7, .3, 1) both; }
+  @keyframes stGrow { from { transform: scaleX(0); } }
+  @keyframes stRise { from { transform: scaleY(0); } }
+  @keyframes stDraw { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+}

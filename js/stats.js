@@ -181,13 +181,15 @@ function renderStats(from) {
     <div class="card-box ach-grid" id="ach" data-lz="ach" style="min-height:200px"></div>`;
   loadStories().then(() => { const h = $('#readyHost'); if (h) h.innerHTML = readyBox(); });
   $('#shareProg').onclick = shareProgress;
+  countUp(view.querySelectorAll('.tile-s b'));
   view.querySelectorAll('[data-lt]').forEach((b) => { b.onclick = () => go('ltest', b.dataset.lt); });
   $('#sBack').onclick = () => go(from || 'home');
   startLazy({
     heat: [yearHeatmap, bindHeatmap],
     trend: [(el) => { el.dataset.w = hostW(el); return trendChart(+el.dataset.w); }, bindTrend],
     stk: [stickerBook, bindStickers],
-    ach: [() => ACH.map((a) => { const hid = a.secret && !S.ach[a.id]; return `<button class="ach ${S.ach[a.id] ? 'on' : ''}" data-ach="${a.id}"><span>${hid ? '❓' : a.icon}</span><small>${hid ? 'เหรียญลับ' : a.name}</small></button>`; }).join('')],
+    ach: [() => ACH.map((a) => { const hid = a.secret && !S.ach[a.id], t = medalTier(a), fresh = typeof S.ach[a.id] === 'string' && dayDiff(today(), S.ach[a.id]) <= 3;
+      return `<button class="ach ${S.ach[a.id] ? 'on' : ''} md-${t}${fresh ? ' fresh' : ''}" data-ach="${a.id}" aria-label="${hid ? 'เหรียญลับ' : esc(a.name)}${S.ach[a.id] ? ` (${MEDAL_NAME[t]})` : ' ยังไม่ได้'}">${medalSvg(t, !!S.ach[a.id])}<span>${hid ? '❓' : a.icon}</span><small>${hid ? 'เหรียญลับ' : a.name}</small></button>`; }).join('')],
   });
   $('#ach').onclick = (e) => {
     const b = e.target.closest('[data-ach]'); if (!b) return;

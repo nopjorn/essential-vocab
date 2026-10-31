@@ -24,7 +24,8 @@ test('real-life texts: every kind renders, the hint and the answer reveal work, 
   await expect(page.locator('#view .opt')).toHaveCount(4);
   await page.locator('#rtHint').click();
   await expect(page.locator('#rtTh')).toBeVisible();
-  const right = await page.evaluate(() => { const t = document.querySelector('.rt-paper').textContent; return REALTEXT.find((r) => r.text.replace(/\n/g, '') === t.replace(/\n/g, '').replace('_____', '___') || t.includes('_____')).right; });
+  // the item on screen: same text once whitespace and the blank (any run of _) are normalised
+  const right = await page.evaluate(() => { const n = (x) => x.replace(/_+/g, '_').replace(/\s+/g, ''); const t = n(document.querySelector('.rt-paper').textContent); const r = REALTEXT.find((r) => n(r.text) === t); return r && r.right; });
   expect(right).toBeTruthy();
   const wrongBtn = page.locator('#view .opt', { hasNotText: right }).first();
   await wrongBtn.click();

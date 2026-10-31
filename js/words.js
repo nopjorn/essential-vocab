@@ -112,7 +112,7 @@ function openSheet(w, onChange, opt = {}) {
       <div class="sheet-body">
       <div class="row" style="justify-content:space-between">${lvBadge(w.g)}<a class="oxl" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(w.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener" aria-label="ดูใน Oxford Learner's Dictionaries">📖 Oxford ↗</a><span class="st-pill ${st}">${stLabel}</span></div>
       <div class="sheet-word" lang="en">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button><span class="sheet-emoji" id="emBox" aria-hidden="true">${emojiOf(w)}</span></div>
-      <div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span>${w.tp ? ` · ${TOPIC_LABEL[w.tp]}` : ''}</div>
+      <div class="muted">${ipaHtml(w.i)} · <span class="pos">${esc(w.p)}</span>${w.tp ? ` · ${TOPIC_LABEL[w.tp]}` : ''}</div>
       ${tagsOf(w).length ? `<div class="small muted sheet-tags">${tagsOf(w).map((id) => `<span class="tag-pill">${TAG_LABEL[id]}</span>`).join('')}</div>` : ''}
       <div class="th" style="font-size:22px;margin:10px 0">${esc(w.t)}</div>
       ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div><div class="colloc" id="irBox"></div><div class="colloc" id="dpBox"></div><div class="colloc" id="gpBox"></div><div class="colloc" id="pvBox"></div><div class="colloc" id="idBox"></div><div class="colloc" id="synBox"></div><div class="colloc" id="afBox"></div><div class="colloc" id="rtBox"></div><div class="colloc" id="ukBox"></div>

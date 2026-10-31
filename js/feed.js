@@ -169,7 +169,7 @@ function renderFeed() {
       const toTh = type !== 'th2en' && type !== 'cloze';
       const list = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
       right = String(w.idx);
-      if (type === 'en2th') prompt = `<div class="f-tag">🇬🇧 แปลว่าอะไร?</div><div class="f-word" lang="en">${esc(w.w)}</div><div class="muted">${esc(w.i)} · <span class="pos">${esc(w.p)}</span></div>`;
+      if (type === 'en2th') prompt = `<div class="f-tag">🇬🇧 แปลว่าอะไร?</div><div class="f-word" lang="en">${esc(w.w)}</div><div class="muted">${ipaHtml(w.i)} · <span class="pos">${esc(w.p)}</span></div>`;
       else if (type === 'th2en') prompt = `<div class="f-tag">🇹🇭 ภาษาอังกฤษคือ?</div><div class="f-th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>`;
       else if (type === 'listen') prompt = `<div class="f-tag">🎧 ฟังแล้วตอบ</div><button class="speak f-listen" data-say>🔊</button><div class="small muted">แตะเพื่อฟังอีกครั้ง</div>`;
       else {
