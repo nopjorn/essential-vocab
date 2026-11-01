@@ -29,17 +29,14 @@ function welcomeBack(plan) {
     <div class="small" style="margin-top:4px">${msg}</div>
     <div class="small muted" style="margin-top:4px">⏸ พักคำใหม่ไว้ชั่วคราวจนกว่าการ์ดค้างจะเหลือไม่เกิน ${BACKLOG_PAUSE} ใบ (ปิดได้ที่ ⚙️ ตั้งค่า → การเรียน)</div></div>`;
 }
-// iPad landscape dashboard (1.117): ≥1000 px wide in landscape, the today card (and น้องคำ) sit in a sticky left panel and the
-// other blocks fill two columns on the right. Turning the iPad re-renders home.
+// iPad landscape dashboard (1.117, balanced in 1.131.2): ≥1000 px wide in landscape, every block sits in two equal masonry columns
+// (each block one column wide, packed into the shorter column) so neither side is left empty. Turning the iPad re-renders home.
 const DASH_MQ = matchMedia('(min-width: 1000px) and (min-height: 600px) and (orientation: landscape)');
 DASH_MQ.addEventListener && DASH_MQ.addEventListener('change', () => { if (view.dataset.route === 'home') renderHome(); });
-const DASH_SIDE = ['hero', 'mascot'];
 function homeGridHtml(blocks) {
-  const cell = (b) => `<div class="hb hw-${b.w}" data-hb="${b.id}">${b.html}</div>`;
-  const side = DASH_MQ.matches ? blocks.filter((b) => DASH_SIDE.includes(b.id)) : [];
-  if (!side.length) return `<div class="home-grid">${blocks.map(cell).join('')}</div>`;
-  const rest = blocks.filter((b) => !DASH_SIDE.includes(b.id));
-  return `<div class="home-dash"><div class="dash-side">${side.map((b) => cell({ ...b, w: 'full' })).join('')}</div><div class="home-grid">${rest.map(cell).join('')}</div></div>`;
+  const dash = DASH_MQ.matches;
+  const cell = (b) => `<div class="hb hw-${dash ? 'full' : b.w}" data-hb="${b.id}">${b.html}</div>`;
+  return `<div class="home-grid${dash ? ' home-cols' : ''}">${blocks.map(cell).join('')}</div>`;
 }
 function renderHome() {
   rollDay();

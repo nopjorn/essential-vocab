@@ -1544,7 +1544,7 @@ test('wide screens (1.96): home, stats, settings, guide and reference pages pack
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   // number of distinct left edges among the boxes = columns in use
   const cols = (sel) => page.evaluate((s) => new Set([...document.querySelectorAll(s)].filter((e) => e.offsetHeight).map((e) => Math.round(e.getBoundingClientRect().left))).size, sel);
-  for (const [js, sel, min] of [["go('home')", '.home-grid > .hb, .dash-side > .hb', 3], ["go('stats')", '#view > *', 2], ["go('settings')", '#view > details', 2],
+  for (const [js, sel, min] of [["go('home')", '.home-grid > .hb', 3], ["go('stats')", '#view > *', 2], ["go('settings')", '#view > details', 2],
     ["go('guide')", '.g-group > .g-sec', 2], ['renderIrregular()', '#irList .col-row', 2], ['renderPairs()', '.pair-list > .pair-card', 2]]) {
     await page.evaluate(js);
     if (js === "go('guide')") await page.waitForFunction(() => guideOn); // the manual is lazy-loaded
@@ -1859,14 +1859,21 @@ test('polish (1.131): notices share one box, option badges, one-line title, A–
   expect(errors).toEqual([]);
 });
 
-test('iPad landscape home dashboard (1.117): today card + น้องคำ in a sticky side panel, back to one grid in portrait', async ({ page }) => {
+test('iPad landscape home dashboard (1.131.2): blocks in two balanced columns, back to the normal grid in portrait', async ({ page }) => {
   await page.setViewportSize({ width: 1376, height: 1032 });
   const errors = await openApp(page, { placedAt: '2026-01-01' });
-  await expect(page.locator('.home-dash .dash-side [data-hb="hero"]')).toHaveCount(1);
-  await expect(page.locator('.home-dash .dash-side [data-hb="mascot"]')).toHaveCount(1);
-  expect(await page.locator('.dash-side').evaluate((e) => getComputedStyle(e).position)).toBe('sticky');
+  await expect(page.locator('.home-grid.home-cols [data-hb="hero"]')).toHaveCount(1);
+  await page.waitForTimeout(300);
+  const cols = await page.evaluate(() => {
+    const g = document.querySelector('.home-cols'), mid = g.getBoundingClientRect().left + g.clientWidth / 2;
+    const h = [0, 0];
+    for (const el of g.children) { const r = el.getBoundingClientRect(); h[r.left < mid ? 0 : 1] = Math.max(h[r.left < mid ? 0 : 1], r.bottom); }
+    return h.map((v) => v - g.getBoundingClientRect().top);
+  });
+  expect(cols[1]).toBeGreaterThan(0);
+  expect(Math.abs(cols[0] - cols[1])).toBeLessThan(Math.max(cols[0], cols[1]) * 0.5);
   await page.setViewportSize({ width: 1032, height: 1376 });
-  await expect(page.locator('.home-dash')).toHaveCount(0);
+  await expect(page.locator('.home-cols')).toHaveCount(0);
   await expect(page.locator('.home-grid [data-hb="hero"]')).toHaveCount(1);
   expect(errors).toEqual([]);
 });
