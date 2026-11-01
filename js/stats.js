@@ -58,6 +58,46 @@ function etaDays(total, learned, rate, h) {
 }
 
 // Skill games on a review schedule (S.lex): per game how many questions were asked, how many are solid (gap ≥ 7 days) and due now.
+// Weak spots (1.125): from the last 21 days of wrong answers (S.miss) and the skill games' own records (S.lex): which topics,
+// parts of speech and levels go wrong most, and which skill games are least accurate. Each finding comes with a button to practise it.
+const POS_TH = { n: 'คำนาม', v: 'คำกริยา', adj: 'คำคุณศัพท์', adv: 'คำกริยาวิเศษณ์', prep: 'บุพบท', pron: 'สรรพนาม', conj: 'คำเชื่อม', det: 'คำนำหน้านาม' };
+function weakSpots() {
+  const miss = {};
+  for (const day of Object.values(S.miss || {})) for (const [w, n] of Object.entries(day)) miss[w] = (miss[w] || 0) + n;
+  const words = Object.entries(miss).map(([w, n]) => [WORD_BY[w], n]).filter(([w]) => w);
+  const total = words.reduce((a, [, n]) => a + n, 0);
+  const tally = (key) => { const t = {}; for (const [w, n] of words) { const k = key(w); if (k) t[k] = (t[k] || 0) + n; } return Object.entries(t).sort((a, b) => b[1] - a[1]); };
+  const skills = {};
+  for (const [k, p] of Object.entries(S.lex || {})) { const g = k.split(':')[0]; if (!GAMES[g] || !p) continue; const r = (skills[g] = skills[g] || [0, 0]); r[0] += (p.c || 0) + (p.x || 0); r[1] += p.c || 0; }
+  const weakSkills = Object.entries(skills).filter(([, [n]]) => n >= 6).map(([g, [n, c]]) => [g, c / n, n]).filter(([, acc]) => acc < 0.8).sort((a, b) => a[1] - b[1]).slice(0, 2);
+  return { total, words: words.sort((a, b) => b[1] - a[1]), topics: tally((w) => w.tp).slice(0, 3), pos: tally((w) => String(w.p || '').split('/')[0]).slice(0, 2), levels: tally((w) => w.g).slice(0, 2), weakSkills };
+}
+function weakCard() {
+  const r = weakSpots();
+  if (r.total < 8 && !r.weakSkills.length) return `<div class="h2">🩺 จุดอ่อนของฉัน</div><div class="card-box small muted">ยังมีข้อมูลน้อย ตอบผิดสะสมใน 21 วันอีกสักหน่อย (ตอนนี้ ${r.total} ครั้ง) แล้วแอปจะบอกได้ว่าพลาดเรื่องไหนบ่อย</div>`;
+  const pct = (n) => Math.round(n / Math.max(1, r.total) * 100);
+  const row = (ic, label, list, fmt) => (list.length ? `<div class="wk-row"><span class="wk-ic" aria-hidden="true">${ic}</span><div class="grow"><b>${label}</b><div class="small">${list.map(fmt).join(' · ')}</div></div></div>` : '');
+  return `<div class="h2">🩺 จุดอ่อนของฉัน <span class="small muted">21 วันล่าสุด</span></div><div class="card-box" id="weak">
+    ${r.total ? `<div class="small muted" style="margin-bottom:8px">ตอบผิด ${r.total} ครั้ง จาก ${r.words.length} คำ</div>` : ''}
+    ${row('📂', 'หมวดที่พลาดบ่อย', r.topics, ([t, n]) => `${TOPIC_LABEL[t] || t} <span class="muted">${pct(n)}%</span>`)}
+    ${row('🔤', 'ชนิดคำที่พลาดบ่อย', r.pos, ([p, n]) => `${POS_TH[p] || p} <span class="muted">${pct(n)}%</span>`)}
+    ${row('📶', 'ระดับที่พลาดบ่อย', r.levels, ([l, n]) => `${LV_LABEL[l] || l} <span class="muted">${pct(n)}%</span>`)}
+    ${row('🧩', 'เกมฝึกทักษะที่ยังไม่แม่น', r.weakSkills, ([g, acc]) => `${GAMES[g].icon} ${esc(GAMES[g].name)} <span class="muted">ถูก ${Math.round(acc * 100)}%</span>`)}
+    <div class="wk-btns">${r.words.length ? `<button class="btn primary" data-weak="miss">🎯 ฝึกคำที่ผิดช่วงนี้ (${Math.min(20, r.words.length)} คำ)</button>` : ''}
+      ${r.topics.length ? `<button class="btn" data-weak="tp:${r.topics[0][0]}">📂 ฝึกหมวด${esc((TOPIC_LABEL[r.topics[0][0]] || '').replace(/^\S+ /, ''))}</button>` : ''}
+      ${r.weakSkills.map(([g]) => `<button class="btn" data-weak="g:${g}">${GAMES[g].icon} เล่น${esc(GAMES[g].name)}</button>`).join('')}</div></div>`;
+}
+// The buttons: a one-off round on the words picked (custom source), or the weak skill game itself.
+function weakGo(k) {
+  const r = weakSpots();
+  if (k.startsWith('g:')) return startGame(k.slice(2));
+  const list = k === 'miss' ? r.words.map(([w]) => w) : r.words.map(([w]) => w).filter((w) => w.tp === k.slice(3))
+    .concat(W.filter((w) => w.tp === k.slice(3) && S.prog[w.w]).sort((a, b) => (S.prog[b.w].x || 0) - (S.prog[a.w].x || 0)));
+  customWords = [...new Set(list)].slice(0, 20);
+  if (customWords.length < 4) customWords = [...new Set(customWords.concat(pool().filter((w) => k === 'miss' || w.tp === k.slice(3)).slice(0, 10)))];
+  gameSource = 'custom';
+  startGame(pick(['en2th', 'th2en', 'listen']));
+}
 function skillCard() {
   const rows = SKILL_GAMES.map((g) => ({ g, ...lexStats(g) })).filter((r) => r.seen);
   if (!rows.length) return '';
@@ -136,6 +176,7 @@ function renderStats(from) {
     <div class="h2">📅 การ์ดที่ต้องทบทวน 7 วันข้างหน้า</div>
     <div class="card-box">${forecastChart()}</div>
     ${retCard()}
+    ${weakCard()}
     ${skillCard()}
     <div class="h2">นิสัยการเล่น <span class="small muted">${h.span} วันล่าสุด</span></div>
     <div class="tiles">
@@ -181,6 +222,7 @@ function renderStats(from) {
     <div class="card-box ach-grid" id="ach" data-lz="ach" style="min-height:200px"></div>`;
   loadStories().then(() => { const h = $('#readyHost'); if (h) h.innerHTML = readyBox(); });
   $('#shareProg').onclick = shareProgress;
+  { const wk = $('#weak'); if (wk) wk.onclick = (e) => { const b = e.target.closest('[data-weak]'); if (b) weakGo(b.dataset.weak); }; }
   countUp(view.querySelectorAll('.tile-s b'));
   view.querySelectorAll('[data-lt]').forEach((b) => { b.onclick = () => go('ltest', b.dataset.lt); });
   $('#sBack').onclick = () => go(from || 'home');

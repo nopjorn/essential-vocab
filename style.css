@@ -1991,3 +1991,13 @@ button.sus:active { transform: scale(.97); }
 /* card-back pattern unlocked by a gold topic sticker (1.124, cardPattern in app.js) */
 .fc .face.back.pat { background-image: var(--pat); background-size: 44px 44px; background-position: 0 0; }
 .fc.tint .face.back.pat { background: var(--pat) 0 0 / 44px 44px, linear-gradient(165deg, color-mix(in srgb, hsl(var(--hue) 75% 55%) 14%, var(--surface)) 0%, var(--surface) 62%); }
+
+/* 1.125: weak spots (stats) + target date (home) */
+.wk-row { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--border); }
+.wk-row:first-of-type { border-top: 0; }
+.wk-ic { font-size: 22px; line-height: 1.2; }
+.wk-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.exam-days { font-family: var(--num, inherit); color: var(--primary-text, var(--primary)); }
+.exam-days b { font-size: 26px; }
+.exam-set { gap: 6px; flex-wrap: wrap; width: 100%; margin-top: 6px; }
+.exam-set input[type="text"] { flex: 1 1 140px; min-width: 0; }

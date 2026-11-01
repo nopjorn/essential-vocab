@@ -92,6 +92,18 @@ function renderHome() {
     mascot: mascotCard,
     year: () => { const y = yearToShow(); return y && yearStats(y).days ? `<button class="card-box guide-link" id="qYear"><span>🎊</span><div class="grow"><b>สรุปปี ${y + 543} ของคุณ</b><div class="small muted">ดูว่าเก่งขึ้นแค่ไหน แล้วแชร์เป็นภาพได้</div></div><span class="muted">›</span></button>` : ''; },
     short: () => `<button class="quick-btn" id="qShort"><span>⏱️</span><b>เซสชัน 3 นาที</b><small>${SHORT_N} ใบ สำหรับวันที่เวลาน้อย</small></button>`,
+    exam: () => {
+      const x = examPlan(); if (!x) return '';
+      const title = esc(x.name || 'วันเป้าหมาย');
+      if (x.past) return '';
+      const msg = !x.left ? 'เรียนครบทุกคำในระดับที่เลือกแล้ว 🎉 ทบทวนต่อให้แม่นนะ'
+        : x.days === 0 ? `วันนี้แล้ว! ยังเหลือ ${x.left} คำที่ยังไม่ได้เริ่ม ทวนคำที่เรียนแล้วให้แม่นดีกว่า 💪`
+        : x.ok ? `ต้องเรียนคำใหม่วันละ <b>${x.need}</b> คำ · ตอนนี้ตั้งไว้ ${newGoal()} คำ ทันแน่นอน ✅`
+        : `ต้องเรียนคำใหม่วันละ <b>${x.need}</b> คำ แต่ตอนนี้ตั้งไว้ ${newGoal()} คำ`;
+      const fix = x.left && x.days > 0 && !x.ok && !(S.settings.minutes | 0) && x.need <= 100 ? `<button class="btn primary" id="examFix">ตั้งคำใหม่เป็นวันละ ${x.need} คำ</button>` : '';
+      return `<div class="card-box exam-card"><div class="row" style="justify-content:space-between"><b>🗓️ ${title}</b><span class="exam-days"><b>${x.days}</b> วัน</span></div>
+        <div class="small" style="margin-top:6px">${msg}</div><div class="small muted" style="margin-top:2px">เหลือ ${x.left.toLocaleString()} คำที่ยังไม่ได้เริ่ม (${lvNames(S.settings.levels)}) · ${thDate(Date.parse(x.date + 'T12:00:00'))}</div>${fix ? `<div style="margin-top:10px">${fix}</div>` : ''}</div>`;
+    },
     wgoal: () => {
       const g = S.settings.weekGoal | 0; if (!g) return '';
       const n = wnewNow(), left = 7 - ((new Date().getDay() + 6) % 7);
@@ -152,6 +164,7 @@ function renderHome() {
   click('#qFeed', () => go('feed'));
   click('#statsBtn', () => go('stats', 'home'));
   click('#qPlay', quickPlay);
+  click('#examFix', () => { const x = examPlan(); if (x) { S.settings.newPerDay = x.need; save(); toast(`ตั้งคำใหม่เป็นวันละ ${x.need} คำแล้ว ✅`); renderHome(); } });
   click('#boxOpen', () => { openBox(); renderHome(); });
   click('#qYear', () => go('year', yearToShow()));
   click('#qShort', () => go('cards', 'short'));
@@ -219,6 +232,7 @@ const HOME_BLOCKS = [
   { id: 'year', ic: '🎊', name: 'สรุปปี (ปลายธันวาคม–ต้นมกราคม)', w: 'full', on: true },
   { id: 'month', ic: '📅', name: 'สรุปเดือน (7 วันแรกของเดือน)', w: 'full', on: true },
   { id: 'week', ic: '📊', name: 'สรุปสัปดาห์ (ทุกวันจันทร์)', w: 'full', on: true },
+  { id: 'exam', ic: '🗓️', name: 'นับถอยหลังวันสอบ/วันเดินทาง (ตั้งในตั้งค่า)', w: 'full', on: true },
   { id: 'wgoal', ic: '🎯', name: 'เป้าคำใหม่ประจำสัปดาห์ (ตั้งในตั้งค่า)', w: 'full', on: true },
   { id: 'quest', ic: '🎯', name: 'ภารกิจวันนี้', w: 'full', on: true },
   { id: 'adv', ic: '🗺️', name: 'ผจญภัยประจำสัปดาห์', w: 'full', on: true },

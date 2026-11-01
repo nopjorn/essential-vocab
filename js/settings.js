@@ -44,7 +44,7 @@ function renderSettings() {
 
     <details class="set-group" data-g="learn" ${setIsOpen('learn')}><summary>🧠 การเรียน</summary><div class="card-box">
       <div class="set-row"><span>คำใหม่ต่อวัน</span>
-        <select class="sel" id="npd">${[5, 10, 15, 20, 30, 50, 100].map((n) => `<option ${n === st.newPerDay ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+        <select class="sel" id="npd">${[...new Set([5, 10, 15, 20, 30, 50, 100, st.newPerDay | 0])].filter((n) => n > 0).sort((a, b) => a - b).map((n) => `<option ${n === st.newPerDay ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
       <div class="set-row"><span>ตั้งเป้าเป็นเวลาต่อวัน<br><span class="small muted" id="minInfo"></span></span>
         <select class="sel" id="mins">${[0, 10, 15, 20, 30].map((n) => `<option value="${n}" ${n === (st.minutes | 0) ? 'selected' : ''}>${n ? n + ' นาที' : 'ปิด'}</option>`).join('')}</select></div>
       <div class="set-row"><span>ตัวจัดรอบทบทวน<br><span class="small muted">FSRS = อัลกอริทึมโอเพนซอร์สที่ Anki ใช้ ทบทวนน้อยลงที่ความจำเท่าเดิม · เปลี่ยนแล้วไม่กระทบกำหนดเดิม มีผลกับการทบทวนครั้งถัดไป</span></span>
@@ -53,6 +53,9 @@ function renderSettings() {
         <select class="sel" id="ret" ${st.scheduler === 'sm2' ? 'disabled' : ''}>${[80, 85, 90, 95].map((n) => `<option value="${n}" ${n === Math.round((st.retention || 0.9) * 100) ? 'selected' : ''}>${n}%</option>`).join('')}</select></div>
       <div class="set-row"><span>เป้าคำใหม่ต่อสัปดาห์<br><span class="small muted">โชว์แถบความคืบหน้าบนหน้าแรก (ปิด = ไม่แสดง)</span></span>
         <select class="sel" id="wgoal">${[0, 20, 35, 50, 70, 100].map((n) => `<option value="${n}" ${n === (st.weekGoal | 0) ? 'selected' : ''}>${n ? n + ' คำ' : 'ปิด'}</option>`).join('')}</select></div>
+      <div class="set-row" style="flex-wrap:wrap"><span>🗓️ วันสอบ / วันเดินทาง<br><span class="small muted">แอปคำนวณว่าต้องเรียนคำใหม่วันละกี่คำถึงจะครบทุกคำในระดับที่เลือกทันวันนั้น (โชว์บนหน้าแรก)</span></span>
+        <div class="row exam-set"><input class="sel" type="text" id="examName" maxlength="40" placeholder="เช่น สอบ TOEIC" aria-label="ชื่อเป้าหมาย" value="${esc((st.exam && st.exam.name) || '')}">
+        <input class="sel" type="date" id="examDate" min="${today()}" aria-label="วันที่" value="${esc((st.exam && st.exam.date) || '')}"><button class="btn ghost" id="examClear" aria-label="ล้างวันสอบ">✕</button></div></div>
       <div class="set-row"><span>กลับมาแบบไม่ท้อ<br><span class="small muted">การ์ดค้างเกิน 60 ใบ: พักคำใหม่ และทวนวันละ 50 ใบที่ค้างนานสุดก่อน</span></span>
         <label class="switch"><input type="checkbox" id="gentle" aria-label="กลับมาแบบไม่ท้อ" ${st.gentle !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>ความยากเกมตัวเลือก<br><span class="small muted">อัตโนมัติ = ถ้าตอบถูกต่อเนื่อง ตัวเลือกลวงจะคล้ายขึ้น และจับเวลาข้อละ 12 วินาทีเมื่อแม่นมาก</span></span>
@@ -240,6 +243,9 @@ function renderSettings() {
   $('#acc').onchange = (e) => { st.accent = e.target.value; save(); speak('Hello! Nice to meet you.'); };
   $('#rate').onchange = (e) => { st.rate = +e.target.value; save(); speak('vocabulary'); };
   $('#wgoal').onchange = (e) => { st.weekGoal = +e.target.value; save(); };
+  const examSave = () => { st.exam = { date: $('#examDate').value || '', name: $('#examName').value.trim().slice(0, 40) }; save(); };
+  $('#examDate').onchange = examSave; $('#examName').onchange = examSave;
+  $('#examClear').onclick = () => { $('#examDate').value = ''; $('#examName').value = ''; examSave(); };
   $('#gentle').onchange = (e) => { st.gentle = e.target.checked; save(); };
   $('#slowRep').onchange = (e) => { st.slowRepeat = e.target.checked; save(); };
   $('#test').onclick = () => speak('Hello! Let\'s learn English together.');

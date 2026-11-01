@@ -1795,3 +1795,30 @@ test('look 1.117: heading font and glass bar switches, ripple on a right answer'
   expect(await page.locator('.opt.correct').evaluate((e) => getComputedStyle(e, '::after').content)).not.toBe('none');
   expect(errors).toEqual([]);
 });
+
+test('1.125: weak spots from recent wrong answers + practice buttons; target date counts down and fixes the pace', async ({ page }) => {
+  const t = new Date().toISOString().slice(0, 10), d = new Date(Date.now() + 40 * 864e5).toISOString().slice(0, 10);
+  const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1'], newPerDay: 5, exam: { date: d, name: 'สอบ TOEIC' } },
+    miss: { [t]: { dog: 3, cat: 2, horse: 2, run: 2, apple: 2 } }, lex: { 'syn:a1': { c: 2, x: 5 } } });
+  // home: countdown + one-tap fix
+  await expect(page.locator('.exam-card')).toContainText('สอบ TOEIC');
+  const need = await page.evaluate(() => examPlan().need);
+  expect(need).toBeGreaterThan(5);
+  await page.locator('#examFix').click();
+  expect(await page.evaluate(() => S.settings.newPerDay)).toBe(need);
+  await expect(page.locator('#examFix')).toHaveCount(0);
+  // stats: findings and buttons
+  await page.evaluate(() => go('stats'));
+  await expect(page.locator('#weak')).toContainText('สัตว์');
+  await expect(page.locator('#weak [data-weak="g:syn"]')).toHaveCount(1);
+  await page.locator('#weak [data-weak="miss"]').click();
+  await expect(page.locator('.session-top')).toHaveCount(1);
+  expect(await page.evaluate(() => customWords.map((w) => w.w).sort())).toEqual(['apple', 'cat', 'dog', 'horse', 'run']);
+  // a date in the past shows nothing; little data shows the hint
+  await page.evaluate(() => { S.settings.exam = { date: '2020-01-01', name: '' }; S.miss = {}; S.lex = {}; go('home'); });
+  await expect(page.locator('.exam-card')).toHaveCount(0);
+  await page.evaluate(() => go('stats'));
+  await expect(page.locator('.h2', { hasText: 'จุดอ่อนของฉัน' })).toHaveCount(1);
+  await expect(page.locator('#weak')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

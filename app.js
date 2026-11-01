@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.124.0';
+const APP_VERSION = '1.125.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -193,7 +193,7 @@ function sanitizeDecks(r) {
 }
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, fest: true, season: true, sfxPack: 'chime', qMascot: true, headFont: true, glassBar: true, fsz: 'md', appKbd: 'auto', shareTpl: 'classic', palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, exam: { date: '', name: '' }, fest: true, season: true, sfxPack: 'chime', qMascot: true, headFont: true, glassBar: true, fsz: 'md', appKbd: 'auto', shareTpl: 'classic', palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -1225,6 +1225,16 @@ function timeCard() {
 }
 const secPerCard = () => (S.spc.n >= 30 ? Math.min(30, Math.max(3, S.spc.t / S.spc.n)) : SPC_DEFAULT);
 // New words to learn today: the fixed setting, or — with a minutes goal — what fits the time left over from reviews.
+// Target date (1.125, settings.exam {date, name}): learn every word of the chosen levels by that date. examPlan() = days left,
+// words still not started, the pace that needs (words a day) and how that compares with the current new-words-a-day.
+function examPlan(now = today()) {
+  const e = S.settings.exam || {};
+  if (!e.date || !/^\d{4}-\d{2}-\d{2}$/.test(e.date)) return null;
+  const days = dayDiff(e.date, now), left = pool().filter((w) => !S.prog[w.w]).length;
+  if (days < 0) return { past: true, days, left, name: e.name || '' };
+  const need = days > 0 ? Math.ceil(left / days) : left;
+  return { days, left, need, name: e.name || '', ok: need <= newGoal(), date: e.date };
+}
 function newGoal() {
   const m = S.settings.minutes | 0;
   if (!m) return S.settings.newPerDay;
