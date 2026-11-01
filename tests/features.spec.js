@@ -1516,7 +1516,7 @@ test('desktop + iPad landscape (1.95): centred feed, title in line with the cont
   const left = (sel) => page.evaluate((s) => document.querySelector(s).getBoundingClientRect().left, sel);
   await page.evaluate(() => go('feed'));
   const feed = await page.evaluate(() => document.querySelector('.fcard').getBoundingClientRect().width);
-  expect(feed).toBeLessThanOrEqual(730);
+  expect(feed).toBeLessThanOrEqual(1010); // 1.132: a wider card in landscape (prompt | answers)
   await page.evaluate(() => go('settings'));
   expect(Math.abs(await left('#title') - await left('#view > *:not(.row)'))).toBeLessThanOrEqual(30);
   // quiz: 1–4 answers, Enter goes on
@@ -1933,7 +1933,7 @@ test('1.126: Thai dates hand-formatted like Intl, guide counts the secret medals
 test('1.128: drawn tab icons (search still shows the emoji), golden "จำได้แล้ว" pill, streak flame grows', async ({ page }) => {
   const t = new Date().toISOString().slice(0, 10);
   const errors = await openApp(page, { streak: { last: t, count: 35 } });
-  await expect(page.locator('.tabbar button[data-tab] .tic')).toHaveCount(6);
+  await expect(page.locator('.tabbar > button[data-tab] .tic')).toHaveCount(6);
   await expect(page.locator('#streak .flame.fl3')).toHaveCount(1);
   await expect(page.locator('#streak')).toContainText('35');
   expect(await page.evaluate(() => { const r = gsSearch('ตั้งค่า'); return r.pages.some((p) => p.ic === '⚙️'); })).toBe(true);
@@ -1976,5 +1976,26 @@ test('1.130: every topic has a drawn icon (sticker book, map), soft background s
   await expect(page.locator('.map-topic[data-t="animal"] svg.tpi')).toHaveCount(1);
   await page.evaluate(() => go('stats'));
   await expect(page.locator('#stk .stk-ic svg.tpi')).toHaveCount(await page.evaluate(() => TOPICS.length));
+  expect(errors).toEqual([]);
+});
+
+test('iPad look 1.132: every sidebar item has a drawn icon, feed splits prompt | answers in landscape', async ({ page }) => {
+  await page.setViewportSize({ width: 1180, height: 820 });
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  // every rail button (main tabs, ฝึกต่อ, คลังความรู้, คู่มือ) uses the same line-icon set; search still gets an emoji from data-ic
+  const plain = await page.evaluate(() => [...document.querySelectorAll('#tabbar button')].filter((b) => !b.querySelector('.ti-svg > svg.tic') || !b.querySelector('.ti-svg').dataset.ic).map((b) => b.textContent.trim()));
+  expect(plain).toEqual([]);
+  await page.evaluate(() => go('feed'));
+  // find a quiz card with answers and check the answers sit to the right of the prompt
+  const ok = await page.evaluate(async () => {
+    const feed = document.querySelector('.feed');
+    for (let i = 0; i < 8; i++) {
+      const body = [...document.querySelectorAll('.f-body')].find((b) => b.querySelector(':scope > .options') && b.getBoundingClientRect().top >= 0 && b.getBoundingClientRect().top < innerHeight);
+      if (body) { const o = body.querySelector(':scope > .options').getBoundingClientRect(), t = body.querySelector(':scope > .f-tag').getBoundingClientRect(); return o.left > t.right; }
+      feed.scrollBy(0, feed.clientHeight); await new Promise((r) => setTimeout(r, 400));
+    }
+    return 'no quiz card';
+  });
+  expect(ok).toBe(true);
   expect(errors).toEqual([]);
 });

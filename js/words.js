@@ -115,8 +115,12 @@ function editNote(w, onDone) {
 function sheetRing(w, dm) {
   const p = (dm || S.prog)[w.w], f = !p ? 0 : p.b >= MASTERED ? 1 : Math.min(0.95, Math.max(0.08, ivlOf(p) / INTERVALS[MASTERED]));
   const lab = !p ? 'ยังไม่เรียน' : f >= 1 ? 'จำได้แล้ว' : `ความจำ ${Math.round(f * 100)}%`;
-  return `<div class="sh-ring" role="img" aria-label="${lab}"><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" class="rt"/><circle cx="18" cy="18" r="15" class="rg" pathLength="100" style="stroke-dashoffset:${(100 - f * 100).toFixed(1)}" transform="rotate(-90 18 18)"/></svg><span>${f >= 1 ? '✓' : Math.round(f * 100)}</span></div>`;
+  // 1.132: tap = what the number means (the review gap so far against the 16 days that count as "จำได้แล้ว")
+  const tip = !p ? 'วงความจำ: ยังไม่ได้เรียนคำนี้ เริ่มที่ 0%' : f >= 1 ? 'วงความจำเต็มแล้ว ✓ คำนี้ทบทวนห่างกันเกิน 16 วันแล้ว = จำได้แล้ว'
+    : `วงความจำ ${Math.round(f * 100)}% · ตอนนี้ทบทวนห่างกันราว ${Math.max(1, Math.round(ivlOf(p)))} วัน ถึง 16 วันเมื่อไหร่ = จำได้แล้ว (เต็มวง)`;
+  return `<button type="button" class="sh-ring" aria-label="${lab}" data-tip="${esc(tip)}"><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" class="rt"/><circle cx="18" cy="18" r="15" class="rg" pathLength="100" style="stroke-dashoffset:${(100 - f * 100).toFixed(1)}" transform="rotate(-90 18 18)"/></svg><span aria-hidden="true">${f >= 1 ? '✓' : Math.round(f * 100) + '<small>%</small>'}</span></button>`;
 }
+document.addEventListener('click', (e) => { const r = e.target.closest && e.target.closest('.sh-ring[data-tip]'); if (r) toast(r.dataset.tip); });
 function openSheet(w, onChange, opt = {}) {
   const dm = opt.deck ? S.dprog[opt.deck] || {} : null;
   const st = dm ? DECK_DOT[deckStatus(dm[w.w])] : status(w);

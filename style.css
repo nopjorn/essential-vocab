@@ -2093,7 +2093,8 @@ button.sus:active { transform: scale(.97); }
 .sh-hero.lvc-A1 { --lvc: var(--a1); } .sh-hero.lvc-A2 { --lvc: var(--a2); } .sh-hero.lvc-B1 { --lvc: var(--b1); } .sh-hero.lvc-B2 { --lvc: var(--b2); } .sh-hero.lvc-B2x { --lvc: var(--b2x); } .sh-hero.lvc-C1 { --lvc: var(--c1); }
 .sh-hero .sheet-word { padding-right: 92px; }
 .sh-hero .sheet-emoji { position: absolute; right: 64px; top: 40px; font-size: 44px; line-height: 1; margin: 0; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .15)); }
-.sh-ring { position: absolute; right: 12px; top: 42px; width: 44px; height: 44px; display: grid; place-items: center; }
+.sh-ring { position: absolute; right: 12px; top: 42px; width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+.sh-ring span small { font-size: 8px; font-weight: 800; }
 .sh-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .sh-ring .rt { fill: none; stroke: color-mix(in srgb, var(--lvc) 18%, transparent); stroke-width: 4; }
 .sh-ring .rg { fill: none; stroke: var(--lvc); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 100; }
@@ -2206,4 +2207,43 @@ html[data-theme="dark"]:not(.no-pbg) body, html[data-theme="black"]:not(.no-pbg)
 @media (min-width: 1100px) and (min-height: 700px) and (orientation: landscape) {
   .view:has(> #sideStats) > .stage { height: clamp(340px, calc(100dvh - 260px - env(safe-area-inset-bottom)), 760px); min-height: 0; max-height: none; margin-bottom: 16px; }
   .view:has(> #sideStats) > .side-stats { align-self: stretch; }
+}
+
+/* ---------- 1.132: feed (ไถศัพท์) on the iPad — bigger type, a centred content column, landscape splits prompt | answers ---------- */
+@media (min-width: 700px) and (min-height: 700px) {
+  .fcard { padding: 10px 20px 18px; }
+  .f-in { padding: 30px 104px 30px 40px; border-radius: 32px; }
+  .fcard.sum .f-in { padding-right: 40px; }
+  .f-body { width: 100%; max-width: 620px; margin: auto; padding: 0; }
+  .f-tag { font-size: var(--fs-md); padding: 6px 18px; margin-bottom: 22px; }
+  .f-word { font-size: clamp(52px, 6.4vw, 72px); letter-spacing: -.5px; }
+  .f-th { font-size: clamp(30px, 3.8vw, 42px); margin-top: 14px; }
+  .f-body .ipa { font-size: 22px; }
+  .f-body .cloze { font-size: 30px; line-height: 1.45; }
+  .f-body .example { font-size: 19px; padding: 14px 18px; border-radius: 18px; margin-top: 18px; }
+  .f-body .options { margin-top: 30px; gap: 12px; }
+  .f-body .opt { min-height: 70px; font-size: 21px; border-radius: 20px; padding-top: 14px; padding-bottom: 14px; }
+  .f-listen { width: 120px; height: 120px; font-size: 52px; }
+  .f-emo { font-size: 170px; top: 22px; right: 26px; opacity: .13; }
+  .f-side { right: 28px; bottom: 34px; gap: 16px; }
+  .f-act { width: 64px; height: 72px; border-radius: 20px; font-size: 28px; }
+  .f-in > .lv { font-size: var(--fs-md); }
+  .f-stats b { font-size: 26px; }
+  .feed-hud { padding-left: 24px; padding-right: 24px; }
+}
+/* big iPad portrait (13"): 4 answers in a 2 × 2 grid under the prompt */
+@media (min-width: 1000px) and (min-height: 700px) and (orientation: portrait) {
+  .f-body .options:not(.tf):has(> .opt:nth-child(4)) { grid-template-columns: 1fr 1fr; }
+}
+/* iPad landscape: a wider card, prompt on the left and answers on the right */
+@media (min-width: 1000px) and (min-height: 700px) and (orientation: landscape) {
+  .topbar:has(~ .view.feed-mode) { --maxw: 1000px; }
+  .view.feed-mode { --maxw: 1000px; }
+  .f-body { max-width: none; }
+  .f-body:not(:has(> .options)) { max-width: 680px; }
+  .f-body:has(> .options) { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); column-gap: 40px; align-items: center; text-align: center; }
+  .f-body:has(> .options) > * { grid-column: 1; }
+  .f-body:has(> .options) > .options { grid-column: 2; grid-row: 1 / span 12; margin-top: 0; align-self: center; }
+  .f-body:has(> .options) > .f-tag { justify-self: center; }
+  .f-body .options.tf { flex-direction: column; }
 }
