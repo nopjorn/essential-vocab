@@ -163,7 +163,7 @@ function renderStats(from) {
     const ws = W.filter((w) => w.g === l);
     const learned = ws.filter((w) => S.prog[w.w]).length;
     const mastered = ws.filter((w) => status(w) === 'mastered').length;
-    return `<div class="lvl-row">${lvBadge(l)}
+    return `<div class="lvl-row lv-${l}">${lvBadge(l)}
       <div class="grow"><div class="bar"><div class="l" style="width:${learned / ws.length * 100}%"></div><div class="m" style="width:${mastered / ws.length * 100}%"></div></div>
       <div class="small muted" style="margin-top:4px">เรียนแล้ว ${learned} · จำได้ ${mastered} / ${ws.length}</div></div></div>`;
   };

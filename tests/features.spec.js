@@ -1820,6 +1820,45 @@ test('games menu layout (1.127): list view by default, card toggle, folding skil
   expect(errors).toEqual([]);
 });
 
+test('polish (1.131): notices share one box, option badges, one-line title, A–Z headings + rings, level colours', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  // tab bar: line icons, search still lists the pages with their emoji
+  await expect(page.locator('.tabbar [data-tab="home"] .ti svg')).toHaveCount(1);
+  expect(await page.evaluate(() => gsSearch('ตั้งค่า').pages.some((p) => p.ic === '⚙️'))).toBe(true);
+  // home: placement + install notices sit in one swipeable deck with a dot each
+  await page.evaluate(() => go('home'));
+  await expect(page.locator('#notices .nd-slide')).toHaveCount(2);
+  await expect(page.locator('#notices [data-nd]')).toHaveCount(2);
+  await expect(page.locator('#placeCard')).toBeAttached();
+  await page.locator('#installTip [data-inst]').click();   // closing one leaves a single plain notice
+  await expect(page.locator('#notices')).toHaveCount(0);
+  await expect(page.locator('#placeCard')).toBeVisible();
+  // answer options: badge 1–4, then ✓ on the right one
+  await page.evaluate(() => startGame('en2th'));
+  await expect(page.locator('.opt').first()).toBeVisible();
+  const badge = () => page.evaluate(() => getComputedStyle(document.querySelector('.opt'), '::before').content);
+  expect(await badge()).toContain('counter(opt)');
+  // long titles: one line, smaller type
+  await page.evaluate(() => { $('#title').textContent = 'เลือกรูปที่ถูก (ไวยากรณ์ผูกกับคำ) · 10/10'; });
+  await expect(page.locator('#title')).toHaveClass(/long/);
+  expect(await page.evaluate(() => getComputedStyle($('#title')).whiteSpace)).toBe('nowrap');
+  // word list: each letter heading once, a ring per word
+  await page.evaluate(() => go('list'));
+  await expect(page.locator('#rows .wrow .dot.ring').first()).toBeVisible();
+  const heads = await page.locator('#rows .lt-h').allTextContents();
+  expect(heads.length).toBeGreaterThan(0);
+  expect(new Set(heads).size).toBe(heads.length);
+  await page.locator('#q').fill('app');
+  await expect(page.locator('#rows .lt-h')).toHaveCount(0);
+  // stats: per-level bars carry the level colour
+  await page.evaluate(() => go('stats'));
+  await expect(page.locator('.lvl-row.lv-A1')).toHaveCount(1);
+  // XP chip pops on a new level
+  await page.evaluate(() => { S.xp = (S.xp || 0) + 5000; updateStreak(); });
+  await expect(page.locator('#streak')).toHaveClass(/lvup/);
+  expect(errors).toEqual([]);
+});
+
 test('iPad landscape home dashboard (1.117): today card + น้องคำ in a sticky side panel, back to one grid in portrait', async ({ page }) => {
   await page.setViewportSize({ width: 1376, height: 1032 });
   const errors = await openApp(page, { placedAt: '2026-01-01' });

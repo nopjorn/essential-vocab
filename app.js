@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.130.0';
+const APP_VERSION = '1.131.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1691,8 +1691,11 @@ function withLoading(p) {
   const t = setTimeout(() => { if (view.firstElementChild === was) { view.innerHTML = SKELETON; animView('vin'); } }, 150);
   return p.then((v) => { clearTimeout(t); return v; });
 }
+let shownLv = 0; // level shown on the chip: a higher one pops (1.131)
 function updateStreak() {
   const el = $('#streak'), L = levelOf(S.xp);
+  if (shownLv && L > shownLv) { el.classList.remove('lvup'); void el.offsetWidth; el.classList.add('lvup'); setTimeout(() => el.classList.remove('lvup'), 700); }
+  shownLv = L;
   const n = streakNow(), fl = n >= 100 ? 4 : n >= 30 ? 3 : n >= 7 ? 2 : n >= 1 ? 1 : 0; // flame: none / small / big / purple / blue (1.128)
   el.innerHTML = `<span class="flame fl${fl}" aria-hidden="true">🔥</span> ${n}${S.freeze ? ' · 🧊' + S.freeze : ''} · Lv.${L}`;
   el.setAttribute('aria-label', `สตรีค ${n} วัน${S.freeze ? ` ตัวกันสตรีค ${S.freeze}` : ''} เลเวล ${L} ดูสถิติ`);
@@ -1713,6 +1716,10 @@ new MutationObserver(() => {
   if (d !== backDepth) animView(d > backDepth ? 'vin-push' : 'vin-pop');
   backDepth = d;
 }).observe(view, { childList: true });
+// Top bar title on one line (1.131): a title too wide for the bar gets the smaller size (.long), then ends in "…".
+function fitTitle() { const t = $('#title'); t.classList.remove('long'); if (t.scrollWidth > t.clientWidth + 1) t.classList.add('long'); }
+new MutationObserver(fitTitle).observe($('#title'), { childList: true, characterData: true, subtree: true });
+addEventListener('resize', fitTitle);
 $('#topBack').addEventListener('click', () => { const b = view.querySelector('[id$="Back"]'); if (b) b.click(); });
 // iPad sidebar extras: reference pages live under the คลังความรู้ page (route 'ref', 1.127), so open it first (their ‹ กลับ returns there).
 const REF_PAGES = { pairs: () => renderPairs(), fams: () => renderFamilies(), syn: () => renderSyn(), affix: () => renderAffix(), roots: () => renderRoots(), ukus: () => renderUkUs(), phrasal: () => renderPhrasal(), idiom: () => renderIdioms(), sit: () => renderSit(), irr: () => renderIrregular(), dprep: () => renderDepPrep(), mis: () => renderMistakes(), gpat: () => renderGramPat(), ipa: () => renderIpa() };

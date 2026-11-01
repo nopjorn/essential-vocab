@@ -300,7 +300,7 @@ function readyBox() {
   return `<div class="card-box ready-box"><b>📖 พร้อมอ่านระดับไหนแล้ว?</b>
     <div class="small" style="margin-top:4px">${best ? `คุณรู้คำศัพท์ ${best.pct}% ในเรื่องสั้นระดับ ${LV_LABEL[best.lv]} → <b>พร้อมอ่าน ${LV_LABEL[best.lv]}</b> 🎉` : 'เรียนคำศัพท์เพิ่ม แล้วระดับที่พร้อมอ่านจะขึ้นที่นี่ (เกณฑ์ 90%)'}</div>
     ${rs.map((r) => `<div class="small" style="margin-top:8px">${LV_LABEL[r.lv]} <span class="muted">· รู้ ${r.pct}% ${r.pct >= 95 ? '· อ่านลื่น ✨' : r.pct >= 90 ? '· พร้อมอ่าน ✅' : ''}</span></div>
-      <div class="bar" style="margin-top:3px"><div class="l" style="width:${r.pct}%"></div></div>`).join('')}</div>`;
+      <div class="bar lv-${r.lv}" style="margin-top:3px"><div class="l" style="width:${r.pct}%"></div></div>`).join('')}</div>`;
 }
 function renderLibrary() {
   const done = STORIES.filter((st) => S.read[st.id]).length;

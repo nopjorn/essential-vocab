@@ -242,7 +242,7 @@ function renderCards(extra) {
       <div class="fc lvc-${card.g}${tintStyle(card) ? ' tint' : ''}${S.settings.frame === 'gold' && itemOpen('frame:gold') ? ' gold' : ''}" id="fc"${tintStyle(card)}>
         <div class="swipe-tag l">ลืม</div><div class="swipe-tag r">จำได้</div>
         <div class="fc-inner">
-          <div class="face front">${enFront ? enFace : thFace}
+          <div class="face front"><span class="fc-wm" aria-hidden="true">${TOPIC_IC[card.tp] || ''}</span>${enFront ? enFace : thFace}
             ${isNew ? '<button class="know-btn" data-know>✓ รู้คำนี้แล้ว ข้ามเลย</button>' : ''}
             <div class="hint">${isNew ? '✨ คำใหม่ · ' : ''}${leechIn(card, map) ? '🐢 คำดื้อ · ' : ''}<span class="tap-hint">แตะเพื่อพลิก · ปัดซ้าย/ขวา</span><span class="kb-hint">คลิกหรือกด Space เพื่อพลิก · ปุ่ม 1–4 ให้คะแนน</span></div></div>
           <div class="face back${cardPattern(card.tp) ? ' pat' : ''}"${cardPattern(card.tp) ? ` style='--pat:${cardPattern(card.tp)}'` : ''}><span class="fc-wm" aria-hidden="true">${TOPIC_IC[card.tp] || ''}</span>${enFront ? `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>

@@ -2142,3 +2142,59 @@ html[data-theme="dark"]:not(.no-pbg) body, html[data-theme="black"]:not(.no-pbg)
   @keyframes spWave { from { transform: rotate(-18deg); } to { transform: rotate(22deg); } }
   @keyframes spBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 }
+
+/* ===================== polish (1.131) ===================== */
+/* top bar title: one line; long titles shrink first (fitTitle), then end in "…" */
+.topbar h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; padding-block: 4px; margin-block: -4px; }
+.topbar h1.long { font-size: 20px; }
+
+/* home: several notices share one swipeable box */
+.notice-deck { margin-bottom: 14px; }
+.nd-track { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; align-items: stretch; margin-inline: calc(-16px / var(--uz, 1)); padding-inline: calc(16px / var(--uz, 1)); scroll-padding-inline: calc(16px / var(--uz, 1)); }
+.nd-track::-webkit-scrollbar { display: none; }
+.nd-slide { flex: 0 0 100%; scroll-snap-align: start; display: flex; }
+.nd-slide > .card-box { flex: 1; margin: 0; }
+.nd-dots { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 8px; }
+.nd-dots button { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 99px; background: color-mix(in srgb, var(--muted) 45%, transparent); transition: width .2s, background-color .2s; }
+.nd-dots button.on { width: 18px; background: var(--primary); }
+.nd-dots small { margin-left: 6px; color: var(--muted); font-size: var(--fs-xs); }
+
+/* answer options: number badge 1–4 on the left, ✓ / ✗ once answered, a small pop on the right one */
+.options { counter-reset: opt; }
+.options .opt { position: relative; padding-left: 54px; counter-increment: opt; }
+.options .opt::before { content: counter(opt); position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: var(--surface-2); color: var(--muted); font-size: var(--fs-sm); font-weight: 800; transition: background-color .15s, color .15s; }
+.options .opt.mp { padding-left: 16px; padding-right: 16px; }
+.options .opt.mp::before { top: 12px; transform: none; }
+.options .opt.correct::before { content: "✓"; background: var(--good); color: #fff; }
+.options .opt.wrong::before { content: "✗"; background: var(--bad); color: #fff; }
+.options .opt.correct { animation: optPop .32s ease-out; }
+@keyframes optPop { 40% { transform: scale(1.03); } }
+.options .opt:not(:disabled):active { transform: scale(.98); }
+@media (prefers-reduced-motion: reduce) { .options .opt.correct { animation: none; } }
+
+/* word list: sticky A–Z letter headings + a small progress ring per word */
+.lt-h { position: sticky; top: 0; z-index: 1; margin: 0 -14px; padding: 6px 14px 4px; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-weight: 800; font-size: var(--fs-sm); color: var(--primary-ink, var(--primary)); border-bottom: 1px solid var(--border); }
+.lt-h:first-child { border-top-left-radius: var(--radius); border-top-right-radius: var(--radius); }
+#rows > .lt-h { grid-column: 1 / -1; }
+.dot.ring { width: 16px; height: 16px; border: 0; background: conic-gradient(var(--rc, var(--warn)) var(--p, 0%), var(--surface-2) 0); -webkit-mask: radial-gradient(circle, transparent 4px, #000 4.5px); mask: radial-gradient(circle, transparent 4px, #000 4.5px); }
+.dot.ring.new { background: var(--surface-2); }
+.dot.ring.mastered { --rc: var(--good); }
+
+/* level colours on the reading-readiness and per-level bars */
+.lv-B2x { --lvc: var(--b2x); }
+.ready-box .bar[class*="lv-"] .l { background: var(--lvc); }
+.lvl-row[class*="lv-"] .bar .l { background: color-mix(in srgb, var(--lvc) 35%, var(--surface-2)); }
+.lvl-row[class*="lv-"] .bar .m { background: var(--lvc); }
+.bar .l, .bar .m { transition: width .6s cubic-bezier(.2, .8, .2, 1); }
+
+/* flashcard front: the topic watermark too */
+.face.front { isolation: isolate; }
+.face.front > .fc-wm { z-index: -1; }
+
+/* XP chip: the level bar slides, a new level pops */
+@property --xp { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+.streak { transition: --xp .7s cubic-bezier(.2, .8, .2, 1), transform .1s, background-color .15s; }
+.streak.lvup { animation: chipLvUp .7s ease-out; }
+@keyframes chipLvUp { 0% { transform: scale(1); } 30% { transform: scale(1.18); box-shadow: 0 0 0 6px color-mix(in srgb, var(--primary) 30%, transparent); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .streak { transition: none; } .streak.lvup { animation: none; } }
+@media (min-width: 700px) { .nd-track { margin-inline: 0; padding-inline: 0; scroll-padding-inline: 0; } }

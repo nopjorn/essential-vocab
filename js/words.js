@@ -24,12 +24,14 @@ function renderList() {
     view.querySelectorAll('#lv .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === listFilter.lv));
     view.querySelectorAll('#st .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === listFilter.st));
   };
-  let items = [], shown = 0;
+  let items = [], shown = 0, letter = '', az = true;
   const rows = $('#rows');
+  // A–Z headings only while the list is in A–Z order (a search sorts prefix matches first)
+  const head = (w) => { if (!az) return ''; const c = (w.w[0] || '').toUpperCase(); if (c === letter) return ''; letter = c; return `<div class="lt-h" aria-hidden="true">${esc(c)}</div>`; };
   const more = () => {
     const chunk = items.slice(shown, shown + 80);
-    rows.insertAdjacentHTML('beforeend', chunk.map((w) => `<div class="wrow" data-i="${w.idx}">
-      <span class="dot ${status(w)}"></span>
+    rows.insertAdjacentHTML('beforeend', chunk.map((w) => `${head(w)}<div class="wrow" data-i="${w.idx}">
+      ${wordRing(w)}
       <div class="grow"><div><span class="w">${esc(w.w)}</span> <span class="pos">${esc(w.p)}</span></div><div class="t">${esc(w.t)}</div></div>
       <span class="star-mark">${isLeech(w) ? '🐢' : ''}${isStar(w) ? '⭐' : ''}</span>${lvBadge(w.g)}</div>`).join(''));
     shown += chunk.length;
@@ -40,6 +42,8 @@ function renderList() {
       && (listFilter.st === 'all' || (listFilter.st === 'star' ? isStar(w) : listFilter.st === 'leech' ? isLeech(w) : listFilter.st === 'note' ? !!S.note[w.w] : status(w) === listFilter.st))
       && (!q || w.w.toLowerCase().includes(q) || w.t.includes(q)));
     if (q) items.sort((a, b) => (b.w.toLowerCase().startsWith(q)) - (a.w.toLowerCase().startsWith(q)));
+    else items.sort((a, b) => { const x = a.w.toLowerCase(), y = b.w.toLowerCase(); return x < y ? -1 : x > y ? 1 : 0; }); // A–Z ignoring case (W puts capitals first), so each letter heading shows once
+    az = !q; letter = '';
     rows.innerHTML = ''; shown = 0; more();
     if (!items.length) rows.innerHTML = emptyArt({ kind: 'search', title: 'ไม่พบคำศัพท์', sub: 'ลองพิมพ์ให้สั้นลง หรือเปลี่ยนตัวกรองด้านบน' });
     $('#cnt').textContent = `${items.length} คำ · แตะคำเพื่อดูตัวอย่างประโยค`;
@@ -54,7 +58,7 @@ function renderList() {
     const r = e.target.closest('.wrow'); if (!r) return;
     const w = W[+r.dataset.i];
     speak(w.w);
-    const onChange = () => { r.querySelector('.dot').className = 'dot ' + status(w); r.querySelector('.star-mark').textContent = (isLeech(w) ? '🐢' : '') + (isStar(w) ? '⭐' : ''); };
+    const onChange = () => { r.querySelector('.dot').outerHTML = wordRing(w); r.querySelector('.star-mark').textContent = (isLeech(w) ? '🐢' : '') + (isStar(w) ? '⭐' : ''); };
     // the tapped word morphs into the sheet's title (View Transitions); otherwise the sheet slides up as before
     const from = r.querySelector('.w');
     if (!vtOk() || vtBusy) return openSheet(w, onChange);
@@ -65,6 +69,12 @@ function renderList() {
   io.observe($('#sentinel'));
   cleanup = () => io.disconnect();
   apply();
+}
+
+// Word-list status (1.131): a small ring that fills as the review interval grows (full = จำได้แล้ว, 16+ days).
+function wordRing(w) {
+  const st = status(w), p = st === 'mastered' ? 100 : st === 'new' ? 0 : Math.max(12, Math.min(90, ivlOf(S.prog[w.w]) / 16 * 100));
+  return `<span class="dot ring ${st}" style="--p:${Math.round(p)}%"></span>`;
 }
 
 /* ---------- memory notes ---------- */

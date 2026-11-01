@@ -148,17 +148,18 @@ function renderHome() {
   }
   if (open) open.w = 'full';
 
-  view.innerHTML = `
-    ${needsBackup() ? `<div class="card-box backup-nag">
+  const notices = [needsBackup() ? `<div class="card-box backup-nag">
       <div><b>💾 ถึงเวลาสำรองข้อมูลแล้ว</b><div class="small muted">${lastBackup === null ? 'ยังไม่เคยสำรองเลย' : `สำรองล่าสุด ${lastBackup} วันก่อน`} · กันความคืบหน้าหายตอนลบแอปหรือเปลี่ยนเครื่อง</div></div>
       <div class="row" style="margin-top:10px"><button class="btn primary grow" id="bkNow">📤 สำรองเลย</button><button class="btn" id="bkLater">ไว้ทีหลัง</button></div>
-    </div>` : ''}
-    ${repairCard()}
-    ${welcomeBack(plan)}
-    ${!S.placedAt && Object.keys(S.prog).length < 50 ? `<div class="card-box place-card slim" id="placeCard">
+    </div>` : '',
+    repairCard(),
+    welcomeBack(plan),
+    !S.placedAt && Object.keys(S.prog).length < 50 ? `<div class="card-box place-card slim" id="placeCard">
       <div><b>🎯 รู้ศัพท์อยู่แล้วบ้างไหม?</b><div class="small muted">วัดระดับ 3–5 นาที แล้วข้ามคำที่รู้แล้ว</div></div>
-      <button class="btn primary" data-pl="go">วัดระดับ</button><button class="x" data-pl="no" aria-label="ไม่ต้อง">✕</button></div>` : ''}
-    ${standalone || installHidden() ? '' : `<div class="card-box install-tip slim small" id="installTip">${installTipInner()}</div>`}
+      <button class="btn primary" data-pl="go">วัดระดับ</button><button class="x" data-pl="no" aria-label="ไม่ต้อง">✕</button></div>` : '',
+    standalone || installHidden() ? '' : `<div class="card-box install-tip slim small" id="installTip">${installTipInner()}</div>`].filter(Boolean);
+  view.innerHTML = `
+    ${noticeDeck(notices)}
     ${homeGridHtml(blocks)}
     ${blocks.length ? '' : '<div class="card-box center small muted">ซ่อนทุกกล่องอยู่ — เปิดกล่องที่ต้องการได้ที่ ⚙️ ตั้งค่า → จัดหน้าแรก</div>'}
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
@@ -200,7 +201,7 @@ function renderHome() {
   const pc = $('#placeCard');
   if (pc) pc.onclick = (e) => {
     const b = e.target.closest('[data-pl]'); if (!b) return;
-    if (b.dataset.pl === 'go') go('placement'); else { S.placedAt = today(); save(); pc.remove(); }
+    if (b.dataset.pl === 'go') go('placement'); else { S.placedAt = today(); save(); renderHome(); }
   };
   masonry([view.querySelector('.home-grid')]);
   mascotEvolveCheck();
@@ -209,8 +210,24 @@ function renderHome() {
     if (e.target.closest('[data-instgo]') && installEvt) { installEvt.prompt(); installEvt.userChoice.then((c) => { if (c.outcome === 'accepted') it.remove(); }).catch(() => {}); installEvt = null; return; }
     if (!e.target.closest('[data-inst]')) return;
     try { localStorage.setItem('o3k.installHide', '1'); } catch (err) { /* ignore */ }
-    it.remove();
+    renderHome();
   };
+  bindNoticeDeck();
+}
+// Notices above the home blocks (backup, streak repair, backlog, placement, install): one shows as is; several share
+// one swipeable box with dots (1.131), so the today card stays near the top.
+function noticeDeck(list) {
+  if (list.length < 2) return list.join('');
+  return `<div class="notice-deck" id="notices" role="region" aria-label="แจ้งเตือน ${list.length} เรื่อง">
+    <div class="nd-track">${list.map((h) => `<div class="nd-slide">${h}</div>`).join('')}</div>
+    <div class="nd-dots">${list.map((_, k) => `<button class="${k ? '' : 'on'}" data-nd="${k}" aria-label="แจ้งเตือนที่ ${k + 1}"></button>`).join('')}<small>ปัดดู ${list.length} เรื่อง</small></div></div>`;
+}
+function bindNoticeDeck() {
+  const tr = view.querySelector('.nd-track'); if (!tr) return;
+  const dots = [...view.querySelectorAll('[data-nd]')];
+  const at = () => Math.round(tr.scrollLeft / Math.max(1, tr.clientWidth));
+  tr.addEventListener('scroll', () => { const k = at(); dots.forEach((d, j) => d.classList.toggle('on', j === k)); }, { passive: true });
+  dots.forEach((d) => (d.onclick = () => tr.scrollTo({ left: +d.dataset.nd * tr.clientWidth, behavior: 'smooth' })));
 }
 // Install banner: iPhone/iPad = Safari share sheet; Chrome/Edge on a computer = their own install prompt (beforeinstallprompt) or the address-bar icon.
 let installEvt = null;
