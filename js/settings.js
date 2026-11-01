@@ -107,6 +107,8 @@ function renderSettings() {
         <label class="switch"><input type="checkbox" id="qMascot" aria-label="น้องคำในเกม" ${st.qMascot !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🔤 ฟอนต์หัวข้อ “อนุพันธ์”<br><span class="small muted">ใช้ฟอนต์ไทยแบบโค้งมนกับหัวข้อและชื่อหน้า (ปิด = ใช้ฟอนต์ของเครื่องทั้งหมด)</span></span>
         <label class="switch"><input type="checkbox" id="headFont" aria-label="ฟอนต์หัวข้ออนุพันธ์" ${st.headFont !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>🌸 พื้นหลังหน้าแบบนุ่ม<br><span class="small muted">ไล่สีจางๆ ตามสีหลัก โหมดมืดมีดาวระยิบเบาๆ (ปิด = พื้นสีเรียบ)</span></span>
+        <label class="switch"><input type="checkbox" id="pageBg" aria-label="พื้นหลังหน้าแบบนุ่ม" ${st.pageBg !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🪟 แถบเมนูกระจกลอย<br><span class="small muted">บนมือถือ แถบเมนูล่างเป็นแคปซูลใสลอยเหนือขอบจอ (ปิด = แถบเต็มขอบแบบเดิม)</span></span>
         <label class="switch"><input type="checkbox" id="glassBar" aria-label="แถบเมนูกระจกลอย" ${st.glassBar !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🌦️ ท้องฟ้าตามฤดู<br><span class="small muted">นอกช่วงเทศกาล: หน้าร้อนมีแสงแดดและหิ่งห้อย หน้าฝนมีฝนปรอยกับรุ้ง หน้าหนาวมีหมอก</span></span>
@@ -274,6 +276,7 @@ function renderSettings() {
   $('#qMascot').onchange = (e) => { st.qMascot = e.target.checked; save(); };
   $('#headFont').onchange = (e) => { st.headFont = e.target.checked; save(); applyAnim(); };
   $('#glassBar').onchange = (e) => { st.glassBar = e.target.checked; save(); applyAnim(); };
+  $('#pageBg').onchange = (e) => { st.pageBg = e.target.checked; save(); applyAnim(); };
   $('#palette').onclick = (e) => {
     const b = e.target.closest('[data-p]'); if (!b) return;
     st.palette = b.dataset.p; st.palAuto = false; $('#palAuto').checked = false; save(); applyTheme(); palName();

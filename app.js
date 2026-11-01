@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.129.0';
+const APP_VERSION = '1.130.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -193,7 +193,7 @@ function sanitizeDecks(r) {
 }
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, exam: { date: '', name: '' }, fest: true, season: true, sfxPack: 'chime', qMascot: true, headFont: true, glassBar: true, fsz: 'md', appKbd: 'auto', shareTpl: 'classic', palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], gameView: 'list', gameFold: [], riddleLv: ['A1', 'A2'] },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, pageBg: true, exam: { date: '', name: '' }, fest: true, season: true, sfxPack: 'chime', qMascot: true, headFont: true, glassBar: true, fsz: 'md', appKbd: 'auto', shareTpl: 'classic', palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], gameView: 'list', gameFold: [], riddleLv: ['A1', 'A2'] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -932,7 +932,7 @@ function stickerBook() {
     <div class="card-box"><div class="stk-grid" id="stk">${TOPICS.map(([id, ic, th]) => {
       const t = topicStat(id), k = tierOf(t), nx = STK_TIERS[k];
       const pct = nx ? (() => { const [h, need] = nx.need(t); return Math.min(100, h / Math.max(1, need) * 100); })() : 100;
-      return `<button class="stk t${k}" data-stk="${id}"><span class="stk-ic">${ic}</span>${k ? `<span class="stk-tier">${STK_TIERS[k - 1].icon}</span>` : ''}<small>${esc(th)}</small><span class="stk-bar"><span style="width:${pct}%"></span></span></button>`;
+      return `<button class="stk t${k}" data-stk="${id}"><span class="stk-ic">${topicIcon(id)}</span>${k ? `<span class="stk-tier">${STK_TIERS[k - 1].icon}</span>` : ''}<small>${esc(th)}</small><span class="stk-bar"><span style="width:${pct}%"></span></span></button>`;
     }).join('')}</div><div id="stkInfo" class="small muted" style="margin-top:10px">แตะสติกเกอร์เพื่อดูว่าต้องทำอีกเท่าไร · 🥉 → 🥈 → 🥇 → 💎 · ได้ 🥇 ทองแล้ว แฟลชการ์ดของหมวดนั้นจะมีลายพิเศษด้านหลัง</div></div>`;
 }
 // Card-back patterns (1.124): a 🥇 gold (or 💎) sticker in a topic unlocks a drawn pattern on the back of that topic's flashcards.
@@ -1347,7 +1347,8 @@ if (S.settings.anim === false) { S.settings.animPage = S.settings.animAnswer = S
 delete S.settings.anim;
 const FSZ = { sm: 0.9, md: 1, lg: 1.15, xl: 1.3 };
 function applyAnim() {
-  document.documentElement.classList.toggle('no-hf', S.settings.headFont === false); // 1.117: Anuphan headings
+  document.documentElement.classList.toggle('no-hf', S.settings.headFont === false);
+  document.documentElement.classList.toggle('no-pbg', S.settings.pageBg === false); // 1.130: soft page background // 1.117: Anuphan headings
   document.documentElement.classList.toggle('no-glass', S.settings.glassBar === false); // 1.117: floating glass tab bar (phones)
   document.documentElement.classList.toggle('no-vt', S.settings.animPage === false);
   document.documentElement.classList.toggle('no-ans', S.settings.animAnswer === false);

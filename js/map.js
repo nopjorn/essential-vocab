@@ -59,7 +59,7 @@ function renderMap(arg) {
   if (arg && topicStages(arg).length) return renderMapTopic(arg);
   const rows = (ids) => ids.map((id) => {
     const p = topicProgress(id);
-    return `<button class="map-topic" data-t="${id}"><span class="mt-n">${TOPIC_LABEL[id]}</span>
+    return `<button class="map-topic" data-t="${id}">${topicIcon(id, 'mt-ic')}<span class="mt-n">${TOPIC_LABEL[id].replace(/^\S+ /, '')}</span>
       <span class="mp-bar" aria-hidden="true"><i style="width:${p.n ? Math.round(p.cleared / p.n * 100) : 0}%"></i></span>
       <span class="mt-s small muted">ผ่าน ${p.cleared}/${p.n} ด่าน · ★ ${p.stars}/${p.n * 3}</span></button>`;
   }).join('');

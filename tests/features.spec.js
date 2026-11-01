@@ -1918,3 +1918,17 @@ test('1.129: result screen has stars, mascot, answer strip and XP; word sheet he
   if (n) await expect(page.locator('.res-xp')).toContainText('XP');
   expect(errors).toEqual([]);
 });
+
+test('1.130: every topic has a drawn icon (sticker book, map), soft background switch, splash replaced by the first screen', async ({ page }) => {
+  const errors = await openApp(page);
+  expect(await page.evaluate(() => TOPICS.filter(([id]) => !TOPIC_SVG[id]).map(([id]) => id))).toEqual([]);
+  await expect(page.locator('#view .splash')).toHaveCount(0);
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundImage)).toContain('gradient');
+  await page.evaluate(() => { S.settings.pageBg = false; applyAnim(); });
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundImage)).toBe('none');
+  await page.evaluate(() => go('map'));
+  await expect(page.locator('.map-topic[data-t="animal"] svg.tpi')).toHaveCount(1);
+  await page.evaluate(() => go('stats'));
+  await expect(page.locator('#stk .stk-ic svg.tpi')).toHaveCount(await page.evaluate(() => TOPICS.length));
+  expect(errors).toEqual([]);
+});

@@ -2100,3 +2100,45 @@ button.sus:active { transform: scale(.97); }
 .sh-ring span { font-size: 12px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
 .sh-hero > .row { position: relative; z-index: 1; padding-right: 0; }
 .sh-hero .row .st-pill { margin-right: 0; }
+
+/* ---------- 1.130: drawn topic icons (js/icons.js topicIcon) ---------- */
+.tpi { width: 1.2em; height: 1.2em; vertical-align: -0.22em; fill: none; stroke: hsl(var(--hue) 55% 42%); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.tpi .f { fill: hsl(var(--hue) 70% 55% / .22); }
+.tpi circle:not(.f) { fill: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tpi { stroke: hsl(var(--hue) 70% 72%); } :root:not([data-theme="light"]) .tpi .f { fill: hsl(var(--hue) 70% 60% / .26); } }
+:root[data-theme="dark"] .tpi, :root[data-theme="black"] .tpi { stroke: hsl(var(--hue) 70% 72%); }
+:root[data-theme="dark"] .tpi .f, :root[data-theme="black"] .tpi .f { fill: hsl(var(--hue) 70% 60% / .26); }
+.stk-ic .tpi { width: 34px; height: 34px; vertical-align: middle; }
+.stk.t0 .stk-ic .tpi { filter: grayscale(1); opacity: .45; }
+.map-topic:has(> .mt-ic) { grid-template-columns: 30px minmax(0, 1fr); column-gap: 12px; align-items: center; }
+.map-topic > .mt-ic { width: 30px; height: 30px; grid-row: 1 / 4; }
+.map-topic:has(> .mt-ic) > :not(.mt-ic) { grid-column: 2; }
+.set-row2 > .tpi { width: 28px; height: 28px; }
+.gd-name .tpi { width: 18px; height: 18px; }
+
+/* soft page background (1.130, settings.pageBg): two faint glows in the main colours; dark mode adds a sparse star field */
+html:not(.no-pbg) body {
+  background-color: var(--bg);
+  background-image: radial-gradient(900px 520px at 0% -8%, color-mix(in srgb, var(--primary) 11%, transparent), transparent 62%),
+    radial-gradient(760px 480px at 105% 4%, color-mix(in srgb, var(--pink) 8%, transparent), transparent 60%),
+    radial-gradient(900px 600px at 50% 112%, color-mix(in srgb, var(--primary-2) 9%, transparent), transparent 60%);
+  background-attachment: fixed;
+}
+@media (prefers-color-scheme: dark) {
+  html:not(.no-pbg):not([data-theme="light"]) body { background-image: radial-gradient(1.2px 1.2px at 12% 18%, rgba(255,255,255,.45), transparent), radial-gradient(1px 1px at 72% 9%, rgba(255,255,255,.35), transparent), radial-gradient(1.3px 1.3px at 88% 38%, rgba(255,255,255,.3), transparent), radial-gradient(1px 1px at 33% 64%, rgba(255,255,255,.25), transparent), radial-gradient(1.2px 1.2px at 58% 82%, rgba(255,255,255,.3), transparent),
+    radial-gradient(900px 520px at 0% -8%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 62%), radial-gradient(760px 480px at 105% 4%, color-mix(in srgb, var(--pink) 9%, transparent), transparent 60%); }
+}
+html[data-theme="dark"]:not(.no-pbg) body, html[data-theme="black"]:not(.no-pbg) body { background-image: radial-gradient(1.2px 1.2px at 12% 18%, rgba(255,255,255,.45), transparent), radial-gradient(1px 1px at 72% 9%, rgba(255,255,255,.35), transparent), radial-gradient(1.3px 1.3px at 88% 38%, rgba(255,255,255,.3), transparent), radial-gradient(1px 1px at 33% 64%, rgba(255,255,255,.25), transparent), radial-gradient(1.2px 1.2px at 58% 82%, rgba(255,255,255,.3), transparent),
+  radial-gradient(900px 520px at 0% -8%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 62%); }
+
+/* launch splash (index.html, replaced by the first screen): น้องคำ waves hello */
+.splash { min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; }
+.sp-t { font-family: var(--head, inherit); font-size: 24px; font-weight: 800; color: var(--primary-text, var(--primary)); }
+.sp-s { font-size: var(--fs-sm, 14px); color: var(--muted); }
+.sp-hand { transform-box: fill-box; transform-origin: 30% 90%; }
+@media (prefers-reduced-motion: no-preference) {
+  .sp-hand { animation: spWave .9s ease-in-out infinite alternate; }
+  .sp-m { animation: spBob 1.8s ease-in-out infinite; }
+  @keyframes spWave { from { transform: rotate(-18deg); } to { transform: rotate(22deg); } }
+  @keyframes spBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+}

@@ -33,7 +33,7 @@ function setsBox() {
   if (!sets.length) return '';
   return `<details class="card-box sets-box"${albumSets ? ' open' : ''}><summary><b>📦 ชุดสะสมการ์ด</b> <span class="small muted">ครบชุดรับ 🪙 ${SET_COINS} · ${Object.keys(S.sets || {}).length}/${sets.length} ชุด</span></summary>
     ${sets.map((s) => { const done = s.got >= s.ws.length, claimed = !!(S.sets || {})[s.id];
-      return `<div class="set-row2"><span aria-hidden="true">${s.ic}</span><div class="grow"><div class="small"><b>${esc(s.name)}</b> · ${s.got}/${s.ws.length} ใบ</div><div class="set-pics" aria-hidden="true">${s.ws.map((w) => `<i class="${status(w) === 'mastered' ? 'on' : ''}">${EMOJI[w.w]}</i>`).join('')}</div></div>
+      return `<div class="set-row2">${topicIcon(s.id)}<div class="grow"><div class="small"><b>${esc(s.name)}</b> · ${s.got}/${s.ws.length} ใบ</div><div class="set-pics" aria-hidden="true">${s.ws.map((w) => `<i class="${status(w) === 'mastered' ? 'on' : ''}">${EMOJI[w.w]}</i>`).join('')}</div></div>
         ${claimed ? '<span class="small">🏆 ครบแล้ว</span>' : done ? `<button class="btn primary" data-claim="${s.id}">🎁 รับ 🪙 ${SET_COINS}</button>` : ''}</div>`; }).join('')}</details>`;
 }
 let albumSets = false;
@@ -101,7 +101,7 @@ function renderGarden() {
     <div class="card-box garden-head"><b>🌱 สวนคำศัพท์</b><div class="small muted" style="margin-top:2px">หมวดละ 1 ต้น โตตามคำที่เรียนและจำได้ (ระดับที่เลือก ${lvNames(S.settings.levels)}) · 🌸 ออกดอก ${bloom} ต้น${wilt ? ` · 🥀 รอรดน้ำ ${wilt} ต้น` : ''}</div></div>
     <div class="gd-grid">${plants.map(([id, ic, name, p]) => `<div class="gd-plot${p.wilt ? ' wilt' : ''}${p.stage === 5 ? ' bloom' : ''}">
       <div class="gd-plant" aria-hidden="true">${p.wilt && p.stage ? '🥀' : PLANT[p.stage][0]}</div>
-      <b>${ic} ${esc(name)}</b><small>${p.wilt && p.stage ? `เหี่ยว: ${p.due} คำครบรอบทบทวน` : PLANT[p.stage][1]} · จำได้ ${p.m}/${p.n}</small>
+      <b class="gd-name">${topicIcon(id)} ${esc(name)}</b><small>${p.wilt && p.stage ? `เหี่ยว: ${p.due} คำครบรอบทบทวน` : PLANT[p.stage][1]} · จำได้ ${p.m}/${p.n}</small>
       <span class="qbar" role="img" aria-label="ความคืบหน้า ${Math.round(p.score * 100)}%"><span style="width:${Math.round(p.score * 100)}%"></span></span>
       ${p.due ? `<button class="btn${p.wilt ? ' primary' : ''} gd-water" data-water="${id}">💧 รดน้ำ (${p.due})</button>` : !p.l ? `<button class="btn gd-water" data-plant="${id}">🌰 ปลูก</button>` : ''}</div>`).join('')}</div>
     <p class="small muted" style="margin:10px 4px">💧 รดน้ำ = ทบทวนแฟลชการ์ดคำที่ครบรอบของหมวดนั้น · 🌰 ปลูก = เริ่มเรียนคำใหม่ของหมวดนั้น · ต้นไม้เหี่ยวเมื่อมีคำครบรอบตั้งแต่ ${WILT_AT} คำ · ออกดอกเมื่อจำได้ 85% ของคำในระดับที่เลือก</p>`;
