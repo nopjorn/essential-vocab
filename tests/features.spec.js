@@ -654,7 +654,7 @@ test('colour palettes + black theme: settings switch html attributes, persist, n
   await expect(root).toHaveAttribute('data-palette', 'mint');
   expect(await primary()).toBe('#007a61');
   await expect(page.locator('#palette [data-p="mint"]')).toHaveAttribute('aria-pressed', 'true');
-  await page.locator('#theme [data-v="black"]').click();
+  await page.locator('#theme').selectOption('black');
   await expect(root).toHaveAttribute('data-theme', 'black');
   expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(0, 0, 0)');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

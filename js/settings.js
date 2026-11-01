@@ -88,17 +88,17 @@ function renderSettings() {
 
     <details class="set-group" data-g="look" ${setIsOpen('look')}><summary>🎨 หน้าตา</summary><div class="card-box">
       <div class="set-row"><span>🔠 ขนาดตัวอักษร<br><span class="small muted">ขยายทุกหน้า (ยกเว้นแถบเมนู)</span></span>
-        <div class="seg" id="fsz">${[['sm', 'เล็ก'], ['md', 'ปกติ'], ['lg', 'ใหญ่'], ['xl', 'ใหญ่มาก']].map(([v, t]) => `<button class="${(st.fsz || 'md') === v ? 'on' : ''}" data-v="${v}" aria-pressed="${(st.fsz || 'md') === v}">${t}</button>`).join('')}</div></div>
+        <select class="sel" id="fsz" aria-label="ขนาดตัวอักษร">${[['sm', 'เล็ก'], ['md', 'ปกติ'], ['lg', 'ใหญ่'], ['xl', 'ใหญ่มาก']].map(([v, t]) => `<option value="${v}" ${(st.fsz || 'md') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>⌨️ คีย์บอร์ดของแอปในเกมพิมพ์คำ<br><span class="small muted">ไม่บังหน้าจอ และพิมพ์อังกฤษได้ทันที (อัตโนมัติ = ใช้บนจอสัมผัส)</span></span>
-        <div class="seg" id="appKbd">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<button class="${(st.appKbd || 'auto') === v ? 'on' : ''}" data-v="${v}" aria-pressed="${(st.appKbd || 'auto') === v}">${t}</button>`).join('')}</div></div>
+        <select class="sel" id="appKbd" aria-label="คีย์บอร์ดของแอปในเกมพิมพ์คำ">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.appKbd || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>ธีม</span>
-        <div class="seg" id="theme">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด'], ['black', '⚫ ดำสนิท']].map(([v, t]) => `<button class="${(st.theme || 'auto') === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div></div>
+        <select class="sel" id="theme" aria-label="ธีม">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด'], ['black', '⚫ ดำสนิท']].map(([v, t]) => `<option value="${v}" ${(st.theme || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row" style="flex-wrap:wrap"><span>🎨 สีหลัก<br><span class="small muted" id="palName"></span></span>
         <div class="pal" id="palette" role="group" aria-label="สีหลัก">${PALETTES.map(([id, name, a, b]) => `<button data-p="${id}" ${paletteOpen(id) ? '' : 'disabled'} aria-label="${name}${paletteOpen(id) ? '' : ' (ยังไม่ปลดล็อก)'}" aria-pressed="${(st.palAuto ? skyPalette() : st.palette || 'violet') === id}" class="${(st.palAuto ? skyPalette() : st.palette || 'violet') === id ? 'on' : ''}"><i style="--sw1:${a};--sw2:${b}">${(st.palAuto ? skyPalette() : st.palette || 'violet') === id ? '✓' : ''}</i></button>`).join('')}</div></div>
       <div class="set-row"><span>🕒 สีหลักเปลี่ยนตามช่วงเวลา<br><span class="small muted">เช้า ชมพู · สาย ฟ้า · บ่าย มิ้นต์ · เย็น ส้ม · มืด ม่วง · ดึก กาแล็กซี (ถ้ายังไม่ปลดล็อก Lv.20 ใช้ม่วง) · เลือกสีเองด้านบนเมื่อไหร่จะปิดโหมดนี้</span></span>
         <label class="switch"><input type="checkbox" id="palAuto" aria-label="สีหลักเปลี่ยนตามช่วงเวลา" ${st.palAuto ? 'checked' : ''}><span></span></label></div>
-      <div class="set-row" style="flex-wrap:wrap"><span>🌅 พื้นหลังการ์ดวันนี้<br><span class="small muted">การ์ดบนหน้าแรก: สีตามธีม หรือเปลี่ยนตามช่วงเวลา</span></span>
-        <div class="seg" id="heroBg" role="group" aria-label="พื้นหลังการ์ดวันนี้">${[['theme', '🎨 ตามธีม'], ['time', '🕒 ตามเวลา']].map(([v, t]) => `<button class="${(st.heroBg === 'time' ? 'time' : 'theme') === v ? 'on' : ''}" data-v="${v}" aria-pressed="${(st.heroBg === 'time' ? 'time' : 'theme') === v}">${t}</button>`).join('')}</div></div>
+      <div class="set-row"><span>🌅 พื้นหลังการ์ดวันนี้<br><span class="small muted">การ์ดบนหน้าแรก: สีตามธีม หรือเปลี่ยนตามช่วงเวลา</span></span>
+        <select class="sel" id="heroBg" aria-label="พื้นหลังการ์ดวันนี้">${[['theme', '🎨 ตามธีม'], ['time', '🕒 ตามเวลา']].map(([v, t]) => `<option value="${v}" ${(st.heroBg === 'time' ? 'time' : 'theme') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>🖼️ ภาพวาดพื้นหลัง<br><span class="small muted">ท้องฟ้า เมฆ ภูเขา พระอาทิตย์/พระจันทร์ที่วงแหวนวนรอบ (วาดเอง เปลี่ยนตามช่วงเวลา)</span></span>
         <label class="switch"><input type="checkbox" id="heroArt" aria-label="ภาพวาดพื้นหลังการ์ดวันนี้" ${st.heroArt !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🎃 ฉากเทศกาล<br><span class="small muted">ช่วงกิจกรรมเทศกาล ท้องฟ้ามีค้างคาว โคมลอย หิมะ พลุ ฯลฯ และน้องคำใส่ชุดเทศกาลให้ลองก่อน</span></span>
@@ -139,8 +139,8 @@ function renderSettings() {
         <label class="switch"><input type="checkbox" id="auto" ${st.autoSpeak ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>เสียงเอฟเฟกต์ในเกม</span>
         <label class="switch"><input type="checkbox" id="sfx" ${st.sfx ? 'checked' : ''}><span></span></label></div>
-      <div class="set-row" style="flex-wrap:wrap"><span>🎼 ชุดเสียง<br><span class="small muted">แตะเพื่อฟังตัวอย่าง</span></span>
-        <div class="seg" id="sfxPack" role="group" aria-label="ชุดเสียง">${SFX_PACKS.map(([v, t]) => `<button class="${(st.sfxPack || 'chime') === v ? 'on' : ''}" data-v="${v}" aria-pressed="${(st.sfxPack || 'chime') === v}">${t}</button>`).join('')}</div></div>
+      <div class="set-row"><span>🎼 ชุดเสียง<br><span class="small muted">เปลี่ยนแล้วเล่นตัวอย่างให้ฟัง</span></span>
+        <select class="sel" id="sfxPack" aria-label="ชุดเสียง">${SFX_PACKS.map(([v, t]) => `<option value="${v}" ${(st.sfxPack || 'chime') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>สำเนียง</span>
         <select class="sel" id="acc"><option value="en-US" ${st.accent === 'en-US' ? 'selected' : ''}>🇺🇸 อเมริกัน</option><option value="en-GB" ${st.accent === 'en-GB' ? 'selected' : ''}>🇬🇧 อังกฤษ</option></select></div>
       <div class="set-row"><span>ความเร็วเสียง</span>
@@ -234,10 +234,8 @@ function renderSettings() {
   };
   $('#haptic').onchange = (e) => { st.haptic = e.target.checked; save(); if (st.haptic) haptic('ok'); };
   $('#sfx').onchange = (e) => { st.sfx = e.target.checked; save(); sfx('ok'); };
-  $('#sfxPack').onclick = (e) => {
-    const b = e.target.closest('[data-v]'); if (!b) return;
-    st.sfxPack = b.dataset.v; save();
-    view.querySelectorAll('#sfxPack button').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+  $('#sfxPack').onchange = (e) => {
+    st.sfxPack = e.target.value; save();
     const was = st.sfx; st.sfx = true; sfx('ok'); setTimeout(() => sfx('win'), 450); st.sfx = was;
   };
   $('#acc').onchange = (e) => { st.accent = e.target.value; save(); speak('Hello! Nice to meet you.'); };
@@ -251,13 +249,9 @@ function renderSettings() {
   $('#test').onclick = () => speak('Hello! Let\'s learn English together.');
   fillVoices();
   $('#voice').onchange = (e) => { st.voice = e.target.value; save(); speak('Hello! This is how I sound when I read your words.'); };
-  $('#fsz').onclick = (e) => { const b = e.target.closest('[data-v]'); if (!b) return; st.fsz = b.dataset.v; save(); applyAnim(); const top = view.scrollTop; renderSettings(); view.scrollTop = top; };
-  $('#appKbd').onclick = (e) => { const b = e.target.closest('[data-v]'); if (!b) return; st.appKbd = b.dataset.v; save(); const top = view.scrollTop; renderSettings(); view.scrollTop = top; };
-  $('#theme').onclick = (e) => {
-    const b = e.target.closest('[data-v]'); if (!b) return;
-    st.theme = b.dataset.v; save(); applyTheme();
-    view.querySelectorAll('#theme button').forEach((x) => x.classList.toggle('on', x === b));
-  };
+  $('#fsz').onchange = (e) => { st.fsz = e.target.value; save(); applyAnim(); };
+  $('#appKbd').onchange = (e) => { st.appKbd = e.target.value; save(); };
+  $('#theme').onchange = (e) => { st.theme = e.target.value; save(); applyTheme(); };
   const palNow = () => (st.palAuto ? skyPalette() : st.palette) || 'violet';
   const palName = () => { const p = PALETTES.find((x) => x[0] === palNow()); $('#palName').textContent = p ? (st.palAuto ? 'ตามเวลา · ' : '') + p[1] : ''; };
   palName();
@@ -273,11 +267,7 @@ function renderSettings() {
     st.palAuto = e.target.checked; save(); applyTheme(); palName();
     view.querySelectorAll('#palette button').forEach((x) => { const on = x.dataset.p === palNow(); x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); x.firstElementChild.textContent = on ? '✓' : ''; });
   };
-  $('#heroBg').onclick = (e) => {
-    const b = e.target.closest('[data-v]'); if (!b) return;
-    st.heroBg = b.dataset.v; save();
-    view.querySelectorAll('#heroBg button').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
-  };
+  $('#heroBg').onchange = (e) => { st.heroBg = e.target.value; save(); };
   $('#heroArt').onchange = (e) => { st.heroArt = e.target.checked; save(); };
   $('#festSky').onchange = (e) => { st.fest = e.target.checked; save(); };
   $('#seasonSky').onchange = (e) => { st.season = e.target.checked; save(); };

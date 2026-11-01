@@ -32,7 +32,7 @@ test('text size: settings switch zooms the pages; no sideways scroll on a phone 
   const errors = await openApp(page, base);
   await page.evaluate(() => go('settings'));
   await page.locator('details[data-g="look"] > summary').click();
-  await page.locator('#fsz [data-v="xl"]').click();
+  await page.locator('#fsz').selectOption('xl');
   expect(await page.evaluate(() => [S.settings.fsz, getComputedStyle(document.documentElement).getPropertyValue('--uz').trim()])).toEqual(['xl', '1.3']);
   for (const r of ['home', 'games', 'cards', 'fun', 'stats', 'list', 'settings', 'read', 'decks', 'tower', 'puzzle', 'cafe', 'room']) {
     await page.evaluate((r) => go(r), r);

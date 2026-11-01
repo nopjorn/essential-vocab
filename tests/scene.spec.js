@@ -59,9 +59,9 @@ test('settings: choose time-of-day colours, switch the scene off, gallery of six
   const errors = await openApp(page, { settings: { levels: ['A1'] } });
   await page.evaluate(() => go('settings'));
   await page.evaluate(() => { document.querySelector('[data-g="look"]').open = true; });
-  await expect(page.locator('#heroBg button.on')).toHaveText(/ตามธีม/);
-  await page.locator('#heroBg [data-v="time"]').click();
-  await expect(page.locator('#heroBg button.on')).toHaveText(/ตามเวลา/);
+  await expect(page.locator('#heroBg')).toHaveValue('theme');
+  await page.locator('#heroBg').selectOption('time');
+  await expect(page.locator('#heroBg')).toHaveValue('time');
   await page.locator('.sky-more summary').click();
   await expect(page.locator('#skyPrev .sk-mini')).toHaveCount(6);
   await expect(page.locator('#skyPrev .sk-mini.now')).toHaveCount(1);
