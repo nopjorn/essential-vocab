@@ -30,6 +30,7 @@ test('fun hub: tiles open their pages, home card and games menu link to it', asy
 
 test('coins: per-device buckets, merge keeps the larger numbers, shop buys an item once, bad data is cleaned', async ({ page }) => {
   const errors = await openApp(page, { ...base, coin: { other: [100, 20], bad: 'x', neg: [-5, 'a'] } });
+  await page.evaluate(() => { window.fqList = () => []; }); // keep today's fun quests from paying extra coins
   expect(await page.evaluate(() => coinBal())).toBe(80);
   await page.evaluate(() => addCoins(50));
   expect(await page.evaluate(() => coinBal())).toBe(130);
@@ -77,6 +78,7 @@ test('tower: right answers clear floors (+coins), wrong ones cost hearts, a run 
 
 test('power-ups: 50:50 hides two wrong options, skip counts as right without touching the card, heart refills', async ({ page }) => {
   const errors = await openApp(page, { ...base, coin: { x: [100, 0] } });
+  await page.evaluate(() => { window.fqList = () => []; }); // keep today's fun quests from paying extra coins
   await page.evaluate(() => runTower(1));
   await expect(page.locator('.q-prompt')).toBeVisible();
   await page.locator('[data-pw="fifty"]').click();
@@ -226,7 +228,7 @@ test('detective: read clues, answer questions, a wrong guess then the right one;
   const errors = await openApp(page, { ...base, cases: { cake: { ok: true, t: 0 }, book: { ok: true, t: 1 } } });
   await page.evaluate(() => { window.fqList = () => []; }); // keep today's fun quests from paying extra coins
   await page.evaluate(() => go('cases'));
-  await expect(page.locator('[data-case]')).toHaveCount(8);
+  await expect(page.locator('[data-case]')).toHaveCount(12);
   await page.locator('[data-case="flowers"]').click();
   await page.locator('#caseNext').click(); // intro → clues
   await page.locator('[data-th="0"]').click();
@@ -286,10 +288,11 @@ test('ghost race: survival shows the best run and saves a new one; time attack g
       if (cz) { const pre = cz.textContent.split('_____')[0]; return words.findIndex((w) => w.e && w.e.startsWith(pre)); }
       return words.findIndex((w) => w.w === window.__said.at(-1));
     });
+    const before = await page.locator('#title').textContent();
     await page.locator('.opt').nth(ok ? k : (k + 1) % 4).click();
     await expect(page.locator('#reveal')).not.toBeEmpty();
     const n = page.locator('#nextQ'); if (await n.count()) await n.click().catch(() => {});
-    await page.waitForTimeout(1000);
+    await expect.poll(async () => (await page.locator('.result-emoji').count()) > 0 || (await page.locator('#title').textContent()) !== before, { timeout: 8000 }).toBe(true); // next question (ข้อ n+1) or the result
   };
   await page.evaluate(() => startGame('survival'));
   await expect(page.locator('#ghN')).toBeVisible();
@@ -375,5 +378,97 @@ test('card sets: a topic\'s picture words all mastered can be claimed once for c
   await page.locator(`[data-claim="${id}"]`).click();
   expect(await page.evaluate(() => [coinBal(), !!S.sets.clothes])).toEqual([50, true]);
   await expect(page.locator(`[data-claim="${id}"]`)).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+/* ---------- 1.122: room, paths, picture story, sentence builder, bedtime, new cases ---------- */
+test('paths data: every choice leads to a node of the same story, every node is reachable, 3+ endings each', async () => {
+  const fs = require('fs'), vm = require('vm'), ctx = { window: {} };
+  vm.runInNewContext(fs.readFileSync(require('path').join(__dirname, '..', 'data', 'paths.js'), 'utf8'), ctx);
+  for (const st of ctx.window.PATHS) {
+    const seen = new Set([st.start]), q = [st.start];
+    for (let k = 0; k < q.length; k++) for (const [en, th, next] of st.nodes[q[k]].ch || []) { expect(st.nodes[next], `${st.id}: ${next}`).toBeTruthy(); expect(en && /[฀-๿]/.test(th)).toBeTruthy(); if (!seen.has(next)) { seen.add(next); q.push(next); } }
+    expect(seen.size, st.id).toBe(Object.keys(st.nodes).length);
+    const ends = Object.values(st.nodes).filter((n) => n.end);
+    expect(ends.length, st.id).toBeGreaterThanOrEqual(3);
+    expect(ends.every((n) => ['good', 'ok', 'bad'].includes(n.end) && n.name)).toBe(true);
+  }
+});
+
+test('room: buy furniture with coins, it appears in the room and says its word; labels toggle; merge adds items', async ({ page }) => {
+  const errors = await openApp(page, { ...base, coin: { x: [100, 0] } });
+  await page.evaluate(() => { window.fqList = () => []; }); // keep today's fun quests from paying extra coins
+  await page.evaluate(() => go('room'));
+  await page.locator('[data-rbuy="lamp"]').click();
+  await expect(page.locator('.room-it[data-rw="lamp"]')).toBeVisible();
+  expect(await page.evaluate(() => [coinBal(), S.room.own])).toEqual([80, ['lamp']]);
+  await page.locator('.room-it[data-rw="lamp"]').click();
+  expect(await page.evaluate(() => window.__said.at(-1))).toBe('lamp');
+  await page.locator('#rmLbl').click();
+  await expect(page.locator('.room.lbl')).toBeVisible();
+  await expect(page.locator('[data-rbuy="piano"]')).toBeEnabled(); // 80 left = the piano's price
+  expect(await page.evaluate(() => { mergeBackup({ room: { own: ['cat', 'lamp', 'BAD!'] } }); return S.room.own; })).toEqual(['lamp', 'cat']);
+  expect(errors).toEqual([]);
+});
+
+test('paths: choices lead to an ending, a new ending pays once, the list counts endings found', async ({ page }) => {
+  const errors = await openApp(page, base);
+  await page.evaluate(() => { window.fqList = () => []; go('paths'); });
+  await page.locator('[data-path="puppy"]').click();
+  await page.locator('[data-next="b"]').click();
+  await page.locator('[data-next="d"]').click();
+  await expect(page.locator('#ptEnd')).toContainText('ลัคกี้ได้กลับบ้าน');
+  expect(await page.evaluate(() => [S.paths.puppy, coinBal()])).toEqual([['d'], 10]);
+  await page.locator('#ptAgain').click();
+  await page.locator('[data-next="b"]').click();
+  await page.locator('[data-next="d"]').click();
+  expect(await page.evaluate(() => coinBal())).toBe(10);
+  await page.locator('#ptList').click();
+  await expect(page.locator('[data-path="puppy"]')).toContainText('1/4');
+  expect(errors).toEqual([]);
+});
+
+test('picture story: needs 4+ words and 2 picture words; a good sentence pays and is kept', async ({ page }) => {
+  const errors = await openApp(page, base);
+  await page.evaluate(() => { window.fqList = () => []; return loadEmoji().then(() => go('pic')); });
+  const ws = await page.evaluate(() => picSet.map((w) => w.w));
+  await page.locator('#pcIn').fill(`I like ${ws[0]}`);
+  await page.locator('#pcForm button[type=submit]').click();
+  await expect(page.locator('#pcMsg')).toContainText('อย่างน้อย 4 คำ');
+  await page.locator('#pcIn').fill(`I see one ${ws[0]} today`);
+  await page.locator('#pcForm button[type=submit]').click();
+  await expect(page.locator('#pcMsg')).toContainText('อย่างน้อย 2 คำ');
+  await page.locator('#pcIn').fill(`My ${ws[0]} and the ${ws[1]} and a ${ws[2]} are here.`);
+  await page.locator('#pcForm button[type=submit]').click();
+  expect(await page.evaluate(() => [coinBal(), S.pics.length, S.pics[0].w.length])).toEqual([10, 1, 3]);
+  await expect(page.locator('.pic-hist')).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
+test('sentence builder: the right order is accepted, a wrong one shows the sentence; decoys never belong to it', async ({ page }) => {
+  const errors = await openApp(page, base);
+  await page.evaluate(() => { window.fqList = () => []; go('build'); });
+  await page.locator('#bdGo').click();
+  const build = async (ok) => {
+    const ks = await page.evaluate((ok) => { const used = new Set(); const ks = buildRun.toks.map((t) => { const k = buildRun.chips.findIndex((c, i) => c === t && !used.has(i)); used.add(k); return k; }); return ok ? ks : ks.slice().reverse(); }, ok);
+    for (const k of ks) await page.locator(`#bdPool [data-p="${k}"]`).click();
+    await page.locator('#bdCheck').click();
+    await expect(page.locator('#reveal')).toContainText(ok ? 'ถูกต้อง' : 'ที่ถูกคือ');
+    await page.locator('#bdCheck').click();
+  };
+  expect(await page.evaluate(() => buildRun.chips.length - buildRun.toks.length)).toBe(2);
+  await build(true);
+  await build(false);
+  expect(await page.evaluate(() => [coinBal(), S.counts.builds])).toEqual([2, 1]);
+  expect(errors).toEqual([]);
+});
+
+test('bedtime: plays 10 recent misses without examples and dims the screen', async ({ page }) => {
+  const errors = await openApp(page, { ...base, miss: { [new Date().toLocaleDateString('en-CA')]: { apple: 2, water: 1 } } });
+  expect(await page.evaluate(() => earMissed().map((w) => w.w))).toEqual(['apple', 'water']);
+  await page.evaluate(() => go('ear'));
+  await page.locator('#earBed').click();
+  await expect(page.locator('#earDimmer')).toBeVisible({ timeout: 4000 });
+  expect(await page.evaluate(() => [earOpt.src, earOpt.ex])).toEqual(['miss', false]);
   expect(errors).toEqual([]);
 });

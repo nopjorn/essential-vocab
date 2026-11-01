@@ -5,7 +5,14 @@
 // Classic script sharing globals with app.js (load order: index.html).
 
 /* ---------- ฟังทบทวน ---------- */
+// Words answered wrong in the last 3 days (S.miss), most missed first (1.122: the bedtime mode uses it).
+function earMissed() {
+  const t = today(), n = {};
+  for (const [d, m] of Object.entries(S.miss || {})) if (dayDiff(t, d) <= 2) for (const [w, k] of Object.entries(m)) n[w] = (n[w] || 0) + k;
+  return Object.keys(n).sort((a, b) => n[b] - n[a]).map((w) => W.find((x) => x.w === w)).filter(Boolean);
+}
 const EAR_SRC = {
+  miss: ['❌', 'คำที่ผิดช่วงนี้ (3 วัน)', earMissed],
   due: ['⏰', 'การ์ดที่ถึงกำหนด', () => dueList().slice(0, 60)],
   learning: ['🟡', 'คำที่กำลังเรียน', () => shuffle(W.filter((w) => status(w) === 'learning'))],
   mastered: ['🟢', 'คำที่จำได้แล้ว', () => shuffle(masteredWords())],
@@ -21,6 +28,7 @@ function renderEar() {
   const seg = (id, vals, cur, fmt) => `<div class="seg" id="${id}" role="group">${vals.map((v) => `<button class="${cur === v ? 'on' : ''}" data-v="${v}" aria-pressed="${cur === v}">${fmt(v)}</button>`).join('')}</div>`;
   view.innerHTML = `<div class="card-box center"><div class="result-emoji" aria-hidden="true">🎧</div><div class="h2" style="margin:2px 0">ฟังทบทวนแบบไม่ต้องดูจอ</div>
       <p class="small muted">แอปพูดคำ รอให้คุณนึกความหมาย แล้วเฉลยเป็นภาษาไทยพร้อมประโยคตัวอย่าง ไปคำถัดไปเอง เหมาะกับตอนเดินทาง จอจะไม่ดับระหว่างฟัง และแตะ 🌙 เพื่อดับจอประหยัดแบตได้ (นับเป็นการฝึก ไม่เปลี่ยนรอบทบทวนของการ์ด)</p></div>
+    <button class="card-box guide-link" id="earBed"><span>🌙</span><div class="grow"><b>ทบทวนก่อนนอน 2 นาที</b><div class="small muted">ฟัง 10 คำที่ผิดช่วงนี้ (ไม่มีก็ใช้คำที่ถึงกำหนด) ไม่อ่านประโยค แล้วดับจอให้เอง</div></div><span class="muted">›</span></button>
     <div class="h2">เลือกคำจาก</div>
     <div class="chips" id="earSrc">${Object.entries(EAR_SRC).map(([k, [ic, name]]) => `<button class="chip${earOpt.src === k ? ' on' : ''}${avail[k] ? '' : ' off'}" data-v="${k}" ${avail[k] ? '' : 'disabled'}>${ic} ${name} <small>${avail[k]}</small></button>`).join('')}</div>
     <div class="set-row"><span>จำนวนคำ</span>${seg('earN', [10, 20, 30], earOpt.n, (v) => v + ' คำ')}</div>
@@ -34,9 +42,18 @@ function renderEar() {
   $('#earGap').onclick = (e) => { const b = e.target.closest('[data-v]'); if (b) { earOpt.gap = +b.dataset.v; renderEar(); } };
   $('#earEx').onchange = (e) => { earOpt.ex = e.target.checked; };
   $('#earTh').onchange = (e) => { earOpt.th = e.target.checked; };
+  $('#earBed').onclick = () => earBedtime();
   $('#earGo').onclick = () => playEar(EAR_SRC[earOpt.src][2]().slice(0, earOpt.n));
 }
-function playEar(list) {
+// 🌙 Bedtime (1.122): 10 recent misses (or due / learning words), no example sentences, the screen dims by itself.
+function earBedtime() {
+  const src = ['miss', 'due', 'learning', 'mastered'].find((k) => EAR_SRC[k][2]().length);
+  if (!src) return toast('ยังไม่มีคำให้ฟัง ลองเรียนแฟลชการ์ดก่อนนะคะ');
+  Object.assign(earOpt, { src, n: 10, gap: 4, ex: false, th: true });
+  if (current !== 'ear') go('ear');
+  playEar(EAR_SRC[src][2]().slice(0, 10), true);
+}
+function playEar(list, bed = false) {
   if (!list.length) return renderEar();
   let i = 0, tok = 0, timer = null, playing = true;
   view.innerHTML = `<div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="earBack">‹ กลับ</button></div>
@@ -106,6 +123,7 @@ function playEar(list) {
     document.body.appendChild(d); d.focus();
   };
   keepAwake();
+  if (bed) setTimeout(() => { const b = $('#earDim'); if (b && current === 'ear') b.click(); }, 1500);
   cleanup = () => { halt(); letSleep(); const d = document.getElementById('earDimmer'); if (d) d.remove(); };
   run();
 }

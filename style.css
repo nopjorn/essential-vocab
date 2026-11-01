@@ -1926,3 +1926,27 @@ button.sus:active { transform: scale(.97); }
 .set-pics { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 3px; }
 .set-pics i { font-style: normal; font-size: 16px; opacity: .25; filter: grayscale(1); }
 .set-pics i.on { opacity: 1; filter: none; }
+
+/* ---------- 1.122: room, paths, picture story, sentence builder ---------- */
+.room { position: relative; width: 100%; aspect-ratio: 10 / 7; border-radius: 22px; overflow: hidden; border: 2px solid var(--border);
+  background: linear-gradient(180deg, #fde9d0 0%, #fbe0c0 58%, #c99a6b 58%, #b8865a 100%); }
+:root[data-theme="dark"] .room, :root[data-theme="black"] .room { background: linear-gradient(180deg, #3a3150 0%, #332a48 58%, #5a4330 58%, #4a3626 100%); }
+.room-m { position: absolute; left: 50%; top: 74%; transform: translate(-50%, -50%); }
+.room-it { position: absolute; transform: translate(-50%, -50%); border: 0; background: none; padding: 0; line-height: 1; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
+.room-it small { display: none; font-size: 11px; font-weight: 700; background: rgba(255, 255, 255, .92); color: #2b2350; border-radius: 6px; padding: 1px 5px; margin-top: 2px; }
+.room.lbl .room-it small { display: block; }
+.room-it.bounce { animation: roompop .35s ease-out; }
+@keyframes roompop { 40% { transform: translate(-50%, -50%) scale(1.25); } 100% { transform: translate(-50%, -50%); } }
+.path-en { font-size: 18px; line-height: 1.6; margin: 8px 0; }
+.path-ch { display: grid; gap: 8px; }
+.path-opt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
+.path-opt small { font-size: var(--fs-xs); }
+.pic-row { display: flex; justify-content: center; gap: 10px; margin: 10px 0 4px; }
+.pic-card { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 86px; padding: 10px 4px; border: 2px solid var(--border); border-radius: 18px; background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
+.pic-card span { font-size: 42px; line-height: 1.1; }
+.pic-card small { font-weight: 700; }
+#pcIn { width: 100%; min-height: 76px; resize: vertical; font: inherit; }
+.pic-hist { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; }
+.pic-hist + .pic-hist { border-top: 1px solid var(--border); }
+.bd-ans { min-height: 58px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.bd-pool { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 10px 0; }

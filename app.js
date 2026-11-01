@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.121.0';
+const APP_VERSION = '1.122.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -211,6 +211,9 @@ const defaults = () => ({
   coin: {},            // fun zone coins (1.115): device id -> [earned, spent]; balance = coinBal() (js/fun.js)
   puz: { d: '', cw: [], rv: [], lad: [], ladDone: false, ladGave: false, streak: 0, best: 0, last: '', n: 0 }, // daily puzzles (1.119, js/puzzle.js)
   fq: { d: '', c: {}, got: [] }, // daily fun-zone quests (1.121): day, counts per event type, quest indexes done (js/fun.js)
+  room: { own: [] },   // น้องคำ's room (1.122): furniture / pets bought (list words) (js/room.js)
+  paths: {},           // choose-your-path stories (1.122): story id -> [ending ids found] (js/paths.js)
+  pics: [],            // picture-story sentences (1.122): [{ t, w: [words], d }] newest first (js/create.js)
   sets: {},            // card sets claimed in the album (1.121): topic -> date (js/collect.js)
   cases: {},           // detective cases (1.120): id -> { ok: solved, t: wrong guesses } (js/cases.js)
   cafe: { best: 0, total: 0 }, // ร้านน้องคำ (1.120): most guests served in a day, guests served in total (js/cafe.js)
@@ -279,7 +282,7 @@ function load() {
       if (!r.evt || typeof r.evt !== 'object' || Array.isArray(r.evt)) r.evt = {};
       r.adv = cleanAdv(r.adv);
       r.coin = cleanCoin(r.coin); r.tower = cleanTower(r.tower); r.puz = cleanPuz(r.puz); r.foil = cleanFoil(r.foil);
-      r.fq = cleanFq(r.fq); r.sets = cleanFoil(r.sets);
+      r.fq = cleanFq(r.fq); r.sets = cleanFoil(r.sets); r.room = cleanRoom(r.room); r.paths = cleanPaths(r.paths); r.pics = cleanPics(r.pics);
       r.cases = cleanCases(r.cases); r.cafe = cleanCafe(r.cafe); r.ghost = cleanGhost(r.ghost);
       if (!r.box || typeof r.box !== 'object') r.box = d.box;
       if (!r.riddle || typeof r.riddle !== 'object' || !Array.isArray(r.riddle.g)) r.riddle = d.riddle;
@@ -444,6 +447,9 @@ function mergeBackup(d) {
   }
   if (d.fq) { const o = cleanFq(d.fq); if (o.d > S.fq.d) S.fq = o; else if (o.d === S.fq.d) { for (const [k, v] of Object.entries(o.c)) S.fq.c[k] = Math.max(S.fq.c[k] || 0, v); S.fq.got = [...new Set([...S.fq.got, ...o.got])]; } }
   Object.assign(S.sets, cleanFoil(d.sets), S.sets);
+  S.room = { own: [...new Set([...S.room.own, ...cleanRoom(d.room).own])] };
+  for (const [k, v] of Object.entries(cleanPaths(d.paths))) S.paths[k] = [...new Set([...(S.paths[k] || []), ...v])];
+  { const seen = new Set(); S.pics = [...S.pics, ...cleanPics(d.pics)].sort((a, b) => (a.d < b.d ? 1 : a.d > b.d ? -1 : 0)).filter((p) => !seen.has(p.t) && seen.add(p.t)).slice(0, 30); }
   if (d.box && d.box.date && d.box.date > (S.box.date || '')) S.box = d.box;
   if (d.wnew && d.wnew.key) {
     if (d.wnew.key > (S.wnew.key || '')) S.wnew = d.wnew; else if (d.wnew.key === S.wnew.key) S.wnew.n = Math.max(S.wnew.n, d.wnew.n || 0);
@@ -541,6 +547,13 @@ function cleanTower(t) {
   if (t.wk && typeof t.wk === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(t.wk.k || '')) out.wk = { k: t.wk.k, best: n(t.wk.best) }; // weekly special tower (1.121)
   return out;
 }
+function cleanRoom(r) { return { own: [...new Set((r && Array.isArray(r.own) ? r.own : []).filter((w) => typeof w === 'string' && /^[a-z ]{2,20}$/.test(w)))] }; }
+function cleanPaths(p) {
+  const out = {};
+  if (p && typeof p === 'object' && !Array.isArray(p)) for (const [k, v] of Object.entries(p)) if (/^[a-z0-9]{1,20}$/.test(k) && Array.isArray(v)) out[k] = [...new Set(v.filter((x) => typeof x === 'string' && x.length < 20))];
+  return out;
+}
+function cleanPics(a) { return (Array.isArray(a) ? a : []).filter((p) => p && typeof p.t === 'string' && Array.isArray(p.w) && typeof p.d === 'string').map((p) => ({ t: p.t.slice(0, 200), w: p.w.filter((x) => typeof x === 'string').slice(0, 3), d: p.d })).slice(0, 30); }
 function cleanFq(q) {
   const ok = q && typeof q === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(q.d || '');
   if (!ok) return { d: '', c: {}, got: [] };
@@ -833,8 +846,10 @@ const ACH = [
   { id: 'sFoil', icon: '✨', name: 'นักสะสมฟอยล์', desc: 'มีการ์ดฟอยล์ 25 ใบ', secret: true, ok: (s) => s.foil >= 25 },
   { id: 'sBloom', icon: '🌸', name: 'สวนดอกไม้บาน', desc: 'มีต้นไม้ในสวนคำศัพท์ออกดอก 1 ต้น', secret: true, ok: (s) => s.bloom },
   { id: 'case3', icon: '🕵️', name: 'นักสืบฝีมือดี', desc: 'ไขคดีนักสืบได้ 3 คดี', ok: (s) => s.cases >= 3 },
-  { id: 'sCases', icon: '🔎', name: 'เชอร์ล็อกตัวน้อย', desc: 'ไขคดีนักสืบครบทุกคดี', secret: true, ok: (s) => s.cases >= 8 },
+  { id: 'sCases', icon: '🔎', name: 'เชอร์ล็อกตัวน้อย', desc: 'ไขคดีนักสืบครบทุกคดี (12 คดี)', secret: true, ok: (s) => s.cases >= 12 },
   { id: 'sCafe', icon: '🍜', name: 'ร้านเต็มทุกโต๊ะ', desc: 'ร้านน้องคำเสิร์ฟครบ 8 คนในวันเดียว', secret: true, ok: (s) => s.cafeBest >= 8 },
+  { id: 'sPaths', icon: '📖', name: 'นักอ่านทุกทางแยก', desc: 'เจอตอนจบนิยายเลือกทางครบทุกแบบ', secret: true, ok: (s) => s.paths >= 12 },
+  { id: 'sRoom', icon: '🏠', name: 'บ้านในฝัน', desc: 'แต่งห้องน้องคำครบทุกชิ้น', secret: true, ok: (s) => s.room >= 21 },
   { id: 'sF13', icon: '🐈‍⬛', name: 'ไม่กลัวโชคร้าย', desc: 'เรียนในวันศุกร์ที่ 13', secret: true, ok: (s) => s.f13 },
   { id: 'sSpeed', icon: '⚡', name: 'สายฟ้าแลบ', desc: 'จับเวลา 60 วินาทีตอบถูก 30 ข้อ', secret: true, ok: (s) => s.speed >= 30 },
   { id: 'comeback', icon: '🦋', name: 'กลับมาอีกครั้ง', desc: 'กลับมาเรียนหลังหายไปเกิน 30 วัน', secret: true, ok: (s) => s.comeback },
@@ -868,6 +883,7 @@ function checkAch() {
     early: S.counts.early, owl: S.counts.owl, newyear: S.counts.newyear, comeback: S.counts.comeback,
     allGames: typeof GAMES !== 'undefined' && Object.keys(GAMES).every((g) => gamePlays(g) > 0 || (!canListen && /^speak/.test(g))),
     lt: Object.fromEntries(LEVELS.map((l) => [l, ((m) => !!(m && m.n && m.r / m.n >= 0.8))(S.ltest[l])])),
+    paths: Object.values(S.paths || {}).reduce((n, a) => n + a.length, 0), room: ((S.room || {}).own || []).length,
     cases: Object.values(S.cases || {}).filter((c) => c && c.ok).length, cafeBest: (S.cafe && S.cafe.best) || 0,
     puz: (S.puz && S.puz.best) || 0, foil: Object.keys(S.foil || {}).length, bloom: typeof plantOf === 'function' && TOPICS.some(([id]) => plantOf(id).stage === 5),
     tower: (S.tower && S.tower.best) || 0, maxCoin: S.counts.maxCoin || 0, buys: S.counts.buys || 0, f13: S.counts.f13, speed: S.best.timeAttack || 0,
@@ -1567,7 +1583,7 @@ function sectionize(box, brk) {
 /* ---------- router ---------- */
 let current = 'home';
 let cleanup = null;
-const TITLES = { cases: 'คดีนักสืบ', cafe: 'ร้านน้องคำ', puzzle: 'ปริศนาประจำวัน', album: 'อัลบั้มการ์ด', garden: 'สวนคำศัพท์', fun: 'โซนสนุก', tower: 'หอคอยไม่รู้จบ', coinshop: 'ร้านค้าเหรียญ', adv: 'ผจญภัยสัปดาห์', ear: 'ฟังทบทวน', wsearch: 'ค้นหาคำในตาราง', map: 'แผนที่ด่าน', duel: 'ท้าดวลเพื่อน', event: 'กิจกรรมเทศกาล', mascot: 'น้องคำ', year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
+const TITLES = { room: 'ห้องของน้องคำ', paths: 'นิยายเลือกทาง', pic: 'เล่าภาพ', build: 'ต่อคำเป็นประโยค', cases: 'คดีนักสืบ', cafe: 'ร้านน้องคำ', puzzle: 'ปริศนาประจำวัน', album: 'อัลบั้มการ์ด', garden: 'สวนคำศัพท์', fun: 'โซนสนุก', tower: 'หอคอยไม่รู้จบ', coinshop: 'ร้านค้าเหรียญ', adv: 'ผจญภัยสัปดาห์', ear: 'ฟังทบทวน', wsearch: 'ค้นหาคำในตาราง', map: 'แผนที่ด่าน', duel: 'ท้าดวลเพื่อน', event: 'กิจกรรมเทศกาล', mascot: 'น้องคำ', year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
 function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
@@ -1581,7 +1597,7 @@ function go(tab, ...args) {
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab || (tab === 'decks' && !wide && b.dataset.tab === 'list')));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, ear: renderEar, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, mascot: renderMascot, event: renderEvent, riddle: renderRiddle, duel: renderDuel, map: renderMap, wsearch: renderWSearch, decks: renderDecks, adv: renderAdventure, fun: renderFun, tower: renderTower, coinshop: renderCoinShop, puzzle: renderPuzzle, album: renderAlbum, garden: renderGarden, cases: renderCases, cafe: renderCafe }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, ear: renderEar, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, mascot: renderMascot, event: renderEvent, riddle: renderRiddle, duel: renderDuel, map: renderMap, wsearch: renderWSearch, decks: renderDecks, adv: renderAdventure, fun: renderFun, tower: renderTower, coinshop: renderCoinShop, puzzle: renderPuzzle, album: renderAlbum, garden: renderGarden, cases: renderCases, cafe: renderCafe, room: renderRoom, paths: renderPaths, pic: renderPic, build: renderBuild }[tab])(...args);
   updateStreak();
   const a = TAB_ORDER.indexOf(prev), b = TAB_ORDER.indexOf(tab);
   animView(a < 0 || b < 0 || a === b ? 'vin' : b > a ? 'vin-l' : 'vin-r');
