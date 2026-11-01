@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.127.0';
+const APP_VERSION = '1.128.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1182,6 +1182,18 @@ function levelUpScreen(L, before = L - 1) {
   const b = el.querySelector('[data-close]'); if (b) b.focus({ preventScroll: true });
 }
 
+// "จำได้แล้ว!" (1.128): a golden pill at the top with a shine, never blocks taps. Several in a row are counted in one pill.
+let mstTimer = null, mstN = 0;
+function masteredMoment(w) {
+  let el = document.querySelector('.mst-pop');
+  mstN = el ? mstN + 1 : 1;
+  if (!el) { el = document.createElement('div'); el.className = 'mst-pop'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+  el.classList.remove('out');
+  el.innerHTML = `<span class="mst-ic" aria-hidden="true">✨</span><div>จำได้แล้ว!<small lang="en">${esc(w.w)}${mstN > 1 ? ` <span lang="th">และอีก ${mstN - 1} คำ</span>` : ''}</small></div>`;
+  if (S.settings.sfx) setTimeout(() => sfx('ok'), 120);
+  clearTimeout(mstTimer);
+  mstTimer = setTimeout(() => { el.classList.add('out'); setTimeout(() => { if (el.classList.contains('out')) el.remove(); }, 320); }, 2200);
+}
 let toastTimer;
 // Settings-style rows (<div class="set-row"><span>label</span> … control): give unlabelled controls the row text as their name.
 function labelRows(root) {
@@ -1506,6 +1518,7 @@ function grade(w, g, map = S.prog) {
   } else S.daily.reviews++;
   if (main && p && (p.s || 0) > 0 && p.d <= Date.now()) retLog(ivlOf(p), g > 0); // a card that was due: did it come back?
   const n = sched(p, g);
+  if (main && g > 0 && p && p.b < MASTERED && n.b >= MASTERED) masteredMoment(w); // 1.128: the moment a word becomes "จำได้แล้ว"
   map[w.w] = {
     b: n.b, i: n.i, e: n.e,
     d: dueAt(n.i),
@@ -1679,7 +1692,9 @@ function withLoading(p) {
 }
 function updateStreak() {
   const el = $('#streak'), L = levelOf(S.xp);
-  el.textContent = '🔥 ' + streakNow() + (S.freeze ? ' · 🧊' + S.freeze : '') + ' · Lv.' + L;
+  const n = streakNow(), fl = n >= 100 ? 4 : n >= 30 ? 3 : n >= 7 ? 2 : n >= 1 ? 1 : 0; // flame: none / small / big / purple / blue (1.128)
+  el.innerHTML = `<span class="flame fl${fl}" aria-hidden="true">🔥</span> ${n}${S.freeze ? ' · 🧊' + S.freeze : ''} · Lv.${L}`;
+  el.setAttribute('aria-label', `สตรีค ${n} วัน${S.freeze ? ` ตัวกันสตรีค ${S.freeze}` : ''} เลเวล ${L} ดูสถิติ`);
   el.style.setProperty('--xp', Math.min(100, Math.max(0, ((S.xp || 0) - levelStart(L)) / (50 * L) * 100)) + '%'); // progress to the next level
 }
 view.addEventListener('click', (e) => { const g = e.target.closest('[data-go]'); if (g) vtRun(() => go(g.dataset.go, g.dataset.year)); });

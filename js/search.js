@@ -36,7 +36,7 @@ function gsSearch(q) {
   // pages: every tab-bar / sidebar entry (read from the DOM, so a new page there is found automatically) + the extras
   const pages = [...document.querySelectorAll('#tabbar button[data-tab], #tabbar button[data-ref]')].map((b) => {
     const sp = b.querySelectorAll('span'), key = b.dataset.tab ? 't:' + b.dataset.tab : 'r:' + b.dataset.ref;
-    return { ic: sp[0] ? sp[0].textContent : '', t: sp[1] ? sp[1].textContent : '', kw: b.dataset.tab || b.dataset.ref, key, btn: b };
+    return { ic: sp[0] ? sp[0].dataset.ic || sp[0].textContent : '', t: sp[1] ? sp[1].textContent : '', kw: b.dataset.tab || b.dataset.ref, key, btn: b };
   }).concat(GS_EXTRA.map(([ic, t, kw, route]) => ({ ic, t, kw: kw + ' ' + route, key: 'x:' + route, route })));
   if (!q) { out.pages = pages.slice(0, 8); return out; }
   for (const p of pages) { const r = Math.min(...[gsRank(p.t, q), gsRank(p.kw, q)].map((x) => (x < 0 ? 9 : x))); if (r < 9) out.pages.push({ ...p, r }); }

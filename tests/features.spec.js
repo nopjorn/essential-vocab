@@ -1883,3 +1883,20 @@ test('1.126: Thai dates hand-formatted like Intl, guide counts the secret medals
   expect(await page.evaluate(() => JSON.stringify(GUIDE))).toContain(`เหรียญลับ</b> ${n} เหรียญ`);
   expect(errors).toEqual([]);
 });
+
+test('1.128: drawn tab icons (search still shows the emoji), golden "จำได้แล้ว" pill, streak flame grows', async ({ page }) => {
+  const t = new Date().toISOString().slice(0, 10);
+  const errors = await openApp(page, { streak: { last: t, count: 35 } });
+  await expect(page.locator('.tabbar button[data-tab] .tic')).toHaveCount(6);
+  await expect(page.locator('#streak .flame.fl3')).toHaveCount(1);
+  await expect(page.locator('#streak')).toContainText('35');
+  expect(await page.evaluate(() => { const r = gsSearch('ตั้งค่า'); return r.pages.some((p) => p.ic === '⚙️'); })).toBe(true);
+  // crossing into mastered shows the pill, a plain review does not
+  await page.evaluate(() => { const w = W.find((x) => x.w === 'house'); S.prog.house = { b: 3, i: 9, e: 2.5, d: Date.now() - 1000, s: 4, c: 4, x: 0, st: 12, df: 5, lr: Date.now() - 12 * 864e5 }; grade(w, 3); });
+  if (await page.evaluate(() => S.prog.house.b >= MASTERED)) await expect(page.locator('.mst-pop')).toContainText('house');
+  await page.evaluate(() => { document.querySelectorAll('.mst-pop').forEach((x) => x.remove()); const w = W.find((x) => x.w === 'table'); S.prog.table = { b: 1, i: 1, e: 2.5, d: Date.now(), s: 1, c: 1, x: 0 }; grade(w, 2); });
+  await expect(page.locator('.mst-pop')).toHaveCount(0);
+  await page.evaluate(() => { S.streak = { last: '2000-01-01', count: 0 }; updateStreak(); });
+  await expect(page.locator('#streak .flame.fl0')).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
