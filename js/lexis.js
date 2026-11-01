@@ -73,7 +73,7 @@ function renderPhrasal() {
   };
   paint();
   $('#pvq').oninput = (e) => { pvQuery = e.target.value; paint(); };
-  $('#pvBack').onclick = () => go('games');
+  $('#pvBack').onclick = () => go('ref');
   $('#pvPlay').onclick = () => startGame('phrasal');
   $('#pvList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
 }
@@ -159,7 +159,7 @@ function renderIdioms() {
   };
   paint();
   $('#idq').oninput = (e) => { idQuery = e.target.value; paint(); };
-  $('#idBack').onclick = () => go('games');
+  $('#idBack').onclick = () => go('ref');
   $('#idPlay').onclick = () => startGame('idiom');
   $('#idList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
 }
@@ -184,7 +184,7 @@ function renderSit(id) {
     view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="sitBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="sitPlay">🗨️ เล่นเกม</button></div>
       <p class="small muted" style="margin:0 4px 10px">${SIT.length} สถานการณ์ที่เจอบ่อย แต่ละเรื่องมีคำ/วลีสำคัญและบทสนทนาสั้นๆ ให้ฟังและพูดตาม</p>
       <div class="sit-grid" id="sitList">${SIT.map((x) => `<button class="sit-tile" data-sit="${x.id}"><span class="sit-ic">${x.icon}</span><b>${esc(x.th)}</b><small class="muted" lang="en">${esc(x.en)}</small></button>`).join('')}</div>`;
-    $('#sitBack').onclick = () => go('games');
+    $('#sitBack').onclick = () => go('ref');
     $('#sitPlay').onclick = () => startGame('sit');
     $('#sitList').onclick = (e) => { const b = e.target.closest('[data-sit]'); if (b) renderSit(b.dataset.sit); };
     return;
@@ -393,7 +393,7 @@ function renderSyn() {
   };
   paint();
   $('#synq').oninput = (e) => { synQuery = e.target.value; paint(); };
-  $('#synBack').onclick = () => go('games');
+  $('#synBack').onclick = () => go('ref');
   $('#synPlay').onclick = () => startGame('syn');
   $('#synList').onclick = (e) => {
     const b = e.target.closest('[data-col]'); if (!b) return;
@@ -444,7 +444,7 @@ function renderAffix() {
   };
   paint();
   $('#afq').oninput = (e) => { affixQuery = e.target.value; paint(); };
-  $('#afBack').onclick = () => go('games');
+  $('#afBack').onclick = () => go('ref');
   $('#afPlay').onclick = () => startGame('affix');
   $('#afList').onclick = (e) => { const b = e.target.closest('[data-col]'); if (b) speak(b.dataset.col); };
 }

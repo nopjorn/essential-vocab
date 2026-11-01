@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.126.1';
+const APP_VERSION = '1.127.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -193,7 +193,7 @@ function sanitizeDecks(r) {
 }
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, exam: { date: '', name: '' }, fest: true, season: true, sfxPack: 'chime', qMascot: true, headFont: true, glassBar: true, fsz: 'md', appKbd: 'auto', shareTpl: 'classic', palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, exam: { date: '', name: '' }, fest: true, season: true, sfxPack: 'chime', qMascot: true, headFont: true, glassBar: true, fsz: 'md', appKbd: 'auto', shareTpl: 'classic', palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], gameView: 'list', gameFold: [], riddleLv: ['A1', 'A2'] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -1627,7 +1627,7 @@ function sectionize(box, brk) {
 /* ---------- router ---------- */
 let current = 'home', firstGo = true;
 let cleanup = null;
-const TITLES = { room: 'ห้องของน้องคำ', paths: 'นิยายเลือกทาง', pic: 'เล่าภาพ', build: 'ต่อคำเป็นประโยค', cases: 'คดีนักสืบ', cafe: 'ร้านน้องคำ', puzzle: 'ปริศนาประจำวัน', album: 'อัลบั้มการ์ด', garden: 'สวนคำศัพท์', fun: 'โซนสนุก', tower: 'หอคอยไม่รู้จบ', coinshop: 'ร้านค้าเหรียญ', adv: 'ผจญภัยสัปดาห์', ear: 'ฟังทบทวน', wsearch: 'ค้นหาคำในตาราง', map: 'แผนที่ด่าน', duel: 'ท้าดวลเพื่อน', event: 'กิจกรรมเทศกาล', mascot: 'น้องคำ', year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
+const TITLES = { ref: 'คลังความรู้', room: 'ห้องของน้องคำ', paths: 'นิยายเลือกทาง', pic: 'เล่าภาพ', build: 'ต่อคำเป็นประโยค', cases: 'คดีนักสืบ', cafe: 'ร้านน้องคำ', puzzle: 'ปริศนาประจำวัน', album: 'อัลบั้มการ์ด', garden: 'สวนคำศัพท์', fun: 'โซนสนุก', tower: 'หอคอยไม่รู้จบ', coinshop: 'ร้านค้าเหรียญ', adv: 'ผจญภัยสัปดาห์', ear: 'ฟังทบทวน', wsearch: 'ค้นหาคำในตาราง', map: 'แผนที่ด่าน', duel: 'ท้าดวลเพื่อน', event: 'กิจกรรมเทศกาล', mascot: 'น้องคำ', year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
 function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
@@ -1638,10 +1638,10 @@ function go(tab, ...args) {
   view.dataset.route = tab; // CSS uses this for wide (iPad/landscape) layouts
   // the sets page sits under the word list: on a phone the "คำศัพท์" tab stays lit, on the iPad rail its own item does
   const wide = matchMedia('(min-width: 700px)').matches;
-  document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab || (tab === 'decks' && !wide && b.dataset.tab === 'list')));
+  document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab || (tab === 'decks' && !wide && b.dataset.tab === 'list') || (tab === 'ref' && b.dataset.tab === 'games')));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   view.scrollTop = 0;
-  ({ home: renderHome, cards: renderCards, ear: renderEar, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, mascot: renderMascot, event: renderEvent, riddle: renderRiddle, duel: renderDuel, map: renderMap, wsearch: renderWSearch, decks: renderDecks, adv: renderAdventure, fun: renderFun, tower: renderTower, coinshop: renderCoinShop, puzzle: renderPuzzle, album: renderAlbum, garden: renderGarden, cases: renderCases, cafe: renderCafe, room: renderRoom, paths: renderPaths, pic: renderPic, build: renderBuild }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, ear: renderEar, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, mascot: renderMascot, event: renderEvent, riddle: renderRiddle, duel: renderDuel, map: renderMap, wsearch: renderWSearch, decks: renderDecks, adv: renderAdventure, fun: renderFun, tower: renderTower, coinshop: renderCoinShop, puzzle: renderPuzzle, album: renderAlbum, garden: renderGarden, cases: renderCases, cafe: renderCafe, room: renderRoom, paths: renderPaths, pic: renderPic, build: renderBuild, ref: renderRef }[tab])(...args);
   updateStreak();
   if (firstGo) { firstGo = false; return; } // the first screen at start-up just appears: no fade, no forced layout before the first paint (1.126)
   const a = TAB_ORDER.indexOf(prev), b = TAB_ORDER.indexOf(tab);
@@ -1688,20 +1688,23 @@ document.addEventListener('click', (e) => { const b = e.target.closest('[data-sl
 const slowBtn = (text, label = 'ฟังช้า') => `<button class="slow-btn" data-slow="${esc(text)}" aria-label="ฟังช้าๆ">🐢 ${label}</button>`;
 $('#streak').addEventListener('click', () => { if (current !== 'stats') go('stats', 'home'); });
 // Sub pages carry their own "‹ กลับ" button (id ending in Back); mirror it in the top bar and hide the in-page one.
-// Gaining a back button = a sub page opened (push); losing it = went back (pop).
+// Going deeper = a sub page opened (push); shallower = went back (pop). Depth: no back button 0, a back button with
+// data-depth (the คลังความรู้ page, 1.127) that value, any other back button 2.
+let backDepth = 0;
 new MutationObserver(() => {
-  const had = document.body.classList.contains('has-back'), has = !!view.querySelector('[id$="Back"]');
-  document.body.classList.toggle('has-back', has);
-  if (has !== had) animView(has ? 'vin-push' : 'vin-pop');
+  const b = view.querySelector('[id$="Back"]'), d = !b ? 0 : +(b.dataset.depth || 2);
+  document.body.classList.toggle('has-back', !!b);
+  if (d !== backDepth) animView(d > backDepth ? 'vin-push' : 'vin-pop');
+  backDepth = d;
 }).observe(view, { childList: true });
 $('#topBack').addEventListener('click', () => { const b = view.querySelector('[id$="Back"]'); if (b) b.click(); });
-// iPad sidebar extras: reference pages live under the games screen, so open games first (their ‹ กลับ returns there).
+// iPad sidebar extras: reference pages live under the คลังความรู้ page (route 'ref', 1.127), so open it first (their ‹ กลับ returns there).
 const REF_PAGES = { pairs: () => renderPairs(), fams: () => renderFamilies(), syn: () => renderSyn(), affix: () => renderAffix(), roots: () => renderRoots(), ukus: () => renderUkUs(), phrasal: () => renderPhrasal(), idiom: () => renderIdioms(), sit: () => renderSit(), irr: () => renderIrregular(), dprep: () => renderDepPrep(), mis: () => renderMistakes(), gpat: () => renderGramPat(), ipa: () => renderIpa() };
 $('#tabbar').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   if (!b.dataset.ref) return vtRun(() => go(b.dataset.tab));
   vtRun(() => {
-    go('games'); REF_PAGES[b.dataset.ref]();
+    go('ref'); REF_PAGES[b.dataset.ref]();
     document.querySelectorAll('.tabbar button').forEach((x) => x.classList.toggle('active', x === b));
   });
 });

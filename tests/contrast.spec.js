@@ -3,7 +3,7 @@
 const { test, expect } = require('@playwright/test');
 const { openApp } = require('./helpers');
 
-const ROUTES = ['home', 'cards', 'games', 'list', 'stats', 'settings', 'guide', 'read', 'mascot', 'decks', 'adv', 'fun', 'tower', 'coinshop', 'puzzle', 'album', 'garden', 'cases', 'cafe', 'room', 'paths', 'pic', 'build', 'map', 'riddle', 'changelog'];
+const ROUTES = ['home', 'cards', 'games', 'list', 'stats', 'settings', 'guide', 'read', 'mascot', 'decks', 'adv', 'fun', 'tower', 'coinshop', 'puzzle', 'album', 'garden', 'cases', 'cafe', 'room', 'paths', 'pic', 'build', 'map', 'riddle', 'changelog', 'ref'];
 const REFS = ['pairs', 'fams', 'syn', 'affix', 'roots', 'ukus', 'phrasal', 'idiom', 'sit', 'irr', 'dprep', 'mis', 'gpat', 'ipa'];
 const now = Date.now();
 const prog = {};
@@ -58,7 +58,7 @@ for (const theme of ['dark', 'light']) {
     const bad = {};
     const check = async (name) => { await page.waitForTimeout(150); const v = await page.evaluate(scan); if (v.length) bad[name] = v; };
     for (const r of ROUTES) { await page.evaluate((r) => go(r), r); await check(r); }
-    for (const r of REFS) { await page.evaluate((r) => { go('games'); REF_PAGES[r](); }, r); await check('ref:' + r); }
+    for (const r of REFS) { await page.evaluate((r) => { go('ref'); REF_PAGES[r](); }, r); await check('ref:' + r); }
     await page.evaluate(() => openSheet(W.find((w) => w.w === 'decide'))); await check('sheet'); await page.keyboard.press('Escape');
     await page.evaluate(() => openSearch()); await page.evaluate(() => { document.querySelector('#gsq').value = 'a'; document.querySelector('#gsq').dispatchEvent(new Event('input')); }); await check('search');
     const lines = Object.entries(bad).map(([k, v]) => `${k}: ` + v.map((x) => `${x.sel} "${x.text}" ${x.ratio}`).slice(0, 8).join(' | '));

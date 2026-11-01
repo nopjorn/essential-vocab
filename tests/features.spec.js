@@ -57,7 +57,7 @@ test('story reader: slow toggle and shadowing mode (play, next, prev, hide, back
 
 test('phrasal verbs: browser, word sheet box, game with right and wrong answers', async ({ page }) => {
   const errors = await openApp(page, { settings: { levels: ['A1'] } });
-  await page.evaluate(() => go('games'));
+  await page.evaluate(() => go('ref'));
   await page.locator('#toPV').click();
   await expect(page.locator('#pvList .pair-card').first()).toBeVisible();
   await page.locator('#pvq').fill('เลิก');
@@ -99,7 +99,7 @@ test('synonyms: every question has exactly one listed answer; browser, sheet box
     return out;
   }));
   expect(problems).toEqual([]);
-  await page.evaluate(() => go('games'));
+  await page.evaluate(() => go('ref'));
   await page.locator('#toSyn').click();
   await page.locator('#synq').fill('ใหญ่');
   await expect(page.locator('#synList')).toContainText('enormous');
@@ -130,7 +130,7 @@ test('synonyms: every question has exactly one listed answer; browser, sheet box
 
 test('word parts: browser, word sheet box, game with right and wrong answers', async ({ page }) => {
   const errors = await openApp(page, { settings: { levels: ['A1'] } });
-  await page.evaluate(() => go('games'));
+  await page.evaluate(() => go('ref'));
   await page.locator('#toAf').click();
   await expect(page.locator('#afList')).toContainText('un-');
   await page.locator('#afq').fill('less');
@@ -275,6 +275,8 @@ test('iPad sidebar (portrait + landscape): extra shortcuts only in the sidebar, 
   await expect(page.locator('#pvList')).toBeVisible();
   await expect(page.locator('.tabbar [data-ref="phrasal"]')).toHaveClass(/active/);
   await page.locator('#topBack').click();
+  await expect(page.locator('.ref-tile').first()).toBeVisible(); // back lands on the คลังความรู้ page (1.127)
+  await page.locator('#topBack').click();
   await expect(page.locator('[data-game]').first()).toBeVisible();
   await page.locator('.tabbar [data-ref="syn"]').click();
   await expect(page.locator('#title')).not.toHaveText('ศัพท์ต้องรู้');
@@ -295,7 +297,11 @@ test('page animations: tabs slide by side, sub pages push / pop; slow data shows
   await expect(page.locator('#pBack')).toBeAttached();
   expect(await anim()).toBe('vin-push');
   await page.locator('#topBack').click();
-  expect(await anim()).toBe('vin-pop');
+  expect(await anim()).toBe('vin-pop'); // to the คลังความรู้ page
+  await expect(page.locator('#refBack')).toBeAttached();
+  await page.evaluate(() => renderSyn());
+  await expect(page.locator('#synBack')).toBeAttached();
+  expect(await anim()).toBe('vin-push');
   // phrasal.js answers slowly → skeleton, then the list
   await page.route('**/data/phrasal.js*', async (r) => { await new Promise((s) => setTimeout(s, 700)); r.continue(); });
   await page.evaluate(() => renderPhrasal());
@@ -364,7 +370,7 @@ test('settings: a 1.39.1 save with animations off turns all three switches off',
 
 test('idioms: browser search, word sheet box, both question kinds with right and wrong answers', async ({ page }) => {
   const errors = await openApp(page, { settings: { levels: ['A1'] } });
-  await page.evaluate(() => go('games'));
+  await page.evaluate(() => go('ref'));
   await page.locator('#toId').click();
   await expect(page.locator('#idList .pair-card').first()).toBeVisible();
   await page.locator('#idq').fill('ง่ายมาก');
@@ -400,7 +406,7 @@ test('idioms: browser search, word sheet box, both question kinds with right and
 
 test('situations: list, detail with phrases and full dialogue playback, reply game', async ({ page }) => {
   const errors = await openApp(page, { settings: { levels: ['A1'] } });
-  await page.evaluate(() => go('games'));
+  await page.evaluate(() => go('ref'));
   await page.locator('#toSit').click();
   await expect(page.locator('.sit-tile').first()).toBeVisible(); // situations.js is lazy-loaded
   await expect(page.locator('.sit-tile')).toHaveCount(await page.evaluate(() => SIT.length));
@@ -1769,6 +1775,50 @@ test('games menu by skill (1.106): every game is in exactly one group, chips fil
   expect(errors).toEqual([]);
 });
 
+
+test('games menu layout (1.127): list view by default, card toggle, folding skill groups, shortcuts and the คลังความรู้ page', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => go('games'));
+  const view = page.locator('#view');
+  // list view by default; the toggle switches to cards and is remembered in settings
+  await expect(view.locator('.game-grid.list [data-game="listen"]')).toBeVisible();
+  await view.locator('#gView').click();
+  await expect(view.locator('.game-grid.list')).toHaveCount(0);
+  await expect(view.locator('.game-grid [data-game="listen"]')).toBeVisible();
+  expect(await page.evaluate(() => S.settings.gameView)).toBe('card');
+  await view.locator('#gView').click();
+  expect(await page.evaluate(() => S.settings.gameView)).toBe('list');
+  // fold a skill group: its games go, the heading stays, the choice is remembered across visits
+  const head = view.locator('[data-fold="hear"]');
+  await expect(head).toHaveAttribute('aria-expanded', 'true');
+  await head.click();
+  await expect(view.locator('[data-fold="hear"]')).toHaveAttribute('aria-expanded', 'false');
+  await expect(view.locator('[data-game="listen"]')).toHaveCount(0);
+  await page.evaluate(() => go('home')); await page.evaluate(() => go('games'));
+  await expect(view.locator('[data-game="listen"]')).toHaveCount(0);
+  expect(await page.evaluate(() => S.settings.gameFold)).toEqual(['hear']);
+  // a skill chip still shows the folded group's games
+  await view.locator('#gSkill [data-skill="hear"]').click();
+  await expect(view.locator('[data-game="listen"]')).toBeVisible();
+  await view.locator('#gSkill [data-skill="all"]').click();
+  await view.locator('[data-fold="hear"]').click();
+  await expect(view.locator('[data-game="listen"]')).toBeVisible();
+  // shortcuts come after the games; the reference library is its own page and its pages come back to it
+  const order = await page.evaluate(() => { const a = view.querySelector('#gSkill'), b = view.querySelector('.short-grid'); return !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING); });
+  expect(order).toBe(true);
+  await expect(view.locator('.short-tile')).toHaveCount(6);
+  await expect(view.locator('.ref-tile')).toHaveCount(0);
+  await view.locator('#toRef').click();
+  await expect(page.locator('#title')).toHaveText('คลังความรู้');
+  await expect(view.locator('.ref-tile')).toHaveCount(14);
+  await view.locator('#toPairs').click();
+  await expect(view.locator('.pair-card').first()).toBeVisible();
+  await page.locator('#topBack').click();
+  await expect(view.locator('.ref-tile')).toHaveCount(14);
+  await page.locator('#topBack').click();
+  await expect(view.locator('#gSkill')).toBeVisible();
+  expect(errors).toEqual([]);
+});
 
 test('iPad landscape home dashboard (1.117): today card + น้องคำ in a sticky side panel, back to one grid in portrait', async ({ page }) => {
   await page.setViewportSize({ width: 1376, height: 1032 });

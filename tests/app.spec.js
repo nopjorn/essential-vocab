@@ -2,7 +2,7 @@
 const { test, expect } = require('@playwright/test');
 const { openApp, readState } = require('./helpers');
 
-const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read', 'placement', 'changelog', 'mtest', 'ltest', 'year', 'mascot', 'event', 'riddle', 'duel', 'map', 'wsearch', 'decks', 'adv', 'fun', 'tower', 'coinshop', 'puzzle', 'album', 'garden', 'cases', 'cafe', 'room', 'paths', 'pic', 'build'];
+const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read', 'placement', 'changelog', 'mtest', 'ltest', 'year', 'mascot', 'event', 'riddle', 'duel', 'map', 'wsearch', 'decks', 'adv', 'fun', 'tower', 'coinshop', 'puzzle', 'album', 'garden', 'cases', 'cafe', 'room', 'paths', 'pic', 'build', 'ref'];
 
 test('every screen renders without errors and shows the version', async ({ page }) => {
   const errors = await openApp(page);
@@ -68,7 +68,7 @@ test('word sheet shows the word family and collocations', async ({ page }) => {
 
 test('word family browser filters and plays', async ({ page }) => {
   const errors = await openApp(page);
-  await page.evaluate(() => go('games'));
+  await page.evaluate(() => go('ref'));
   await page.locator('#toFams').click();
   await expect(page.locator('#famList .pair-card').first()).toBeVisible();
   await page.locator('#fq').fill('decis');

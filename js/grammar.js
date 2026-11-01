@@ -56,7 +56,7 @@ function renderIrregular() {
   paint();
   $('#irq').oninput = (e) => { irrQuery = e.target.value; paint(); };
   $('#irPat').onclick = (e) => { const c = e.target.closest('[data-p]'); if (c) { irrPat = c.dataset.p; paint(); } };
-  $('#irBack').onclick = () => go('games');
+  $('#irBack').onclick = () => go('ref');
   $('#irPlay').onclick = () => startGame('irreg');
   $('#irList').onclick = (e) => { const b = e.target.closest('[data-col]'); if (b) speak(b.dataset.col); };
 }
@@ -129,7 +129,7 @@ function renderDepPrep() {
   paint();
   $('#dpq').oninput = (e) => { dpQuery = e.target.value; paint(); };
   $('#dpGroup').onclick = (e) => { const c = e.target.closest('[data-g]'); if (c) { dpGroup = c.dataset.g; paint(); } };
-  $('#dpBack').onclick = () => go('games');
+  $('#dpBack').onclick = () => go('ref');
   $('#dpPlay').onclick = () => startGame('dprep');
   $('#dpList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
 }
@@ -165,7 +165,7 @@ function renderMistakes() {
   paint();
   $('#misq').oninput = (e) => { misQuery = e.target.value; paint(); };
   $('#misCat').onclick = (e) => { const c = e.target.closest('[data-c]'); if (c) { misCat = c.dataset.c; paint(); } };
-  $('#misBack').onclick = () => go('games');
+  $('#misBack').onclick = () => go('ref');
   $('#misPlay').onclick = () => startGame('thaierr');
   $('#misList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
 }
@@ -229,7 +229,7 @@ function renderGramPat() {
   paint();
   $('#gpq').oninput = (e) => { gpQuery = e.target.value; paint(); };
   $('#gpKind').onclick = (e) => { const c = e.target.closest('[data-k]'); if (c) { gpKind = c.dataset.k; paint(); } };
-  $('#gpBack').onclick = () => go('games');
+  $('#gpBack').onclick = () => go('ref');
   $('#gpPlay').onclick = () => startGame('gpat');
   $('#gpList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
 }
@@ -292,7 +292,7 @@ function renderIpa() {
     ${IPA_GROUPS.map(([title, note, rows]) => `<div class="card-box pair-card"><div class="pair-h"><b>${title}</b></div><div class="small muted" style="margin-bottom:6px">${note}</div>
       ${rows.map(([sym, th, ex, tip]) => `<div class="ipa-row"><div class="ipa-sym" lang="en">/${esc(sym)}/</div><div class="grow"><b>${esc(th)}</b><div class="small muted">${esc(tip)}</div><div class="ipa-ex">${ex.map(wordBtn).join('')}</div></div></div>`).join('')}</div>`).join('')}
     <button class="btn block" id="ipMin" style="margin-top:10px">👂 ฝึกหูแยกเสียงคล้าย</button>`;
-  $('#ipBack').onclick = () => go('games');
+  $('#ipBack').onclick = () => go('ref');
   $('#ipPlay').onclick = () => startGame('ipa');
   $('#ipMin').onclick = () => startGame('minpair');
   view.onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };

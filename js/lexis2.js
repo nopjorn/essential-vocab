@@ -41,7 +41,7 @@ function renderRoots() {
   };
   paint();
   $('#rtq').oninput = (e) => { rootQuery = e.target.value; paint(); };
-  $('#rtBack').onclick = () => go('games');
+  $('#rtBack').onclick = () => go('ref');
   $('#rtPlay').onclick = () => startGame('root');
   $('#rtList').onclick = (e) => { const b = e.target.closest('[data-col]'); if (b) speak(b.dataset.col); };
 }
@@ -83,7 +83,7 @@ function renderUkUs() {
   paint();
   $('#ukq').oninput = (e) => { ukusQuery = e.target.value; paint(); };
   $('#ukKind').onclick = (e) => { const c = e.target.closest('[data-k]'); if (c) { ukusKind = c.dataset.k; paint(); } };
-  $('#ukBack').onclick = () => go('games');
+  $('#ukBack').onclick = () => go('ref');
   $('#ukList').onclick = (e) => { const b = e.target.closest('[data-uk]'); if (b) speakBoth(b.dataset.uk, b.dataset.us); };
 }
 

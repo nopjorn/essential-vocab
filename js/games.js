@@ -90,8 +90,37 @@ const GAME_SKILLS = [
 let gameSkill = 'all'; // chip selected in the games menu: 'all' or a GAME_SKILLS id
 function gameTile(id) {
   const g = GAMES[id];
-  const best = S.best[id] != null ? `<span>🏅 สถิติ: ${S.best[id]}</span>` : '';
-  return `<button class="game-tile" data-game="${id}"><div class="gi">${g.icon}</div><b>${g.name}</b><span>${g.desc}</span>${best}</button>`;
+  const best = S.best[id] != null ? `<span class="gb">🏅 <i>สถิติ: </i>${S.best[id]}</span>` : '';
+  return `<button class="game-tile" data-game="${id}"><div class="gi">${g.icon}</div><div class="gt"><b>${g.name}</b><span class="gd">${g.desc}</span></div>${best}</button>`;
+}
+// Games menu look (1.127): 'list' = one slim row per game (default), 'card' = the big two-column tiles.
+const gameView = () => (S.settings.gameView === 'card' ? 'card' : 'list');
+const gridCls = () => `game-grid${gameView() === 'list' ? ' list' : ''}`;
+const gameFolded = () => new Set(S.settings.gameFold || []); // skill groups folded shut under "ทั้งหมด"
+// The reference pages (route 'ref'): [REF_PAGES key in app.js, button id, icon, name].
+const REF_LIST = [['pairs', 'toPairs', '🤔', 'คู่คำสับสน'], ['fams', 'toFams', '🧬', 'ครอบครัวคำ'], ['syn', 'toSyn', '≈', 'คำเหมือน–ตรงข้าม'], ['affix', 'toAf', '🧱', 'prefix / suffix'],
+  ['roots', 'toRt', '🌱', 'รากศัพท์'], ['ukus', 'toUk', '🇬🇧', 'อังกฤษ–อเมริกัน'], ['phrasal', 'toPV', '🧩', 'Phrasal verbs'], ['idiom', 'toId', '🎭', 'สำนวน'],
+  ['sit', 'toSit', '🗨️', 'ศัพท์ตามสถานการณ์'], ['irr', 'toIrr', '⏪', 'กริยาไม่ปกติ'], ['dprep', 'toDp', '🔗', 'บุพบทที่ตามหลังคำ'], ['mis', 'toMis', '🩹', 'ข้อผิดที่พบบ่อย'],
+  ['gpat', 'toGp', '📐', 'ไวยากรณ์ผูกกับคำ'], ['ipa', 'toIpa', '🔡', 'ตารางเสียง IPA']];
+function renderRef() {
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="refBack" data-depth="1">‹ กลับ</button></div>
+    <p class="small muted" style="margin:0 4px 12px">${REF_LIST.length} หัวข้อ อ่านแล้วกดเล่นเกมของแต่ละหัวข้อได้ · ใช้ได้แม้ออฟไลน์</p>
+    <div class="ref-grid">${REF_LIST.map(([k, id, ic, name]) => `<button class="ref-tile" id="${id}" data-r="${k}"><span>${ic}</span>${name}</button>`).join('')}</div>`;
+  $('#refBack').onclick = () => go('games');
+  view.querySelector('.ref-grid').onclick = (e) => { const b = e.target.closest('[data-r]'); if (b) REF_PAGES[b.dataset.r](); };
+}
+// The other play pages as a compact 3×2 grid + the reference library button, at the bottom of the games menu.
+function gameShortcuts() {
+  const t = (attr, ic, name, meta) => `<button class="short-tile" ${attr}><span class="si">${ic}</span><b>${name}</b><small>${meta}</small></button>`;
+  return `<div class="small muted games-sec short-h"><b>✨ เล่นแบบอื่น</b></div><div class="short-grid">
+      ${t('data-go="fun"', '🎪', 'โซนสนุก', `🪙 ${coinBal()}`)}
+      ${t('id="toRiddle"', '🔤', 'ปริศนาศัพท์', riddleToday().over ? 'ทำแล้ว ✅' : 'คำใหม่วันนี้')}
+      ${t('id="toWs"', '🔎', 'ค้นหาคำ', 'ตาราง 10×10')}
+      ${t('id="toMap"', '🗺️', 'แผนที่ด่าน', `ผ่าน ${stageTotals()}`)}
+      ${t('id="toDuel"', '⚔️', 'ท้าดวลเพื่อน', `${DUEL_N} ข้อ`)}
+      ${t('id="toRead"', '📖', 'เรื่องสั้น', `อ่านแล้ว ${Object.keys(S.read).length}/${STORY_COUNT}`)}
+    </div>
+    <button class="card-box guide-link ref-link" id="toRef"><span>📚</span><div class="grow"><b>คลังความรู้</b><div class="small muted">${REF_LIST.length} หัวข้อ: คู่คำสับสน ครอบครัวคำ Phrasal verbs สำนวน IPA …</div></div><span class="muted">›</span></button>`;
 }
 let gameSource = 'level';
 let gameTopic = 'food';
@@ -140,7 +169,7 @@ function bindGameEditor() {
 // Pinned games, then the most played ones, above the rest of the games menu.
 function gameSections() {
   const pins = gamePins(), freq = frequentGames();
-  const sec = (title, ids) => `<div class="small muted games-sec"><b>${title}</b></div><div class="game-grid">${ids.map(gameTile).join('')}</div>`;
+  const sec = (title, ids) => `<div class="small muted games-sec"><b>${title}</b></div><div class="${gridCls()}">${ids.map(gameTile).join('')}</div>`;
   return (pins.length ? sec('📌 เกมโปรด', pins) : '') + (freq.length ? sec('🕘 เล่นบ่อย', freq) : '');
 }
 // "ความยากเกมตัวเลือก" text for the games menu and result screen.
@@ -157,7 +186,12 @@ function gameList() {
   const chips = [['all', '🎮', 'ทั้งหมด', n], ...groups.map((g) => [g[0], g[1], g[2], g[3].length])]
     .map(([id, ic, name, c]) => `<button class="chip${gameSkill === id ? ' on' : ''}" data-skill="${id}" aria-pressed="${gameSkill === id}">${ic} ${name} <small>${c}</small></button>`).join('');
   const shown = gameSkill === 'all' ? groups : groups.filter((g) => g[0] === gameSkill);
-  const body = shown.map(([, ic, name, ids]) => (gameSkill === 'all' ? `<div class="small muted games-sec"><b>${ic} ${name}</b></div>` : '') + `<div class="game-grid">${ids.map(gameTile).join('')}</div>`).join('');
+  const fold = gameFolded(), all = gameSkill === 'all';
+  const body = shown.map(([id, ic, name, ids]) => {
+    const shut = all && fold.has(id);
+    const head = all ? `<button class="small muted games-sec fold" data-fold="${id}" aria-expanded="${!shut}"><b>${ic} ${name}</b><small>${ids.length}</small><i aria-hidden="true">▾</i></button>` : '';
+    return head + (shut ? '' : `<div class="${gridCls()}">${ids.map(gameTile).join('')}</div>`);
+  }).join('');
   return `<div class="chips skill-chips" id="gSkill" role="group" aria-label="กรองเกมตามทักษะ">${chips}</div>${body}`;
 }
 function renderGames() {
@@ -188,32 +222,10 @@ function renderGames() {
       ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
     </div>
     ${gameEdit ? '' : gameSections()}
-    <button class="card-box guide-link" data-go="fun"><span>🎪</span><div class="grow"><b>โซนสนุก</b><div class="small muted">หอคอยไม่รู้จบ ปริศนาประจำวัน การ์ดสะสม สวนคำศัพท์ ร้านค้าเหรียญ · 🪙 ${coinBal()}</div></div><span class="muted">›</span></button>
-    <button class="card-box guide-link" id="toRiddle"><span>🔤</span><div class="grow"><b>ปริศนาศัพท์ประจำวัน</b><div class="small muted">ทายคำ 5 ตัวอักษรใน 6 ครั้ง · คำใหม่ทุกวัน${riddleToday().over ? ' · ทำแล้ววันนี้ ✅' : ''}</div></div><span class="muted">›</span></button>
-    <button class="card-box guide-link" id="toWs"><span>🔎</span><div class="grow"><b>ค้นหาคำในตาราง</b><div class="small muted">หาคำที่ซ่อนในตาราง 10×10 โดยดูคำแปลไทยเป็นคำใบ้ · เลือกหมวดได้</div></div><span class="muted">›</span></button>
-    <button class="card-box guide-link" id="toMap"><span>🗺️</span><div class="grow"><b>แผนที่ด่าน</b><div class="small muted">เดินทางผ่านด่านของแต่ละหมวด ด่านละ 8 ข้อ ได้ ★ 1–3 · ผ่าน ${stageTotals()} ด่าน</div></div><span class="muted">›</span></button>
-    <button class="card-box guide-link" id="toDuel"><span>⚔️</span><div class="grow"><b>ท้าดวลเพื่อน</b><div class="small muted">ข้อสอบ ${DUEL_N} ข้อจากรหัสสั้นๆ ส่งรหัสให้เพื่อนเล่นชุดเดียวกันแล้วเทียบคะแนน</div></div><span class="muted">›</span></button>
-    <button class="card-box guide-link" id="toRead"><span>📖</span><div class="grow"><b>อ่านเรื่องสั้น</b><div class="small muted">${STORY_COUNT} เรื่อง · อ่านแล้ว ${Object.keys(S.read).length} · แตะคำเพื่อดูความหมาย</div></div><span class="muted">›</span></button>
-    <div class="card-box ref-box"><div class="small muted"><b>📚 คลังความรู้</b> อ่านแล้วกดเล่นเกมของแต่ละหัวข้อได้</div>
-      <div class="ref-grid">
-        <button class="ref-tile" id="toPairs"><span>🤔</span>คู่คำสับสน</button>
-        <button class="ref-tile" id="toFams"><span>🧬</span>ครอบครัวคำ</button>
-        <button class="ref-tile" id="toSyn"><span>≈</span>คำเหมือน–ตรงข้าม</button>
-        <button class="ref-tile" id="toAf"><span>🧱</span>prefix / suffix</button>
-        <button class="ref-tile" id="toRt"><span>🌱</span>รากศัพท์</button>
-        <button class="ref-tile" id="toUk"><span>🇬🇧</span>อังกฤษ–อเมริกัน</button>
-        <button class="ref-tile" id="toPV"><span>🧩</span>Phrasal verbs</button>
-        <button class="ref-tile" id="toId"><span>🎭</span>สำนวน</button>
-        <button class="ref-tile" id="toSit"><span>🗨️</span>ศัพท์ตามสถานการณ์</button>
-        <button class="ref-tile" id="toIrr"><span>⏪</span>กริยาไม่ปกติ</button>
-        <button class="ref-tile" id="toDp"><span>🔗</span>บุพบทที่ตามหลังคำ</button>
-        <button class="ref-tile" id="toMis"><span>🩹</span>ข้อผิดที่พบบ่อย</button>
-        <button class="ref-tile" id="toGp"><span>📐</span>ไวยากรณ์ผูกกับคำ</button>
-        <button class="ref-tile" id="toIpa"><span>🔡</span>ตารางเสียง IPA</button>
-      </div></div>
-    <div class="row games-head"><b class="grow">${gameEdit ? '✏️ จัดหน้าเกม' : (gamePins().length ? '🎮 เกมอื่นๆ' : '🎮 เกมทั้งหมด')}</b><button class="btn${gameEdit ? ' primary' : ''}" id="gEdit">${gameEdit ? '✓ เสร็จ' : '✏️ จัดเกม'}</button></div>
+    <div class="row games-head"><b class="grow">${gameEdit ? '✏️ จัดหน้าเกม' : (gamePins().length ? '🎮 เกมอื่นๆ' : '🎮 เกมทั้งหมด')}</b>${gameEdit ? '' : `<button class="icon-btn" id="gView" aria-label="${gameView() === 'list' ? 'ดูแบบการ์ดใหญ่' : 'ดูแบบรายการ'}" title="${gameView() === 'list' ? 'ดูแบบการ์ดใหญ่' : 'ดูแบบรายการ'}">${gameView() === 'list' ? '🔲' : '☰'}</button>`}<button class="btn${gameEdit ? ' primary' : ''}" id="gEdit">${gameEdit ? '✓ เสร็จ' : '✏️ จัดเกม'}</button></div>
     ${gameEdit ? gameEditor() : `${gameList()}
-    ${gameHidden().size ? `<details class="card-box hidden-games"><summary class="small muted">🙈 เกมที่ซ่อนไว้ (${gameHidden().size})</summary><div class="game-grid" style="margin-top:10px">${[...gameHidden()].map(gameTile).join('')}</div></details>` : ''}`}`;
+    ${gameHidden().size ? `<details class="card-box hidden-games"><summary class="small muted">🙈 เกมที่ซ่อนไว้ (${gameHidden().size})</summary><div class="${gridCls()}" style="margin-top:10px">${[...gameHidden()].map(gameTile).join('')}</div></details>` : ''}
+    ${gameShortcuts()}`}`;
   if ($('#gSkill')) $('#gSkill').onclick = (e) => {
     const c = e.target.closest('[data-skill]'); if (!c) return;
     gameSkill = c.dataset.skill;
@@ -222,26 +234,23 @@ function renderGames() {
   };
   $('#gEdit').onclick = () => { gameEdit = !gameEdit; renderGames(); if (gameEdit) $('#gEdit').scrollIntoView({ block: 'start' }); };
   if (gameEdit) bindGameEditor();
-  $('#toRead').onclick = () => go('read');
-  $('#toRiddle').onclick = () => go('riddle');
+  if (!gameEdit) {
+    $('#toRead').onclick = () => go('read');
+    $('#toRiddle').onclick = () => go('riddle');
+    $('#toDuel').onclick = () => go('duel');
+    $('#toMap').onclick = () => go('map');
+    $('#toWs').onclick = () => go('wsearch');
+    $('#toRef').onclick = () => go('ref');
+    $('#gView').onclick = () => { S.settings.gameView = gameView() === 'list' ? 'card' : 'list'; save(); const top = view.scrollTop; renderGames(); view.scrollTop = top; $('#gView').focus({ preventScroll: true }); };
+    view.querySelectorAll('[data-fold]').forEach((b) => (b.onclick = () => {
+      const f = gameFolded(), id = b.dataset.fold;
+      if (f.has(id)) f.delete(id); else f.add(id);
+      S.settings.gameFold = [...f]; save();
+      const top = view.scrollTop; renderGames(); view.scrollTop = top;
+      const nb = view.querySelector(`[data-fold="${id}"]`); if (nb) nb.focus({ preventScroll: true });
+    }));
+  }
   $('#gDiffSet').onclick = (e) => { e.preventDefault(); go('settings'); };
-  $('#toDuel').onclick = () => go('duel');
-  $('#toMap').onclick = () => go('map');
-  $('#toWs').onclick = () => go('wsearch');
-  $('#toId').onclick = () => renderIdioms();
-  $('#toSit').onclick = () => renderSit();
-  $('#toIrr').onclick = () => renderIrregular();
-  $('#toDp').onclick = () => renderDepPrep();
-  $('#toMis').onclick = () => renderMistakes();
-  $('#toGp').onclick = () => renderGramPat();
-  $('#toIpa').onclick = () => renderIpa();
-  $('#toPairs').onclick = () => renderPairs();
-  $('#toFams').onclick = () => renderFamilies();
-  $('#toPV').onclick = () => renderPhrasal();
-  $('#toSyn').onclick = () => renderSyn();
-  $('#toAf').onclick = () => renderAffix();
-  $('#toRt').onclick = () => renderRoots();
-  $('#toUk').onclick = () => renderUkUs();
   const paint = () => view.querySelectorAll('#src .chip').forEach((c) => c.classList.toggle('on', c.dataset.s === gameSource));
   paint();
   if ($('#gTopic')) $('#gTopic').onchange = (e) => { gameTopic = e.target.value; };
@@ -272,7 +281,7 @@ function renderPairs() {
     <div class="pair-list">${CONFUSE.map((c) => `<div class="card-box pair-card"><div class="pair-h"><b>${esc(c.a)}</b> <span class="muted">vs</span> <b>${esc(c.b)}</b></div>
       <div class="tip-box">💡 ${esc(c.tip)}</div>
       ${c.q.map(([sn, r, , th]) => { const f = sn.replace('___', r); return `<button class="pair-ex" data-say="${esc(f)}"><span>${esc(sn).replace('___', `<mark>${esc(r)}</mark>`)}</span><small class="muted">${esc(th)}</small></button>`; }).join('')}</div>`).join('')}</div>`;
-  $('#pBack').onclick = () => go('games');
+  $('#pBack').onclick = () => go('ref');
   $('#pPlay').onclick = () => startGame('confuse');
   view.querySelector('.pair-list').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
 }
@@ -296,7 +305,7 @@ function renderFamilies() {
   };
   paint();
   $('#fq').oninput = (e) => { famQuery = e.target.value; paint(); };
-  $('#fBack').onclick = () => go('games');
+  $('#fBack').onclick = () => go('ref');
   $('#fPlay').onclick = () => startGame('wform');
   $('#famList').onclick = (e) => { const b = e.target.closest('[data-say],[data-col]'); if (b) speak(b.dataset.say || b.dataset.col); };
 }
