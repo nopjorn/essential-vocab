@@ -184,6 +184,49 @@ function addDeck(name, icon, words, own) {
   return d;
 }
 
+/* ---------- add words from anywhere + share a set (1.123) ---------- */
+// Adds list words to a set; returns how many were new.
+function addToDeck(d, words) {
+  const before = new Set(d.words.map((x) => x.toLowerCase()));
+  const add = words.filter((x) => !before.has(x.toLowerCase()));
+  d.words = [...d.words, ...add].slice(0, DECK_MAX.words);
+  touchDeck(d);
+  return Math.min(add.length, DECK_MAX.words - before.size);
+}
+// A small sheet listing the sets (+ a new one) to put `words` into (word sheet, wrong answers of a game).
+function pickDeck(words) {
+  const ds = liveDecks();
+  const el = document.createElement('div');
+  el.className = 'sheet-wrap';
+  el.innerHTML = `<div class="sheet" role="dialog" aria-label="ใส่คำเข้าชุด"><div class="grab"></div><div class="sheet-body">
+    <b>📚 ใส่ ${words.length === 1 ? `“${esc(words[0])}”` : words.length + ' คำ'} เข้าชุด</b>
+    <div class="pick-decks">${ds.map((d) => { const has = words.every((x) => d.words.some((y) => y.toLowerCase() === x.toLowerCase())); return `<button class="wrow pick-deck" data-pd="${d.id}" ${has ? 'disabled' : ''}><span class="dk-ic">${esc(d.icon)}</span><span class="grow">${esc(d.name || 'ชุดไม่มีชื่อ')}</span><span class="small muted">${has ? '✓ มีแล้ว' : d.words.length + ' คำ'}</span></button>`; }).join('')}
+      <button class="wrow pick-deck" data-pd="new"><span class="dk-ic">＋</span><span class="grow">สร้างชุดใหม่</span></button></div></div></div>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('open'));
+  const close = () => { el.classList.remove('open'); setTimeout(() => el.remove(), 250); };
+  el.onclick = (e) => {
+    if (e.target === el) return close();
+    const b = e.target.closest('[data-pd]'); if (!b || b.disabled) return;
+    let d;
+    if (b.dataset.pd === 'new') { d = addDeck(`ชุดใหม่ ${thDate(Date.now())}`, '📚', []); if (!d) return close(); }
+    else d = deckById(b.dataset.pd);
+    if (!d) return close();
+    const n = addToDeck(d, words);
+    close(); toast(n ? `📚 ใส่ ${n} คำเข้าชุด “${d.name}” แล้ว` : 'คำนี้อยู่ในชุดแล้ว');
+  };
+  return el;
+}
+// Share a set as plain text (share sheet, else clipboard): the friend pastes it into ✏️ → 📋 วางลิสต์ (matchWords()).
+function shareDeck(d) {
+  const words = deckWords(d).map((w) => w.w);
+  const text = `${d.icon} ${d.name || 'ชุดคำศัพท์'} (${words.length} คำ)\n${words.join(', ')}\n\nวางในแอป “ศัพท์ต้องรู้”: ชุดของฉัน → สร้างชุด → 📋 วางลิสต์\nhttps://nopjorn.github.io/essential-vocab/`;
+  shareDeck.last = text; // read by tests
+  if (navigator.share) return navigator.share({ title: d.name, text }).catch(() => {});
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(() => toast('📋 คัดลอกรายการคำแล้ว ส่งให้เพื่อนวางในแอปได้เลย'), () => toast('คัดลอกไม่สำเร็จ'));
+  toast('อุปกรณ์นี้แชร์ไม่ได้');
+}
+
 /* ---------- one set: study + statistics ---------- */
 function renderDeck(id) {
   const d = deckById(id);
@@ -202,7 +245,7 @@ function renderDeck(id) {
     <button class="btn primary block" id="dkStudy" ${st.n ? '' : 'disabled'}>▶︎ เรียนชุดนี้ <small>(ครบกำหนด ${st.due} · คำใหม่ ${Math.min(DECK_ROUND, st.fresh)})</small></button>
     <button class="btn block" id="dkPlay" style="margin-top:8px" ${st.n ? '' : 'disabled'}>🎮 เล่นเกมจากชุดนี้</button>
     <p class="small muted" style="margin:8px 4px 14px">ความคืบหน้าของชุดแยกจากสถิติหลัก (คำที่เรียน / จำได้แล้ว ในหน้าหลักไม่เปลี่ยน) แต่สตรีค XP และปฏิทินความขยันนับรวม · "แม่นแล้ว" = ทบทวนห่างตั้งแต่ 7 วันขึ้นไป</p>
-    ${st.n ? '<button class="btn ghost block" id="dkRestart">🔄 เริ่มชุดนี้ใหม่</button>' : ''}
+    ${st.n ? '<button class="btn block" id="dkShare" style="margin-top:8px">📤 แชร์ชุดนี้ให้เพื่อน</button><button class="btn ghost block" id="dkRestart">🔄 เริ่มชุดนี้ใหม่</button>' : ''}
     <div class="card-box" style="padding:4px 14px;margin-top:14px" id="dkList">${ws.map((w) => `<div class="wrow" data-i="${w.idx}" data-w="${esc(w.w)}"><span class="dot ${DECK_DOT[deckStatus(map[w.w])]}"></span>
       <div class="grow dk-w"><div><span class="w" lang="en">${esc(w.w)}</span> <span class="pos">${esc(w.p)}</span></div><div class="t">${esc(w.t)}</div></div>
       <span class="star-mark">${leechIn(w, map) ? '🐢' : ''}${isStar(w) ? '⭐' : ''}</span></div>`).join('')}</div>`;
@@ -210,6 +253,7 @@ function renderDeck(id) {
   $('#dkEdit').onclick = () => renderDeckEdit(id);
   $('#dkStudy').onclick = () => go('cards', { deck: id });
   $('#dkPlay').onclick = () => { gameSource = 'deck'; gameDecks = [id]; go('games'); };
+  if ($('#dkShare')) $('#dkShare').onclick = () => shareDeck(d);
   if ($('#dkRestart')) $('#dkRestart').onclick = () => {
     if (!confirm(`เริ่มชุด "${d.name}" ใหม่ทั้งหมดใช่ไหม? ความคืบหน้าของชุดนี้จะถูกล้าง (สถิติหลักไม่เปลี่ยน)`)) return;
     const m = deckMap(id);

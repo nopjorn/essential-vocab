@@ -119,7 +119,7 @@ function openSheet(w, onChange, opt = {}) {
       </div>
       <div class="sheet-acts">
         <button class="btn" data-act="star">${isStar(w) ? '★ เอาดาวออก' : '⭐ ติดดาว'}</button>
-        ${dm ? '' : '<button class="btn" data-act="review" aria-label="ทบทวนวันนี้">🔁 ทบทวน</button><button class="btn" data-act="known">✓ รู้แล้ว</button>'}
+        ${dm ? '' : '<button class="btn" data-act="review" aria-label="ทบทวนวันนี้">🔁 ทบทวน</button><button class="btn" data-act="known">✓ รู้แล้ว</button><button class="btn" data-act="deck" aria-label="ใส่คำนี้เข้าชุดของฉัน">📚 ใส่ชุด</button>'}
       </div>
     </div>`;
   document.body.appendChild(el);
@@ -172,6 +172,7 @@ function openSheet(w, onChange, opt = {}) {
       if (onChange) onChange();
       return;
     }
+    if (act.dataset.act === 'deck') { close(); pickDeck([w.w]); return; }
     if (act.dataset.act === 'known') { markKnown(w); toast('ทำเครื่องหมายว่ารู้แล้ว 👍'); }
     else { markForReview(w); toast('เพิ่มเข้ารายการทบทวนแล้ว 🔁'); }
     if (onChange) onChange();

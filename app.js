@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.122.0';
+const APP_VERSION = '1.123.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -193,7 +193,7 @@ function sanitizeDecks(r) {
 }
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, fest: true, qMascot: true, headFont: true, glassBar: true, shareTpl: 'classic', palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, fest: true, qMascot: true, headFont: true, glassBar: true, fsz: 'md', appKbd: 'auto', shareTpl: 'classic', palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -1291,11 +1291,13 @@ applyIcon();
 // animAnswer → bounce/shake on answers (html.no-ans), confetti. 1.39.1 had one `anim` switch for all three.
 if (S.settings.anim === false) { S.settings.animPage = S.settings.animAnswer = S.settings.confetti = false; }
 delete S.settings.anim;
+const FSZ = { sm: 0.9, md: 1, lg: 1.15, xl: 1.3 };
 function applyAnim() {
   document.documentElement.classList.toggle('no-hf', S.settings.headFont === false); // 1.117: Anuphan headings
   document.documentElement.classList.toggle('no-glass', S.settings.glassBar === false); // 1.117: floating glass tab bar (phones)
   document.documentElement.classList.toggle('no-vt', S.settings.animPage === false);
   document.documentElement.classList.toggle('no-ans', S.settings.animAnswer === false);
+  document.documentElement.style.setProperty('--uz', FSZ[S.settings.fsz] || 1); // 1.123: text size of the pages (settings → หน้าตา)
 }
 applyAnim();
 // The right-answer ripple starts where the finger touched (1.117): pointer position as CSS variables on the pressed control.

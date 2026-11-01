@@ -285,6 +285,16 @@ test('service worker keeps word lists, stories and other content in the data cac
   ['app.js', 'index.html', 'data/changelog.js', 'config.js'].forEach((f) => expect(files, f).not.toContain(f)); // change every version
 });
 
+test('offline (1.123): every data file the code loads lazily is cached by the service worker', () => {
+  const sw = read('sw.js'), cached = new Set([...sw.matchAll(/^\s+'([^']+)',?$/gm)].map((m) => m[1]));
+  const code = appCode();
+  const used = new Set([...code.matchAll(/'(data\/[a-z0-9/]+\.js)/g)].map((m) => m[1]));
+  ['collocations', 'pairs', 'families', 'guide', 'play'].forEach((f) => used.add(`data/${f}.js`));
+  fs.readdirSync(path.join(root, 'data')).filter((f) => f.endsWith('.js')).forEach((f) => used.add(`data/${f}`)); // every data file, lazy or not
+  const missing = [...used].filter((f) => f !== 'data/changelog.js' && !cached.has(f) && fs.existsSync(path.join(root, f)));
+  expect(missing).toEqual([]);
+});
+
 test('every word row uses a topic id from TOPICS (and no retired id)', () => {
   const src = read('app.js');
   const block = src.slice(src.indexOf('const TOPICS = ['), src.indexOf('];', src.indexOf('const TOPICS = [')));

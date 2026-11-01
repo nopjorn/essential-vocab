@@ -5,13 +5,23 @@
 /* ---------- lazy data files ---------- */
 // loadData('data/phrasal.js', 'PHRASAL') → Promise of window.PHRASAL ([] if the file fails to load).
 const DATA_P = {};
+// 1.123 offline check: a data file that could not load (no network and not cached yet) is announced once per file,
+// and the loaders try again on the next call / when the device is back online (each loader resets itself in onOnline hooks).
+const LOAD_FAILED = new Set(), ON_ONLINE = [];
+function loadFailed(file) {
+  if (LOAD_FAILED.has(file)) return;
+  LOAD_FAILED.add(file);
+  toast(navigator.onLine === false ? '📴 ไม่มีอินเทอร์เน็ต: ส่วนนี้ยังไม่ได้เก็บไว้ในเครื่อง ต่อเน็ตแล้วลองใหม่นะคะ' : '⚠️ โหลดข้อมูลส่วนนี้ไม่สำเร็จ ลองใหม่อีกครั้งนะคะ');
+}
+addEventListener('online', () => { LOAD_FAILED.clear(); ON_ONLINE.forEach((f) => f()); });
 function loadData(file, key) {
   if (!DATA_P[key]) {
     DATA_P[key] = window[key] ? Promise.resolve(window[key]) : new Promise((res) => {
       const sc = document.createElement('script');
       sc.src = file + '?v=' + APP_VERSION;
       const done = () => res(window[key] || []);
-      sc.onload = done; sc.onerror = done;
+      sc.onload = done;
+      sc.onerror = () => { sc.remove(); delete DATA_P[key]; loadFailed(file); res([]); }; // 1.123: not kept, so it loads again later (offline → online)
       document.head.appendChild(sc);
     });
   }

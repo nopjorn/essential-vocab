@@ -84,6 +84,10 @@ function renderSettings() {
     </div></details>
 
     <details class="set-group" data-g="look" ${setIsOpen('look')}><summary>🎨 หน้าตา</summary><div class="card-box">
+      <div class="set-row"><span>🔠 ขนาดตัวอักษร<br><span class="small muted">ขยายทุกหน้า (ยกเว้นแถบเมนู)</span></span>
+        <div class="seg" id="fsz">${[['sm', 'เล็ก'], ['md', 'ปกติ'], ['lg', 'ใหญ่'], ['xl', 'ใหญ่มาก']].map(([v, t]) => `<button class="${(st.fsz || 'md') === v ? 'on' : ''}" data-v="${v}" aria-pressed="${(st.fsz || 'md') === v}">${t}</button>`).join('')}</div></div>
+      <div class="set-row"><span>⌨️ คีย์บอร์ดของแอปในเกมพิมพ์คำ<br><span class="small muted">ไม่บังหน้าจอ และพิมพ์อังกฤษได้ทันที (อัตโนมัติ = ใช้บนจอสัมผัส)</span></span>
+        <div class="seg" id="appKbd">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<button class="${(st.appKbd || 'auto') === v ? 'on' : ''}" data-v="${v}" aria-pressed="${(st.appKbd || 'auto') === v}">${t}</button>`).join('')}</div></div>
       <div class="set-row"><span>ธีม</span>
         <div class="seg" id="theme">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด'], ['black', '⚫ ดำสนิท']].map(([v, t]) => `<button class="${(st.theme || 'auto') === v ? 'on' : ''}" data-v="${v}">${t}</button>`).join('')}</div></div>
       <div class="set-row" style="flex-wrap:wrap"><span>🎨 สีหลัก<br><span class="small muted" id="palName"></span></span>
@@ -231,6 +235,8 @@ function renderSettings() {
   $('#test').onclick = () => speak('Hello! Let\'s learn English together.');
   fillVoices();
   $('#voice').onchange = (e) => { st.voice = e.target.value; save(); speak('Hello! This is how I sound when I read your words.'); };
+  $('#fsz').onclick = (e) => { const b = e.target.closest('[data-v]'); if (!b) return; st.fsz = b.dataset.v; save(); applyAnim(); const top = view.scrollTop; renderSettings(); view.scrollTop = top; };
+  $('#appKbd').onclick = (e) => { const b = e.target.closest('[data-v]'); if (!b) return; st.appKbd = b.dataset.v; save(); const top = view.scrollTop; renderSettings(); view.scrollTop = top; };
   $('#theme').onclick = (e) => {
     const b = e.target.closest('[data-v]'); if (!b) return;
     st.theme = b.dataset.v; save(); applyTheme();

@@ -184,7 +184,7 @@ html.no-ans .ring .rg, html.no-ans .hero.ring-closed .ring { animation: none; }
 .skill-chips .chip small { opacity: .7; margin-left: 2px; }
 .skill-chips .chip.on small { opacity: 1; }
 .skill-chips + .games-sec { margin-top: 2px; }
-@media (max-width: 699px) { .skill-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; } .skill-chips::-webkit-scrollbar { display: none; } .skill-chips .chip { flex: none; } }
+@media (max-width: 699px) { .skill-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-16px / var(--uz, 1)); padding-inline: calc(16px / var(--uz, 1)); } .skill-chips::-webkit-scrollbar { display: none; } .skill-chips .chip { flex: none; } }
 .games-sec ~ .games-sec { margin-top: 6px; }
 .hidden-games { margin-top: 14px; }
 .hidden-games summary { cursor: pointer; }
@@ -609,7 +609,7 @@ code { background: var(--surface-2); border-radius: 6px; padding: 1px 5px; font-
 .st-score { flex: none; padding: 3px 9px; border-radius: 99px; background: var(--surface-2); color: var(--muted); font-size: var(--fs-xs); font-weight: 800; }
 .st-score.full { background: color-mix(in srgb, var(--good) 20%, transparent); color: var(--good); }
 
-.read-bar { position: sticky; top: -8px; z-index: 5; height: 4px; margin: -8px -16px 4px; background: transparent; }
+.read-bar { position: sticky; top: -8px; z-index: 5; height: 4px; margin: -8px calc(-16px / var(--uz, 1)) 4px; background: transparent; }
 .read-prog { width: 0; height: 100%; border-radius: 0 4px 4px 0; background: linear-gradient(90deg, var(--primary), var(--pink)); transition: width .15s; }
 .st-hero { padding: 22px 20px 18px; border-radius: var(--radius); color: #fff; text-align: center;
   background: linear-gradient(150deg, var(--lvc), color-mix(in srgb, var(--lvc) 50%, var(--primary))); box-shadow: var(--shadow); }
@@ -906,10 +906,10 @@ body.has-back .view [id$="Back"]:not(:only-child) { display: none; }
 .src-btn[aria-expanded="true"] i { transform: rotate(180deg); }
 #src { margin-top: 12px; }
 /* horizontally scrolling filter rows + sticky search (word list) */
-.chips.scroll { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-left: -16px; margin-right: -16px; padding: 0 16px 2px; }
+.chips.scroll { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-left: calc(-16px / var(--uz, 1)); margin-right: calc(-16px / var(--uz, 1)); padding: 0 calc(16px / var(--uz, 1)) 2px; }
 .chips.scroll::-webkit-scrollbar { display: none; }
 .chips.scroll .chip { flex: none; padding: 7px 14px; }
-.list-head { position: sticky; top: -8px; z-index: 5; margin: -8px -16px 6px; padding: 8px 16px 2px; background: linear-gradient(var(--bg) 85%, transparent); }
+.list-head { position: sticky; top: -8px; z-index: 5; margin: -8px calc(-16px / var(--uz, 1)) 6px; padding: 8px calc(16px / var(--uz, 1)) 2px; background: linear-gradient(var(--bg) 85%, transparent); }
 .list-head .search { margin-bottom: 8px; }
 @media (min-width: 700px) {
   .chips.scroll { flex-wrap: wrap; overflow: visible; margin: 0; padding: 0; }
@@ -1950,3 +1950,22 @@ button.sus:active { transform: scale(.97); }
 .pic-hist + .pic-hist { border-top: 1px solid var(--border); }
 .bd-ans { min-height: 58px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .bd-pool { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 10px 0; }
+
+/* ---------- 1.123: text size (settings → หน้าตา): every page inside #view is zoomed; the bars stay as they are ---------- */
+#view > * { zoom: var(--uz, 1); }
+
+/* ---------- 1.123: app keyboard, put-into-set sheet ---------- */
+.app-kb { display: flex; flex-direction: column; gap: 6px; margin: 10px 0 4px; user-select: none; -webkit-user-select: none; }
+.kb-r { display: flex; gap: 5px; justify-content: center; }
+.kb-k { flex: 1 1 0; max-width: 46px; min-height: 46px; border: 0; border-radius: 10px; background: var(--surface); box-shadow: 0 1px 0 var(--border), 0 2px 6px rgba(0, 0, 0, .06); color: var(--text); font: inherit; font-size: 19px; font-weight: 700; padding: 0; touch-action: manipulation; }
+.kb-k:active { background: var(--surface-2); transform: scale(.95); }
+.kb-del { max-width: 64px; flex-grow: 1.4; }
+.kb-sp { max-width: none; flex: 3; font-size: var(--fs-sm); color: var(--muted); }
+.kb-ok { max-width: none; flex: 2; background: var(--primary); color: #fff; font-size: var(--fs-md); }
+@media (max-height: 520px) { .kb-k { min-height: 36px; font-size: 16px; } .app-kb { gap: 4px; } }
+.kb-in { caret-color: transparent; }
+.pick-decks { display: grid; gap: 4px; margin-top: 10px; max-height: 50vh; overflow: auto; }
+.pick-deck { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: var(--surface-2); color: var(--text); font: inherit; border-radius: 12px; padding: 10px 12px; text-align: left; cursor: pointer; }
+.pick-deck:disabled { opacity: .55; cursor: default; }
+.set-row > select, .set-row > .sel { min-width: 0; max-width: 58%; flex: 0 1 auto; }
+.set-row > .seg { flex-wrap: wrap; justify-content: flex-end; min-width: 0; }

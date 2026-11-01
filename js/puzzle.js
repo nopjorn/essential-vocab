@@ -167,6 +167,7 @@ function renderCw() {
     }
   };
   const form = $('#cwForm');
+  if (form) appKbd($('#cwIn'), form);
   if (form) form.onsubmit = (e) => {
     e.preventDefault();
     const v = $('#cwIn').value.trim().toLowerCase();
@@ -197,6 +198,7 @@ function renderLad() {
     ${p.ladDone ? `<div class="center" style="margin-top:10px"><b>${p.ladGave ? `🏳️ เฉลย: ${L.path.map((s) => s.toUpperCase()).join(' → ')}` : `🎉 ถึงแล้วใน ${p.lad.length} ขั้น${p.lad.length === shortest ? ' · สั้นสุดเลย! 💯' : ''}`}</b></div>`
       : `<div class="pw-row"><button class="pw-btn" id="ladHint" ${coinBal() < PUZ_HINT ? 'disabled' : ''}>💡 คำใบ้ <small>🪙${PUZ_HINT}</small></button>${p.lad.length ? '<button class="pw-btn" id="ladUndo">↩️ ลบคำล่าสุด</button>' : ''}<button class="pw-btn" id="ladGive">🏳️ ยอมแพ้</button></div><div class="small center" id="ladTip" aria-live="polite"></div>`}</div>`;
   const form = $('#ladForm');
+  if (form) appKbd($('#ladIn'), form);
   if (form) form.onsubmit = (e) => {
     e.preventDefault();
     const v = $('#ladIn').value.trim().toLowerCase();

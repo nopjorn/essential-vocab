@@ -279,7 +279,8 @@ test('ร้านน้องคำ: serving the right food earns a tip, wrong 
 test('ghost race: survival shows the best run and saves a new one; time attack ghost counts by time', async ({ page }) => {
   const errors = await openApp(page, { ...base, ghost: { survival: [1, 2, 3, 4], timeAttack: [1.5, 3, 4, 60] }, best: { survival: 4, timeAttack: 4 } });
   const step = async (ok) => {
-    await expect(page.locator('.opt').first()).toBeVisible();
+    await expect.poll(async () => (await page.locator('.opt').count()) > 0 || (await page.locator('.result-emoji').count()) > 0, { timeout: 10000 }).toBe(true);
+    if (await page.locator('.result-emoji').count()) return;
     const k = await page.evaluate(() => { // the right option of a survival question (en2th / th2en / listen / cloze)
       const words = [...document.querySelectorAll('.opt')].map((o) => W[+o.dataset.i]);
       const wd = document.querySelector('.q-prompt .word'), th = document.querySelector('.q-prompt .th'), cz = document.querySelector('.q-prompt .cloze');

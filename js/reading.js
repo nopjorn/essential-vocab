@@ -7,7 +7,7 @@
 // onto window.STORIES. Loaded on first use so app start stays fast; the service worker still caches them offline.
 const STORY_FILES = ['a1', 'a2', 'b1', 'b2', 'c1', 'c2', 'real']; // 'real' (1.103) = dialogues and emails, `kind` on each story
 const KIND_LABEL = { dialogue: '💬 บทสนทนา', email: '✉️ อีเมล' };
-let STORIES = null;
+let STORIES = null, storyFail = false;
 const STORY_COUNT = 115;
 function loadStories() {
   if (STORIES) return Promise.resolve(STORIES);
@@ -15,10 +15,16 @@ function loadStories() {
   const one = (f) => new Promise((res) => {
     const sc = document.createElement('script');
     sc.src = 'data/stories/' + f + '.js?v=' + APP_VERSION;
-    sc.onload = sc.onerror = res;
+    sc.onload = res;
+    sc.onerror = () => { storyFail = true; loadFailed('data/stories/' + f + '.js'); res(); };
     document.head.appendChild(sc);
   });
-  return Promise.all(STORY_FILES.map(one)).then(() => loadIrregular()).then(() => (STORIES = window.STORIES.sort((a, b) => a.id - b.id)));
+  storyFail = false;
+  return Promise.all(STORY_FILES.map(one)).then(() => loadIrregular()).then(() => {
+    const out = window.STORIES.sort((a, b) => a.id - b.id);
+    if (!storyFail) STORIES = out; // 1.123: a partial load (offline) is used now but not kept, so the next visit tries again
+    return out;
+  });
 }
 // data/collocations.js: window.COLLOC = { headword: [[phrase, thai], ...] } — lazy-loaded like stories.
 let COLLOC = window.COLLOC || null;
@@ -28,7 +34,7 @@ function loadColloc() {
     const sc = document.createElement('script');
     sc.src = 'data/collocations.js?v=' + APP_VERSION;
     sc.onload = () => res((COLLOC = window.COLLOC || {}));
-    sc.onerror = () => res((COLLOC = {}));
+    sc.onerror = () => { loadFailed('data/collocations.js'); ON_ONLINE.push(() => { if (COLLOC && !Object.keys(COLLOC).length) COLLOC = null; }); res((COLLOC = {})); }; // 1.123: loads again once online
     document.head.appendChild(sc);
   });
 }
@@ -52,7 +58,7 @@ function loadPairs() {
     const sc = document.createElement('script');
     sc.src = 'data/pairs.js?v=' + APP_VERSION;
     const done = () => { CONFUSE = window.CONFUSE || []; MINPAIRS = window.MINPAIRS || []; MINPAIRS_TIP = window.MINPAIRS_TIP || {}; res(CONFUSE); };
-    sc.onload = done; sc.onerror = done;
+    sc.onload = done; sc.onerror = () => { loadFailed('data/pairs.js'); ON_ONLINE.push(() => { if (CONFUSE && !CONFUSE.length) CONFUSE = null; }); done(); };
     document.head.appendChild(sc);
   });
 }
@@ -64,12 +70,13 @@ function loadFamilies() {
     const sc = document.createElement('script');
     sc.src = 'data/families.js?v=' + APP_VERSION;
     const done = () => { FAMILIES = window.FAMILIES || []; res(FAMILIES); };
-    sc.onload = done; sc.onerror = done;
+    sc.onload = done; sc.onerror = () => { loadFailed('data/families.js'); ON_ONLINE.push(() => { if (FAMILIES && !FAMILIES.length) { FAMILIES = null; FAMILY_OF = null; } }); done(); };
     document.head.appendChild(sc);
   });
 }
 // The family a list word belongs to (or undefined).
 function familyOf(word) {
+  if (!FAMILIES) return undefined;
   if (!FAMILY_OF) { FAMILY_OF = new Map(); FAMILIES.forEach((f) => f.f.forEach(([w]) => FAMILY_OF.set(w, f))); }
   return FAMILY_OF.get(word.toLowerCase());
 }
