@@ -167,11 +167,16 @@ function renderStats(from) {
       <div class="grow"><div class="bar"><div class="l" style="width:${learned / ws.length * 100}%"></div><div class="m" style="width:${mastered / ws.length * 100}%"></div></div>
       <div class="small muted" style="margin-top:4px">เรียนแล้ว ${learned} · จำได้ ${mastered} / ${ws.length}</div></div></div>`;
   };
-  const lvRows = `<div class="small muted" style="margin-top:8px"><b>ชุด 3000 คำ</b> (คำหลัก)</div>${LEVELS_3000.map(lvRow).join('')}
-    <div class="small muted" style="margin-top:12px"><b>ชุด 5000 คำ</b> (คำเพิ่มเติม)</div>${LEVELS_5000.map(lvRow).join('')}`;
+  // Levels being studied (or with progress) show; the rest fold away so a new learner doesn't face a wall of empty bars (1.134).
+  const lvOn = (l) => S.settings.levels.includes(l) || W.some((w) => w.g === l && S.prog[w.w]);
+  const lvSet = (name, sub, ls, top) => { const on = ls.filter(lvOn); return on.length ? `<div class="small muted" style="margin-top:${top}px"><b>${name}</b> (${sub})</div>${on.map(lvRow).join('')}` : ''; };
+  const lvRest = [...LEVELS_3000, ...LEVELS_5000].filter((l) => !lvOn(l));
+  const lvRows = lvSet('ชุด 3000 คำ', 'คำหลัก', LEVELS_3000, 8) + lvSet('ชุด 5000 คำ', 'คำเพิ่มเติม', LEVELS_5000, 12)
+    + (lvRest.length ? `<details class="lv-more"><summary>ระดับอื่นที่ยังไม่ได้เริ่ม (${lvRest.map((l) => LV_LABEL[l]).join(' · ')})</summary>${lvRest.map(lvRow).join('')}</details>` : '');
 
   view.innerHTML = `
     <div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="sBack">‹ กลับ</button></div>
+    ${starterCard()}
     ${levelCard()}
     <div id="readyHost"></div>
     <div class="h2">ความคืบหน้าแต่ละระดับ</div>
@@ -246,6 +251,19 @@ function renderStats(from) {
   watchCharts();
   sectionize(view, '[data-lz="stk"]');
   masonry([view], '.row, .m-sec:has([data-lz="heat"], #ach), [data-lz="stk"]');
+}
+
+// First days: a friendly card instead of letting the empty charts speak first (1.134). Days played = days with any
+// answer in hist; it goes away on the 3rd day played.
+function starterCard() {
+  const days = Object.keys(S.hist).filter((k) => S.hist[k] > 0).length;
+  if (days >= 3) return '';
+  const dots = [0, 1, 2].map((k) => `<span class="sc-dot${k < days ? ' on' : ''}">${k < days ? '✓' : k + 1}</span>`).join('');
+  return `<div class="card-box starter-card">
+    <div class="sc-pic" aria-hidden="true">${mascotSvg({ mood: days ? 'happy' : 'normal', size: 76 })}</div>
+    <div class="grow"><b>${days ? 'เริ่มได้สวยเลย!' : 'ยินดีต้อนรับสู่หน้าสถิติ'}</b>
+      <div class="small muted" style="margin-top:4px">เล่นให้ครบ 3 วัน แล้วกราฟ ปฏิทิน และวันคาดว่าจะจำได้ครบจะเริ่มมีข้อมูลให้ดูนะ</div>
+      <div class="sc-dots" role="img" aria-label="เล่นแล้ว ${days} จาก 3 วัน">${dots}</div></div></div>`;
 }
 
 // Heavy blocks below the fold (calendar, trend chart, stickers, medals) are drawn when they come within 300px of the

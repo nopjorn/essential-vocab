@@ -1830,6 +1830,9 @@ test('polish (1.131): notices share one box, option badges, one-line title, A–
   await page.evaluate(() => go('home'));
   await expect(page.locator('#notices .nd-slide')).toHaveCount(2);
   await expect(page.locator('#notices [data-nd]')).toHaveCount(2);
+  // 1.134: the second card peeks in (dimmed) so the deck reads as swipeable
+  await expect(page.locator('#notices .nd-slide').first()).toHaveClass(/\bon\b/);
+  expect(await page.evaluate(() => { const tr = $('.nd-track').getBoundingClientRect(), b = document.querySelectorAll('.nd-slide')[1].getBoundingClientRect(); return tr.right - b.left; })).toBeGreaterThan(14);
   await expect(page.locator('#placeCard')).toBeAttached();
   await page.locator('#installTip [data-inst]').click();   // closing one leaves a single plain notice
   await expect(page.locator('#notices')).toHaveCount(0);
@@ -2030,5 +2033,49 @@ test('iPad 1.133: narrow rail in portrait, foldable sidebar groups, quiz answers
   // a wrong and a right answer still work in this layout
   await page.locator('.options .opt').first().click();
   await expect(page.locator('#nextQ')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('1.134: stats starter card + folded levels, goal ring party once a day, edge swipe back, notice peek', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  // stats for a brand-new learner: welcome card, only the studied level open, the rest folded
+  await page.evaluate(() => go('stats'));
+  await expect(page.locator('.starter-card')).toBeVisible();
+  await expect(page.locator('.starter-card .sc-dot.on')).toHaveCount(0);
+  await expect(page.locator('.lvl-row.lv-A1')).toBeVisible();
+  await expect(page.locator('.lv-more .lvl-row.lv-B1')).toBeHidden();
+  await page.locator('.lv-more:has(.lvl-row) > summary').click();
+  await expect(page.locator('.lv-more .lvl-row.lv-B1')).toBeVisible();
+  await expect(page.locator('#readyHost .ready-box')).toBeVisible();
+  await page.evaluate(() => { for (let k = 0; k < 3; k++) S.hist[dayKey(k)] = 5; go('stats'); });
+  await expect(page.locator('.starter-card')).toHaveCount(0);
+  // closing today's goal ring: rays + confetti once, then never again today
+  await page.evaluate(() => { S.daily.fresh = newGoal(); go('home'); });
+  await expect(page.locator('.hero.ring-party .ring-burst')).toHaveCount(1);
+  expect(await page.evaluate(() => localStorage.getItem('o3k.ring'))).toBe(await page.evaluate(() => today()));
+  await expect(page.locator('.m-cheer')).toContainText('ครบเป้าวันนี้');
+  await page.evaluate(() => { go('games'); go('home'); });
+  await expect(page.locator('.hero.ring-closed')).toHaveCount(1);
+  await expect(page.locator('.ring-burst')).toHaveCount(0);
+  // swipe from the left edge on a page with a back button goes back
+  await page.evaluate(() => go('stats', 'home'));
+  await expect(page.locator('body.has-back')).toHaveCount(1);
+  await page.evaluate(() => {
+    const t = (x, y) => new Touch({ identifier: 1, target: document.body, clientX: x, clientY: y });
+    const fire = (type, x) => document.dispatchEvent(new TouchEvent(type, { touches: type === 'touchend' ? [] : [t(x, 400)], changedTouches: [t(x, 400)], bubbles: true }));
+    fire('touchstart', 8); fire('touchmove', 40); fire('touchmove', 90); fire('touchmove', 140);
+    window.__edgeTip = !!document.querySelector('.edge-back.ready');
+    fire('touchend', 140);
+  });
+  expect(await page.evaluate(() => window.__edgeTip)).toBe(true);
+  await expect(page.locator('#view')).toHaveAttribute('data-route', 'home');
+  // a short swipe stays put
+  await page.evaluate(() => go('stats', 'home'));
+  await page.evaluate(() => {
+    const t = (x, y) => new Touch({ identifier: 1, target: document.body, clientX: x, clientY: y });
+    const fire = (type, x) => document.dispatchEvent(new TouchEvent(type, { touches: type === 'touchend' ? [] : [t(x, 400)], changedTouches: [t(x, 400)], bubbles: true }));
+    fire('touchstart', 8); fire('touchmove', 40); fire('touchend', 40);
+  });
+  await expect(page.locator('#view')).toHaveAttribute('data-route', 'stats');
   expect(errors).toEqual([]);
 });

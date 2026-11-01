@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.133.0';
+const APP_VERSION = '1.134.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1721,6 +1721,49 @@ function fitTitle() { const t = $('#title'); t.classList.remove('long'); if (t.s
 new MutationObserver(fitTitle).observe($('#title'), { childList: true, characterData: true, subtree: true });
 addEventListener('resize', fitTitle);
 $('#topBack').addEventListener('click', () => { const b = view.querySelector('[id$="Back"]'); if (b) b.click(); });
+// Swipe in from the left edge = the back button (1.134), like native iOS apps: a ‹ bubble follows the finger and the page
+// leans along; let go past 80px (mostly sideways) to go back. Only on pages with a back button and no sheet/dialog open.
+(() => {
+  let x0 = 0, y0 = 0, dx = 0, on = false, locked = false, tip = null;
+  const EDGE = 24, GO = 80;
+  const reset = () => {
+    on = false; locked = false;
+    view.style.transition = 'transform .2s'; view.style.transform = '';
+    setTimeout(() => { view.style.transition = ''; }, 220);
+    if (tip) { const t = tip; tip = null; t.classList.add('out'); setTimeout(() => t.remove(), 200); }
+  };
+  document.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    if (e.touches.length !== 1 || t.clientX > EDGE || !document.body.classList.contains('has-back')) return;
+    if (document.querySelector('.sheet-wrap, .celebrate, dialog[open], [aria-modal="true"], [role="dialog"]')) return;
+    x0 = t.clientX; y0 = t.clientY; dx = 0; on = true; locked = false;
+  }, { passive: true });
+  document.addEventListener('touchmove', (e) => {
+    if (!on) return;
+    const t = e.touches[0], mx = t.clientX - x0, my = t.clientY - y0;
+    if (!locked) {
+      if (Math.abs(my) > 12 && Math.abs(my) > mx) { on = false; return; } // a scroll, not a swipe
+      if (mx < 10) return;
+      locked = true;
+      tip = document.createElement('div'); tip.className = 'edge-back'; tip.setAttribute('aria-hidden', 'true'); tip.textContent = '‹';
+      tip.style.top = Math.max(80, Math.min(innerHeight - 120, t.clientY)) - 22 + 'px';
+      document.body.appendChild(tip);
+    }
+    dx = Math.max(0, mx);
+    const k = Math.min(1, dx / GO);
+    tip.style.transform = `translateX(${Math.min(dx, 110) * 0.6}px) scale(${0.6 + 0.4 * k})`;
+    tip.classList.toggle('ready', dx >= GO);
+    view.style.transform = `translateX(${Math.min(dx, 140) * 0.25}px)`;
+  }, { passive: true });
+  const end = () => {
+    if (!on) return;
+    const go = locked && dx >= GO;
+    reset();
+    if (go) { haptic('ok'); $('#topBack').click(); }
+  };
+  document.addEventListener('touchend', end, { passive: true });
+  document.addEventListener('touchcancel', () => { if (on) reset(); }, { passive: true });
+})();
 // iPad sidebar extras: reference pages live under the คลังความรู้ page (route 'ref', 1.127), so open it first (their ‹ กลับ returns there).
 const REF_PAGES = { pairs: () => renderPairs(), fams: () => renderFamilies(), syn: () => renderSyn(), affix: () => renderAffix(), roots: () => renderRoots(), ukus: () => renderUkUs(), phrasal: () => renderPhrasal(), idiom: () => renderIdioms(), sit: () => renderSit(), irr: () => renderIrregular(), dprep: () => renderDepPrep(), mis: () => renderMistakes(), gpat: () => renderGramPat(), ipa: () => renderIpa() };
 // iPad sidebar groups (1.133): a group heading folds its shortcuts away (the active one stays visible); the folded groups are remembered on this device.

@@ -49,6 +49,7 @@ function renderHome() {
   const goal = newGoal();
   const standalone = window.navigator.standalone || matchMedia('(display-mode: standalone)').matches;
 
+  let party = false; // today's goal ring just closed: celebrate once a day (1.134)
   const lastBackup = S.backupAt ? Math.floor((Date.now() - S.backupAt) / DAY) : null;
   // Each home block returns its HTML ('' = nothing to show today); order/width/visibility come from homeBlocks().
   const B = {
@@ -62,7 +63,8 @@ function renderHome() {
       const rfv = closed ? 1 : revTot ? rf : 0, nfv = closed ? 1 : newTot ? nf : 0;
       const arc = (r, f, cls) => `<circle class="rg ${cls}${f <= 0 ? ' z' : ''}" cx="50" cy="50" r="${r}" pathLength="100" style="stroke-dashoffset:${(100 - f * 100).toFixed(1)}" transform="rotate(-90 50 50)"/>`;
       const sk = heroSky();
-      return `<div class="hero pop${closed ? ' ring-closed' : ''}${sk.cls}"${sk.style}>${sk.scene}
+      party = closed && doneToday > 0 && ringPartyDue();
+      return `<div class="hero pop${closed ? ' ring-closed' : ''}${party ? ' ring-party' : ''}${sk.cls}"${sk.style}>${sk.scene}
       <div class="hero-top">
         <div class="hero-main">
           <div class="small" style="opacity:.9">${greeting()}</div>
@@ -71,7 +73,7 @@ function renderHome() {
         </div>
         <div class="ring" role="img" aria-label="ความคืบหน้าวันนี้ ${pct}% ทบทวน ${S.daily.reviews} จาก ${revTot} ใบ คำใหม่ ${S.daily.fresh} จาก ${goal} คำ">
           ${sk.disc}<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="rt" cx="50" cy="50" r="43"/><circle class="rt" cx="50" cy="50" r="30"/>${arc(43, rfv, 'r1')}${arc(30, nfv, 'r2')}</svg>
-          <span class="ring-c" aria-hidden="true">${closed ? '✓' : pct + '%'}</span>
+          <span class="ring-c" aria-hidden="true">${closed ? '✓' : pct + '%'}</span>${party ? `<span class="ring-burst" aria-hidden="true">${'<i></i>'.repeat(12)}</span>` : ''}
         </div>
       </div>
       <div class="ring-legend small"><span><i class="d1"></i>ทบทวน ${S.daily.reviews}/${revTot}</span><span><i class="d2"></i>${plan.on ? 'คำใหม่ ⏸ พักไว้' : `คำใหม่ ${S.daily.fresh}/${goal}`}</span></div>
@@ -210,6 +212,18 @@ function renderHome() {
     renderHome();
   };
   bindNoticeDeck();
+  if (party) ringParty();
+}
+// Goal ring closed: rays + confetti + น้องคำ once a day per device (localStorage o3k.ring = the day it was shown).
+function ringPartyDue() { try { return localStorage.getItem('o3k.ring') !== today(); } catch (e) { return false; } }
+function ringParty() {
+  try { localStorage.setItem('o3k.ring', today()); } catch (e) { /* ignore */ }
+  const still = document.documentElement.classList.contains('no-ans') || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setTimeout(() => {
+    if (view.dataset.route !== 'home') return;
+    confetti('burst'); haptic('win');
+    if (!still) mascotPop('ครบเป้าวันนี้แล้ว! เก่งมาก 🎉', ['happy'], 2800);
+  }, still ? 200 : 1300);
 }
 // Notices above the home blocks (backup, streak repair, backlog, placement, install): one shows as is; several share
 // one swipeable box with dots (1.131), so the today card stays near the top.
@@ -221,10 +235,14 @@ function noticeDeck(list) {
 }
 function bindNoticeDeck() {
   const tr = view.querySelector('.nd-track'); if (!tr) return;
-  const dots = [...view.querySelectorAll('[data-nd]')];
-  const at = () => Math.round(tr.scrollLeft / Math.max(1, tr.clientWidth));
-  tr.addEventListener('scroll', () => { const k = at(); dots.forEach((d, j) => d.classList.toggle('on', j === k)); }, { passive: true });
-  dots.forEach((d) => (d.onclick = () => tr.scrollTo({ left: +d.dataset.nd * tr.clientWidth, behavior: 'smooth' })));
+  const dots = [...view.querySelectorAll('[data-nd]')], slides = [...tr.children];
+  // slides are narrower than the track (the next one peeks in, 1.134), so find the one nearest the start edge
+  const at = () => { const x = tr.scrollLeft; let k = 0, best = Infinity;
+    slides.forEach((sl, j) => { const d = Math.abs(sl.offsetLeft - slides[0].offsetLeft - x); if (d < best) { best = d; k = j; } }); return k; };
+  const mark = () => { const k = at(); dots.forEach((d, j) => d.classList.toggle('on', j === k)); slides.forEach((sl, j) => sl.classList.toggle('on', j === k)); };
+  slides[0].classList.add('on');
+  tr.addEventListener('scroll', mark, { passive: true });
+  dots.forEach((d) => (d.onclick = () => tr.scrollTo({ left: slides[+d.dataset.nd].offsetLeft - slides[0].offsetLeft, behavior: 'smooth' })));
 }
 // Install banner: iPhone/iPad = Safari share sheet; Chrome/Edge on a computer = their own install prompt (beforeinstallprompt) or the address-bar icon.
 let installEvt = null;
