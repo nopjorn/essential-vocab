@@ -117,7 +117,7 @@ const deckBar = (st) => `<div class="dk-bar" role="img" aria-label="แม่น
 // Default name = this week (Monday–Sunday), e.g. "ศัพท์สัปดาห์ 20–26 ต.ค."
 function weekDeckName() {
   const mon = new Date(mondayKey() + 'T12:00:00'), sun = new Date(mon.getTime() + 6 * DAY);
-  const m = (d) => d.toLocaleDateString('th-TH', { month: 'short' });
+  const m = (d) => TH_MON_FMT.format(d);
   return `ศัพท์สัปดาห์ ${mon.getDate()}${m(mon) === m(sun) ? '' : ' ' + m(mon)}–${sun.getDate()} ${m(sun)}`.slice(0, DECK_MAX.name);
 }
 // Words of a goal shortcut ("travel", …) or the starred words, as list spellings.

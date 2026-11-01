@@ -16,7 +16,11 @@ function takeSnap() {
   S.snap[today()] = [l3, m3, la, ma];
 }
 const dayKey = (k) => ymd(new Date(Date.now() - k * DAY)); // k days ago
-const thDate = (ms) => new Date(ms).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+// Thai dates by hand (1.126), same text as toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) ("11 ธ.ค. 69"):
+// building the Thai Intl formatter cost 50–65 ms of start-up at 4× CPU.
+const TH_MON_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const TH_MON_FMT = { format: (d) => TH_MON_SHORT[d.getMonth()] };
+const thDate = (ms) => { const d = new Date(ms); return `${d.getDate()} ${TH_MON_SHORT[d.getMonth()]} ${String((d.getFullYear() + 543) % 100).padStart(2, '0')}`; };
 const durTxt = (d) => (d < 45 ? `${Math.round(d)} วัน` : d < 365 * 1.5 ? `${Math.round(d / 30)} เดือน` : `${(d / 365).toFixed(1)} ปี`);
 
 // Habits over the last 28 days (or since the first day played, if sooner).
@@ -400,7 +404,7 @@ function yearHeatmap() {
       if (key > tKey) { cells.push('<i class="hm-c hm-x"></i>'); continue; }
       if (dow === 0 && d.getMonth() !== lastMonth) {
         lastMonth = d.getMonth();
-        if (wk < 51) { if (months.length && wk - months[months.length - 1][0] < 3) months.pop(); months.push([wk, d.toLocaleDateString('th-TH', { month: 'short' })]); }
+        if (wk < 51) { if (months.length && wk - months[months.length - 1][0] < 3) months.pop(); months.push([wk, TH_MON_FMT.format(d)]); }
       }
       const v = S.hist[key] || 0;
       if (v) { active++; total += v; run++; best = Math.max(best, run); } else if (key !== tKey) run = 0;

@@ -1822,3 +1822,14 @@ test('1.125: weak spots from recent wrong answers + practice buttons; target dat
   await expect(page.locator('#weak')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test('1.126: Thai dates hand-formatted like Intl, guide counts the secret medals', async ({ page }) => {
+  const errors = await openApp(page);
+  const bad = await page.evaluate(() => { const out = []; for (let t = Date.UTC(2025, 0, 1); t < Date.UTC(2028, 0, 1); t += 86400000 * 2.7) { const a = thDate(t), b = new Date(t).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }); if (a !== b) out.push([a, b]); } return out; });
+  expect(bad).toEqual([]);
+  await page.evaluate(() => go('guide'));
+  await page.waitForFunction(() => guideOn);
+  const n = await page.evaluate(() => ACH.filter((a) => a.secret).length);
+  expect(await page.evaluate(() => JSON.stringify(GUIDE))).toContain(`เหรียญลับ</b> ${n} เหรียญ`);
+  expect(errors).toEqual([]);
+});

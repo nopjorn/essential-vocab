@@ -46,6 +46,10 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
 | `js/events.js` | Seasonal events (`EVENTS`: halloween 24–31 Oct, songkran 10–16 Apr, loy 5–30 Nov, newyear 26 Dec–3 Jan, christmas 20–25 Dec, valentine 10–14 Feb, mother 8–12 Aug, cny = Chinese New Year via `dates: CNY_WINDOWS` (3 days before to 5 after, 2026–2035 only: add years in `CNY_DAYS`); first match wins, cny is listed before valentine; each with 10 original words + short story + 5-question quiz). `eventOn(date)`, `eventYear`, home block `event` (`eventCard`), route `event` (`renderEvent(id)`), quiz pass (3/5) → `S.evt['id-year']`, sticker + mascot item `evt:*` in `S.owned` |
 | `data/play.js` | Game engine `playQuiz`/`playMatch` (moved out of `js/games.js` in 1.101): `loadPlay()` + stubs in games.js, idle prefetch in boot.js; `openApp` in tests waits for `playOn` |
 | `sw.js` | Network-first service worker with versioned cache |
+| `js/duel.js` `js/riddle.js` `js/wsearch.js` | Challenge a friend (route `duel`, 10 questions from a short code, no server) · daily 5-letter riddle (route `riddle`) · word search (route `wsearch`, 10×10, one topic) |
+| `js/grammar.js` + `data/irregular.js` `depprep.js` `grampat.js` `idioms.js` `mistakes.js` `situations.js` | Grammar/lexis reference pages and their games, data lazy-loaded with `loadData()` (irregular verbs also feed `lookupWord()` went → go; header comments in each data file give the row shape) |
+| `fonts/anuphan-thai-700.woff2` | Heading font (1.117, Thai glyphs only, OFL in `fonts/OFL-Anuphan.txt`), `--head` in style.css, off with `settings.headFont = false` (`html.no-hf`) |
+| `docs/word-list-licence.md` | Notes on replacing the OUP-derived word list (NGSL etc.) if the app is ever sold |
 | `data/families.js` | `window.FAMILIES = [{f: [[word, pos, thai], ...], q: [[sentence ___, answer, thai], ...]}]` original word families (a word is in one family only), lazy-loaded by `loadFamilies()`; `familyOf(word)` → family (word sheet box, `wform` game, `renderFamilies()` browser) |
 | `tests/*.spec.js`, `playwright.config.js` | Playwright test suite (`npm test`), run by `.github/workflows/test.yml` on every push to `master` |
 | `data/collocations.js` | `window.COLLOC = {headword: [[phrase, thai], ...]}` original collocation data, lazy-loaded by `loadColloc()` (word sheet + `colloc` game) |
@@ -77,6 +81,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 - Settings sync (1.53+): `save()` stamps `settingsAt` when `settingsSig()` (settings minus `voice` + `homeCfg`) changes; `mergeBackup()` adopts the copy with the newer `settingsAt`. `gplay` is per device (`DEV`, localStorage `o3k.dev`), summed by `gamePlays(id)`.
 - When adding a field: add it to `defaults()` (load() shallow-merges top-level keys) **and** handle it
   in `mergeBackup()` so importing a backup keeps it.
+- 1.124–1.126 settings: `season` (Thai season sky, `seasonId()`/`seasonScene()` in js/scene.js), `sfxPack` (`SFX_PACKS`/`SFX_DEF` in app.js), `exam {date, name}` (`examPlan()`, home block `exam`), `shareTpl`, `headFont`, `glassBar`. น้องคำ growth screen: `mascotEvolveCheck()` on home, last stage per device in localStorage `o3k.mst`. Card-back pattern from a gold topic sticker: `cardPattern(tp)`. Weak spots: `weakSpots()`/`weakCard()`/`weakGo()` in js/stats.js. `thDate()` is hand-formatted (no Intl at start-up).
 - `save()` (1.73+) is batched: it stamps `settingsAt`, schedules the cloud push and badge, and marks dirty; `flushSave()` (≈300 ms later, on `visibilitychange` hidden, on `pagehide`, in `exportBackup`) runs `checkAch()` (achievements), `takeSnap()` and the localStorage write. Tests call `flushSave()` before reading localStorage (`readState` does).
 
 ## Learning logic

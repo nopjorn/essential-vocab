@@ -129,8 +129,11 @@ function renderHome() {
     forecast: () => `<div class="card-box"><b>🔮 ทบทวน 7 วันข้างหน้า</b><div style="margin-top:8px">${forecastChart()}</div></div>`,
     prog: () => `<button class="card-box prog-card" id="statsBtn">
       <div class="row" style="justify-content:space-between"><b>📈 ความคืบหน้า</b><span class="small muted">ดูสถิติ ›</span></div>
-      ${[['ชุด 3000 คำ', in3000().size, (w) => in3000().has(w.w)], ['ครบ 5000 คำ', W.length, () => true]].map(([name, n, f]) => {
-        const l = W.filter((w) => f(w) && S.prog[w.w]).length, m = W.filter((w) => f(w) && status(w) === 'mastered').length;
+      ${(() => { // one pass over the words (1.126: two filters per row with status() were ~50 ms of start-up at 4× CPU)
+        const c = { l3: 0, m3: 0, l: 0, m: 0 }, s3 = in3000();
+        for (const w of W) { if (!S.prog[w.w]) continue; const m = status(w) === 'mastered', t = s3.has(w.w); c.l++; if (m) c.m++; if (t) { c.l3++; if (m) c.m3++; } }
+        return [['ชุด 3000 คำ', s3.size, c.l3, c.m3], ['ครบ 5000 คำ', W.length, c.l, c.m]];
+      })().map(([name, n, l, m]) => {
         return `<div class="small" style="margin-top:10px">${name} <span class="muted">· จำได้ ${m.toLocaleString()} · เรียนแล้ว ${l.toLocaleString()} / ${n.toLocaleString()}</span></div>
           <div class="bar" style="margin-top:4px"><div class="l" style="width:${l / n * 100}%"></div><div class="m" style="width:${m / n * 100}%"></div></div>`;
       }).join('')}
