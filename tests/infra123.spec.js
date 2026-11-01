@@ -75,6 +75,7 @@ test('put into a set: from the word sheet (new set and existing), from wrong ans
   await page.locator('.sheet-wrap [data-act="deck"]').click();
   await page.locator('[data-pd="d1"]').click();
   expect(await page.evaluate(() => deckById('d1').words)).toEqual(['airport', 'hotel']);
+  await expect(page.locator('.sheet-wrap')).toHaveCount(0); // the first sheet finishes closing before the second opens
   await page.evaluate(() => openSheet(W.find((w) => w.w === 'hotel')));
   await page.locator('.sheet-wrap [data-act="deck"]').click();
   await expect(page.locator('[data-pd="d1"]')).toBeDisabled(); // already in it

@@ -1969,3 +1969,25 @@ button.sus:active { transform: scale(.97); }
 .pick-deck:disabled { opacity: .55; cursor: default; }
 .set-row > select, .set-row > .sel { min-width: 0; max-width: 58%; flex: 0 1 auto; }
 .set-row > .seg { flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
+
+/* ---------- 1.124: น้องคำ grows up (mascotEvolveScreen) ---------- */
+.evo-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 4px; }
+.evo-old { opacity: .55; filter: saturate(.6); line-height: 0; }
+.evo-arrow { font-size: 26px; color: var(--muted); }
+.evo-new { line-height: 0; filter: drop-shadow(0 0 14px rgba(255, 211, 77, .7)); }
+
+/* Thai seasons on the hero sky (1.124, seasonScene in js/scene.js) */
+@media (prefers-reduced-motion: no-preference) {
+  html:not(.no-ans) .fx-rain { animation-name: fxRain; animation-timing-function: linear; }
+  html:not(.no-ans) .fx-mist { animation: fxMist 26s ease-in-out infinite alternate; }
+  html:not(.no-ans) .fx-beams { animation: fxBeams 7s ease-in-out infinite alternate; transform-origin: 0 0; }
+  html:not(.no-ans) .fx-fly { animation: fxFly 4s ease-in-out infinite alternate; }
+  @keyframes fxRain { from { transform: translate(8px, -30px); } to { transform: translate(-30px, 330px); } }
+  @keyframes fxMist { from { transform: translateX(-40px); } to { transform: translateX(60px); } }
+  @keyframes fxBeams { from { opacity: .35; transform: rotate(-2deg); } to { opacity: .6; transform: rotate(2deg); } }
+  @keyframes fxFly { from { transform: translate(0, 0); opacity: .4; } to { transform: translate(10px, -12px); opacity: 1; } }
+}
+
+/* card-back pattern unlocked by a gold topic sticker (1.124, cardPattern in app.js) */
+.fc .face.back.pat { background-image: var(--pat); background-size: 44px 44px; background-position: 0 0; }
+.fc.tint .face.back.pat { background: var(--pat) 0 0 / 44px 44px, linear-gradient(165deg, color-mix(in srgb, hsl(var(--hue) 75% 55%) 14%, var(--surface)) 0%, var(--surface) 62%); }

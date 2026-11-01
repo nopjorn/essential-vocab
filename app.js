@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.123.0';
+const APP_VERSION = '1.124.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -193,7 +193,7 @@ function sanitizeDecks(r) {
 }
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, fest: true, qMascot: true, headFont: true, glassBar: true, fsz: 'md', appKbd: 'auto', shareTpl: 'classic', palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, fest: true, season: true, sfxPack: 'chime', qMascot: true, headFont: true, glassBar: true, fsz: 'md', appKbd: 'auto', shareTpl: 'classic', palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], riddleLv: ['A1', 'A2'] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -933,7 +933,28 @@ function stickerBook() {
       const t = topicStat(id), k = tierOf(t), nx = STK_TIERS[k];
       const pct = nx ? (() => { const [h, need] = nx.need(t); return Math.min(100, h / Math.max(1, need) * 100); })() : 100;
       return `<button class="stk t${k}" data-stk="${id}"><span class="stk-ic">${ic}</span>${k ? `<span class="stk-tier">${STK_TIERS[k - 1].icon}</span>` : ''}<small>${esc(th)}</small><span class="stk-bar"><span style="width:${pct}%"></span></span></button>`;
-    }).join('')}</div><div id="stkInfo" class="small muted" style="margin-top:10px">แตะสติกเกอร์เพื่อดูว่าต้องทำอีกเท่าไร · 🥉 → 🥈 → 🥇 → 💎</div></div>`;
+    }).join('')}</div><div id="stkInfo" class="small muted" style="margin-top:10px">แตะสติกเกอร์เพื่อดูว่าต้องทำอีกเท่าไร · 🥉 → 🥈 → 🥇 → 💎 · ได้ 🥇 ทองแล้ว แฟลชการ์ดของหมวดนั้นจะมีลายพิเศษด้านหลัง</div></div>`;
+}
+// Card-back patterns (1.124): a 🥇 gold (or 💎) sticker in a topic unlocks a drawn pattern on the back of that topic's flashcards.
+// Tiles are 44×44 SVG; topics without their own drawing get stars.
+const PAT_INK = '#8a7fd8';
+const CARD_PAT = {
+  animal: '<g opacity=".2"><ellipse cx="22" cy="26" rx="6" ry="5"/><circle cx="14" cy="18" r="2.6"/><circle cx="19" cy="14" r="2.6"/><circle cx="25" cy="14" r="2.6"/><circle cx="30" cy="18" r="2.6"/></g>',
+  plant: '<path opacity=".2" d="M10 34C10 18 22 10 34 10 34 24 24 34 10 34zM10 34L26 18" stroke="#fff" stroke-width="0"/>',
+  weather: '<g opacity=".2"><ellipse cx="22" cy="26" rx="12" ry="5"/><circle cx="17" cy="22" r="5"/><circle cx="25" cy="20" r="7"/></g>',
+  food: '<g opacity=".2"><path d="M10 22h24a12 12 0 0 1-24 0z"/><path d="M26 8l-6 12M31 9l-6 11" stroke="' + PAT_INK + '" stroke-width="2" stroke-linecap="round"/></g>',
+  home: '<path opacity=".2" d="M22 9L9 21h4v12h7v-7h4v7h7V21h4z"/>',
+  transport: '<g opacity=".2"><rect x="8" y="17" width="28" height="10" rx="4"/><circle cx="15" cy="29" r="3"/><circle cx="29" cy="29" r="3"/><rect x="13" y="12" width="16" height="7" rx="3"/></g>',
+  sport: '<g opacity=".2"><circle cx="22" cy="22" r="11"/><path d="M11 22h22M22 11c-5 6-5 16 0 22M22 11c5 6 5 16 0 22" stroke="#fff" stroke-width="1.6" fill="none"/></g>',
+  arts: '<path opacity=".2" d="M18 30a4 4 0 1 1-2-3.5V12l14-3v17a4 4 0 1 1-2-3.5V13l-10 2z"/>',
+  money: '<g opacity=".2"><circle cx="22" cy="22" r="10"/><path d="M22 15v14M18 19h6a2 2 0 0 1 0 4h-4a2 2 0 0 0 0 4h6" stroke="#fff" stroke-width="2" fill="none"/></g>',
+  tech: '<g opacity=".2"><rect x="10" y="12" width="24" height="16" rx="2"/><rect x="7" y="30" width="30" height="3" rx="1.5"/></g>',
+};
+const PAT_STAR = '<path opacity=".2" d="M22 10l3.5 7.5 8 1-6 5.5 1.6 8-7.1-4-7.1 4 1.6-8-6-5.5 8-1z"/>';
+function cardPattern(tp) {
+  if (!tp || (S.stk && S.stk[tp] || 0) < 3) return '';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" fill="${PAT_INK}">${CARD_PAT[tp] || PAT_STAR}</svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 function bindStickers() {
   const g = $('#stk'); if (!g) return;
@@ -1019,22 +1040,33 @@ const bindSayEx = (root, text) => root.querySelectorAll('[data-sayex]').forEach(
 
 // Tiny sound effects with Web Audio (no files needed).
 let actx;
+// Sound packs (1.124, settings.sfxPack): chime (the original), wood (marimba-like), retro (8-bit), bubble (soft pops).
+// Each: wave, [ok notes], [bad notes], [win notes], note gap (s), length (s), volume, bend (pitch glide factor, bubble).
+const SFX_PACKS = [['chime', '🔔 กริ๊ง'], ['wood', '🪵 ไม้'], ['retro', '👾 เกม 8 บิต'], ['bubble', '🫧 ฟองสบู่']];
+const SFX_DEF = {
+  chime: { w: 'sine', bw: 'square', ok: [660, 880], bad: [220, 160], win: [523, 659, 784, 1047], gap: 0.09, len: 0.16, vol: 0.12 },
+  wood: { w: 'triangle', bw: 'triangle', ok: [523, 784], bad: [196, 147], win: [392, 523, 659, 784], gap: 0.08, len: 0.11, vol: 0.2 },
+  retro: { w: 'square', bw: 'square', ok: [988, 1319], bad: [147, 110], win: [523, 659, 784, 1047, 1319], gap: 0.06, len: 0.08, vol: 0.05 },
+  bubble: { w: 'sine', bw: 'sine', ok: [500, 750], bad: [300, 200], win: [400, 600, 800, 1000], gap: 0.1, len: 0.12, vol: 0.14, bend: 1.8 },
+};
 function sfx(kind) {
   haptic(kind);
   if (!S.settings.sfx) return;
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-    const notes = { ok: [660, 880], bad: [220, 160], win: [523, 659, 784, 1047] }[kind];
+    const P = SFX_DEF[S.settings.sfxPack] || SFX_DEF.chime, notes = P[kind];
+    if (!notes) return;
     notes.forEach((f, k) => {
       const o = actx.createOscillator(), g = actx.createGain();
-      const t0 = actx.currentTime + k * 0.09;
-      o.type = kind === 'bad' ? 'square' : 'sine';
-      o.frequency.value = f;
+      const t0 = actx.currentTime + k * P.gap;
+      o.type = kind === 'bad' ? P.bw : P.w;
+      o.frequency.setValueAtTime(f, t0);
+      if (P.bend) o.frequency.exponentialRampToValueAtTime(f * (kind === 'bad' ? 1 / P.bend : P.bend), t0 + P.len);
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(kind === 'bad' ? 0.05 : 0.12, t0 + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+      g.gain.exponentialRampToValueAtTime(kind === 'bad' ? P.vol * 0.45 : P.vol, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + P.len);
       o.connect(g).connect(actx.destination);
-      o.start(t0); o.stop(t0 + 0.18);
+      o.start(t0); o.stop(t0 + P.len + 0.02);
     });
   } catch (e) { /* audio unavailable */ }
 }

@@ -106,6 +106,8 @@ function renderSettings() {
         <label class="switch"><input type="checkbox" id="headFont" aria-label="ฟอนต์หัวข้ออนุพันธ์" ${st.headFont !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🪟 แถบเมนูกระจกลอย<br><span class="small muted">บนมือถือ แถบเมนูล่างเป็นแคปซูลใสลอยเหนือขอบจอ (ปิด = แถบเต็มขอบแบบเดิม)</span></span>
         <label class="switch"><input type="checkbox" id="glassBar" aria-label="แถบเมนูกระจกลอย" ${st.glassBar !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>🌦️ ท้องฟ้าตามฤดู<br><span class="small muted">นอกช่วงเทศกาล: หน้าร้อนมีแสงแดดและหิ่งห้อย หน้าฝนมีฝนปรอยกับรุ้ง หน้าหนาวมีหมอก</span></span>
+        <label class="switch"><input type="checkbox" id="seasonSky" aria-label="ท้องฟ้าตามฤดู" ${st.season !== false ? 'checked' : ''}><span></span></label></div>
       <details class="sky-more"><summary class="small muted">ดูท้องฟ้าทั้ง 6 ช่วงเวลา (เช้า สาย บ่าย เย็น มืด ดึก)</summary>${skyGallery()}</details>
       <div class="set-row" style="flex-wrap:wrap"><span>📱 ไอคอนแอป<br><span class="small muted" id="icoName"></span></span>
         <div class="pal ico" id="iconPick" role="group" aria-label="ไอคอนแอป">${ICONS.map(([id, name]) => `<button data-i="${id}" aria-label="ไอคอน${name}" aria-pressed="${(st.icon || 'purple') === id}" class="${(st.icon || 'purple') === id ? 'on' : ''}"><img src="${iconSrc(id)}" alt="" width="44" height="44"></button>`).join('')}</div></div>
@@ -134,6 +136,8 @@ function renderSettings() {
         <label class="switch"><input type="checkbox" id="auto" ${st.autoSpeak ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>เสียงเอฟเฟกต์ในเกม</span>
         <label class="switch"><input type="checkbox" id="sfx" ${st.sfx ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row" style="flex-wrap:wrap"><span>🎼 ชุดเสียง<br><span class="small muted">แตะเพื่อฟังตัวอย่าง</span></span>
+        <div class="seg" id="sfxPack" role="group" aria-label="ชุดเสียง">${SFX_PACKS.map(([v, t]) => `<button class="${(st.sfxPack || 'chime') === v ? 'on' : ''}" data-v="${v}" aria-pressed="${(st.sfxPack || 'chime') === v}">${t}</button>`).join('')}</div></div>
       <div class="set-row"><span>สำเนียง</span>
         <select class="sel" id="acc"><option value="en-US" ${st.accent === 'en-US' ? 'selected' : ''}>🇺🇸 อเมริกัน</option><option value="en-GB" ${st.accent === 'en-GB' ? 'selected' : ''}>🇬🇧 อังกฤษ</option></select></div>
       <div class="set-row"><span>ความเร็วเสียง</span>
@@ -227,6 +231,12 @@ function renderSettings() {
   };
   $('#haptic').onchange = (e) => { st.haptic = e.target.checked; save(); if (st.haptic) haptic('ok'); };
   $('#sfx').onchange = (e) => { st.sfx = e.target.checked; save(); sfx('ok'); };
+  $('#sfxPack').onclick = (e) => {
+    const b = e.target.closest('[data-v]'); if (!b) return;
+    st.sfxPack = b.dataset.v; save();
+    view.querySelectorAll('#sfxPack button').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+    const was = st.sfx; st.sfx = true; sfx('ok'); setTimeout(() => sfx('win'), 450); st.sfx = was;
+  };
   $('#acc').onchange = (e) => { st.accent = e.target.value; save(); speak('Hello! Nice to meet you.'); };
   $('#rate').onchange = (e) => { st.rate = +e.target.value; save(); speak('vocabulary'); };
   $('#wgoal').onchange = (e) => { st.weekGoal = +e.target.value; save(); };
@@ -264,6 +274,7 @@ function renderSettings() {
   };
   $('#heroArt').onchange = (e) => { st.heroArt = e.target.checked; save(); };
   $('#festSky').onchange = (e) => { st.fest = e.target.checked; save(); };
+  $('#seasonSky').onchange = (e) => { st.season = e.target.checked; save(); };
   $('#qMascot').onchange = (e) => { st.qMascot = e.target.checked; save(); };
   $('#headFont').onchange = (e) => { st.headFont = e.target.checked; save(); applyAnim(); };
   $('#glassBar').onchange = (e) => { st.glassBar = e.target.checked; save(); applyAnim(); };

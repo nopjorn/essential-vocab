@@ -106,10 +106,10 @@ test('festive sky (1.115): every event draws its layer, mascot tries the costume
   expect(await page.evaluate(() => festEquip({}).equip.head)).toBe('pumpkin');
   await expect(page.locator('.mascot-card .m-fest')).toContainText('ชั่วคราว');
   await page.evaluate(() => { S.settings.fest = false; go('home'); });
-  await expect(page.locator('.hero .fest')).toHaveCount(0);
+  await expect(page.locator('.hero .fest:not(.season)')).toHaveCount(0);
   expect(await page.evaluate(() => festEquip({}).equip.head)).toBeUndefined();
   await page.evaluate(() => { window.eventOn = () => null; S.settings.fest = true; go('home'); });
-  await expect(page.locator('.hero .fest')).toHaveCount(0);
+  await expect(page.locator('.hero .fest:not(.season)')).toHaveCount(0); // 1.124: outside events the season layer may be there
   expect(errors).toEqual([]);
 });
 
@@ -123,5 +123,36 @@ test('น้องคำ in the game header (1.115): happy after a right answer,
   expect(await page.locator('.q-m.yay, .q-m.oops').count()).toBe(1);
   await page.evaluate(() => { S.settings.qMascot = false; startGame('en2th'); });
   await expect(page.locator('.q-m')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('1.124: Thai seasons on the sky, sound packs, card-back pattern from a gold sticker, น้องคำ grows up once per device', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  const at = (m, d) => page.evaluate(([m, d]) => seasonId(new Date(2026, m - 1, d)), [m, d]);
+  for (const [m, d, s] of [[2, 14, 'cool'], [2, 15, 'hot'], [5, 15, 'hot'], [5, 16, 'rain'], [10, 15, 'rain'], [10, 16, 'cool'], [1, 1, 'cool']]) expect(await at(m, d), `${m}/${d}`).toBe(s);
+  // no event: the season layer is drawn; switched off: nothing
+  await page.evaluate(() => { window.eventOn = () => null; window.seasonId = () => 'rain'; window.skyId = () => 'afternoon'; go('home'); });
+  await expect(page.locator('.hero .season.season-rain .fx-bow')).toHaveCount(1);
+  await page.evaluate(() => { window.seasonId = () => 'hot'; window.skyId = () => 'night'; go('home'); });
+  await expect(page.locator('.hero .season-hot .fx-fly')).not.toHaveCount(0);
+  await page.evaluate(() => { S.settings.season = false; go('home'); });
+  await expect(page.locator('.hero .season')).toHaveCount(0);
+  // sound packs: every pack has every sound; playing them does not throw
+  expect(await page.evaluate(() => SFX_PACKS.every(([id]) => ['ok', 'bad', 'win'].every((k) => SFX_DEF[id][k].length)))).toBe(true);
+  await page.evaluate(() => { S.settings.sfx = true; for (const [id] of SFX_PACKS) { S.settings.sfxPack = id; sfx('ok'); sfx('bad'); sfx('win'); } });
+  // card pattern only from gold
+  expect(await page.evaluate(() => { S.stk = { animal: 2 }; return cardPattern('animal'); })).toBe('');
+  expect(await page.evaluate(() => { S.stk = { animal: 3, edu: 4 }; return [cardPattern('animal'), cardPattern('edu')].every((x) => x.startsWith('url("data:image/svg+xml,')); })).toBe(true);
+  // growth: first look records silently, a later stage shows the screen once
+  await page.evaluate(() => { localStorage.removeItem('o3k.mst'); mascotEvolveCheck(); });
+  await page.waitForTimeout(700);
+  await expect(page.locator('.evolve')).toHaveCount(0);
+  await page.evaluate(() => { localStorage.setItem('o3k.mst', '0'); window.mascotStage = () => ({ i: 1, name: 'เด็กน้อย', next: { need: 250, name: 'โตเต็มวัย' } }); mascotEvolveCheck(); });
+  await expect(page.locator('.evolve')).toContainText('เด็กน้อย');
+  await page.locator('.evolve [data-close]').click();
+  await expect(page.locator('.evolve')).toHaveCount(0);
+  await page.evaluate(() => mascotEvolveCheck());
+  await page.waitForTimeout(700);
+  await expect(page.locator('.evolve')).toHaveCount(0);
   expect(errors).toEqual([]);
 });

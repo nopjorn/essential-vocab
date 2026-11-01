@@ -224,3 +224,34 @@ function renderMascot() {
   };
   cleanup = () => { view.onclick = null; };
 }
+
+/* ---------- น้องคำ grows up (1.124) ---------- */
+// When the growth stage goes up (mastered words, STAGES), a full-screen moment shows the old and the new น้องคำ. Checked on home
+// (a calm screen, never mid-session); the last stage seen is kept per device (localStorage o3k.mst). A device seeing the app for
+// the first time just records the current stage, so nobody gets a celebration for growth that happened long ago.
+function mascotEvolveCheck() {
+  let seen = null; try { seen = localStorage.getItem('o3k.mst'); } catch (e) { return; }
+  const st = mascotStage();
+  if (seen === null || +seen > st.i) { try { localStorage.setItem('o3k.mst', String(st.i)); } catch (e) {} return; }
+  if (st.i <= +seen) return;
+  try { localStorage.setItem('o3k.mst', String(st.i)); } catch (e) {}
+  setTimeout(() => mascotEvolveScreen(+seen, st), 500);
+}
+const STAGE_SAY = ['', 'มีใบอ่อนงอกบนหัวแล้ว! จำคำได้ 50 คำ 🌱', 'โตเต็มวัยแล้ว! จำคำได้ 300 คำ เก่งมาก 💪', 'เป็นตำนานคำศัพท์! จำคำได้ 1,000 คำ มีรัศมีทองรอบตัว ✨'];
+function mascotEvolveScreen(from, st) {
+  document.querySelectorAll('.evolve').forEach((x) => x.remove());
+  if (!confettiOff()) confetti('burst'); else sfx('win');
+  const el = document.createElement('div');
+  el.className = 'celebrate lvlup evolve'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', `น้องคำโตเป็น ${st.name}`);
+  el.innerHTML = `<div class="cel-card"><div class="evo-row" aria-hidden="true"><span class="evo-old">${mascotSvg({ mood: 'normal', size: 70, stage: from })}</span><span class="evo-arrow">➜</span>
+    <span class="evo-new dance">${mascotSvg({ mood: 'happy', size: 112, stage: st.i })}</span></div>
+    <div class="h2">น้องคำโตเป็น “${st.name}” แล้ว!</div><p>${STAGE_SAY[st.i] || ''}</p>
+    ${st.next ? `<p class="small muted">จำได้อีก ${st.next.need.toLocaleString()} คำ จะโตเป็น “${st.next.name}”</p>` : '<p class="small muted">โตเต็มที่แล้ว ขอบคุณที่เรียนมาด้วยกันนะ 💛</p>'}
+    <button class="btn primary block" data-close>เย้!</button></div>`;
+  const close = () => { el.classList.add('out'); setTimeout(() => el.remove(), 250); document.removeEventListener('keydown', k); };
+  const k = (e) => { if (e.key === 'Escape') close(); };
+  el.onclick = close;
+  document.addEventListener('keydown', k);
+  document.body.appendChild(el);
+  const b = el.querySelector('[data-close]'); if (b) b.focus({ preventScroll: true });
+}

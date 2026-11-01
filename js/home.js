@@ -187,6 +187,7 @@ function renderHome() {
     if (b.dataset.pl === 'go') go('placement'); else { S.placedAt = today(); save(); pc.remove(); }
   };
   masonry([view.querySelector('.home-grid')]);
+  mascotEvolveCheck();
   const it = $('#installTip');
   if (it) it.onclick = (e) => {
     if (e.target.closest('[data-instgo]') && installEvt) { installEvt.prompt(); installEvt.userChoice.then((c) => { if (c.outcome === 'accepted') it.remove(); }).catch(() => {}); installEvt = null; return; }

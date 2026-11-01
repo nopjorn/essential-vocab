@@ -56,7 +56,7 @@ function skyVars(id, time) {
 function heroSky() {
   const time = S.settings.heroBg === 'time', art = S.settings.heroArt !== false;
   if (!time && !art) return { cls: '', style: '', scene: '', disc: '' };
-  const id = skyId(), fe = art ? festOn() : null, fx = fe ? festScene(fe) : '';
+  const id = skyId(), fe = art ? festOn() : null, fx = fe ? festScene(fe) : art && S.settings.season !== false ? seasonScene(seasonId(), id) : '';
   return { cls: ` sk-${id}${time ? ' sky-time' : ''}${art ? ' sky-art' : ''}${fx ? ' fest-on' : ''}`, style: ` style="${skyVars(id, time)}"`, scene: art ? skyScene(id).replace(/<\/div>$/, `${fx}</div>`) : '', disc: art ? '<i class="ring-disc" aria-hidden="true"></i>' : '' };
 }
 // Settings: a small card per time of day (always the full time-of-day look) so every sky can be seen.
@@ -110,4 +110,28 @@ function festScene(e) {
   const sky = FEST_SKY[e.id], ground = FEST_GROUND[e.id];
   if (!sky && !ground) return '';
   return `<div class="fest fest-${e.id}" aria-hidden="true">${sky ? `<svg class="fx-sky" viewBox="0 0 400 300" preserveAspectRatio="xMidYMin slice" focusable="false">${sky()}</svg>` : ''}${ground ? `<svg class="fx-prop" viewBox="0 0 120 60" focusable="false">${ground}</svg>` : ''}</div>`;
+}
+
+/* ---------- Thai seasons (1.124) ---------- */
+// Outside festival windows the sky follows the Thai season: ฤดูร้อน 15 Feb–15 May (sun beams by day, fireflies at night),
+// ฤดูฝน 16 May–15 Oct (drizzle, a rainbow late morning to afternoon), ฤดูหนาว 16 Oct–14 Feb (drifting mist, cool air).
+// settings.season (default on). Decorative only.
+const SEASONS = { hot: ['☀️', 'ฤดูร้อน'], rain: ['🌧️', 'ฤดูฝน'], cool: ['🌫️', 'ฤดูหนาว'] };
+function seasonId(d = new Date()) {
+  const md = (d.getMonth() + 1) * 100 + d.getDate();
+  return md >= 215 && md <= 515 ? 'hot' : md >= 516 && md <= 1015 ? 'rain' : 'cool';
+}
+function seasonScene(season, sky) {
+  const day = ['morning', 'forenoon', 'afternoon'].includes(sky), night = sky === 'night' || sky === 'dusk';
+  let svg = '';
+  if (season === 'rain') {
+    if (sky === 'forenoon' || sky === 'afternoon') svg += '<g class="fx-bow" opacity=".42" fill="none" stroke-width="5">' + ['#ff6b6b', '#ffb347', '#ffe66b', '#6bd88a', '#6bb8ff', '#9a7bff'].map((c, i) => `<path d="M${60 + i * 5} 230A${150 - i * 5} ${150 - i * 5} 0 0 1 ${360 - i * 5} 230" stroke="${c}"/>`).join('') + '</g>';
+    svg += festMany(28, 113, (x, y, sc, d, t) => FX_A('fx-fall fx-rain', x, -20, sc, d, +t / 5, '<path d="M0 0l-3 10" stroke="rgba(220,235,255,.75)" stroke-width="1.6" stroke-linecap="round"/>'));
+  } else if (season === 'cool') {
+    svg += [[0, 168, 1.2, 0], [150, 196, 1, 3], [40, 222, 1.4, 6]].map(([x, y, sc, d]) => FX_A('fx-mist', x, y, sc, d, 26, '<ellipse cx="120" cy="0" rx="160" ry="18" fill="rgba(255,255,255,.3)"/>')).join('');
+  } else if (season === 'hot') {
+    if (day) svg += '<g class="fx-beams" opacity=".5">' + [-20, 0, 20, 40].map((a) => `<path d="M0 0L400 ${a * 6 + 60}L400 ${a * 6 + 100}Z" fill="rgba(255,240,180,.16)"/>`).join('') + '</g>';
+    if (night) svg += festMany(12, 131, (x, y, sc, d) => FX_A('fx-tw fx-fly', x, +y / 1.4 + 120, sc, d, 3, '<circle r="2.2" fill="#fff59a"/><circle r="5" fill="rgba(255,245,154,.25)"/>'));
+  }
+  return svg ? `<div class="fest season season-${season}" aria-hidden="true"><svg class="fx-sky" viewBox="0 0 400 300" preserveAspectRatio="xMidYMin slice" focusable="false">${svg}</svg></div>` : '';
 }
