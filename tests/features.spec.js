@@ -1900,3 +1900,21 @@ test('1.128: drawn tab icons (search still shows the emoji), golden "จำไ�
   await expect(page.locator('#streak .flame.fl0')).toHaveCount(1);
   expect(errors).toEqual([]);
 });
+
+test('1.129: result screen has stars, mascot, answer strip and XP; word sheet header shows the memory ring', async ({ page }) => {
+  const errors = await openApp(page, { prog: { house: { b: 3, i: 8, e: 2.5, d: Date.now() + 864e5, s: 3, c: 3, x: 0 } } });
+  await page.evaluate(() => openSheet(W.find((x) => x.w === 'house')));
+  await expect(page.locator('.sh-hero .sh-ring')).toHaveAttribute('aria-label', 'ความจำ 50%');
+  await page.evaluate(() => { document.querySelector('.sheet-wrap').remove(); startGame('en2th'); });
+  for (let k = 0; k < 10; k++) {
+    await page.locator('.opt').first().click();
+    const nx = page.locator('#nextQ'); if (await nx.count()) await nx.click();
+  }
+  await expect(page.locator('.res-stars')).toHaveCount(1);
+  await expect(page.locator('.res-strip i')).toHaveCount(10);
+  const n = await page.locator('.res-strip i.ok').count();
+  await expect(page.locator('.res-stars')).toHaveAttribute('aria-label', `${n >= 9 ? 3 : n >= 7 ? 2 : n >= 4 ? 1 : 0} ดาวจาก 3`);
+  await expect(page.locator('.res-m .mascot')).toHaveCount(1);
+  if (n) await expect(page.locator('.res-xp')).toContainText('XP');
+  expect(errors).toEqual([]);
+});

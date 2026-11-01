@@ -101,6 +101,12 @@ function editNote(w, onDone) {
 
 /* ---------- word detail sheet ---------- */
 // opt.deck = id of a word set: show that set's progress and hide the buttons that change the main progress.
+// Word-sheet header (1.129): how well the word is held, as a ring (new 0 → mastered full, by the review gap up to 16 days).
+function sheetRing(w, dm) {
+  const p = (dm || S.prog)[w.w], f = !p ? 0 : p.b >= MASTERED ? 1 : Math.min(0.95, Math.max(0.08, ivlOf(p) / INTERVALS[MASTERED]));
+  const lab = !p ? 'ยังไม่เรียน' : f >= 1 ? 'จำได้แล้ว' : `ความจำ ${Math.round(f * 100)}%`;
+  return `<div class="sh-ring" role="img" aria-label="${lab}"><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" class="rt"/><circle cx="18" cy="18" r="15" class="rg" pathLength="100" style="stroke-dashoffset:${(100 - f * 100).toFixed(1)}" transform="rotate(-90 18 18)"/></svg><span>${f >= 1 ? '✓' : Math.round(f * 100)}</span></div>`;
+}
 function openSheet(w, onChange, opt = {}) {
   const dm = opt.deck ? S.dprog[opt.deck] || {} : null;
   const st = dm ? DECK_DOT[deckStatus(dm[w.w])] : status(w);
@@ -110,9 +116,11 @@ function openSheet(w, onChange, opt = {}) {
   el.innerHTML = `<div class="sheet wsheet${tintStyle(w) ? ' tint' : ''}" role="dialog" aria-label="${esc(w.w)}"${tintStyle(w)}>
       <div class="grab"></div>
       <div class="sheet-body">
+      <div class="sh-hero lvc-${w.g}">${sheetRing(w, dm)}
       <div class="row" style="justify-content:space-between">${lvBadge(w.g)}<a class="oxl" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(w.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener" aria-label="ดูใน Oxford Learner's Dictionaries">📖 Oxford ↗</a><span class="st-pill ${st}">${stLabel}</span></div>
       <div class="sheet-word" lang="en">${esc(w.w)} <button class="say-ex" data-say aria-label="ฟังเสียง">🔊</button><span class="sheet-emoji" id="emBox" aria-hidden="true">${emojiOf(w)}</span></div>
       <div class="muted">${ipaHtml(w.i)} · <span class="pos">${esc(w.p)}</span>${w.tp ? ` · ${TOPIC_LABEL[w.tp]}` : ''}</div>
+      </div>
       ${tagsOf(w).length ? `<div class="small muted sheet-tags">${tagsOf(w).map((id) => `<span class="tag-pill">${TAG_LABEL[id]}</span>`).join('')}</div>` : ''}
       <div class="th" style="font-size:22px;margin:10px 0">${esc(w.t)}</div>
       ${noteBox(w)}${exampleBox(w)}<div class="colloc" id="colBox"></div><div class="colloc" id="famBox"></div><div class="colloc" id="irBox"></div><div class="colloc" id="dpBox"></div><div class="colloc" id="gpBox"></div><div class="colloc" id="pvBox"></div><div class="colloc" id="idBox"></div><div class="colloc" id="synBox"></div><div class="colloc" id="afBox"></div><div class="colloc" id="rtBox"></div><div class="colloc" id="ukBox"></div>

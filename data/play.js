@@ -25,7 +25,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   const TIME_LIMIT = 60;
   const items = SURV ? [] : SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId) ? lexPick(gameId, src, ROUND) : shuffle(src).slice(0, ENDLESS || STAGE ? src.length : ROUND);
   let i = 0, score = 0, combo = 0, bestCombo = 0, asked = 0, hearts = 3, reach = 0, finished = false, timeLeft = TIME_LIMIT;
-  const wrong = [];
+  const wrong = [], runLog = [], xp0 = S.xp || 0; // runLog: right/wrong of each answer, xp0: XP at the start (result screen, 1.129)
   $('#title').textContent = GNAME;
 
   // 👻 Ghost race (1.120): survival / time attack show the best run so far next to this one (S.ghost[gameId]:
@@ -1171,6 +1171,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (TIMED && ok) ghostRun.push(Math.round((Date.now() - runT0) / 100) / 10);
     if (SURV) ghostRun.push(asked - wrong.length);
     qmReact(ok);
+    runLog.push(ok);
   }
   function next() { if ((SURV || BOSS) && hearts <= 0) return result(); i++; q(); }
 
@@ -1194,8 +1195,15 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     questEvent('round', { game: gameId, correct, bestCombo, perfect: !ENDLESS && correct === items.length && items.length >= 10 });
     if (STAGE ? done.stars >= 2 : SURV || TIMED ? right_ >= 20 : ENDLESS ? bestCombo >= 10 : correct >= 8) confetti(STAGE && done.stars === 3 ? 'burst' : undefined);
     const emoji = STAGE && done.stars === 3 && typeof mascotSvg === 'function' ? `<div class="dance">${mascotSvg({ mood: 'happy', size: 104 })}</div>` : STAGE ? (done.stars === 3 ? '🏆' : done.stars ? '🎉' : '💪') : SURV || TIMED ? (right_ >= 30 ? '🏆' : right_ >= 15 ? '🎉' : '💪') : ENDLESS ? (bestCombo >= 20 ? '🏆' : bestCombo >= 10 ? '🎉' : '💪') : correct === items.length ? '🏆' : correct >= 7 ? '🎉' : correct >= 4 ? '💪' : '📚';
+    // 1.129: a normal round gets stars (3 = 9+/10, 2 = 7+, 1 = 4+), น้องคำ acting out the result, and its score counting up
+    const PLAIN = !STAGE && !ENDLESS, ratio = items.length ? correct / items.length : 0;
+    const rStars = ratio >= 0.9 ? 3 : ratio >= 0.7 ? 2 : ratio >= 0.4 ? 1 : 0;
+    const rMood = ratio >= 0.8 ? 'happy' : ratio >= 0.5 ? 'normal' : 'miss';
+    const rSay = ratio === 1 ? 'เต็มทุกข้อ! เก่งที่สุดเลย 🎉' : ratio >= 0.8 ? 'เยี่ยมมาก! เกือบเต็มแล้ว ✨' : ratio >= 0.5 ? 'ดีขึ้นเรื่อยๆ นะ ทวนคำที่ผิดอีกนิด 💪' : 'ไม่เป็นไรนะ ลองรอบหน้าด้วยกัน 💛';
+    const plainHead = PLAIN && typeof mascotSvg === 'function' ? `<div class="result-emoji res-m${rMood === 'happy' ? ' dance' : ''}" aria-hidden="true">${mascotSvg({ mood: rMood, size: 96, equip: festEquip().equip })}</div>
+        <div class="res-stars" role="img" aria-label="${rStars} ดาวจาก 3">${[0, 1, 2].map((k) => `<i class="${k < rStars ? 'on' : ''}" style="--k:${k}">★</i>`).join('')}</div><p class="small res-say">${rSay}</p>` : '';
     view.innerHTML = `<div class="card-box center pop">
-        <div class="result-emoji">${emoji}</div>
+        ${plainHead || `<div class="result-emoji">${emoji}</div>`}
         ${STAGE ? `<div class="h2" aria-label="${done.stars} ดาว">${starRow(done.stars)}</div>
         <p>${BOSS ? (done.stars ? `🐲 ชนะบอสแล้ว!${done.badge ? ' ได้ 🏅 ตราบอสหมวดนี้ (+25 XP)' : ''}` : '💔 หัวใจหมด บอสชนะรอบนี้ ลองใหม่นะ') : done.stars ? (done.first ? 'ผ่านด่านแล้ว! ปลดล็อกด่านต่อไป 🔓' : 'ผ่านด่านแล้ว') : `ยังไม่ผ่าน ต้องถูกอย่างน้อย ${needFor(items.length)} ข้อ ลองใหม่นะ`} · ถูก ${correct}/${items.length}</p>`
         : SURV ? `<div class="h2">❤️ รอดมาได้ ${right_} ข้อ ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
@@ -1204,9 +1212,10 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
         <p>ตอบไป ${asked} ข้อ · คอมโบสูงสุด ${bestCombo}${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>${ghostMsg}`
         : ENDLESS ? `<div class="h2">🔥 ถูกติดต่อกันสูงสุด ${bestCombo} ข้อ ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
         <p>เล่นไป ${total} ข้อ · ถูก ${correct} · ${score} แต้ม${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>`
-        : `<div class="h2">${score} แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
+        : `<div class="h2"><b class="res-cnt">${score}</b> แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
         <p>ถูก ${correct}/${items.length} · คอมโบสูงสุด ${bestCombo}</p>`}
         ${['en2th', 'th2en', 'listen', 'cloze'].includes(gameId) ? `<p class="small muted">🎚️ ความยากตอนนี้ ${diffLabel()}</p>` : ''}
+        ${resultExtras(runLog, xp0)}
       </div>
       ${wrong.length ? `<div class="card-box wrong-list"><b>${gameId.startsWith('speak') ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b> <span class="small muted">${gameId.startsWith('speak') ? '(แตะคำเพื่อฟังเสียง)' : SKILL_GAMES.includes(gameId) ? '(แตะเพื่อฟังเสียง)' : deckRun.practice ? '(โหมดซ้อม) · กด ☆ เพื่อติดดาว' : deckRun.map ? '(ใส่ในการทบทวนของชุดให้แล้ว) · กด ☆ เพื่อติดดาว' : '(ใส่ในแฟลชการ์ดให้แล้ว) · กด ☆ เพื่อติดดาว'}</span>
         ${[...new Set(wrong)].map((w) => w.idx < 0 ? `<div class="wl" data-i="-1" data-say="${esc(w._q ? w._q[0].replace('___', w._q[1]) : w._m[0] + ', ' + w._m[2])}"><span><b>${esc(w.w)}</b></span><span class="muted grow" style="text-align:right">${esc(w._q ? w._q[3] : w.t)}</span></div>`
@@ -1228,11 +1237,21 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       if (sb) { toggleStar(w); sb.textContent = starIcon(w); } else speak(w.w);
     };
     updateStreak();
+    countUp(view.querySelectorAll('.res-cnt, .res-xp b'));
   }
 
   q();
 }
 
+// Result screen extras (1.129): the answers in order as a strip (runs of right answers stand out), XP earned this round and
+// the bar to the next level filling from where the round started.
+function resultExtras(log, xp0) {
+  const gain = Math.max(0, (S.xp || 0) - xp0), L = levelOf(S.xp), a = levelStart(L), b = levelStart(L + 1);
+  const from = levelOf(xp0) === L ? Math.max(0, (xp0 - a) / (b - a) * 100) : 0, to = Math.min(100, ((S.xp || 0) - a) / (b - a) * 100);
+  let best = 0, run = 0; for (const ok of log) { run = ok ? run + 1 : 0; best = Math.max(best, run); }
+  const strip = log.length > 1 && log.length <= 60 ? `<div class="res-strip" role="img" aria-label="ผลทีละข้อ ถูก ${log.filter(Boolean).length} จาก ${log.length} ข้อ ถูกติดกันยาวสุด ${best} ข้อ">${log.map((ok, k) => `<i class="${ok ? 'ok' : 'no'}" style="--k:${k}"></i>`).join('')}</div>` : '';
+  return `${strip}${gain ? `<div class="res-xp"><span class="small"><b>+${gain}</b> XP · Lv.${L}${levelOf(xp0) < L ? ' ⬆️' : ''}</span><div class="bar"><div class="l" style="--from:${from.toFixed(1)}%;width:${to.toFixed(1)}%"></div></div></div>` : ''}`;
+}
 function playMatch(src, deckRun = {}) {
   const PAIRS = 6, ROUNDS = 3;
   let round = 0, mistakes = 0, start = Date.now(), timer;
