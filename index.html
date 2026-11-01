@@ -47,13 +47,16 @@
     <button data-tab="list"><span class="ti ti-svg" data-ic="📖"><svg class="tic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="f" d="M12 6.5C10 5 7 4.5 3.5 5v13.5c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z"/><path d="M12 6.5V20"/></svg></span><span>คำศัพท์</span></button>
     <button data-tab="settings"><span class="ti ti-svg" data-ic="⚙️"><svg class="tic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h8.6M17.4 7H20M4 12h1.6M10.4 12H20M4 17h6.6M15.4 17H20"/><circle class="f" cx="15" cy="7" r="2.4"/><circle class="f" cx="8" cy="12" r="2.4"/><circle class="f" cx="13" cy="17" r="2.4"/></svg></span><span>ตั้งค่า</span></button>
     <div class="tab-more">
-      <div class="tab-h">ฝึกต่อ</div>
+      <div class="tab-grp" data-grp="practice">
+      <button type="button" class="tab-h" aria-expanded="true">ฝึกต่อ</button>
       <button data-tab="decks"><span class="ti ti-svg" data-ic="📚"><svg class="tic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect class="f" x="4" y="9" width="16" height="11.5" rx="2"/><path d="M6 6h12M8 3.3h8"/><path d="M9.5 13.5h5"/></svg></span><span>ชุดของฉัน</span></button>
       <button data-tab="feed"><span class="ti ti-svg" data-ic="📱"><svg class="tic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect class="f" x="6" y="2.5" width="12" height="19" rx="2.6"/><path d="M10.5 18.6h3"/><path d="M12 6.5v7M9.5 11l2.5 2.5 2.5-2.5"/></svg></span><span>ไถศัพท์</span></button>
       <button data-tab="ear"><span class="ti ti-svg" data-ic="🎧"><svg class="tic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect class="f" x="3.5" y="13.5" width="4.5" height="7" rx="1.6"/><rect class="f" x="16" y="13.5" width="4.5" height="7" rx="1.6"/></svg></span><span>ฟังทบทวน</span></button>
       <button data-tab="read"><span class="ti ti-svg" data-ic="📖"><svg class="tic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="f" d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v15H7.5A2.5 2.5 0 0 0 5 20.5z"/><path d="M5 20.5A2.5 2.5 0 0 1 7.5 18H19v3H7.5"/><path d="M9 7.5h6M9 10.5h4"/></svg></span><span>เรื่องสั้น</span></button>
       <button data-tab="mtest"><span class="ti ti-svg" data-ic="📝"><svg class="tic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect class="f" x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 3h6v3H9z"/><path d="m8.8 13.3 2.3 2.3 4.4-4.6"/></svg></span><span>ทดสอบประจำเดือน</span></button>
-      <div class="tab-h">คลังความรู้</div>
+      </div>
+      <div class="tab-grp" data-grp="ref">
+      <button type="button" class="tab-h" aria-expanded="true">คลังความรู้</button>
       <button data-ref="pairs"><span class="ti ti-svg" data-ic="🤔"><svg class="tic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle class="f" cx="9" cy="12" r="5.6"/><circle cx="15" cy="12" r="5.6"/></svg></span><span>คู่คำสับสน</span></button>
       <button data-ref="fams"><span class="ti ti-svg" data-ic="🧬"><svg class="tic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle class="f" cx="12" cy="5" r="2.3"/><circle class="f" cx="5.5" cy="18.7" r="2.3"/><circle class="f" cx="12" cy="18.7" r="2.3"/><circle class="f" cx="18.5" cy="18.7" r="2.3"/><path d="M12 7.3v9.1M12 11.6H5.5v4.8M12 11.6h6.5v4.8"/></svg></span><span>ครอบครัวคำ</span></button>
       <button data-ref="syn"><span class="ti ti-svg" data-ic="≈"><svg class="tic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 8.5h13M14 5.5l3 3-3 3"/><path d="M20 15.5H7M10 12.5l-3 3 3 3"/></svg></span><span>คำเหมือน–ตรงข้าม</span></button>
@@ -69,6 +72,7 @@
       <button data-ref="gpat"><span class="ti ti-svg" data-ic="📐"><svg class="tic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="f" d="M4 3.5v17h17z"/><path d="M8 13v3.5h3.5M4 8h2M4 12h2"/></svg></span><span>ไวยากรณ์ที่ผูกกับคำ</span></button>
       <button data-ref="ipa"><span class="ti ti-svg" data-ic="🔡"><svg class="tic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 12h1M7 8.5v7M10.5 5v14M14 8v8M17.5 6v12M21 10.5v3"/></svg></span><span>ตารางเสียง IPA</span></button>
       <button data-tab="guide"><span class="ti ti-svg" data-ic="📘"><svg class="tic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle class="f" cx="12" cy="12" r="8.5"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.4"/><path d="M12 16.7v.1"/></svg></span><span>คู่มือ</span></button>
+      </div>
     </div>
   </nav>
 </div>

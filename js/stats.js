@@ -451,7 +451,7 @@ function renderMonthTest() {
     <p class="small muted">${n} ข้อ สุ่มจาก${fromMastered ? 'คำที่จำได้แล้ว' : 'คำที่เรียนแล้ว'} (${pool.length} คำ) ไม่มีตัวช่วย คำที่ตอบผิดจะกลับไปให้ทบทวนในแฟลชการ์ด</p>
     <div class="tiles mo-tiles" style="margin:12px 0"><div class="tile-s"><b>${cur ? pct(cur) + '%' : '–'}</b><span>เดือนนี้ (ดีที่สุด)</span></div><div class="tile-s"><b>${prev ? pct(prev) + '%' : '–'}</b><span>เดือนที่แล้ว</span></div><div class="tile-s"><b>${n}</b><span>ข้อ</span></div></div>
     <button class="btn primary block" id="mtGo">เริ่มทำแบบทดสอบ</button></div>
-    <div class="card-box">${mtestSummary()}</div>`;
+    <div class="card-box mt-sum"><b>📈 ผลย้อนหลังรายเดือน</b>${mtestSummary()}</div>`;
   $('#mtGo').onclick = () => runMonthTest(shuffle(pool).slice(0, n));
 }
 function runMonthTest(items, lv) {

@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.132.0';
+const APP_VERSION = '1.133.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1723,8 +1723,26 @@ addEventListener('resize', fitTitle);
 $('#topBack').addEventListener('click', () => { const b = view.querySelector('[id$="Back"]'); if (b) b.click(); });
 // iPad sidebar extras: reference pages live under the คลังความรู้ page (route 'ref', 1.127), so open it first (their ‹ กลับ returns there).
 const REF_PAGES = { pairs: () => renderPairs(), fams: () => renderFamilies(), syn: () => renderSyn(), affix: () => renderAffix(), roots: () => renderRoots(), ukus: () => renderUkUs(), phrasal: () => renderPhrasal(), idiom: () => renderIdioms(), sit: () => renderSit(), irr: () => renderIrregular(), dprep: () => renderDepPrep(), mis: () => renderMistakes(), gpat: () => renderGramPat(), ipa: () => renderIpa() };
+// iPad sidebar groups (1.133): a group heading folds its shortcuts away (the active one stays visible); the folded groups are remembered on this device.
+const RAIL_FOLD_KEY = 'o3k.railFold';
+function railFold(apply) {
+  let f = ['ref']; try { const v = localStorage.getItem(RAIL_FOLD_KEY); if (v != null) f = JSON.parse(v) || []; } catch (e) {} // คลังความรู้ starts folded (its 15 shortcuts made the sidebar scroll)
+  document.querySelectorAll('#tabbar .tab-grp').forEach((g) => {
+    const on = f.includes(g.dataset.grp);
+    g.classList.toggle('fold', on);
+    const h = g.querySelector('.tab-h'); if (h) h.setAttribute('aria-expanded', on ? 'false' : 'true');
+  });
+  return f;
+}
+railFold();
 $('#tabbar').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
+  if (b.classList.contains('tab-h')) {
+    const id = b.closest('.tab-grp').dataset.grp, f = railFold().filter((x) => x !== id);
+    if (!b.closest('.tab-grp').classList.contains('fold')) f.push(id);
+    try { localStorage.setItem(RAIL_FOLD_KEY, JSON.stringify(f)); } catch (err) {}
+    railFold(); return;
+  }
   if (!b.dataset.ref) return vtRun(() => go(b.dataset.tab));
   vtRun(() => {
     go('ref'); REF_PAGES[b.dataset.ref]();

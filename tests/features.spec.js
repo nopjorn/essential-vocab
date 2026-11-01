@@ -271,6 +271,7 @@ test('iPad sidebar (portrait + landscape): extra shortcuts only in the sidebar, 
   await expect(page.locator('.tab-more')).toBeVisible();
   await page.locator('.tabbar [data-tab="stats"]').click();
   await expect(page.locator('.tabbar [data-tab="stats"]')).toHaveClass(/active/);
+  await page.locator('[data-grp="ref"] .tab-h').click(); // คลังความรู้ starts folded (1.133)
   await page.locator('.tabbar [data-ref="phrasal"]').click();
   await expect(page.locator('#pvList')).toBeVisible();
   await expect(page.locator('.tabbar [data-ref="phrasal"]')).toHaveClass(/active/);
@@ -1983,7 +1984,7 @@ test('iPad look 1.132: every sidebar item has a drawn icon, feed splits prompt |
   await page.setViewportSize({ width: 1180, height: 820 });
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   // every rail button (main tabs, ฝึกต่อ, คลังความรู้, คู่มือ) uses the same line-icon set; search still gets an emoji from data-ic
-  const plain = await page.evaluate(() => [...document.querySelectorAll('#tabbar button')].filter((b) => !b.querySelector('.ti-svg > svg.tic') || !b.querySelector('.ti-svg').dataset.ic).map((b) => b.textContent.trim()));
+  const plain = await page.evaluate(() => [...document.querySelectorAll('#tabbar button:not(.tab-h)')].filter((b) => !b.querySelector('.ti-svg > svg.tic') || !b.querySelector('.ti-svg').dataset.ic).map((b) => b.textContent.trim()));
   expect(plain).toEqual([]);
   await page.evaluate(() => go('feed'));
   // find a quiz card with answers and check the answers sit to the right of the prompt
@@ -1997,5 +1998,37 @@ test('iPad look 1.132: every sidebar item has a drawn icon, feed splits prompt |
     return 'no quiz card';
   });
   expect(ok).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('iPad 1.133: narrow rail in portrait, foldable sidebar groups, quiz answers beside the question on an 11" iPad', async ({ page }) => {
+  await page.setViewportSize({ width: 820, height: 1180 });
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  // portrait: narrow rail, labels under the icons
+  expect(await page.evaluate(() => document.querySelector('#tabbar').getBoundingClientRect().width)).toBeLessThan(120);
+  // คลังความรู้ starts folded, its heading unfolds it and the choice is remembered
+  await expect(page.locator('.tabbar [data-ref="phrasal"]')).toBeHidden();
+  await expect(page.locator('[data-grp="ref"] .tab-h')).toHaveAttribute('aria-expanded', 'false');
+  await page.locator('[data-grp="ref"] .tab-h').click();
+  await expect(page.locator('.tabbar [data-ref="phrasal"]')).toBeVisible();
+  await page.locator('[data-grp="practice"] .tab-h').click();
+  await expect(page.locator('.tabbar [data-tab="feed"]')).toBeHidden();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('o3k.railFold')))).toEqual(['practice']);
+  await expect(page.locator('#title')).toContainText('ศัพท์ต้องรู้'); // a heading tap does not navigate
+  // the active page stays visible in a folded group
+  await page.evaluate(() => go('feed'));
+  await expect(page.locator('.tabbar [data-tab="feed"]')).toBeVisible();
+  // landscape 11": quiz answers to the right of the question, roughly centred on it
+  await page.setViewportSize({ width: 1180, height: 820 });
+  await page.evaluate(() => startGame('en2th'));
+  const pos = await page.evaluate(() => {
+    const q = document.querySelector('.q-prompt').getBoundingClientRect(), o = document.querySelector('.options').getBoundingClientRect();
+    return { right: o.left > q.right, mid: Math.abs((o.top + o.bottom) / 2 - (q.top + q.bottom) / 2) };
+  });
+  expect(pos.right).toBe(true);
+  expect(pos.mid).toBeLessThan(80);
+  // a wrong and a right answer still work in this layout
+  await page.locator('.options .opt').first().click();
+  await expect(page.locator('#nextQ')).toBeVisible();
   expect(errors).toEqual([]);
 });
