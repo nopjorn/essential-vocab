@@ -1341,10 +1341,10 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       ${wrong.length ? `<div class="card-box wrong-list"><b>${gameId.startsWith('speak') ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b> <span class="small muted">${gameId.startsWith('speak') ? '(แตะคำเพื่อฟังเสียง)' : SKILL_GAMES.includes(gameId) ? '(แตะเพื่อฟังเสียง)' : deckRun.practice ? '(โหมดซ้อม) · กด ☆ เพื่อติดดาว' : deckRun.map ? '(ใส่ในการทบทวนของชุดให้แล้ว) · กด ☆ เพื่อติดดาว' : '(ใส่ในแฟลชการ์ดให้แล้ว) · กด ☆ เพื่อติดดาว'}</span>
         ${[...new Set(wrong)].map((w) => w.idx < 0 ? `<div class="wl" data-i="-1" data-say="${esc(w._q ? w._q[0].replace('___', w._q[1]) : w._m[0] + ', ' + w._m[2])}"><span><b>${esc(w.w)}</b></span><span class="muted grow" style="text-align:right">${esc(w._q ? w._q[3] : w.t)}</span></div>`
           : `<div class="wl" data-i="${w.idx}"><span><b>${esc(w.w)}</b> <span class="pos">${esc(w.p)}</span></span><span class="muted grow" style="text-align:right">${esc(w.t)}</span><button class="star-btn" data-star>${starIcon(w)}</button></div>`).join('')}</div>` : ''}
-      ${wrong.some((w) => w.idx >= 0) && !deckRun.map ? '<button class="btn block" id="wrongDeck" style="margin-bottom:10px">📚 ใส่คำที่ผิดเข้าชุดของฉัน</button>' : ''}
-      ${STAGE && done.hasNext ? '<button class="btn primary block" id="stNext">ด่านต่อไป →</button><div style="height:10px"></div>' : ''}
+      <div class="res-acts">${wrong.some((w) => w.idx >= 0) && !deckRun.map ? '<button class="btn block" id="wrongDeck">📚 ใส่คำที่ผิดเข้าชุดของฉัน</button>' : ''}
+      ${STAGE && done.hasNext ? '<button class="btn primary block" id="stNext">ด่านต่อไป →</button>' : ''}
       <button class="btn ${STAGE && done.hasNext ? '' : 'primary '}block" id="again">${STAGE ? 'เล่นด่านนี้อีกครั้ง' : 'เล่นอีกรอบ'}</button>
-      <div style="height:10px"></div><button class="btn block" id="back">${STAGE ? '🗺️ กลับแผนที่' : 'เลือกเกมอื่น'}</button>`;
+      <button class="btn block" id="back">${STAGE ? '🗺️ กลับแผนที่' : 'เลือกเกมอื่น'}</button></div>`;
     if ($('#wrongDeck')) $('#wrongDeck').onclick = () => pickDeck([...new Set(wrong.filter((w) => w.idx >= 0).map((w) => w.w))]);
     $('#again').onclick = () => (STAGE ? startStage(stage.topic, stage.k) : startGame(gameId));
     $('#back').onclick = leave;
@@ -1478,8 +1478,8 @@ function playMatch(src, deckRun = {}) {
         <div class="h2">${score} แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
         <p>เวลา ${((Date.now() - start) / 1000).toFixed(1)} วินาที · ผิด ${mistakes} ครั้ง (+3 วิ/ครั้ง)</p>
       </div>
-      <button class="btn primary block" id="again">เล่นอีกรอบ</button>
-      <div style="height:10px"></div><button class="btn block" id="back">เลือกเกมอื่น</button>`;
+      <div class="res-acts"><button class="btn primary block" id="again">เล่นอีกรอบ</button>
+      <button class="btn block" id="back">เลือกเกมอื่น</button></div>`;
     $('#again').onclick = () => startGame('match');
     $('#back').onclick = () => go('games');
     updateStreak();

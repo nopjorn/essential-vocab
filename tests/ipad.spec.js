@@ -1,6 +1,6 @@
 // iPad held with both hands (1.136): flashcard grade buttons on both sides of the card.
 const { test, expect } = require('@playwright/test');
-const { openApp } = require('./helpers');
+const { openApp, playRound } = require('./helpers');
 
 test('thumb grade buttons: ลืม/ยาก left of the card, จำได้/ง่าย right, card still flips', async ({ page }) => {
   await page.setViewportSize({ width: 1133, height: 744 }); // iPad mini landscape
@@ -553,5 +553,21 @@ test('thumb layouts fill the screen that is left: card and buttons fit, the ques
   const n = await page.locator('#nextQ').boundingBox(), o4 = await page.locator('.options .opt').nth(3).boundingBox();
   expect(n.y).toBeGreaterThanOrEqual(o4.y + o4.height);
   expect(n.y + n.height).toBeLessThanOrEqual(820);
+  expect(errors).toEqual([]);
+});
+
+test('result screen: the buttons sit in one row on a wide landscape screen, stacked on a phone (1.150.1)', async ({ page }) => {
+  await page.setViewportSize({ width: 1180, height: 820 });
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => startGame('en2th'));
+  await playRound(page, 'en2th');
+  const btns = page.locator('.res-acts > .btn');
+  await expect(btns).toHaveCount(3); // wrong words → set, play again, other game
+  const ys = [];
+  for (let k = 0; k < 3; k++) ys.push((await btns.nth(k).boundingBox()).y);
+  expect(Math.max(...ys) - Math.min(...ys)).toBeLessThan(2);
+  await page.setViewportSize({ width: 440, height: 956 });
+  const a = await btns.nth(0).boundingBox(), c = await btns.nth(2).boundingBox();
+  expect(c.y).toBeGreaterThan(a.y + a.height);
   expect(errors).toEqual([]);
 });

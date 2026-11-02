@@ -2604,3 +2604,11 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
 /* 🪟 room for the iPadOS window buttons (1.149, html.win-gap = applyWinGap()): narrow windows keep their top bar clear of the
    top-left corner; wide ones have the tab rail there (its logo sits under the buttons, nothing to tap) */
 @media (max-width: 699.98px) { html.win-gap .topbar { padding-left: calc(env(safe-area-inset-left) + 88px); } }
+
+/* ---------- result buttons in one row on wide screens (1.150.1) ---------- */
+.res-acts { display: flex; flex-direction: column; gap: 10px; }
+.res-acts > .btn { margin: 0; }
+@media (min-width: 900px) and (orientation: landscape) {
+  .res-acts { flex-direction: row; }
+  .res-acts > .btn { flex: 1 1 0; min-width: 0; width: auto; }
+}
