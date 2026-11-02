@@ -219,7 +219,7 @@ function renderCards(extra) {
       <div class="small muted">อีก ${(b - S.xp).toLocaleString()} XP ถึง Lv.${L + 1}</div>`;
   }
 
-  const landMQ = matchMedia('(min-width: 700px) and (orientation: landscape)');
+  const landMQ = matchMedia('(min-width: 700px) and (orientation: landscape), (min-width: 520px) and (max-height: 520px)'); // 1.145: squat windows too
   let frontEn = true; // side shown first for the current card (settings.front: en, th or mix)
   function show() {
     if (!queue.length) return finish();

@@ -113,8 +113,8 @@ test('keyboard: arrows grade flashcards, Esc closes sheet / leaves a session / g
   const party = () => page.evaluate(() => document.querySelectorAll('.celebrate').forEach((e) => e.remove())); // the first-answer streak party has its own keys
   const kp = async (k) => { await party(); await page.keyboard.press(k); };
   await party();
-  await kp('Escape'); // ✕ leaves the session
-  await expect(page.locator('#view')).toHaveAttribute('data-route', 'home');
+  // ✕ leaves the session (a late celebration can take the first Esc for itself: it owns its keys, so try again)
+  await expect.poll(async () => { await kp('Escape'); return page.locator('#view').getAttribute('data-route'); }, { timeout: 10000 }).toBe('home');
   // ⌥3 = games, ⌥6 = settings
   await kp('Alt+Digit3');
   await expect(page.locator('#view')).toHaveAttribute('data-route', 'games');

@@ -60,14 +60,22 @@ test('survival: leaving early with ✕ shows the result; zero answers go back to
 test('time attack: 60 s countdown ends the round, score = right answers, record kept', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   await page.evaluate(() => { Math.random = () => 0.3; startGame('timeAttack'); });
-  const view = page.locator('#view'), round = {};
+  const view = page.locator('#view');
   await expect(view.locator('#tLeft')).toBeVisible();
   let rights = 0;
   const step = async (ok) => {
-    if (await play(page, ok, round)) rights++;
+    // the engine says which word is asked (reading the reveal raced with the automatic next question under load)
+    await page.evaluate((ok) => {
+      window.__q = playQuiz.cur;
+      const opts = [...document.querySelectorAll('#view .opt')];
+      (opts.find((o) => (+o.dataset.i === playQuiz.cur.idx) === ok) || opts[0]).click();
+    }, ok);
+    if (ok) rights++;
     await expect.poll(() => view.locator('#nextQ').count(), { timeout: 5000 }).toBe(0); // moves on by itself
+    await expect.poll(() => page.evaluate(() => playQuiz.cur !== window.__q), { timeout: 5000 }).toBe(true);
     await expect(view.locator('.opt').first()).toBeVisible();
   };
+
   await step(true);
   for (let n = 0; n < 3; n++) await step(true);
   await step(false); // a wrong answer costs nothing but time
