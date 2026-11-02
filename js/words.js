@@ -145,6 +145,9 @@ function openSheet(w, onChange, opt = {}) {
       </div>
     </div>`;
   document.body.appendChild(el);
+  // drag the word out (Split View: into Notes, Goodnotes, Mail …) as "word – Thai" (1.140)
+  const dw = el.querySelector('.sheet-word');
+  if (dw) { dw.draggable = true; dw.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', `${w.w} – ${w.t}`); e.dataTransfer.effectAllowed = 'copy'; }); }
   if (opt.now) el.classList.add('open', 'nt'); else requestAnimationFrame(() => el.classList.add('open')); // opt.now: shown at once (View Transition morph)
   if (!EMOJI) loadEmoji().then(() => { const b = el.querySelector('#emBox'); if (b) b.textContent = emojiOf(w); }).catch(() => {});
   loadColloc().then((c) => {

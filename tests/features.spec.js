@@ -1668,7 +1668,7 @@ test('compose game (1.104): needs the word and 3+ words, shows the app example, 
   await view.locator('#si').fill('Hello there');
   await view.locator('#sf button[type=submit]').click();
   await expect(view.locator('#reveal')).toContainText('สั้นไป');
-  await view.locator('#si').fill('Nothing in this sentence at all');
+  await view.locator('#si').fill('Qwz xyv plk mnb vrt'); // no real words: the asked word can never be inside ("Nothing …" once matched the word "not")
   await view.locator('#sf button[type=submit]').click();
   await expect(view.locator('#reveal')).toContainText('ยังไม่มีคำว่า');
   const mine = `I really like ${word} very much`;

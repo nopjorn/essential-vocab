@@ -194,3 +194,51 @@ test('Apple Pencil mode: big writable field, folded app keyboard, ⌨️ toggle,
   expect(await page.locator('#si').evaluate((x) => x.readOnly)).toBe(true);
   expect(errors).toEqual([]);
 });
+
+// Split View drag & drop (1.140): text dropped from another app → article checker or a word sheet; a field keeps its own drop.
+const dropOn = (page, sel, data) => page.evaluate(([sel, data]) => {
+  const t = document.querySelector(sel), dt = new DataTransfer();
+  Object.entries(data).forEach(([k, v]) => dt.setData(k, v));
+  const r = t.getBoundingClientRect(), xy = { clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 };
+  const over = new DragEvent('dragover', { dataTransfer: dt, bubbles: true, cancelable: true, ...xy });
+  t.dispatchEvent(over);
+  const zone = !!document.getElementById('dropZone');
+  const drop = new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true, ...xy });
+  t.dispatchEvent(drop);
+  return { caught: over.defaultPrevented, zone, after: !!document.getElementById('dropZone') };
+}, [sel, data]);
+
+test('drag & drop: a dropped article opens the checker, one word opens its sheet, html is read as text, fields keep their drop', async ({ page }) => {
+  await page.setViewportSize({ width: 566, height: 744 }); // half of an iPad mini in Split View
+  const errors = await openApp(page);
+  let r = await dropOn(page, '#view', { 'text/plain': 'The weather was beautiful, so we walked to the market and bought fresh bread.' });
+  expect(r).toEqual({ caught: true, zone: true, after: false });
+  await expect(page.locator('#view')).toHaveAttribute('data-route', 'mine');
+  await expect(page.locator('#mineIn')).toHaveValue(/beautiful, so we walked/);
+  await expect(page.locator('#mineText')).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('o3k.mine'))).toContain('fresh bread');
+  // ‹ goes back where the drop happened
+  await page.evaluate(() => document.getElementById('mineBack').click());
+  await expect(page.locator('#view')).toHaveAttribute('data-route', 'home');
+  // one word → its sheet
+  await dropOn(page, '#view', { 'text/plain': '  Weather ' });
+  await expect(page.locator('.sheet .sheet-word')).toContainText('weather');
+  await page.evaluate(() => document.querySelectorAll('.sheet-wrap').forEach((x) => x.remove()));
+  // html only (no plain text): read as text, and never run
+  await dropOn(page, '#view', { 'text/html': '<p>I <b>like</b> green apples and hot tea.</p><img src=x onerror="window.__pwned=1">' });
+  await expect(page.locator('#mineIn')).toHaveValue(/like green apples/);
+  expect(await page.evaluate(() => window.__pwned)).toBeUndefined();
+  // a drop on a text field is left to the field
+  r = await dropOn(page, '#mineIn', { 'text/plain': 'hello' });
+  expect(r.caught).toBe(false);
+  // no English: a toast, nothing else
+  await page.evaluate(() => go('home'));
+  await dropOn(page, '#view', { 'text/plain': 'สวัสดี 123' });
+  await expect(page.locator('#view')).toHaveAttribute('data-route', 'home');
+  // the word on a sheet can be dragged out as "word – Thai"
+  await page.evaluate(() => openSheet(W.find((w) => w.w === 'apple')));
+  const out = await page.evaluate(() => { const el = document.querySelector('.sheet-word'), dt = new DataTransfer(); el.dispatchEvent(new DragEvent('dragstart', { dataTransfer: dt, bubbles: true })); const t = dt.getData('text/plain'); el.dispatchEvent(new DragEvent('dragend', { bubbles: true })); return [el.draggable, t]; });
+  expect(out[0]).toBe(true);
+  expect(out[1]).toMatch(/^apple – /);
+  expect(errors).toEqual([]);
+});

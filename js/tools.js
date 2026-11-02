@@ -288,3 +288,55 @@ function mineShow(text, quiet) {
   $('#minePrint').onclick = () => { const p = need(1); if (!p) return; wkCustom = { name: 'คำจากบทความ', words: p }; go('print', 'custom', 'mine'); };
   if (!quiet) out.scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
+
+/* ---------- drag & drop (1.140) ---------- */
+// Split View / Slide Over on an iPad: drag English text out of Safari (or Notes, Mail …) and drop it anywhere in the app.
+// One to three words that make a list word → its word sheet; anything longer → 📰 เก็บคำจากบทความ, already checked.
+// A drop on a text field keeps the normal behaviour (the text goes into the field). Drag out: the word on a word sheet.
+let dropOwn = false; // a drag that started inside the app (e.g. the word on a sheet) is not a drop to catch
+function dropText(text) {
+  text = String(text || '').replace(/\r/g, '').trim().slice(0, MINE_MAX);
+  const toks = text.match(/[A-Za-z][A-Za-z’']*/g) || [];
+  if (!toks.length) { toast('ลากข้อความภาษาอังกฤษมาวางนะ'); return null; }
+  if (toks.length <= 3) {
+    const w = toks.length === 1 ? lookupWord(toks[0]) : (W.find((x) => x.w.toLowerCase() === toks.join(' ').toLowerCase()) || null); // a phrase only when it is a list entry
+    if (w) { speak(w.w); openSheet(w); return 'word'; }
+  }
+  mineSet(text);
+  go('mine', current === 'mine' ? null : current);
+  toast('📰 รับข้อความแล้ว ตรวจคำให้เลย');
+  return 'mine';
+}
+(() => {
+  const zone = () => document.getElementById('dropZone');
+  const show = (on) => {
+    let z = zone();
+    if (on && !z) {
+      z = document.createElement('div'); z.id = 'dropZone'; z.className = 'drop-zone'; z.setAttribute('aria-hidden', 'true');
+      z.innerHTML = '<div class="dz-box"><div class="dz-ic">📰</div><b>ปล่อยเพื่อตรวจคำ</b><span>ข้อความยาว = เก็บคำจากบทความ · คำเดียว = เปิดความหมาย</span></div>';
+      document.body.appendChild(z);
+    }
+    if (!on && z) z.remove();
+  };
+  const field = (t) => t && t.closest && t.closest('input, textarea, [contenteditable]');
+  const textDrag = (e) => {
+    const ts = e.dataTransfer && [...(e.dataTransfer.types || [])];
+    return !dropOwn && ts && (ts.includes('text/plain') || ts.includes('text/html') || ts.includes('text/uri-list')) && !ts.includes('Files');
+  };
+  document.addEventListener('dragstart', () => { dropOwn = true; });
+  document.addEventListener('dragend', () => { dropOwn = false; show(false); });
+  document.addEventListener('dragover', (e) => {
+    if (!textDrag(e) || field(e.target)) { show(false); return; }
+    e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; show(true);
+  });
+  document.addEventListener('dragleave', (e) => { if (!e.relatedTarget || e.clientX <= 0 || e.clientY <= 0 || e.clientX >= innerWidth || e.clientY >= innerHeight) show(false); });
+  document.addEventListener('drop', (e) => {
+    show(false);
+    if (!textDrag(e) || field(e.target)) return;
+    e.preventDefault();
+    const dt = e.dataTransfer;
+    let t = dt.getData('text/plain');
+    if (!t && dt.types.includes('text/html')) t = new DOMParser().parseFromString(dt.getData('text/html'), 'text/html').body.textContent; // parsed inertly: no scripts, no image loads
+    dropText(t);
+  });
+})();
