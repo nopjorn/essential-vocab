@@ -2493,3 +2493,22 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
 .dz-box span { color: var(--muted); font-size: var(--fs-sm, 14px); }
 .dz-ic { font-size: 44px; line-height: 1; }
 .sheet-word[draggable="true"] { -webkit-user-drag: element; }
+
+/* 👐 thumb answers in multiple-choice games (1.141, html.thumbs = applyThumbs()): tablet landscape, the question in the middle,
+   the first half of the answers on the left edge and the rest on the right, low where the thumbs rest; the answer layer
+   lies over the question row with pointer-events off between the two columns */
+@media (min-width: 1000px) and (min-height: 600px) and (orientation: landscape) {
+  html.thumbs .view:has(> .q-prompt):has(> .options) { --maxw: 1100px; --tw: minmax(170px, .62fr); grid-template-columns: var(--tw) minmax(0, 1fr) var(--tw); grid-template-rows: auto auto auto auto auto 1fr; column-gap: 16px; }
+  html.thumbs .view:has(> .q-prompt):has(> .options) > * { grid-column: 2; }
+  html.thumbs .view:has(> .q-prompt):has(> .options) > .session-top { grid-column: 1 / -1; }
+  html.thumbs .view:has(> .q-prompt):has(> .options) > .q-prompt, html.thumbs .view:has(> .q-prompt):has(> .options) > .q-prompt.fit { grid-column: 2; grid-row: 2; position: static; min-height: 0; max-height: none; height: clamp(260px, calc(100dvh - 250px - env(safe-area-inset-bottom)), 640px); overflow-y: auto; }
+  html.thumbs .view:has(> .q-prompt):has(> .options) > .q-prompt ~ :nth-child(n):not(.options) { grid-row: auto; }
+  html.thumbs .view:has(> .q-prompt):has(> .options) > .options { grid-column: 1 / -1; grid-row: 2; z-index: 2; pointer-events: none; align-self: stretch;
+    display: grid; grid-template-columns: var(--tw) minmax(0, 1fr) var(--tw); grid-auto-flow: row dense; align-content: end; gap: 12px 16px; margin: 0; }
+  html.thumbs .view:has(> .q-prompt):has(> .options) > .options .opt { pointer-events: auto; grid-column: 1; min-height: 76px; }
+  html.thumbs .view:has(> .q-prompt):has(> .options) > .options .opt:nth-child(n+3) { grid-column: 3; }
+  html.thumbs .view:has(> .q-prompt):has(> .options) > .options:has(> .opt:nth-child(2):last-child) .opt:nth-child(2) { grid-column: 3; }
+  html.thumbs .view:has(> .q-prompt):has(> .options) > .options:has(> .opt:nth-child(6)) .opt:nth-child(3) { grid-column: 1; }
+  /* next question: bottom-right, under the right thumb */
+  html.thumbs .view:has(> .q-prompt):has(> .options) #nextQ { position: fixed; z-index: 6; right: calc(env(safe-area-inset-right) + 20px); bottom: calc(env(safe-area-inset-bottom) + 18px); width: auto; min-width: 180px; min-height: 64px; margin: 0 !important; box-shadow: var(--shadow); font-size: var(--fs-lg, 18px); }
+}

@@ -242,3 +242,29 @@ test('drag & drop: a dropped article opens the checker, one word opens its sheet
   expect(out[1]).toMatch(/^apple – /);
   expect(errors).toEqual([]);
 });
+
+test('thumb answers in games: options on both sides of the question, next button in reach; off = usual layout', async ({ page }) => {
+  await page.setViewportSize({ width: 1133, height: 744 });
+  const errors = await openApp(page, { settings: { levels: ['A1'], thumbs: 'on' } });
+  expect(await page.evaluate(() => document.documentElement.classList.contains('thumbs'))).toBe(true);
+  await page.evaluate(() => startGame('en2th'));
+  await expect(page.locator('.options .opt').first()).toBeVisible();
+  const q = await page.locator('.q-prompt').boundingBox();
+  const b = async (k) => page.locator('.options .opt').nth(k).boundingBox();
+  for (const k of [0, 1]) { const o = await b(k); expect(o.x + o.width).toBeLessThanOrEqual(q.x + 1); }
+  for (const k of [2, 3]) { const o = await b(k); expect(o.x).toBeGreaterThanOrEqual(q.x + q.width - 1); }
+  for (const k of [0, 1, 2, 3]) { const o = await b(k); expect(o.y + o.height).toBeLessThanOrEqual(744); }
+  // a wrong answer: the next button is on screen without scrolling
+  await page.evaluate(() => { const c = playQuiz.cur; [...document.querySelectorAll('.opt')].find((x) => +x.dataset.i !== c.idx).click(); });
+  const n = await page.locator('#nextQ').boundingBox();
+  expect(n.y + n.height).toBeLessThanOrEqual(744);
+  expect(n.x).toBeGreaterThan(q.x + q.width - 1);
+  await page.locator('#nextQ').click();
+  await expect(page.locator('#title')).toContainText('2/');
+  // off: answers stay in one column beside the question
+  await page.evaluate(() => { S.settings.thumbs = 'off'; applyThumbs(); startGame('en2th'); });
+  await expect(page.locator('.options .opt').first()).toBeVisible();
+  const q2 = await page.locator('.q-prompt').boundingBox(), o2 = await page.locator('.options .opt').first().boundingBox();
+  expect(o2.x).toBeGreaterThanOrEqual(q2.x + q2.width - 1);
+  expect(errors).toEqual([]);
+});
