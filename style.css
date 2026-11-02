@@ -2375,3 +2375,41 @@ html[data-theme="dark"] input, html[data-theme="black"] input { color-scheme: da
   font-size: 26px; font-weight: 700; line-height: 1; color: var(--text); background: var(--surface); box-shadow: var(--shadow); pointer-events: none; transform-origin: left center; transition: background-color .15s, color .15s, opacity .2s; }
 .edge-back.ready { background: var(--primary); color: #fff; }
 .edge-back.out { opacity: 0; }
+/* ✏️ handwriting game (1.135) */
+.kb-in.kb-pen { caret-color: auto; }
+.hd-wrap { margin-top: 12px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); border: 1px solid var(--border); height: 180px; box-sizing: content-box; }
+.hd-pad { display: block; width: 100%; height: 100%; border-radius: var(--radius); touch-action: none; cursor: crosshair; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.hd-tools { margin-top: 10px; gap: 8px; }
+.hd-tools .btn.on { background: var(--primary); color: #fff; border-color: transparent; }
+#hdAct { flex-wrap: wrap; gap: 8px; }
+.hd-ask { flex: 1 1 100%; margin: 0 4px 2px; }
+@media (min-width: 700px) { .hd-wrap { height: 230px; } }
+@media (max-height: 520px) { .hd-wrap { height: 150px; } }
+/* 🖨️ worksheets (1.135): the paper itself is styled by WK_CSS in js/tools.js */
+.wk-act { margin-top: 12px; gap: 8px; }
+.wk-prev { border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 16px; }
+.wk-prev .wk-paper { padding: 18px 16px; overflow-x: auto; }
+.wk-form .seg { display: flex; }
+.wk-form .seg button { flex: 1; }
+/* 📰 words from my text (1.135) */
+.mine-in { width: 100%; box-sizing: border-box; min-height: 140px; resize: vertical; font: inherit; font-size: var(--fs-md); line-height: 1.5; padding: 12px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); }
+.mine-big { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.mine-big b { font: 800 34px/1 var(--num); color: var(--primary-ink); }
+.mine-bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--surface-2); margin: 10px 0 8px; }
+.mine-bar i, .mine-leg i { display: inline-block; height: 100%; }
+.mine-bar .k, .mine-leg .k { background: var(--good); }
+.mine-bar .l, .mine-leg .l { background: var(--warn); }
+.mine-bar .f, .mine-leg .f { background: var(--pink-2); }
+.mine-leg { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.mine-leg i { width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; background: var(--surface-2); border: 1px solid var(--border); }
+.mine-row input { width: 20px; height: 20px; accent-color: var(--primary); flex: none; }
+.mine-act { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 10px 0 12px; }
+@media (max-width: 420px) { .mine-act { grid-template-columns: 1fr 1fr; } .mine-act .primary { grid-column: 1 / -1; } }
+.mine-det { margin-top: 10px; }
+.mine-det summary { cursor: pointer; font-weight: 700; }
+.mine-text { font-size: 17px; line-height: 1.75; overflow-wrap: anywhere; }
+.mine-text p { margin: 0 0 12px; }
+.mine-text .rw.new, .mine-key .rw.new { background: color-mix(in srgb, var(--pink-2) 26%, transparent); border-radius: 4px; }
+.mine-text.only-new .rw:not(.new) { background: none; text-decoration: none; }
+.wk-act { display: grid; grid-template-columns: 1fr 1fr; }
+.wk-act .primary { grid-column: 1 / -1; order: -1; }

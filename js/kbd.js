@@ -24,6 +24,13 @@ function appKbd(input, form) {
     else if (input.value.length < max) input.value += k;
     input.dispatchEvent(new Event('input', { bubbles: true }));
   };
+  // Apple Pencil (1.135): a pencil touch on the field hands it back to iPadOS, so Scribble can turn handwriting into text there.
+  input.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'pen' || !input.readOnly) return;
+    input.readOnly = false; input.setAttribute('inputmode', 'text'); input.classList.add('kb-pen');
+    input.focus();
+    if (typeof toast === 'function') toast('✏️ เขียนด้วย Apple Pencil ลงในช่องได้เลย');
+  });
   pad.onclick = (e) => { const b = e.target.closest('[data-k]'); if (b) { put(b.dataset.k); } };
   if (kbdKeys) document.removeEventListener('keydown', kbdKeys);
   kbdKeys = (e) => {

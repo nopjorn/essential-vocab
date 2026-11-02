@@ -318,6 +318,7 @@ function renderLibrary() {
       <div class="lib-bars">${RLEVELS.map((lv) => { const n = counts[lv].length, r = counts[lv].filter((st) => S.read[st.id]).length; return n ? `<div class="lib-bar"><div class="lib-fill lv-${lv}" style="width:${(100 * r) / n}%"></div><span>${LV_LABEL[lv]} ${r}/${n}</span></div>` : ''; }).join('')}</div>
     </div>
     ${readyBox()}
+    <button class="card-box guide-link" id="toMine"><span>📰</span><div class="grow"><b>อ่านบทความของฉัน</b><div class="small muted">วางข่าวหรือบทความภาษาอังกฤษ ดูว่ารู้กี่ % แล้วเก็บคำใหม่</div></div><span class="muted">›</span></button>
     ${pick ? `<button class="st-pick lv-${pick.level}" data-id="${pick.id}">
       <div class="st-pick-tag">แนะนำให้อ่านต่อ</div>
       <div class="row" style="gap:14px;align-items:center"><div class="st-pick-emoji">${pick.emoji || '📖'}</div>
@@ -341,6 +342,7 @@ function renderLibrary() {
   $('#rBack').onclick = () => go('games');
   view.onclick = (e) => {
     const c = e.target.closest('#rf .chip'); if (c) { readFilter = c.dataset.v; return paint(); }
+    if (e.target.closest('#toMine')) { view.onclick = null; return go('mine', 'read'); }
     const b = e.target.closest('[data-id]'); if (b) { view.onclick = null; go('read', +b.dataset.id); }
   };
   cleanup = () => { view.onclick = null; };

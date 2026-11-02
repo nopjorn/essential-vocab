@@ -99,6 +99,16 @@ async function answer(page, ok, round) {
       await page.evaluate(() => (window.__heard = 'zzzz'));
       for (let i = 0; i < 3; i++) { await view.locator('#mic').click(); await page.waitForTimeout(80); }
     }
+  } else if (await view.locator('#hdPad').count()) { // handwriting: draw a stroke, check, then grade yourself
+    if (!ok) await view.locator('#skip').click();
+    else {
+      const b = await view.locator('#hdPad').boundingBox();
+      await page.mouse.move(b.x + 30, b.y + b.height / 2); await page.mouse.down();
+      for (let k = 1; k <= 8; k++) await page.mouse.move(b.x + 30 + k * 12, b.y + b.height / 2 + (k % 2 ? 14 : -14));
+      await page.mouse.up();
+      await view.locator('#hdCheck').click();
+      await view.locator('#hdYes').click();
+    }
   } else if (await view.locator('#si[placeholder="พิมพ์ประโยคของคุณ"]').count()) { // compose: write your own sentence
     if (!ok) await view.locator('#skip').click();
     else {

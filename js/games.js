@@ -49,6 +49,7 @@ const GAMES = {
   sit: { icon: '🗨️', name: 'ตอบให้เข้าสถานการณ์', desc: 'เลือกประโยคถัดไปในบทสนทนา' },
   guess: { icon: '🕵️', name: 'เดาความหมายจากบริบท', desc: 'อ่านประโยคจริง เดาความหมายของคำใหม่ก่อนดูเฉลย' },
   dictW: { icon: '🔠', name: 'พิมพ์คำที่ได้ยิน', desc: 'ฟังคำเดี่ยวแล้วพิมพ์ทั้งคำ ไม่มีคำแปลช่วย' },
+  hand: { icon: '✏️', name: 'เขียนด้วยมือ', desc: 'ดูคำแปล เขียนคำด้วยนิ้วหรือ Apple Pencil แล้วเทียบกับเฉลย' },
   compose: { icon: '🖊️', name: 'แต่งประโยคเอง', desc: 'แต่งประโยคด้วยคำนี้ แล้วเทียบกับตัวอย่างของแอป เก็บประโยคไว้ในโน้ต' },
   dictS: { icon: '📜', name: 'พิมพ์ประโยคที่ได้ยิน', desc: 'ฟังประโยคแล้วพิมพ์ให้ครบ ตรวจทีละคำ' },
   ipa: { icon: '🔡', name: 'อ่าน IPA', desc: 'ดูวิธีออกเสียง /ˈæpl/ แล้วเลือกคำที่ถูก' },
@@ -82,7 +83,7 @@ const GAME_SKILLS = [
   ['hear', '👂', 'ฟังและเสียง', ['listen', 'minpair', 'num', 'dict', 'dictW', 'dictS', 'ipa']],
   ['say', '🗣️', 'พูด', ['speak', 'speakS']],
   ['mean', '📖', 'ความหมาย', ['en2th', 'th2en', 'match', 'emoji', 'guess', 'syn', 'confuse', 'review']],
-  ['write', '✍️', 'สะกดและเขียน', ['spell', 'hangman', 'anagram', 'cloze', 'sCloze', 'order', 'sOrder', 'compose']],
+  ['write', '✍️', 'สะกดและเขียน', ['spell', 'hand', 'hangman', 'anagram', 'cloze', 'sCloze', 'order', 'sOrder', 'compose']],
   ['gram', '📐', 'ไวยากรณ์และรูปคำ', ['wform', 'affix', 'root', 'gpat', 'thaierr', 'dprep', 'irreg']],
   ['phrase', '🧩', 'วลีและสำนวน', ['colloc', 'phrasal', 'idiom', 'sit', 'real']],
   ['chal', '🎉', 'ท้าทาย', ['survival', 'timeAttack', 'emojiRun']],
@@ -372,6 +373,7 @@ function gamePool(id) {
   if (id === 'dictW') list = list.filter((w) => !/\s/.test(w.w) && w.w.length >= 3);
   if (id === 'dictS') list = list.filter((w) => { const n = dictTokens(w.e).length; return n >= 3 && n <= 12; });
   if (id === 'ipa') list = list.filter((w) => w.i && w.i.length >= 4 && !/\s/.test(w.w));
+  if (id === 'hand') list = list.filter((w) => /^[a-z][a-z' -]{0,15}$/i.test(w.w)); // fits one line of the writing pad
   if (id === 'hangman' || id === 'anagram') list = list.filter((w) => /^[a-z]{4,12}$/i.test(w.w)); // single words: letters only
   return list;
 }

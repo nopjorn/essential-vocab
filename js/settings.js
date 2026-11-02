@@ -171,6 +171,7 @@ function renderSettings() {
       <div class="small" style="margin:16px 0 6px"><b>📤 ส่งออกรายการคำศัพท์</b> <span class="muted">ไปใช้ใน Excel / Google Sheets หรือ Anki</span></div>
       <select class="sel block-sel" id="xpWhich" aria-label="คำที่จะส่งออก">${Object.entries(EXPORT_SETS).map(([k, [name, f]]) => `<option value="${k}">${name} (${W.filter(f).length})</option>`).join('')}</select>
       <div class="row" style="margin-top:8px"><button class="btn grow" id="xpCsv">📄 CSV</button><button class="btn grow" id="xpAnki">🃏 Anki</button></div>
+      <button class="btn block" id="toPrint" style="margin-top:8px">🖨️ ทำใบงานพิมพ์ / PDF</button>
     </div></details>
 
     <button class="card-box guide-link" id="guideBtn" style="margin-top:24px"><span>📘</span><div class="grow"><b>คู่มือการใช้งาน & ทริก</b><div class="small muted">วิธีใช้ทุกส่วนของแอป และวิธีจำศัพท์ให้ได้ผลที่สุด</div></div><span class="muted">›</span></button>
@@ -311,6 +312,7 @@ function renderSettings() {
     setAuth(null); toast('ออกจากระบบแล้ว'); go(mustLogin() ? 'login' : 'settings');
   };
   $('#exp').onclick = async () => { await exportBackup(); renderSettings(); };
+  $('#toPrint').onclick = () => go('print', null, 'settings');
   $('#xpCsv').onclick = () => exportWords($('#xpWhich').value, 'csv');
   $('#xpAnki').onclick = () => exportWords($('#xpWhich').value, 'anki');
   if (navigator.storage && navigator.storage.persisted) {

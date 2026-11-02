@@ -24,6 +24,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   };
   const TIME_LIMIT = 60;
   const items = SURV ? [] : SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId) ? lexPick(gameId, src, ROUND) : shuffle(src).slice(0, ENDLESS || STAGE ? src.length : ROUND);
+  let noSrs = false; // ✏️ hand game in trace mode: copying a faint word is practice, not recall (no SRS change)
   let i = 0, score = 0, combo = 0, bestCombo = 0, asked = 0, hearts = 3, reach = 0, finished = false, timeLeft = TIME_LIMIT;
   const wrong = [], runLog = [], xp0 = S.xp || 0; // runLog: right/wrong of each answer, xp0: XP at the start (result screen, 1.129)
   $('#title').textContent = GNAME;
@@ -114,6 +115,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'dictW') return qDictW(w);
     if (m === 'dictS') return qDictS(w);
     if (m === 'compose') return qCompose(w);
+    if (m === 'hand') return qHand(w);
     if (m === 'order') return qOrder(w, w.e, w.et);
     if (m === 'sOrder') return qOrder(w, w._s, '', w._st);
     if (m === 'sCloze') return qSCloze(w);
@@ -532,6 +534,124 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     };
     $('#skip').onclick = () => { if (!answered) done(false); };
     setTimeout(() => inp.focus(), 50);
+  }
+  // ✏️ Handwriting (1.135): see the Thai meaning, write the word by hand (Apple Pencil, finger or mouse) on lined paper, then the
+  // answer is laid over the writing and the player grades it. 👻 ลอกตาม (settings.handTrace) shows a faint copy to trace: practice
+  // only (noSrs). Once a pencil touches the pad, finger touches are ignored (palm resting on the screen).
+  function qHand(w) {
+    noSrs = false;
+    const hint = w.w[0] + w.w.slice(1).replace(/[a-zA-Z]/g, '_');
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit pop">${lvBadge(w.g)}<div style="height:8px"></div>
+        <div class="th">${esc(w.t)}</div><div class="pos">${esc(w.p)}</div>
+        <div style="margin-top:10px;font-size:20px;letter-spacing:4px;font-weight:700" lang="en" aria-label="ตัวช่วย ${w.w.replace(/[^a-zA-Z]/g, '').length} ตัวอักษร">${esc(hint)}</div>
+      </div>
+      <div class="hd-wrap"><canvas id="hdPad" class="hd-pad" role="img" aria-label="พื้นที่เขียนคำภาษาอังกฤษด้วยมือ"></canvas></div>
+      <div class="row hd-tools">
+        <button type="button" class="btn" id="hdUndo">↶ ย้อน</button><button type="button" class="btn" id="hdClear">🗑 ล้าง</button>
+        <button type="button" class="btn grow" id="hdTrace" aria-pressed="false">👻 ลอกตาม</button></div>
+      <div class="row" id="hdAct" style="margin-top:10px">
+        <button type="button" class="btn grow" id="skip">ไม่รู้ / เฉลย</button>
+        <button type="button" class="btn primary grow" id="hdCheck">ตรวจคำตอบ</button></div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = leave;
+    const cv = $('#hdPad'), ctx = cv.getContext('2d');
+    const strokes = [];
+    let cur = null, answered = false, shown = false, trace = !!S.settings.handTrace, traced = trace, W_ = 0, H_ = 0;
+    const ink = () => getComputedStyle(view).getPropertyValue('--text').trim() || '#222';
+    const accent = () => getComputedStyle(view).getPropertyValue('--primary').trim() || '#6c5ce7';
+    const lineY = (k) => H_ * [0.2, 0.42, 0.68, 0.88][k]; // ascender · x-height · baseline · descender
+    const font = () => {
+      let px = (lineY(2) - lineY(0)) / 0.72;
+      ctx.font = `${px}px "Chalkboard SE", "Noteworthy", "Comic Sans MS", "Segoe Print", sans-serif`;
+      const wd = ctx.measureText(w.w).width;
+      if (wd > W_ * 0.9) { px *= W_ * 0.9 / wd; ctx.font = `${px}px "Chalkboard SE", "Noteworthy", "Comic Sans MS", "Segoe Print", sans-serif`; }
+    };
+    function paint() {
+      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
+      const r = cv.width / W_; ctx.setTransform(r, 0, 0, r, 0, 0);
+      ctx.lineWidth = 1; ctx.strokeStyle = ink(); ctx.globalAlpha = 0.18; ctx.setLineDash([]);
+      [0, 2, 3].forEach((k) => { ctx.beginPath(); ctx.moveTo(8, lineY(k)); ctx.lineTo(W_ - 8, lineY(k)); ctx.stroke(); });
+      ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.moveTo(8, lineY(1)); ctx.lineTo(W_ - 8, lineY(1)); ctx.stroke(); ctx.setLineDash([]);
+      if (trace || shown) { // faint copy (trace) or the answer laid over the writing (after checking)
+        font(); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+        ctx.fillStyle = shown ? accent() : ink(); ctx.globalAlpha = shown ? 0.45 : 0.16;
+        ctx.fillText(w.w, W_ / 2, lineY(2));
+      }
+      ctx.globalAlpha = 1; ctx.strokeStyle = ink(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (const s of strokes) drawStroke(s);
+    }
+    function drawStroke(s, from = 1) {
+      if (s.pts.length === 1) { ctx.beginPath(); ctx.arc(s.pts[0][0], s.pts[0][1], s.pts[0][2] / 2, 0, 7); ctx.fillStyle = ink(); ctx.fill(); return; }
+      for (let k = Math.max(1, from); k < s.pts.length; k++) {
+        const a = s.pts[k - 1], b = s.pts[k];
+        ctx.lineWidth = (a[2] + b[2]) / 2; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+      }
+    }
+    const size = () => {
+      if (!cv.isConnected) return;
+      const r = cv.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
+      if (!r.width) return;
+      const k = W_ ? r.width / W_ : 1; // keep the strokes when the pad changes size (rotation)
+      if (W_ && k !== 1) strokes.forEach((s) => s.pts.forEach((p) => { p[0] *= k; p[1] *= r.height / H_; }));
+      W_ = r.width; H_ = r.height; cv.width = Math.round(W_ * dpr); cv.height = Math.round(H_ * dpr);
+      paint();
+    };
+    size();
+    const ro = window.ResizeObserver ? new ResizeObserver(size) : null;
+    if (ro) ro.observe(cv);
+    let pen = false;
+    const at = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top, e.pointerType === 'pen' ? 1.6 + (e.pressure || 0.5) * 4 : 4]; };
+    cv.addEventListener('pointerdown', (e) => {
+      if (answered) return;
+      if (e.pointerType === 'pen') pen = true; else if (pen && e.pointerType === 'touch') return; // palm rest
+      e.preventDefault();
+      try { cv.setPointerCapture(e.pointerId); } catch (x) { /* synthetic events */ }
+      cur = { id: e.pointerId, pts: [at(e)] }; strokes.push(cur);
+      ctx.strokeStyle = ink(); drawStroke(cur);
+    });
+    cv.addEventListener('pointermove', (e) => {
+      if (!cur || e.pointerId !== cur.id) return;
+      e.preventDefault();
+      const n = cur.pts.length;
+      for (const ev of e.getCoalescedEvents ? e.getCoalescedEvents() : [e]) cur.pts.push(at(ev));
+      if (cur.pts.length === n) cur.pts.push(at(e));
+      ctx.strokeStyle = ink(); drawStroke(cur, n);
+    });
+    const end = (e) => { if (cur && e.pointerId === cur.id) cur = null; };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    cv.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false }); // no page scroll while writing (older iOS)
+    const tBtn = $('#hdTrace');
+    const showTrace = () => { tBtn.classList.toggle('on', trace); tBtn.setAttribute('aria-pressed', String(trace)); };
+    showTrace();
+    tBtn.onclick = () => {
+      if (answered) return;
+      trace = !trace; if (trace) traced = true;
+      S.settings.handTrace = trace; save(); showTrace(); paint();
+    };
+    $('#hdUndo').onclick = () => { if (!answered && strokes.length) { strokes.pop(); paint(); } };
+    $('#hdClear').onclick = () => { if (!answered) { strokes.length = 0; paint(); } };
+    const done = (ok) => {
+      answered = true; shown = true; paint();
+      if (ro) ro.disconnect();
+      noSrs = traced; // traced = copied, so it only counts as practice
+      mark(w, ok);
+      $('#reveal').innerHTML = (ok ? `✅ ${traced ? 'ลอกตามได้ครบ (โหมดฝึก ไม่นับรอบทบทวน)' : 'เขียนถูก!'} <b lang="en">${esc(w.w)}</b> ${esc(w.i)}` : `❌ คำที่ถูกคือ <b lang="en">${esc(w.w)}</b> ${esc(w.i)}`)
+        + hookBox(w) + exampleBox(w) + `<button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      bindSayEx(view, w.e);
+      $('#nextQ').onclick = next;
+      speak(w.w);
+    };
+    $('#skip').onclick = () => { if (!answered) { $('#hdAct').hidden = true; done(false); } };
+    $('#hdCheck').onclick = () => {
+      if (answered) return;
+      if (!strokes.length) { $('#reveal').textContent = 'ลองเขียนคำลงในกรอบก่อนนะ ✏️ (ถ้าไม่รู้ กด “ไม่รู้ / เฉลย”)'; return; }
+      shown = true; paint(); // answer over the handwriting: the player compares and grades
+      $('#hdAct').innerHTML = `<div class="small muted hd-ask">เทียบลายมือกับคำสีจาง <b lang="en">${esc(w.w)}</b> เขียนถูกทุกตัวไหม?</div>
+        <button type="button" class="btn grow" id="hdNo">❌ ผิด / ไม่ครบ</button><button type="button" class="btn primary grow" id="hdYes">✅ ถูกทุกตัว</button>`;
+      $('#hdNo').onclick = () => { $('#hdAct').hidden = true; done(false); };
+      $('#hdYes').onclick = () => { $('#hdAct').hidden = true; done(true); };
+    };
   }
   function qDict(w) {
     const blank = w.e.replace(clozeRe(w), (all, pre) => pre + '\u0000');
@@ -1162,7 +1282,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     const soft = spk || gameId === 'order' || gameId === 'sOrder' || gameId === 'dictS' || gameId === 'compose';
     asked++;
     if (w.idx < 0 && SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId)) lexGrade(lexKey(gameId, w), ok);
-    if (w.idx < 0 || (soft && !ok) || deckRun.practice) markActive(); else gameResult(w, ok, deckRun.map);
+    if (w.idx < 0 || (soft && !ok) || deckRun.practice || noSrs) markActive(); else gameResult(w, ok, deckRun.map);
     if (spk && ok) S.counts.speak = (S.counts.speak || 0) + 1;
     questEvent('answer', { game: gameId, ok });
     sfx(ok ? 'ok' : 'bad');

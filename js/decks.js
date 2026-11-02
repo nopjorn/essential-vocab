@@ -162,11 +162,13 @@ function renderDecks(openId) {
         <span>${esc(d.icon)}</span><div class="grow"><b>${esc(d.name || 'ชุดไม่มีชื่อ')}</b><div class="small muted">${st.n} คำ${st.due ? ` · ⏰ ครบกำหนด ${st.due}` : ''}${st.solid === st.n && st.n ? ' · ✅ แม่นทั้งชุด' : ''}</div>${st.n ? deckBar(st) : ''}</div><span class="muted">›</span></button>`; }).join('')}</div>`
     : `<div class="card-box">${emptyArt({ kind: 'empty', title: 'ยังไม่มีชุดคำ', sub: 'สร้างชุดจากคำในแอป เช่น ศัพท์ประจำสัปดาห์ที่ครูสั่ง คำที่ใช้บ่อยที่ทำงาน หรือคำสำหรับไปเที่ยว' })}</div>`}
     <button class="btn primary block" id="dkNew">＋ สร้างชุด</button>
+    <button class="btn block" id="dkMine" style="margin-top:8px">📰 เก็บคำใหม่จากบทความ</button>
     ${ds.length ? '' : `<div class="small muted" style="margin:16px 4px 6px">หรือเริ่มจากชุดสำเร็จรูป (แก้ไขเพิ่ม–ลดคำได้ภายหลัง)</div>
       <div class="chips">${goals.map(([id, ic, th]) => `<button class="chip" data-from="${id}">${ic} ${esc(th)} · ${tagWords(id).length}</button>`).join('')}</div>`}
     <p class="small muted" style="margin:16px 4px">เลือกคำได้จากคลังคำในแอปเท่านั้น · ชุดซิงก์ข้ามเครื่องผ่านบัญชีเดียวกัน (ต้องอัปเดตแอปทุกเครื่อง) · แตะชุดเพื่อเรียน เล่นเกม และดูสถิติของชุด</p>`;
   view.querySelectorAll('.deck-card').forEach((b) => { b.onclick = () => renderDeck(b.dataset.id); });
   $('#dkNew').onclick = () => renderDeckEdit();
+  $('#dkMine').onclick = () => go('mine', 'decks');
   view.querySelectorAll('[data-from]').forEach((b) => {
     b.onclick = () => {
       const id = b.dataset.from, t = TAGS.find((x) => x.id === id);
@@ -245,7 +247,7 @@ function renderDeck(id) {
     <button class="btn primary block" id="dkStudy" ${st.n ? '' : 'disabled'}>▶︎ เรียนชุดนี้ <small>(ครบกำหนด ${st.due} · คำใหม่ ${Math.min(DECK_ROUND, st.fresh)})</small></button>
     <button class="btn block" id="dkPlay" style="margin-top:8px" ${st.n ? '' : 'disabled'}>🎮 เล่นเกมจากชุดนี้</button>
     <p class="small muted" style="margin:8px 4px 14px">ความคืบหน้าของชุดแยกจากสถิติหลัก (คำที่เรียน / จำได้แล้ว ในหน้าหลักไม่เปลี่ยน) แต่สตรีค XP และปฏิทินความขยันนับรวม · "แม่นแล้ว" = ทบทวนห่างตั้งแต่ 7 วันขึ้นไป</p>
-    ${st.n ? '<button class="btn block" id="dkShare" style="margin-top:8px">📤 แชร์ชุดนี้ให้เพื่อน</button><button class="btn ghost block" id="dkRestart">🔄 เริ่มชุดนี้ใหม่</button>' : ''}
+    ${st.n ? '<button class="btn block" id="dkShare" style="margin-top:8px">📤 แชร์ชุดนี้ให้เพื่อน</button><button class="btn block" id="dkPrint" style="margin-top:8px">🖨️ พิมพ์ใบงานจากชุดนี้</button><button class="btn ghost block" id="dkRestart">🔄 เริ่มชุดนี้ใหม่</button>' : ''}
     <div class="card-box" style="padding:4px 14px;margin-top:14px" id="dkList">${ws.map((w) => `<div class="wrow" data-i="${w.idx}" data-w="${esc(w.w)}"><span class="dot ${DECK_DOT[deckStatus(map[w.w])]}"></span>
       <div class="grow dk-w"><div><span class="w" lang="en">${esc(w.w)}</span> <span class="pos">${esc(w.p)}</span></div><div class="t">${esc(w.t)}</div></div>
       <span class="star-mark">${leechIn(w, map) ? '🐢' : ''}${isStar(w) ? '⭐' : ''}</span></div>`).join('')}</div>`;
@@ -254,6 +256,7 @@ function renderDeck(id) {
   $('#dkStudy').onclick = () => go('cards', { deck: id });
   $('#dkPlay').onclick = () => { gameSource = 'deck'; gameDecks = [id]; go('games'); };
   if ($('#dkShare')) $('#dkShare').onclick = () => shareDeck(d);
+  if ($('#dkPrint')) $('#dkPrint').onclick = () => go('print', 'deck:' + id, 'decks', id);
   if ($('#dkRestart')) $('#dkRestart').onclick = () => {
     if (!confirm(`เริ่มชุด "${d.name}" ใหม่ทั้งหมดใช่ไหม? ความคืบหน้าของชุดนี้จะถูกล้าง (สถิติหลักไม่เปลี่ยน)`)) return;
     const m = deckMap(id);
