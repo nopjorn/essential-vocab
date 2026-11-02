@@ -2476,3 +2476,12 @@ html[data-theme="dark"] input, html[data-theme="black"] input { color-scheme: da
 .keys-r { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
 .keys-r kbd { flex: none; min-width: 112px; font: 700 var(--fs-sm, 14px)/1.2 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); border-bottom-width: 2px; background: var(--surface-2); color: var(--text); text-align: center; }
 .keys-r span { color: var(--text); }
+
+/* ✏️ Apple Pencil mode (1.139, html.pen-mode from applyPen() in js/kbd.js): answer fields become roomy writing boxes for Scribble */
+html.pen-mode .spell-input { min-height: 96px; font-size: 32px; padding: 18px 16px; border-style: dashed; border-width: 3px; background-image: linear-gradient(transparent calc(100% - 26px), color-mix(in srgb, var(--primary) 22%, transparent) calc(100% - 26px), color-mix(in srgb, var(--primary) 22%, transparent) calc(100% - 24px), transparent calc(100% - 24px)); }
+html.pen-mode textarea.spell-input { min-height: 140px; font-size: 26px; background-image: none; }
+html.pen-mode .spell-input:focus { border-style: solid; }
+html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
+.kb-toggle { display: block; margin: 8px auto 0; }
+@media (max-height: 520px) { html.pen-mode .spell-input { min-height: 64px; font-size: 26px; padding: 10px 12px; } }
+.app-kb[hidden] { display: none; }

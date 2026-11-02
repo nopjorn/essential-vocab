@@ -6,6 +6,19 @@
 // Sentence inputs, search and e-mail keep the phone's keyboard. Classic script sharing globals with app.js.
 
 const kbdOn = () => { const m = S.settings.appKbd || 'auto'; return m === 'on' || (m === 'auto' && !!(window.matchMedia && matchMedia('(pointer: coarse)').matches)); };
+// ✏️ Apple Pencil mode (1.139, settings.penMode 'auto' | 'on' | 'off'): 'auto' turns on once a pencil has touched the app on this
+// device (localStorage o3k.pen). Then answer fields are big writing boxes (html.pen-mode .spell-input), and the app keyboard
+// starts folded with the field writable, so the very first pencil stroke already goes to Scribble (⌨️ unfolds the pad).
+const PEN_KEY = 'o3k.pen';
+const penSeen = () => { try { return localStorage.getItem(PEN_KEY) === '1'; } catch (e) { return false; } };
+const penOn = () => { const m = (S.settings && S.settings.penMode) || 'auto'; return m === 'on' || (m === 'auto' && penSeen()); };
+function applyPen() { document.documentElement.classList.toggle('pen-mode', penOn()); }
+document.addEventListener('pointerdown', (e) => {
+  if (e.pointerType !== 'pen' || penSeen()) return;
+  try { localStorage.setItem(PEN_KEY, '1'); } catch (err) { /* private mode: stays off */ }
+  applyPen();
+}, true);
+applyPen();
 let kbdKeys = null; // the document keydown listener of the keyboard on screen
 function appKbd(input, form) {
   if (!input || !form || !kbdOn()) return false;
@@ -32,10 +45,26 @@ function appKbd(input, form) {
     if (typeof toast === 'function') toast('✏️ เขียนด้วย Apple Pencil ลงในช่องได้เลย');
   });
   pad.onclick = (e) => { const b = e.target.closest('[data-k]'); if (b) { put(b.dataset.k); } };
+  if (penOn()) {
+    // pencil mode: writable field + folded pad; the toggle switches between writing and the app's keys
+    const tg = document.createElement('button');
+    tg.type = 'button'; tg.className = 'btn ghost kb-toggle';
+    const set = (keys) => {
+      pad.hidden = !keys; input.readOnly = keys; input.setAttribute('inputmode', keys ? 'none' : 'text');
+      input.classList.toggle('kb-pen', !keys);
+      tg.textContent = keys ? '✏️ เขียนด้วยปากกา' : '⌨️ แป้นพิมพ์';
+      tg.setAttribute('aria-label', keys ? 'เปลี่ยนเป็นเขียนด้วย Apple Pencil' : 'เปิดแป้นพิมพ์ของแอป');
+    };
+    tg.onclick = () => set(pad.hidden);
+    input.placeholder = '✏️ เขียนคำลงในช่องนี้';
+    pad.after(tg);
+    set(false);
+  }
   if (kbdKeys) document.removeEventListener('keydown', kbdKeys);
   kbdKeys = (e) => {
     if (!input.isConnected) { document.removeEventListener('keydown', kbdKeys); kbdKeys = null; return; }
     if (e.metaKey || e.ctrlKey || e.altKey || (document.activeElement && /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName) && document.activeElement !== input)) return;
+    if (!input.readOnly && document.activeElement === input) return; // writable (pencil): the field types by itself, don't add each key twice
     if (/^[a-zA-Z' -]$/.test(e.key)) { put(e.key.toLowerCase()); e.preventDefault(); }
     else if (e.key === 'Backspace') { put('del'); e.preventDefault(); }
     else if (e.key === 'Enter') { put('ok'); e.preventDefault(); }

@@ -157,3 +157,40 @@ test('keyboard: arrows grade flashcards, Esc closes sheet / leaves a session / g
   if (await inp.count()) { await inp.focus(); await kp('Shift+Slash'); await expect(page.locator('.keys-sheet')).toHaveCount(0); }
   expect(errors).toEqual([]);
 });
+
+test('Apple Pencil mode: big writable field, folded app keyboard, ⌨️ toggle, no double typing; auto turns on after a pencil touch', async ({ page }) => {
+  await page.setViewportSize({ width: 744, height: 1133 });
+  const errors = await openApp(page, { settings: { levels: ['A1'], appKbd: 'on', penMode: 'auto' } });
+  expect(await page.evaluate(() => document.documentElement.classList.contains('pen-mode'))).toBe(false);
+  // a pencil touch anywhere = this device has a pencil
+  await page.evaluate(() => document.body.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'pen', bubbles: true })));
+  expect(await page.evaluate(() => [document.documentElement.classList.contains('pen-mode'), localStorage.getItem('o3k.pen')])).toEqual([true, '1']);
+  await page.evaluate(() => startGame('spell'));
+  const si = page.locator('#si');
+  await expect(si).toBeVisible();
+  expect(await si.evaluate((x) => [x.readOnly, x.getAttribute('inputmode'), x.classList.contains('kb-pen')])).toEqual([false, 'text', true]);
+  await expect(page.locator('.app-kb')).toBeHidden();
+  expect((await si.boundingBox()).height).toBeGreaterThanOrEqual(90);
+  // writing (typing into the focused field) lands once
+  await si.click();
+  await page.keyboard.type('ab');
+  await expect(si).toHaveValue('ab');
+  // ⌨️ unfolds the app's keys and locks the field again; ✏️ folds them back
+  await page.locator('.kb-toggle').click();
+  await expect(page.locator('.app-kb')).toBeVisible();
+  expect(await si.evaluate((x) => x.readOnly)).toBe(true);
+  await page.locator('.app-kb [data-k="c"]').click();
+  await expect(si).toHaveValue('abc');
+  await page.locator('.kb-toggle').click();
+  await expect(page.locator('.app-kb')).toBeHidden();
+  // off in settings: the usual small field and the app keyboard
+  await page.evaluate(() => go('settings'));
+  await page.evaluate(() => { document.querySelector('details[data-g="look"]').open = true; });
+  await page.locator('#penMode').selectOption('off');
+  expect(await page.evaluate(() => document.documentElement.classList.contains('pen-mode'))).toBe(false);
+  await page.evaluate(() => startGame('spell'));
+  await expect(page.locator('.app-kb')).toBeVisible();
+  await expect(page.locator('.kb-toggle')).toHaveCount(0);
+  expect(await page.locator('#si').evaluate((x) => x.readOnly)).toBe(true);
+  expect(errors).toEqual([]);
+});
