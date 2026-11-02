@@ -2591,3 +2591,10 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
 .whov-p { opacity: .75; font-style: italic; font-size: .85em; }
 .whov-s { margin-top: 2px; font-size: .82em; opacity: .85; }
 @media (prefers-reduced-motion: no-preference) { .whov { animation: wmIn .12s ease-out; } }
+
+/* 📴 offline (1.148): top-bar badge while offline, status box in settings → backup */
+.off-badge { display: inline-grid; place-items: center; min-width: 38px; height: 38px; border-radius: 999px; background: var(--surface); box-shadow: var(--shadow); font-size: 18px; }
+.off-badge[hidden] { display: none; }
+.off-box { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; margin: 0 0 12px; border-radius: 14px; background: var(--surface-2); }
+.off-box .btn { margin-top: 6px; }
+.off-box .btn[hidden] { display: none; }

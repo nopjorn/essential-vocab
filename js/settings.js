@@ -169,6 +169,8 @@ function renderSettings() {
       <p class="small muted" style="margin-top:0">${syncOn() && auth
         ? '☁️ ความคืบหน้าซิงก์ขึ้นคลาวด์อัตโนมัติแล้ว ลบแอปหรือเปลี่ยนเครื่องก็ไม่หาย จะส่งออกเป็นไฟล์เก็บไว้อีกชั้นก็ได้'
         : `ความคืบหน้าเก็บไว้ในเครื่องนี้เท่านั้น ถ้าลบไอคอนแอปออกจากหน้าจอโฮม ข้อมูลจะหายด้วย แนะนำให้สำรองเก็บไว้ใน iCloud Drive (แอปจะเตือนทุก ${BACKUP_EVERY} วัน)`}</p>
+      <div class="off-box" id="offBox"><b>📴 ใช้งานออฟไลน์</b><div class="small" id="offState">⏳ กำลังตรวจ…</div><div class="small muted" id="offUsed"></div>
+        <button class="btn block" id="offGet" hidden>⬇️ โหลดเก็บไว้ในเครื่อง</button></div>
       <p class="small" style="margin-top:0"><b>สำรองล่าสุด:</b> ${S.backupAt ? new Date(S.backupAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : 'ยังไม่เคยสำรอง'}<br><span class="muted" id="persist"></span></p>
       <div class="row"><button class="btn grow" id="exp">📤 ส่งออก</button><button class="btn grow" id="imp">📥 นำเข้า</button></div>
       <input type="file" id="file" accept=".json,application/json" hidden>
@@ -326,6 +328,7 @@ function renderSettings() {
   if (navigator.storage && navigator.storage.persisted) {
     navigator.storage.persisted().then((ok) => { const el = $('#persist'); if (el) el.textContent = ok ? '🔒 เครื่องเก็บข้อมูลแบบถาวรแล้ว' : ''; }).catch(() => {});
   }
+  offlineBox();
   $('#imp').onclick = () => $('#file').click();
   $('#file').onchange = async (e) => {
     const f = e.target.files[0]; if (!f) return;
@@ -458,3 +461,46 @@ function exportWords(which, fmt) {
   saveFile(new File([text], name, { type }), 'คำศัพท์จากศัพท์ต้องรู้').then((ok) => { if (ok) toast(`ส่งออก ${list.length} คำแล้ว ✅`); });
 }
 
+
+/* ---------- offline (1.148) ---------- */
+// Asks the service worker which app files are kept on this device (fetch = download the missing ones first).
+// Resolves {version, total, miss} or null (no worker: first visit, private window, tests).
+function offlineStatus(fetch) {
+  const sw = navigator.serviceWorker && navigator.serviceWorker.controller;
+  if (!sw || !window.MessageChannel) return Promise.resolve(null);
+  return new Promise((res) => {
+    const ch = new MessageChannel(), t = setTimeout(() => res(null), fetch ? 60000 : 8000);
+    ch.port1.onmessage = (e) => { clearTimeout(t); res(e.data); };
+    sw.postMessage({ type: fetch ? 'offline-fetch' : 'offline-status' }, [ch.port2]);
+  });
+}
+const mbText = (b) => (b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
+function offlineBox() {
+  const el = document.getElementById('offBox'); if (!el) return;
+  const paint = (r, used) => {
+    if (!document.getElementById('offBox')) return;
+    const ok = r && !r.miss.length;
+    el.querySelector('#offState').innerHTML = !r ? '⏳ ยังตรวจไม่ได้ (เปิดแอปจากไอคอนหน้าจอโฮม แล้วต่อเน็ตสักครั้ง)'
+      : ok ? `✅ พร้อมใช้ออฟไลน์ครบทั้ง ${r.total} ไฟล์`
+      : `⚠️ ยังขาด ${r.miss.length} จาก ${r.total} ไฟล์ · ต่อเน็ตแล้วกด “โหลดเก็บไว้ในเครื่อง”`;
+    el.querySelector('#offUsed').textContent = used ? `ใช้พื้นที่ในเครื่องราว ${mbText(used)}` : '';
+    el.querySelector('#offGet').hidden = !r || ok;
+  };
+  const run = (fetch) => Promise.all([offlineStatus(fetch), navigator.storage && navigator.storage.estimate ? navigator.storage.estimate().then((x) => x.usage).catch(() => 0) : 0])
+    .then(([r, used]) => { paint(r, used); return r; });
+  el.querySelector('#offGet').onclick = (e) => {
+    if (navigator.onLine === false) { toast('📴 ยังไม่มีอินเทอร์เน็ต ต่อเน็ตก่อนแล้วกดอีกครั้งนะคะ'); return; }
+    const b = e.currentTarget; b.disabled = true; b.textContent = '⏳ กำลังโหลด…';
+    run(true).then((r) => { b.disabled = false; b.textContent = '⬇️ โหลดเก็บไว้ในเครื่อง'; toast(r && !r.miss.length ? '✅ เก็บครบแล้ว ใช้ออฟไลน์ได้เลย' : '⚠️ ยังโหลดไม่ครบ ลองใหม่อีกครั้งนะคะ'); });
+  };
+  run(false);
+}
+// 📴 in the top bar while offline; a toast when the connection goes or comes back (sync catches up by itself).
+function netBadge(say) {
+  const off = navigator.onLine === false;
+  document.documentElement.classList.toggle('is-offline', off);
+  const b = document.getElementById('offBadge'); if (b) b.hidden = !off;
+  if (say) toast(off ? '📴 ออฟไลน์อยู่ ยังเรียนและเล่นได้ตามปกติ' + (syncOn() && auth ? ' ความคืบหน้าจะซิงก์เมื่อกลับมาออนไลน์' : '') : '🌐 กลับมาออนไลน์แล้ว');
+}
+addEventListener('online', () => netBadge(true));
+addEventListener('offline', () => netBadge(true));

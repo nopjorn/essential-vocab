@@ -1,5 +1,5 @@
 // Offline cache. Bump VERSION (keep it equal to APP_VERSION in app.js) on every push.
-const VERSION = 'o3k-1.147.0';
+const VERSION = 'o3k-1.148.0';
 // App shell: replaced as a whole with every version.
 const FILES = [
   './',
@@ -193,4 +193,26 @@ self.addEventListener('notificationclick', (e) => {
     const c = list.find((x) => x.url.startsWith(self.registration.scope));
     return c ? c.focus() : self.clients.openWindow(url);
   }));
+});
+
+// 📴 Offline check (1.148): the page asks over a MessageChannel which app files are in the caches ('offline-status'),
+// or to download the missing ones now ('offline-fetch'). Answer: {version, total, miss: [files]}.
+async function offlineMissing() {
+  const scope = self.registration.scope, shell = await caches.open(VERSION), data = await caches.open(DATA_CACHE), miss = [];
+  for (const f of FILES) if (!(await shell.match(new URL(f, scope).href, { ignoreSearch: true }))) miss.push(f);
+  for (const f of DATA) if (!(await data.match(dataKey(new URL(f, scope))))) miss.push(f);
+  return miss;
+}
+self.addEventListener('message', (e) => {
+  const d = e.data || {}, port = e.ports && e.ports[0];
+  if (!port || (d.type !== 'offline-status' && d.type !== 'offline-fetch')) return;
+  e.waitUntil((async () => {
+    let miss = await offlineMissing();
+    if (d.type === 'offline-fetch' && miss.length) {
+      const shell = await caches.open(VERSION), data = await caches.open(DATA_CACHE);
+      await Promise.all(miss.map((f) => (DATA.includes(f) ? refreshData(data, f) : shell.add(f)).catch(() => {})));
+      miss = await offlineMissing();
+    }
+    port.postMessage({ version: VERSION, total: FILES.length + DATA.length, miss });
+  })());
 });

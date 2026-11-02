@@ -485,3 +485,13 @@ test('hover meaning: a hovering pencil (or a resting mouse) over a story word sh
   await expect(page.locator('.whov')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test('flashcards still loading their data do not draw over the page the user moved on to (1.148)', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.evaluate(() => { FAMILIES = null; go('cards'); go('settings'); });
+  await page.waitForTimeout(1200);
+  await expect(page.locator('#view')).toHaveAttribute('data-route', 'settings');
+  await expect(page.locator('#fc')).toHaveCount(0);
+  await expect(page.locator('#thumbs')).toBeAttached();
+  expect(errors).toEqual([]);
+});

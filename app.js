@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.147.0';
+const APP_VERSION = '1.148.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1654,7 +1654,9 @@ function sectionize(box, brk) {
 let current = 'home', firstGo = true;
 let cleanup = null;
 const TITLES = { print: 'ใบงานพิมพ์', mine: 'เก็บคำจากบทความ', ref: 'คลังความรู้', room: 'ห้องของน้องคำ', paths: 'นิยายเลือกทาง', pic: 'เล่าภาพ', build: 'ต่อคำเป็นประโยค', cases: 'คดีนักสืบ', cafe: 'ร้านน้องคำ', puzzle: 'ปริศนาประจำวัน', album: 'อัลบั้มการ์ด', garden: 'สวนคำศัพท์', fun: 'โซนสนุก', tower: 'หอคอยไม่รู้จบ', coinshop: 'ร้านค้าเหรียญ', adv: 'ผจญภัยสัปดาห์', ear: 'ฟังทบทวน', wsearch: 'ค้นหาคำในตาราง', map: 'แผนที่ด่าน', duel: 'ท้าดวลเพื่อน', event: 'กิจกรรมเทศกาล', mascot: 'น้องคำ', year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
+let navSeq = 0; // bumped by every go(): a page that finishes loading late checks it before drawing (1.148)
 function go(tab, ...args) {
+  navSeq++;
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
   if (typeof hovHide === 'function') hovHide(); // a hover-meaning bubble (js/words.js) never outlives its page

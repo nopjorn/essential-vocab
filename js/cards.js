@@ -144,7 +144,7 @@ function bindNextSteps() {
 // extra: undefined (today's cards), true (10 more new), 'ahead', 'mastered', 'learning' (random 20 learning words), 'leech' (stubborn words, 15), or { deck: id, ahead? } = study one of my word sets.
 // A set uses its own progress table `map` (S.dprog[id]); the main S.prog and the daily counts stay untouched.
 function renderCards(extra) {
-  if (!FAMILIES || !CONFUSE) { withLoading(Promise.all([loadFamilies(), loadPairs()])).then(() => renderCards(extra)); return; } // spreadFamilies() needs the family and confusable-pair data
+  if (!FAMILIES || !CONFUSE) { const nav = navSeq; withLoading(Promise.all([loadFamilies(), loadPairs()])).then(() => { if (navSeq === nav) renderCards(extra); }); return; } // 1.148.0: not when the user has left meanwhile // spreadFamilies() needs the family and confusable-pair data
   const deck = extra && typeof extra === 'object' ? deckById(extra.deck) : null;
   if (extra && typeof extra === 'object' && !deck) return go('decks');
   const map = deck ? deckMap(deck.id) : S.prog;
