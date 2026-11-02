@@ -28,8 +28,10 @@ test('adventure: stop quiz gives a stamp on a pass, none on a fail; 5 stamps com
         const opts = [...document.querySelectorAll('.opt')];
         return opts.findIndex((o) => ((o.textContent === w.t || o.textContent === w.w)) === good);
       }, good);
+      const before = await page.evaluate(() => { const q = document.querySelector('.q-prompt'); return q ? q.textContent : ''; });
       await page.locator('.opt').nth(idx).click();
-      await page.waitForTimeout(good ? 700 : 1500);
+      // wait for the next question or the stop's result (a fixed wait was flaky on a slow CI runner)
+      await expect.poll(() => page.evaluate((b) => { const q = document.querySelector('.q-prompt'); return !!document.querySelector('.result-emoji, #advAgain, #advNext') || (!!q && q.textContent !== b && !document.querySelector('.opt.correct, .opt.wrong')); }, before), { timeout: 15000 }).toBe(true);
     }
   };
   // a failed stop: no stamp
