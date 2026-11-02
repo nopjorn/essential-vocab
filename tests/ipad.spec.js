@@ -515,3 +515,32 @@ test('room for the iPad window buttons: off by default in a browser, on moves a 
   expect(await page.evaluate(() => document.documentElement.classList.contains('win-gap'))).toBe(false);
   expect(errors).toEqual([]);
 });
+
+// 1.149.1: on an iPad Air 11" home-screen app (1180×820 with the status bar above the top bar) the thumb layouts fit the screen
+// exactly: the flashcard did not fit (its height was guessed from 100dvh) and the quiz question was a narrow strip.
+test('thumb layouts fill the screen that is left: card and buttons fit, the question card is wide and as tall as the answers', async ({ page }) => {
+  await page.setViewportSize({ width: 1180, height: 820 });
+  const errors = await openApp(page, { settings: { levels: ['A1'], thumbs: 'on' } });
+  await page.addStyleTag({ content: '.topbar { padding-top: 44px !important; }' }); // like the status bar of a home-screen app
+  await page.evaluate(() => go('cards'));
+  await expect(page.locator('#fc')).toBeVisible();
+  const card = await page.evaluate(() => { const s = document.getElementById('stage').getBoundingClientRect(), v = document.getElementById('view'); return { bottom: s.bottom, h: s.height, buttons: Math.max(...[...document.querySelectorAll('#grade .btn')].map((b) => b.getBoundingClientRect().bottom)), scroll: v.scrollHeight - v.clientHeight }; });
+  expect(card.bottom).toBeLessThanOrEqual(820);
+  expect(card.buttons).toBeLessThanOrEqual(820);
+  expect(card.h).toBeGreaterThan(520); // and it uses the room
+  expect(card.scroll).toBeLessThanOrEqual(1);
+  await page.evaluate(() => startGame('en2th'));
+  await expect(page.locator('.options .opt').first()).toBeVisible();
+  await page.waitForTimeout(600); // the question card pops in (scale animation)
+  const q = await page.locator('.q-prompt').boundingBox();
+  const last = await page.locator('.options .opt').nth(3).boundingBox();
+  expect(q.width).toBeGreaterThan(420);
+  expect(last.y + last.height).toBeLessThanOrEqual(820);
+  expect(Math.abs(q.y + q.height - (last.y + last.height))).toBeLessThanOrEqual(2); // the card reaches down to the answers
+  // a wrong answer: the next button does not sit on an answer
+  await page.evaluate(() => { const c = playQuiz.cur; [...document.querySelectorAll('.opt')].find((x) => +x.dataset.i !== c.idx).click(); });
+  const n = await page.locator('#nextQ').boundingBox(), o4 = await page.locator('.options .opt').nth(3).boundingBox();
+  expect(n.y).toBeGreaterThanOrEqual(o4.y + o4.height);
+  expect(n.y + n.height).toBeLessThanOrEqual(820);
+  expect(errors).toEqual([]);
+});

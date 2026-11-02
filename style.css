@@ -2426,9 +2426,10 @@ html[data-theme="dark"] input, html[data-theme="black"] input { color-scheme: da
 /* 👐 thumb grade buttons (1.136, .grade.thumbs from thumbsOn()): tablet landscape, card in the middle,
    ลืม/ยาก on the left edge, จำได้/ง่าย on the right, in the lower half where thumbs rest */
 @media (min-width: 1000px) and (min-height: 600px) and (orientation: landscape) {
-  .view:has(> #grade.thumbs) { --maxw: 1100px; display: grid; grid-template-columns: 128px minmax(0, 1fr) 128px; grid-template-rows: auto 1fr; column-gap: 16px; align-content: start; }
+  /* 1.149.1: the card row takes exactly the height that is left (status bar, top bar and all), instead of a guess from 100dvh */
+  .view:has(> #grade.thumbs) { --maxw: 1100px; display: grid; grid-template-columns: 128px minmax(0, 1fr) 128px; grid-template-rows: auto minmax(0, 1fr); column-gap: 16px; align-content: stretch; padding-bottom: calc(env(safe-area-inset-bottom) + 16px); }
   .view:has(> #grade.thumbs) > .session-top { grid-column: 1 / -1; }
-  .view:has(> #grade.thumbs) > .stage { grid-column: 2; grid-row: 2; height: clamp(320px, calc(100dvh - 140px - env(safe-area-inset-bottom)), 760px); min-height: 0; max-height: none; margin: 0; }
+  .view:has(> #grade.thumbs) > .stage { grid-column: 2; grid-row: 2; height: auto; min-height: 280px; max-height: none; margin: 0; }
   .view:has(> #grade.thumbs) > #sideStats { display: none; }
   .view > #grade.thumbs { grid-column: 1 / -1; grid-row: 2; z-index: 2; pointer-events: none; display: grid; grid-template-columns: 128px minmax(0, 1fr) 128px; grid-template-rows: 1fr auto auto; gap: 12px 16px; padding-bottom: 8px; }
   .view > #grade.thumbs .btn { pointer-events: auto; min-height: 96px; font-size: var(--fs-lg, 18px); border-radius: 20px; }
@@ -2498,10 +2499,12 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
    the first half of the answers on the left edge and the rest on the right, low where the thumbs rest; the answer layer
    lies over the question row with pointer-events off between the two columns */
 @media (min-width: 1000px) and (min-height: 600px) and (orientation: landscape) {
-  html.thumbs .view:has(> .q-prompt):has(> .options) { --maxw: 1100px; --tw: minmax(170px, .62fr); grid-template-columns: var(--tw) minmax(0, 1fr) var(--tw); grid-template-rows: auto auto auto auto auto 1fr; column-gap: 16px; }
+  /* 1.149.1: the question card fills the height that is left (room kept at the bottom for the next button) and the answer columns
+     have a fixed width, so the card is wide instead of a narrow strip between two wide gaps */
+  html.thumbs .view:has(> .q-prompt):has(> .options) { --maxw: 1100px; --tw: clamp(170px, 20vw, 230px); grid-template-columns: var(--tw) minmax(0, 1fr) var(--tw); grid-template-rows: auto minmax(0, 1fr); grid-auto-rows: auto; column-gap: 16px; align-content: stretch; padding-bottom: calc(env(safe-area-inset-bottom) + 96px); }
   html.thumbs .view:has(> .q-prompt):has(> .options) > * { grid-column: 2; }
   html.thumbs .view:has(> .q-prompt):has(> .options) > .session-top { grid-column: 1 / -1; }
-  html.thumbs .view:has(> .q-prompt):has(> .options) > .q-prompt, html.thumbs .view:has(> .q-prompt):has(> .options) > .q-prompt.fit { grid-column: 2; grid-row: 2; position: static; min-height: 0; max-height: none; height: clamp(260px, calc(100dvh - 250px - env(safe-area-inset-bottom)), 640px); overflow-y: auto; }
+  html.thumbs .view:has(> .q-prompt):has(> .options) > .q-prompt, html.thumbs .view:has(> .q-prompt):has(> .options) > .q-prompt.fit { grid-column: 2; grid-row: 2; position: static; min-height: 0; max-height: none; height: auto; align-self: stretch; overflow-y: auto; }
   html.thumbs .view:has(> .q-prompt):has(> .options) > .q-prompt ~ :nth-child(n):not(.options) { grid-row: auto; }
   html.thumbs .view:has(> .q-prompt):has(> .options) > .options { grid-column: 1 / -1; grid-row: 2; z-index: 2; pointer-events: none; align-self: stretch;
     display: grid; grid-template-columns: var(--tw) minmax(0, 1fr) var(--tw); grid-auto-flow: row dense; align-content: end; gap: 12px 16px; margin: 0; }
