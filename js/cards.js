@@ -177,6 +177,7 @@ function renderCards(extra) {
 
   let card = null, flipped = false;
   const gradeBox = $('#grade');
+  gradeBox.classList.toggle('thumbs', thumbsOn()); // tablet held with both hands: ลืม/ยาก left, จำได้/ง่าย right (1.136)
   // Undo stack: snapshots taken before each answer so a mis-tap can be reverted.
   const history = [];
   // Words marked "ยาก" while new: shown again later this session before they're scheduled for tomorrow.
@@ -371,4 +372,11 @@ function renderCards(extra) {
   }
 
   show();
+}
+
+// Thumb grade buttons (1.136, settings.thumbs 'auto' | 'on' | 'off'): the CSS splits them to both sides of the card
+// on a tablet in landscape (≥1000×600); 'auto' = touch screens only.
+function thumbsOn() {
+  const v = S.settings.thumbs || 'auto';
+  return v === 'on' || (v === 'auto' && matchMedia('(pointer: coarse)').matches);
 }
