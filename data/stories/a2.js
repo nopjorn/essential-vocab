@@ -36,6 +36,33 @@
           "It was plastic"
         ],
         "a": 2
+      },
+      {
+        "q": "Who gave the writer the plant?",
+        "o": [
+          "A colleague",
+          "The manager",
+          "The writer's mother"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Why did the writer move the plant near the window?",
+        "o": [
+          "To give it more sun",
+          "To make the desk bigger",
+          "Because Joe asked"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What does the writer say about the plastic plant?",
+        "o": [
+          "It's going in the bin",
+          "It brought bad luck",
+          "It's the only plant the writer has never killed"
+        ],
+        "a": 2
       }
     ]
   },
@@ -72,6 +99,33 @@
           "The house numbers were mixed up",
           "The writer ordered them by mistake",
           "Mrs Sompong moved away"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What arrived on Wednesday?",
+        "o": [
+          "A bag of rice",
+          "A pink umbrella",
+          "Some cakes"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Whose name was on the boxes?",
+        "o": [
+          "The writer's wife",
+          "The delivery man",
+          "Mrs Sompong"
+        ],
+        "a": 2
+      },
+      {
+        "q": "How did the old lady say thank you?",
+        "o": [
+          "She sent some cakes",
+          "She called the writer",
+          "She gave them dog food"
         ],
         "a": 0
       }
@@ -112,6 +166,33 @@
           "Washing the car"
         ],
         "a": 0
+      },
+      {
+        "q": "How old is Beam?",
+        "o": [
+          "Six",
+          "Nine",
+          "Twelve"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Where did Beam keep his money?",
+        "o": [
+          "In a glass jar",
+          "In the bank",
+          "Under his bed"
+        ],
+        "a": 0
+      },
+      {
+        "q": "How long did it take Beam to save the money?",
+        "o": [
+          "Two weeks",
+          "One year",
+          "Four months"
+        ],
+        "a": 2
       }
     ]
   },
@@ -150,6 +231,33 @@
           "To close the window"
         ],
         "a": 0
+      },
+      {
+        "q": "What did the writer wear under the jacket?",
+        "o": [
+          "Old shorts with ducks on them",
+          "Smart trousers",
+          "A swimming suit"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why did the dog bark?",
+        "o": [
+          "It was hungry",
+          "Someone was delivering a package",
+          "It saw the camera"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How did the meeting end?",
+        "o": [
+          "The customer was angry",
+          "The call stopped",
+          "The customer agreed to sign the contract"
+        ],
+        "a": 2
       }
     ]
   },
@@ -186,6 +294,33 @@
           "The food is too expensive",
           "Nobody brings food",
           "People don't want to go back to work"
+        ],
+        "a": 2
+      },
+      {
+        "q": "How did people eat lunch before the club?",
+        "o": [
+          "Together in a restaurant",
+          "Alone at their desks",
+          "At home"
+        ],
+        "a": 1
+      },
+      {
+        "q": "When does the lunch club meet?",
+        "o": [
+          "Every Friday",
+          "Every Monday",
+          "Every day"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What did the colleague from Korea bring?",
+        "o": [
+          "Sour sausage",
+          "Khao soi",
+          "Kimchi"
         ],
         "a": 2
       }
@@ -226,6 +361,33 @@
           "Arrive very early"
         ],
         "a": 0
+      },
+      {
+        "q": "Where was the writer going?",
+        "o": [
+          "To the airport",
+          "To a job interview",
+          "To a wedding"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did the driver do to help the writer relax?",
+        "o": [
+          "He told a very bad joke",
+          "He played music",
+          "He drove very slowly"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What does the writer wish now?",
+        "o": [
+          "That the taxi was cheaper",
+          "That the interview was longer",
+          "That the writer had asked the driver's name"
+        ],
+        "a": 2
       }
     ]
   },
@@ -262,6 +424,33 @@
           "Umbrellas",
           "Hot drinks",
           "Plastic bags for their phones"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What was the street in front of the office like?",
+        "o": [
+          "Empty and dry",
+          "Like a small river",
+          "Full of taxis"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How long did it take the writer to get home?",
+        "o": [
+          "Two hours",
+          "Thirty minutes",
+          "All night"
+        ],
+        "a": 0
+      },
+      {
+        "q": "How did the writer feel about the city at the end?",
+        "o": [
+          "Angry",
+          "Afraid",
+          "Proud"
         ],
         "a": 2
       }
@@ -302,6 +491,33 @@
           "Green tea"
         ],
         "a": 0
+      },
+      {
+        "q": "What was on the app's screen?",
+        "o": [
+          "A little green bird",
+          "A cat",
+          "A Japanese flag"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why did the writer start to forget to study?",
+        "o": [
+          "The app stopped working",
+          "Work got busy",
+          "The writer was ill"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How many days in a row has the writer studied?",
+        "o": [
+          "Ten",
+          "Thirty",
+          "180"
+        ],
+        "a": 2
       }
     ]
   },
@@ -340,6 +556,33 @@
           "People in the street"
         ],
         "a": 0
+      },
+      {
+        "q": "How was the father before his new hobby?",
+        "o": [
+          "Busy and happy",
+          "Bored and grumpy",
+          "Ill in bed"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did most of his first photos show?",
+        "o": [
+          "Leaves and empty sky",
+          "His family",
+          "Birds flying"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What happened this year?",
+        "o": [
+          "He sold his camera",
+          "He started watching TV",
+          "One of his photos won a prize"
+        ],
+        "a": 2
       }
     ]
   },
@@ -378,6 +621,33 @@
           "The shop didn't sell it any more"
         ],
         "a": 0
+      },
+      {
+        "q": "Who told the writer the sugar was too high?",
+        "o": [
+          "A friend",
+          "The doctor",
+          "The writer's mother"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How did the writer feel before the health check?",
+        "o": [
+          "Healthy",
+          "Very ill",
+          "Always tired"
+        ],
+        "a": 0
+      },
+      {
+        "q": "How does the writer drink milk tea now?",
+        "o": [
+          "Extra sweet",
+          "With honey",
+          "Without sugar"
+        ],
+        "a": 2
       }
     ]
   },
@@ -414,6 +684,33 @@
           "It was dirty",
           "It had no window",
           "The air conditioner was broken"
+        ],
+        "a": 2
+      },
+      {
+        "q": "Which room did the couple book?",
+        "o": [
+          "The cheapest room",
+          "A room with a pool",
+          "The biggest room"
+        ],
+        "a": 0
+      },
+      {
+        "q": "How did the couple feel when the receptionist said there was a problem?",
+        "o": [
+          "Excited",
+          "Worried",
+          "Angry"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did the new room have?",
+        "o": [
+          "Two beds and a TV",
+          "A garden",
+          "A balcony, a sea view and its own pool"
         ],
         "a": 2
       }
@@ -454,6 +751,33 @@
           "She has no internet"
         ],
         "a": 1
+      },
+      {
+        "q": "Who helped the aunt sell online?",
+        "o": [
+          "The writer's cousin",
+          "A shop in Bangkok",
+          "Her neighbour"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What happened to the video?",
+        "o": [
+          "Nobody watched it",
+          "It was shared thousands of times",
+          "It was too long"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How many boxes does she send a week now?",
+        "o": [
+          "Five",
+          "Twenty",
+          "Fifty"
+        ],
+        "a": 2
       }
     ]
   },
@@ -490,6 +814,33 @@
           "They had a famous player",
           "The students arrived late",
           "The students got tired in the heat"
+        ],
+        "a": 2
+      },
+      {
+        "q": "When do the friends play football?",
+        "o": [
+          "Every Saturday afternoon",
+          "Every evening",
+          "Every Sunday morning"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What did the students laugh at?",
+        "o": [
+          "The old team's shoes",
+          "The old team's big stomachs",
+          "The hot weather"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What was the final score?",
+        "o": [
+          "Ten to nothing",
+          "Two to two",
+          "Three to two"
         ],
         "a": 2
       }
@@ -530,6 +881,33 @@
           "A friend's number"
         ],
         "a": 1
+      },
+      {
+        "q": "How did the mother feel when she read the message?",
+        "o": [
+          "Happy",
+          "Frightened",
+          "Bored"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did the bank say about her account?",
+        "o": [
+          "It was fine",
+          "It was closed",
+          "It had no money"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What was in the message the mother sent yesterday?",
+        "o": [
+          "Another bank warning",
+          "A photo of her card",
+          "A pizza advertisement"
+        ],
+        "a": 2
       }
     ]
   },
@@ -566,6 +944,33 @@
           "A phone",
           "A trip",
           "A rice cooker"
+        ],
+        "a": 2
+      },
+      {
+        "q": "When does the company have a party?",
+        "o": [
+          "At the end of every year",
+          "Every month",
+          "On the manager's birthday"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why did the writer choose a slow, old love song?",
+        "o": [
+          "The manager liked it",
+          "The writer thought it would be easy",
+          "It was the only song"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How did people react to the writer's singing?",
+        "o": [
+          "They left the room",
+          "They were angry",
+          "They loved it and sang along"
         ],
         "a": 2
       }
@@ -615,6 +1020,24 @@
           "Lucky the dog"
         ],
         "a": 2
+      },
+      {
+        "q": "What did Grandpa say about his old watch?",
+        "o": [
+          "It still works perfectly",
+          "It was broken",
+          "He lost it"
+        ],
+        "a": 0
+      },
+      {
+        "q": "How did Grandpa feel after he started walking more?",
+        "o": [
+          "More tired",
+          "Stronger",
+          "Bored"
+        ],
+        "a": 1
       }
     ]
   },
@@ -662,6 +1085,24 @@
           "Give them to a children's hospital"
         ],
         "a": 2
+      },
+      {
+        "q": "How many boxes of soft toys were there?",
+        "o": [
+          "Three",
+          "Five",
+          "Eleven"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What did Ploy order for her friends?",
+        "o": [
+          "Pizzas and mango sticky rice",
+          "Noodles and tea",
+          "Nothing"
+        ],
+        "a": 0
       }
     ]
   },
@@ -709,6 +1150,24 @@
           "By the express train"
         ],
         "a": 0
+      },
+      {
+        "q": "Why didn't the train stop at Nok's station?",
+        "o": [
+          "It was broken",
+          "It was an express train",
+          "The station was closed"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did Nok do in the fishing town?",
+        "o": [
+          "Visited a temple",
+          "Went shopping",
+          "Ate fresh fish and watched the sunset"
+        ],
+        "a": 2
       }
     ]
   },
@@ -756,6 +1215,24 @@
           "To find a way to send her durian"
         ],
         "a": 2
+      },
+      {
+        "q": "Where did Ton take Lena?",
+        "o": [
+          "To a fruit market",
+          "To a restaurant",
+          "To a temple"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What did Lena say the durian tasted like?",
+        "o": [
+          "Rotten onions",
+          "Sweet cheese and ice cream",
+          "Old socks"
+        ],
+        "a": 1
       }
     ]
   },
@@ -803,6 +1280,24 @@
           "A mug with a banana on it"
         ],
         "a": 2
+      },
+      {
+        "q": "What colour were Mint's shorts?",
+        "o": [
+          "Blue",
+          "White",
+          "Pink"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What did the manager say she was wearing?",
+        "o": [
+          "Slippers",
+          "Pyjamas",
+          "Banana shorts"
+        ],
+        "a": 0
       }
     ]
   },
@@ -850,6 +1345,24 @@
           "A new pot"
         ],
         "a": 1
+      },
+      {
+        "q": "Why did the building manager think she would fail?",
+        "o": [
+          "She was too old",
+          "It was too hot and windy on the roof",
+          "There was no water"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What do the neighbours do every Sunday?",
+        "o": [
+          "Clean the roof",
+          "Go to the market",
+          "Cook together and share the food"
+        ],
+        "a": 2
       }
     ]
   },
@@ -897,6 +1410,24 @@
           "She sends him music books"
         ],
         "a": 0
+      },
+      {
+        "q": "Why didn't Arm buy a new guitar?",
+        "o": [
+          "They were too expensive",
+          "The shop was closed",
+          "He didn't like new guitars"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Where does the woman live?",
+        "o": [
+          "In Bangkok",
+          "In Chiang Mai",
+          "Abroad"
+        ],
+        "a": 1
       }
     ]
   },
@@ -942,6 +1473,24 @@
           "Instant noodle seasoning",
           "Fish sauce",
           "A special kind of rice"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What does Mum always say when people ask for the recipe?",
+        "o": [
+          "Ask Grandma",
+          "Look online",
+          "It's a secret"
+        ],
+        "a": 2
+      },
+      {
+        "q": "Who used the same secret before Mum?",
+        "o": [
+          "The writer's grandmother",
+          "The writer's aunts",
+          "A famous cook"
         ],
         "a": 0
       }
@@ -991,6 +1540,24 @@
           "She couldn't cook"
         ],
         "a": 1
+      },
+      {
+        "q": "What job does Bee do?",
+        "o": [
+          "Cook",
+          "Food delivery rider",
+          "Nurse"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What happened to Mrs. Somsri?",
+        "o": [
+          "She moved house",
+          "She went on holiday",
+          "She fell and broke her arm"
+        ],
+        "a": 2
       }
     ]
   },
@@ -1036,6 +1603,24 @@
           "He wanted a clean car",
           "He wanted Kong to get healthy",
           "He wanted to win easily"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How long did Kong train for?",
+        "o": [
+          "Three months",
+          "One week",
+          "A year"
+        ],
+        "a": 0
+      },
+      {
+        "q": "How long did Kong take to finish the race?",
+        "o": [
+          "Forty minutes",
+          "Fifty-eight minutes",
+          "Two hours"
         ],
         "a": 1
       }

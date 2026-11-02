@@ -36,6 +36,33 @@
           "They asked the guard to leave"
         ],
         "a": 0
+      },
+      {
+        "q": "What was the last thing to disappear before the notice?",
+        "o": [
+          "A yoghurt",
+          "Half a sandwich",
+          "A box of homemade spring rolls"
+        ],
+        "a": 2
+      },
+      {
+        "q": "Was there really a camera?",
+        "o": [
+          "No, there wasn't",
+          "Yes, a small one",
+          "Only on Fridays"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why was the security guard taking food?",
+        "o": [
+          "He didn't like his own food",
+          "He often had no time to buy dinner",
+          "He thought it was free"
+        ],
+        "a": 1
       }
     ]
   },
@@ -74,6 +101,33 @@
           "A photo of blue sky"
         ],
         "a": 2
+      },
+      {
+        "q": "When does the air in northern Thailand become smoky?",
+        "o": [
+          "Between January and April",
+          "In the rainy season",
+          "All year round"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why did the sister think the air purifier was not enough?",
+        "o": [
+          "It was too expensive",
+          "It was broken",
+          "It was only a short-term solution"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What does the local group do?",
+        "o": [
+          "Sells masks",
+          "Teaches farmers other ways to clear land and watches for fires",
+          "Plants trees in Bangkok"
+        ],
+        "a": 1
       }
     ]
   },
@@ -112,6 +166,33 @@
           "A Korean book"
         ],
         "a": 1
+      },
+      {
+        "q": "What was NOT in the wallet?",
+        "o": [
+          "Cash",
+          "A passport",
+          "A hotel key card"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How did the writer spend the afternoon?",
+        "o": [
+          "Going back to every shop and cafe",
+          "At the police station",
+          "Sleeping at the hotel"
+        ],
+        "a": 0
+      },
+      {
+        "q": "How did the writer feel about the student?",
+        "o": [
+          "Angry that she took so long",
+          "Surprised that the money was gone",
+          "Thankful and wanting to be that honest"
+        ],
+        "a": 2
       }
     ]
   },
@@ -150,6 +231,33 @@
           "A hundred"
         ],
         "a": 0
+      },
+      {
+        "q": "How often did the writer use to check the phone?",
+        "o": [
+          "About ten times a day",
+          "About a hundred times a day",
+          "Only in the evening"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How did the writer feel on Saturday morning?",
+        "o": [
+          "Anxious",
+          "Relaxed",
+          "Excited"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What does the writer do now during meals?",
+        "o": [
+          "Turns the phone off for the whole weekend",
+          "Reads the news",
+          "Keeps the phone in another room"
+        ],
+        "a": 2
       }
     ]
   },
@@ -186,6 +294,33 @@
           "Once",
           "Three times",
           "Twice"
+        ],
+        "a": 2
+      },
+      {
+        "q": "Who was the writer's instructor?",
+        "o": [
+          "Her husband",
+          "A calm woman in her sixties",
+          "A young man"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What happened in the first lesson?",
+        "o": [
+          "A man walking his dog overtook the car",
+          "The writer hit another car",
+          "The instructor got angry"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why has the writer asked her husband to take the bus?",
+        "o": [
+          "His leg still hurts",
+          "The car is too small",
+          "He gives too much advice while she drives"
         ],
         "a": 2
       }
@@ -226,6 +361,33 @@
           "The writer stopped volunteering"
         ],
         "a": 1
+      },
+      {
+        "q": "Why did the writer start volunteering?",
+        "o": [
+          "Life felt like all work and no meaning",
+          "The writer wanted a dog",
+          "The writer's boss asked"
+        ],
+        "a": 0
+      },
+      {
+        "q": "How did the writer feel driving home after the weekend?",
+        "o": [
+          "Angry",
+          "Bored",
+          "Happy, despite the hard work"
+        ],
+        "a": 2
+      },
+      {
+        "q": "How long did it take before Khanom came close?",
+        "o": [
+          "One day",
+          "Two months",
+          "A year"
+        ],
+        "a": 1
       }
     ]
   },
@@ -262,6 +424,33 @@
           "A new phone",
           "A gym membership",
           "A trip to Vietnam"
+        ],
+        "a": 2
+      },
+      {
+        "q": "How did the writer find out where the money went?",
+        "o": [
+          "The bank sent a letter",
+          "By recording every payment in an app for a month",
+          "A friend explained it"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What had the writer not used since February?",
+        "o": [
+          "A gym membership",
+          "A streaming service",
+          "A credit card"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why did the writer keep one delivery night a week?",
+        "o": [
+          "It was cheaper",
+          "There was no time to cook",
+          "The writer didn't want to give up everything enjoyable"
         ],
         "a": 2
       }
@@ -302,6 +491,33 @@
           "The photographer got lost"
         ],
         "a": 1
+      },
+      {
+        "q": "How many guests does a Thai wedding usually involve, according to the writer?",
+        "o": [
+          "About fifty",
+          "At least three hundred",
+          "More than a thousand"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Where did the groom's parents want the reception?",
+        "o": [
+          "In their home garden",
+          "At a hotel",
+          "At a temple"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What happened after the wedding?",
+        "o": [
+          "The writer started a business",
+          "The cousin got angry",
+          "The writer slept for fourteen hours"
+        ],
+        "a": 2
       }
     ]
   },
@@ -340,6 +556,33 @@
           "Bored with baking"
         ],
         "a": 0
+      },
+      {
+        "q": "How long did Arm work at the bank?",
+        "o": [
+          "Two years",
+          "Twelve years",
+          "Twenty years"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How did his parents feel about the bakery?",
+        "o": [
+          "Horrified",
+          "Excited",
+          "Not interested"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What do people queue for now?",
+        "o": [
+          "Cakes",
+          "Coffee",
+          "His sourdough"
+        ],
+        "a": 2
       }
     ]
   },
@@ -378,6 +621,33 @@
           "A guide came to find them"
         ],
         "a": 1
+      },
+      {
+        "q": "Why did the guide say to return before four o'clock?",
+        "o": [
+          "The park closes at four",
+          "The weather could change quickly",
+          "It gets very cold"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did the friends do when they couldn't see the path?",
+        "o": [
+          "Stopped, stayed together and listened",
+          "Ran down the mountain",
+          "Called the police"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why wasn't the officer surprised?",
+        "o": [
+          "He saw them on a camera",
+          "He knew them",
+          "The radio is there to help lost hikers"
+        ],
+        "a": 2
       }
     ]
   },
@@ -425,6 +695,24 @@
           "To see who could stay calm"
         ],
         "a": 2
+      },
+      {
+        "q": "How long did Mint prepare for the interview?",
+        "o": [
+          "One day",
+          "A whole week",
+          "A month"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How did Mint feel about the trick in the end?",
+        "o": [
+          "She decided to feel proud",
+          "She was very angry",
+          "She refused the job"
+        ],
+        "a": 0
       }
     ]
   },
@@ -470,6 +758,24 @@
           "He did not know the secret word",
           "The mother started shouting",
           "His phone battery died"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What did the caller say had happened?",
+        "o": [
+          "He had lost his phone",
+          "He was ill",
+          "He had had a car accident"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What did the family report the next morning?",
+        "o": [
+          "The phone number",
+          "The narrator's car",
+          "A lost card"
         ],
         "a": 0
       }
@@ -519,6 +825,24 @@
           "He is angry with his daughter"
         ],
         "a": 1
+      },
+      {
+        "q": "Why has Somchai never had a health check?",
+        "o": [
+          "He was too busy",
+          "He felt fine and didn't want to pay",
+          "He was afraid of doctors"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How much weight has Somchai lost?",
+        "o": [
+          "Two kilos",
+          "Five kilos",
+          "Eight kilos"
+        ],
+        "a": 2
       }
     ]
   },
@@ -564,6 +888,24 @@
           "She is very angry",
           "She doesn't mind",
           "She feels embarrassed"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did Fon ask her father to keep?",
+        "o": [
+          "Every electricity bill for three months",
+          "The money for a car",
+          "A list of his air conditioners"
+        ],
+        "a": 0
+      },
+      {
+        "q": "How much was the electricity bill in April?",
+        "o": [
+          "About two thousand baht",
+          "Almost six thousand baht",
+          "Two hundred thousand baht"
         ],
         "a": 1
       }
@@ -613,6 +955,24 @@
           "He had worked on the same farm"
         ],
         "a": 1
+      },
+      {
+        "q": "Where did Beam live in Australia?",
+        "o": [
+          "In Sydney",
+          "On a farm by the sea",
+          "In a small town in Queensland"
+        ],
+        "a": 2
+      },
+      {
+        "q": "Who did Beam become close friends with?",
+        "o": [
+          "Her housemates from France, Korea and Brazil",
+          "Her supervisor",
+          "Other Thai workers"
+        ],
+        "a": 0
       }
     ]
   },
@@ -660,6 +1020,24 @@
           "The land was too small to sell"
         ],
         "a": 1
+      },
+      {
+        "q": "Who is Auntie Noi?",
+        "o": [
+          "The owner of the land",
+          "A retired teacher",
+          "A farmer"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What happened to the neighbours after the garden started?",
+        "o": [
+          "They moved away",
+          "They argued more",
+          "Neighbours who never spoke now share recipes"
+        ],
+        "a": 2
       }
     ]
   },
@@ -707,6 +1085,24 @@
           "Lazy and careless"
         ],
         "a": 0
+      },
+      {
+        "q": "Why did Ton start selling cameras?",
+        "o": [
+          "As a side business during the pandemic",
+          "He lost his job",
+          "His father had a camera shop"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why did Ton post the photos online?",
+        "o": [
+          "To sell them",
+          "The phone number no longer worked",
+          "He wanted to be famous"
+        ],
+        "a": 1
       }
     ]
   },
@@ -752,6 +1148,24 @@
           "To be careful before sending messages",
           "Never to work at weekends",
           "To stop using group chats"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What did Khun Wit ask the team to do?",
+        "o": [
+          "Work late on Friday",
+          "Join a group chat",
+          "Redo a presentation over the weekend"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What did Nan start doing that night?",
+        "o": [
+          "Updating her CV",
+          "Writing a new presentation",
+          "Calling Khun Wit"
         ],
         "a": 0
       }
@@ -801,6 +1215,24 @@
           "A new job"
         ],
         "a": 0
+      },
+      {
+        "q": "How did the father spend his days after he retired?",
+        "o": [
+          "Running every morning",
+          "Watching the news and getting annoyed",
+          "Working in a garden"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did the father talk about while they ran?",
+        "o": [
+          "Only his knees",
+          "The news",
+          "Stories from his life the narrator had never heard"
+        ],
+        "a": 2
       }
     ]
   },
@@ -846,6 +1278,24 @@
           "She wants to sell her house",
           "She is planning to visit them",
           "She thinks Japan is dangerous"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did the couple decide to do?",
+        "o": [
+          "Keep renting for two more years",
+          "Buy the condo",
+          "Move in with their parents"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why did Bank think renting was better for them?",
+        "o": [
+          "Renting was more expensive",
+          "They could invest the difference and stay free to move",
+          "The condo was too small"
         ],
         "a": 1
       }

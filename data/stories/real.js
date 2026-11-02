@@ -55,6 +55,24 @@
         "She cannot pay"
       ],
       "a": 0
+    },
+    {
+      "q": "Which bus does Mai want?",
+      "o": [
+        "Number 2",
+        "Number 12",
+        "Number 20"
+      ],
+      "a": 1
+    },
+    {
+      "q": "How much is the ticket?",
+      "o": [
+        "Twenty baht",
+        "Ten baht",
+        "Fifteen baht"
+      ],
+      "a": 0
     }
   ]
 },
@@ -108,6 +126,24 @@
         "A cold medicine"
       ],
       "a": 1
+    },
+    {
+      "q": "Who is Anna?",
+      "o": [
+        "Somchai's sister",
+        "A friend",
+        "Somchai's teacher"
+      ],
+      "a": 2
+    },
+    {
+      "q": "What is wrong with Somchai?",
+      "o": [
+        "A headache and a cold",
+        "A broken leg",
+        "A stomach ache"
+      ],
+      "a": 0
     }
   ]
 },
@@ -176,6 +212,15 @@
         "8:30"
       ],
       "a": 1
+    },
+    {
+      "q": "Which day is the booking for?",
+      "o": [
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ],
+      "a": 1
     }
   ]
 },
@@ -227,6 +272,24 @@
         "A lunch on Saturday",
         "A dinner on Monday",
         "A meeting at the shop"
+      ],
+      "a": 0
+    },
+    {
+      "q": "Which flat does Nida live in?",
+      "o": [
+        "4A",
+        "Flat 12",
+        "4B"
+      ],
+      "a": 2
+    },
+    {
+      "q": "How late is the corner shop open?",
+      "o": [
+        "Until ten at night",
+        "Until eight",
+        "All night"
       ],
       "a": 0
     }
@@ -284,6 +347,24 @@
         "A gift card"
       ],
       "a": 1
+    },
+    {
+      "q": "What did the customer order?",
+      "o": [
+        "A chicken pizza",
+        "A vegetarian pizza",
+        "A salad"
+      ],
+      "a": 1
+    },
+    {
+      "q": "When will the money go back to the card?",
+      "o": [
+        "Today",
+        "In two weeks",
+        "Within three working days"
+      ],
+      "a": 2
     }
   ]
 },
@@ -337,6 +418,24 @@
         "Nobody"
       ],
       "a": 1
+    },
+    {
+      "q": "Where is the wedding?",
+      "o": [
+        "In Chiang Mai",
+        "In Bangkok",
+        "In Phuket"
+      ],
+      "a": 0
+    },
+    {
+      "q": "What did Pim check before writing?",
+      "o": [
+        "The train times",
+        "The team calendar",
+        "The monthly report"
+      ],
+      "a": 1
     }
   ]
 },
@@ -388,6 +487,24 @@
         "Cancel and ask for a refund",
         "Visit the shop",
         "Order another lamp"
+      ],
+      "a": 0
+    },
+    {
+      "q": "What did Kanda order?",
+      "o": [
+        "A desk",
+        "A phone",
+        "A desk lamp"
+      ],
+      "a": 2
+    },
+    {
+      "q": "What does the tracking page say?",
+      "o": [
+        "The parcel is \"being processed\"",
+        "The parcel was delivered",
+        "The order was cancelled"
       ],
       "a": 0
     }
@@ -445,6 +562,24 @@
         "The offer ends"
       ],
       "a": 1
+    },
+    {
+      "q": "What job is Ploy offered?",
+      "o": [
+        "Project coordinator",
+        "Marketing manager",
+        "Accountant"
+      ],
+      "a": 0
+    },
+    {
+      "q": "How much salary was Ploy hoping for?",
+      "o": [
+        "42,000 baht",
+        "48,000 baht",
+        "45,000 baht"
+      ],
+      "a": 1
     }
   ]
 },
@@ -498,6 +633,24 @@
         "Call the provider"
       ],
       "a": 1
+    },
+    {
+      "q": "What will the new launch date be?",
+      "o": [
+        "3 May",
+        "Next Thursday",
+        "17 May"
+      ],
+      "a": 2
+    },
+    {
+      "q": "Who approved the new layout?",
+      "o": [
+        "The marketing team",
+        "The developers",
+        "The payment provider"
+      ],
+      "a": 0
     }
   ]
 },
@@ -551,6 +704,24 @@
         "Casual and funny"
       ],
       "a": 1
+    },
+    {
+      "q": "How did Elena's team make the decision?",
+      "o": [
+        "She decided alone in one day",
+        "She discussed it with the leadership team",
+        "Dr Hartmann asked them to say no"
+      ],
+      "a": 1
+    },
+    {
+      "q": "When would Elena's team like to be considered again?",
+      "o": [
+        "Next autumn",
+        "Never",
+        "Next spring, if the programme runs again"
+      ],
+      "a": 2
     }
   ]
 }

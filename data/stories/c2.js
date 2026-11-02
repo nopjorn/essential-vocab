@@ -56,6 +56,24 @@
           "Footnotes make novels harder to read"
         ],
         "a": 1
+      },
+      {
+        "q": "What happens to the heroine in Somsak's version?",
+        "o": [
+          "She walks out into the rain",
+          "She hesitates and returns",
+          "She takes the children with her"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How have reviewers reacted to the footnote?",
+        "o": [
+          "Some complain that it distracts from the novel",
+          "All of them praise it",
+          "None of them noticed it"
+        ],
+        "a": 0
       }
     ]
   },
@@ -112,6 +130,24 @@
           "Her reputation was completely destroyed",
           "She lost some prestige but gained respect for her honesty",
           "Nobody noticed the correction at all"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Who produced the new dataset?",
+        "o": [
+          "A tour operator",
+          "A government agency",
+          "A graduate student"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What did Wipada propose to the student?",
+        "o": [
+          "To delay his paper for a year",
+          "To publish together, with her name second",
+          "To change his method"
         ],
         "a": 1
       }
@@ -172,6 +208,24 @@
           "Accuracy fell sharply and the model was abandoned"
         ],
         "a": 1
+      },
+      {
+        "q": "Why had Thanakorn joined the start-up?",
+        "o": [
+          "Its idea of lending to people banks ignored seemed idealistic",
+          "It paid much more than a bank",
+          "His friend was the founder"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What happened to the model's accuracy after the change?",
+        "o": [
+          "It improved a lot",
+          "It fell by a third",
+          "It fell by only a fraction of a percent"
+        ],
+        "a": 2
       }
     ]
   },
@@ -230,6 +284,24 @@
           "\"Come home\""
         ],
         "a": 1
+      },
+      {
+        "q": "Why did the job of clearing the house fall to Pakorn?",
+        "o": [
+          "He lived in Chiang Mai",
+          "He was the only sibling without children",
+          "He was the eldest"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did Pakorn take back to Bangkok?",
+        "o": [
+          "Only the trunk of notebooks",
+          "The bicycle",
+          "Nothing at all"
+        ],
+        "a": 0
       }
     ]
   },
@@ -288,6 +360,24 @@
           "Learn chess instead of studying law"
         ],
         "a": 1
+      },
+      {
+        "q": "How did Daeng replace the missing bishop?",
+        "o": [
+          "With a coin",
+          "With a noodle bowl",
+          "With a bottle cap"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What habit of Prasert's did Daeng point out?",
+        "o": [
+          "He attacked when he was unsure",
+          "He always played too slowly",
+          "He never took risks"
+        ],
+        "a": 0
       }
     ]
   }

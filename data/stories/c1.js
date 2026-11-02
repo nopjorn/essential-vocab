@@ -45,6 +45,24 @@
           "He discovered his own family's link to the building"
         ],
         "a": 2
+      },
+      {
+        "q": "What was the only thing Mr. Lim originally wanted to keep?",
+        "o": [
+          "The facade",
+          "The teak staircase",
+          "The upstairs rooms"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What argument did Kanya use to save the wall?",
+        "o": [
+          "It would be too expensive to remove",
+          "Authenticity was what the neighbourhood had to sell",
+          "The law did not allow it"
+        ],
+        "a": 1
       }
     ]
   },
@@ -92,6 +110,24 @@
           "She felt the words should remain the author's own"
         ],
         "a": 2
+      },
+      {
+        "q": "What did the line about the people of Chiang Mai suggest?",
+        "o": [
+          "That they were clever and hard-working",
+          "That they were unfriendly",
+          "That they smiled without thinking, like children"
+        ],
+        "a": 2
+      },
+      {
+        "q": "How did Hartley react to Pim's letter?",
+        "o": [
+          "He thanked her and asked for a suggestion",
+          "He was offended",
+          "He ignored it"
+        ],
+        "a": 0
       }
     ]
   },
@@ -139,6 +175,24 @@
           "They had not understood his findings"
         ],
         "a": 0
+      },
+      {
+        "q": "What had Thanakorn's mother done for twenty-six years?",
+        "o": [
+          "Worked at a bank",
+          "Run a noodle stall without missing a payment",
+          "Taught at a school"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Where did his mother finally get the money?",
+        "o": [
+          "From another bank",
+          "From Thanakorn",
+          "From her customers"
+        ],
+        "a": 2
       }
     ]
   },
@@ -186,6 +240,24 @@
           "Somsak had found a new way to stay connected to music"
         ],
         "a": 2
+      },
+      {
+        "q": "Who first said that the problem was Somsak's hearing?",
+        "o": [
+          "His granddaughter, Fah",
+          "The audiologist",
+          "One of his students"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What did Somsak do after hearing the news?",
+        "o": [
+          "He bought a new instrument",
+          "He cancelled his students and stopped playing at temple fairs",
+          "He became angry with his family"
+        ],
+        "a": 1
       }
     ]
   },
@@ -233,6 +305,24 @@
           "Courageous"
         ],
         "a": 2
+      },
+      {
+        "q": "What did Dr. Napat first think the patient had?",
+        "o": [
+          "Food poisoning",
+          "A burst appendix",
+          "Gastritis"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What did her senior colleague tell her?",
+        "o": [
+          "Such errors were inevitable and dwelling on them helped no one",
+          "She should apologise immediately",
+          "She should report herself"
+        ],
+        "a": 0
       }
     ]
   },
@@ -278,6 +368,24 @@
           "She had always been a poor consultant",
           "Her former clients had all failed",
           "Her decision went against her professional logic"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What did Mayuree do before her father died?",
+        "o": [
+          "She worked on the fermentation floor",
+          "She was a management consultant in Singapore",
+          "She ran a restaurant"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Who had started the oldest vat?",
+        "o": [
+          "Mayuree's father",
+          "Aunt Bua",
+          "Mayuree's grandmother"
         ],
         "a": 2
       }
@@ -327,6 +435,24 @@
           "Gratitude for protecting her family"
         ],
         "a": 2
+      },
+      {
+        "q": "What did the documents show?",
+        "o": [
+          "Flood-relief money had gone to the governor's brother-in-law's company",
+          "Nong had stolen money",
+          "The newspaper was in debt"
+        ],
+        "a": 0
+      },
+      {
+        "q": "How did Arthit finally write the story?",
+        "o": [
+          "He used only the leaked emails",
+          "He found the same evidence in other sources",
+          "He let the rival paper write it"
+        ],
+        "a": 1
       }
     ]
   },
@@ -374,6 +500,24 @@
           "The family is grateful for what he did for their son"
         ],
         "a": 2
+      },
+      {
+        "q": "What did Krit's original app promise?",
+        "o": [
+          "Cheaper rice for vendors",
+          "A cooking school",
+          "Street food delivered within twenty minutes"
+        ],
+        "a": 2
+      },
+      {
+        "q": "Who became the company's head of product?",
+        "o": [
+          "The vendor's teenage son",
+          "One of the investors",
+          "Krit himself"
+        ],
+        "a": 0
       }
     ]
   },
@@ -419,6 +563,24 @@
           "He brought her an expensive gift",
           "Her mother told her to be kinder",
           "She discovered an unexpected side of his life abroad"
+        ],
+        "a": 2
+      },
+      {
+        "q": "Where did Wichai work for seven years?",
+        "o": [
+          "In Bangkok",
+          "In a car-parts factory near Busan",
+          "On a farm in Sakon Nakhon"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How did his daughter first greet him?",
+        "o": [
+          "She ran and hugged him",
+          "She refused to speak",
+          "She shook his hand politely, like a visiting uncle"
         ],
         "a": 2
       }
@@ -468,6 +630,24 @@
           "Prasert was moving away"
         ],
         "a": 0
+      },
+      {
+        "q": "Where did the mango tree grow?",
+        "o": [
+          "On Prasert's side of the fence",
+          "On Mrs. Wan's side",
+          "In the middle of the soi"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What had Prasert been doing almost every Saturday?",
+        "o": [
+          "Shaking the branches",
+          "Buying Mrs. Wan's mango sticky rice",
+          "Selling mangoes at the market"
+        ],
+        "a": 1
       }
     ]
   }

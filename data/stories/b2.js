@@ -45,6 +45,24 @@
           "She believes it will soon do her whole job better than her"
         ],
         "a": 1
+      },
+      {
+        "q": "Why did Mai assume her \"days were numbered\"?",
+        "o": [
+          "She expected the AI tool to make her job unnecessary",
+          "Her manager was about to retire",
+          "Her contract was ending"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What did the fish sauce company want?",
+        "o": [
+          "A new bottle design",
+          "A campaign for young people in Bangkok who rarely cooked",
+          "Lower prices for shops"
+        ],
+        "a": 1
       }
     ]
   },
@@ -92,6 +110,24 @@
           "The Wednesday group has become his own kind of workplace"
         ],
         "a": 2
+      },
+      {
+        "q": "What did Krit's friends in Bangkok send him at first?",
+        "o": [
+          "Job offers",
+          "Photos of the office",
+          "Jealous messages"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What problem did Krit not expect?",
+        "o": [
+          "Feeling lonely and invisible",
+          "Bad internet",
+          "His work getting worse"
+        ],
+        "a": 0
       }
     ]
   },
@@ -139,6 +175,24 @@
           "The doctor had blamed him for Pim's illness"
         ],
         "a": 1
+      },
+      {
+        "q": "What happened to Pim in the office car park?",
+        "o": [
+          "She had an accident",
+          "She could not open the car door and started crying",
+          "She lost her phone"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What does Pim do differently now?",
+        "o": [
+          "She works from home",
+          "She has changed jobs",
+          "She leaves her phone in a drawer after eight"
+        ],
+        "a": 2
       }
     ]
   },
@@ -184,6 +238,24 @@
           "He plans to quit his job immediately",
           "He has not given up on the idea, even though it was rejected",
           "He has completely forgotten about the slide"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How long does Thanawat travel each working day?",
+        "o": [
+          "Almost three hours",
+          "About one hour",
+          "Thirty minutes"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What was the extra slide that nobody asked for?",
+        "o": [
+          "A cheaper version of the tower",
+          "A street-level public park with trees and a covered walkway",
+          "A garden on the fortieth floor"
         ],
         "a": 1
       }
@@ -233,6 +305,24 @@
           "That her mother had forgotten the green curry recipe"
         ],
         "a": 0
+      },
+      {
+        "q": "Where did Nok live?",
+        "o": [
+          "In Bangkok",
+          "In Chiang Mai",
+          "In Singapore"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What did Nok do every evening of her visit?",
+        "o": [
+          "Wrote down and photographed her mother's recipes",
+          "Took her mother to the doctor",
+          "Cooked green curry alone"
+        ],
+        "a": 0
       }
     ]
   },
@@ -280,6 +370,24 @@
           "She wants to become an influencer herself"
         ],
         "a": 0
+      },
+      {
+        "q": "How did Fah make her \"effortless\" photos?",
+        "o": [
+          "She took them quickly on her phone",
+          "She often spent an hour arranging them",
+          "A professional took them"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What happened after Fah posted the honest photo?",
+        "o": [
+          "She gained thousands of new followers",
+          "Nothing changed",
+          "She lost followers and two contracts, but received kind comments"
+        ],
+        "a": 2
       }
     ]
   },
@@ -325,6 +433,24 @@
           "A journalist writing about the old temple",
           "One of Somchai's former pupils",
           "Somchai's daughter, who works in Bangkok"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What does the concrete pole in the waves show?",
+        "o": [
+          "How far the sea has moved inland",
+          "Where a new sea wall will go",
+          "Where the school used to stand"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why was the government team visiting?",
+        "o": [
+          "To close the school",
+          "To decide whether a sea wall should be built",
+          "To plant new mangroves"
         ],
         "a": 1
       }
@@ -374,6 +500,24 @@
           "Investors should never print proposals in colour"
         ],
         "a": 1
+      },
+      {
+        "q": "Why did Auntie Lek's shop close at two every afternoon?",
+        "o": [
+          "She ran out of food",
+          "Her landlord asked her to",
+          "She closed then however long the queue was"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What did Ton do the following Saturday?",
+        "o": [
+          "Came back as an ordinary customer",
+          "Sent a new proposal",
+          "Opened his own shop"
+        ],
+        "a": 0
       }
     ]
   },
@@ -419,6 +563,24 @@
           "He was angry that Arun had checked his claims",
           "He planned to blame Arun for the missing money",
           "He had already decided to take responsibility for what he had done"
+        ],
+        "a": 2
+      },
+      {
+        "q": "How much did the claims come to over three years?",
+        "o": [
+          "A few thousand baht",
+          "Nearly half a million baht",
+          "Five million baht"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What was in the folder that Khun Wichai took out?",
+        "o": [
+          "More missing receipts",
+          "A job offer for Arun",
+          "Bank transfers repaying the company and a resignation letter"
         ],
         "a": 2
       }
@@ -468,6 +630,24 @@
           "She knew the airline's managers personally"
         ],
         "a": 1
+      },
+      {
+        "q": "What did Jane do during the day while she was studying?",
+        "o": [
+          "She sold cakes",
+          "She worked at the airport",
+          "She looked after children"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why does Jane call her nine years as a flight attendant her \"longest job interview\"?",
+        "o": [
+          "She had many interviews during that time",
+          "That experience is what made her valuable in her new job",
+          "She never enjoyed the job"
+        ],
+        "a": 1
       }
     ]
   },
@@ -513,6 +693,24 @@
           "He thought he had broken the rules and might lose his job",
           "He thought Mr Prasert had become seriously ill",
           "He did not recognise Jiew"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why were visitors not expected at three o'clock?",
+        "o": [
+          "Mr Prasert had no family",
+          "The ward was closed for cleaning",
+          "Visitors were not allowed on the ward after eight"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What did the cleaner read to Mr Prasert?",
+        "o": [
+          "A small book of poems",
+          "The newspaper",
+          "A letter from his family"
         ],
         "a": 0
       }
@@ -562,6 +760,24 @@
           "A student from the local school"
         ],
         "a": 0
+      },
+      {
+        "q": "How much did Aunt Noi earn in a week after the clip went viral?",
+        "o": [
+          "Less than before",
+          "What she used to earn in a month",
+          "Exactly the same"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Why did her nephew call her decision \"commercial suicide\"?",
+        "o": [
+          "She raised her prices",
+          "She closed the stall",
+          "She deliberately limited her sales and customers"
+        ],
+        "a": 2
       }
     ]
   },
@@ -607,6 +823,24 @@
           "He had changed his mind only after the water came",
           "He had secretly taken Pong's plan seriously all along",
           "He wanted to replace Pong as chairman"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did Pong persuade the village to buy?",
+        "o": [
+          "Sandbags",
+          "A boat",
+          "A generator"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why did Uncle Chai call the map \"a waste of paper\"?",
+        "o": [
+          "It had mistakes on it",
+          "He believed plans were useless without action",
+          "He couldn't read it"
         ],
         "a": 1
       }
@@ -656,6 +890,24 @@
           "It reminded them of how their own parents showed love"
         ],
         "a": 2
+      },
+      {
+        "q": "How does Mook describe her translation work?",
+        "o": [
+          "Well paid and famous",
+          "Easy and relaxing",
+          "Badly paid and largely invisible"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What did Mook's manager ask her to do afterwards?",
+        "o": [
+          "Translate emotional scenes more literally",
+          "Never make the same mistake again",
+          "Work fewer night shifts"
+        ],
+        "a": 0
       }
     ]
   },
@@ -703,6 +955,24 @@
           "Nat plans to compete with Tong again"
         ],
         "a": 0
+      },
+      {
+        "q": "What was Nat like at school?",
+        "o": [
+          "The class president",
+          "The quiet boy who was rarely chosen",
+          "The best football player"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Why had Tong envied Nat at school?",
+        "o": [
+          "Nat had better grades",
+          "Nat had more friends",
+          "Nat never seemed to need anyone's approval"
+        ],
+        "a": 2
       }
     ]
   },
@@ -750,6 +1020,24 @@
           "The head teacher offered him a very high salary"
         ],
         "a": 0
+      },
+      {
+        "q": "How did Daniel communicate with the head teacher at first?",
+        "o": [
+          "He spoke almost no Thai, so he just followed her",
+          "He spoke fluent Thai",
+          "Through an interpreter"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What did Daniel teach the children?",
+        "o": [
+          "English grammar",
+          "Numbers, bicycle parts and a song about a teapot",
+          "How to ride a bicycle"
+        ],
+        "a": 1
       }
     ]
   },
@@ -797,6 +1085,24 @@
           "Ploy's grandmother had given it away"
         ],
         "a": 1
+      },
+      {
+        "q": "How did Ploy find Ratree?",
+        "o": [
+          "Through a newspaper advert",
+          "By asking at the market",
+          "Through old school records and Facebook groups"
+        ],
+        "a": 2
+      },
+      {
+        "q": "How did Suthep finally win Ratree?",
+        "o": [
+          "He asked her father for permission to marry her",
+          "He sent her the letters",
+          "He wrote a poem in the newspaper"
+        ],
+        "a": 0
       }
     ]
   },
@@ -844,6 +1150,24 @@
           "He has come to ask Fai to pay his friend's debt"
         ],
         "a": 0
+      },
+      {
+        "q": "What did Ek want Fai to do?",
+        "o": [
+          "Lend him money",
+          "Act as guarantor for a truck loan",
+          "Buy a truck with him"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did Fai offer instead?",
+        "o": [
+          "To pay half the loan",
+          "To find another guarantor",
+          "To help him make a budget"
+        ],
+        "a": 2
       }
     ]
   },
@@ -889,6 +1213,24 @@
           "Bow sent him a video herself",
           "Members of the deaf group at the café told him about her",
           "He saw her name on the café's website"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did the man always order?",
+        "o": [
+          "An iced Americano with no sugar",
+          "A hot latte",
+          "Green tea"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What happened after Bow greeted the deaf couple in sign language?",
+        "o": [
+          "They complained to the manager",
+          "The café became a meeting place for local deaf people",
+          "They never came back"
         ],
         "a": 1
       }
@@ -938,6 +1280,24 @@
           "He thought nobody would believe him against the well-dressed driver"
         ],
         "a": 2
+      },
+      {
+        "q": "Why did Kan install a dashcam?",
+        "o": [
+          "His insurance company required it",
+          "To film the scenery",
+          "To protect himself if there was an accident"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What surprising fact did Kan later find out?",
+        "o": [
+          "The rider was delivering to Kan's own building",
+          "The SUV driver was a police officer",
+          "The rider was his cousin"
+        ],
+        "a": 0
       }
     ]
   }

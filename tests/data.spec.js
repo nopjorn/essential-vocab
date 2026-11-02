@@ -109,6 +109,10 @@ test('stories: unique ids, count matches STORY_COUNT, questions point at an opti
   for (const s of STORIES) {
     expect(s.en.length, s.id).toBe(s.th.length);
     s.q.forEach((q) => expect(q.o[q.a], `${s.id}: ${q.q}`).toBeDefined());
+    // 1.151: at least 5 questions per story, 3 distinct options each, no repeated question
+    expect(s.q.length, `${s.id} questions`).toBeGreaterThanOrEqual(5);
+    s.q.forEach((q) => expect(new Set(q.o).size, `${s.id}: ${q.q}`).toBe(3));
+    expect(new Set(s.q.map((q) => q.q)).size, `${s.id} repeated question`).toBe(s.q.length);
   }
 });
 

@@ -2079,3 +2079,34 @@ test('1.134: stats starter card + folded levels, goal ring party once a day, edg
   await expect(page.locator('#view')).toHaveAttribute('data-route', 'stats');
   expect(errors).toEqual([]);
 });
+
+test('story quiz (1.151): 5 questions, dots, 🔎 find in story, wrong + right answers, ring result, 🔁 retry keeps the best score', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => loadStories().then(() => go('read', 1)));
+  const qs = page.locator('.st-q');
+  await expect(qs).toHaveCount(5);
+  await expect(page.locator('#rDots i')).toHaveCount(5);
+  const ans = await page.evaluate(() => STORIES.find((s) => s.id === 1).q.map((q) => q.a));
+  // first question wrong, the rest right
+  await qs.nth(0).locator(`.opt[data-j="${(ans[0] + 1) % 3}"]`).click();
+  await expect(qs.nth(0)).toHaveClass(/bad/);
+  await expect(page.locator('#rDots i').nth(0)).toHaveClass('bad');
+  await expect(qs.nth(0).locator('.st-qfoot')).toBeVisible();
+  await qs.nth(0).locator('[data-find]').click();
+  await expect(page.locator('.st-para.flash')).toHaveCount(1);
+  for (let k = 1; k < 5; k++) await qs.nth(k).locator(`.opt[data-j="${ans[k]}"]`).click();
+  await expect(qs.nth(4)).toHaveClass(/ok/);
+  await expect(page.locator('#rDone .st-ring')).toBeVisible();
+  await expect(page.locator('#rDone')).toContainText('4/5');
+  expect(await page.evaluate(() => S.readScore[1])).toEqual([4, 5]);
+  await page.locator('#rRetry').click();
+  await expect(page.locator('#rDone')).toBeEmpty();
+  await expect(page.locator('.st-q.ok, .st-q.bad')).toHaveCount(0);
+  for (let k = 0; k < 5; k++) await qs.nth(k).locator(`.opt[data-j="${ans[k]}"]`).click();
+  await expect(page.locator('#rDone')).toContainText('5/5');
+  await expect(page.locator('#rRetry')).toHaveCount(0);
+  expect(await page.evaluate(() => S.readScore[1])).toEqual([5, 5]);
+  await page.locator('#rLib').click();
+  await expect(page.locator('.st-card[data-id="1"] .st-score.full')).toContainText('5/5');
+  expect(errors).toEqual([]);
+});

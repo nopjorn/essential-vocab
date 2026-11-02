@@ -36,6 +36,33 @@
           "The cake was old"
         ],
         "a": 0
+      },
+      {
+        "q": "What colour are the walls of the coffee shop?",
+        "o": [
+          "White",
+          "Green",
+          "Blue"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Who is Ploy?",
+        "o": [
+          "The owner of the shop",
+          "Nok's sister",
+          "A customer"
+        ],
+        "a": 0
+      },
+      {
+        "q": "How does Nok feel at the end?",
+        "o": [
+          "Angry",
+          "Bored",
+          "Happy"
+        ],
+        "a": 2
       }
     ]
   },
@@ -74,6 +101,33 @@
           "Her lunch"
         ],
         "a": 0
+      },
+      {
+        "q": "How old is Grandma?",
+        "o": [
+          "Fifty-five",
+          "Seventy-five",
+          "Ninety"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Where did Grandma write everything?",
+        "o": [
+          "In a small notebook",
+          "On her phone",
+          "On the wall"
+        ],
+        "a": 0
+      },
+      {
+        "q": "How long did the writer sit with Grandma on Sunday?",
+        "o": [
+          "Ten minutes",
+          "All day",
+          "Two hours"
+        ],
+        "a": 2
       }
     ]
   },
@@ -110,6 +164,33 @@
           "At home",
           "In the office",
           "In the bag"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What day was it?",
+        "o": [
+          "Monday",
+          "Friday",
+          "Sunday"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why did the writer run to the bus stop?",
+        "o": [
+          "It was raining",
+          "The writer was late for work",
+          "The bus was there"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did they talk about?",
+        "o": [
+          "Work and money",
+          "The bus and the city",
+          "The weather and their families"
         ],
         "a": 2
       }
@@ -150,6 +231,33 @@
           "Mint put chillies in it"
         ],
         "a": 0
+      },
+      {
+        "q": "Who is Mint?",
+        "o": [
+          "The teacher",
+          "The writer's friend",
+          "The writer's mother"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Where did they go first?",
+        "o": [
+          "To the market",
+          "To the kitchen",
+          "To a restaurant"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What does the writer want to do next week?",
+        "o": [
+          "Go to Chiang Mai again",
+          "Eat at a restaurant",
+          "Cook for the writer's mother"
+        ],
+        "a": 2
       }
     ]
   },
@@ -188,6 +296,33 @@
           "In the neighbour's garden"
         ],
         "a": 0
+      },
+      {
+        "q": "What colour is Mali?",
+        "o": [
+          "White",
+          "Black",
+          "Brown"
+        ],
+        "a": 0
+      },
+      {
+        "q": "How did the little brother feel when Mali did not come home?",
+        "o": [
+          "Angry",
+          "Sad",
+          "Tired"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Who found Mali?",
+        "o": [
+          "The little brother",
+          "A neighbour",
+          "The mother"
+        ],
+        "a": 2
       }
     ]
   },
@@ -224,6 +359,33 @@
           "Five minutes",
           "Fifteen minutes",
           "Thirty minutes"
+        ],
+        "a": 2
+      },
+      {
+        "q": "Why did the writer start to run?",
+        "o": [
+          "A friend asked",
+          "The doctor said to exercise more",
+          "The writer wanted to win a race"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How long did the writer run on the first day?",
+        "o": [
+          "Five minutes",
+          "Thirty minutes",
+          "One hour"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Who is the writer's new friend?",
+        "o": [
+          "The doctor",
+          "A young runner",
+          "A grandmother"
         ],
         "a": 2
       }
@@ -264,6 +426,33 @@
           "She thought there was a problem"
         ],
         "a": 2
+      },
+      {
+        "q": "Who is Khun Dao?",
+        "o": [
+          "The writer's boss",
+          "Tom's sister",
+          "A new worker"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Where did they put the cake and flowers?",
+        "o": [
+          "On Khun Dao's desk",
+          "In the small meeting room",
+          "In the kitchen"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What time did Tom ask Khun Dao to come?",
+        "o": [
+          "At ten o'clock",
+          "At two o'clock",
+          "At four o'clock"
+        ],
+        "a": 2
       }
     ]
   },
@@ -302,6 +491,33 @@
           "Science"
         ],
         "a": 1
+      },
+      {
+        "q": "When is the night market?",
+        "o": [
+          "Every Thursday",
+          "Every Sunday",
+          "Every day"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What does the family sell?",
+        "o": [
+          "Fried rice and soup",
+          "Grilled chicken and sticky rice",
+          "Phone cases"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Why did the girl give the writer extra chicken?",
+        "o": [
+          "The writer was hungry",
+          "It was free day",
+          "The writer answered all her questions"
+        ],
+        "a": 2
       }
     ]
   },
@@ -340,6 +556,33 @@
           "Visiting a school"
         ],
         "a": 0
+      },
+      {
+        "q": "How many pairs of shoes did Fon have?",
+        "o": [
+          "Ten",
+          "More than forty",
+          "Twenty"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Where did Fon's shoes go?",
+        "o": [
+          "To a school in the village",
+          "To a shop",
+          "To her friends"
+        ],
+        "a": 0
+      },
+      {
+        "q": "How did Fon feel after she gave the shoes away?",
+        "o": [
+          "Sad",
+          "Angry",
+          "Good"
+        ],
+        "a": 2
       }
     ]
   },
@@ -378,6 +621,33 @@
           "She lost it at the hotel"
         ],
         "a": 0
+      },
+      {
+        "q": "How long was the family in Hua Hin?",
+        "o": [
+          "One day",
+          "Three days",
+          "A week"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did the father eat a lot of?",
+        "o": [
+          "Crab",
+          "Fish",
+          "Chicken"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What did the mother give the young man?",
+        "o": [
+          "Some money",
+          "A hat",
+          "A mango"
+        ],
+        "a": 2
       }
     ]
   },
@@ -414,6 +684,33 @@
           "By train",
           "By bicycle",
           "By bus"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What was the train like?",
+        "o": [
+          "Old and slow",
+          "New and fast",
+          "Full and hot"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What did the child give the writer?",
+        "o": [
+          "A banana",
+          "A sweet",
+          "Some water"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did the writer visit in Ayutthaya?",
+        "o": [
+          "A market",
+          "A river",
+          "Old temples"
         ],
         "a": 2
       }
@@ -454,6 +751,33 @@
           "He wanted to be famous"
         ],
         "a": 0
+      },
+      {
+        "q": "What time does the writer hear music?",
+        "o": [
+          "At ten o'clock",
+          "At six o'clock",
+          "At midnight"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What did the writer do one night?",
+        "o": [
+          "Called the police",
+          "Knocked on his door",
+          "Played music too"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What do you think happened on Sunday night?",
+        "o": [
+          "The girlfriend was angry",
+          "The neighbour moved out",
+          "He asked his girlfriend to marry him"
+        ],
+        "a": 2
       }
     ]
   },
@@ -490,6 +814,33 @@
           "At the airport",
           "At a hotel",
           "At a cafe"
+        ],
+        "a": 2
+      },
+      {
+        "q": "Where did the writer fly from?",
+        "o": [
+          "China",
+          "Japan",
+          "Korea"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How did the writer go home from the airport?",
+        "o": [
+          "By taxi",
+          "By bus",
+          "By train"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What was in the writer's bag?",
+        "o": [
+          "Books",
+          "Green tea",
+          "Only clothes"
         ],
         "a": 2
       }
@@ -530,6 +881,33 @@
           "The teacher"
         ],
         "a": 0
+      },
+      {
+        "q": "How old is the writer?",
+        "o": [
+          "Ten",
+          "Thirty",
+          "Forty"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Who watched the writer in the first lesson?",
+        "o": [
+          "The teacher's daughter",
+          "The writer's mother",
+          "A friend"
+        ],
+        "a": 0
+      },
+      {
+        "q": "How did the writer feel at the end?",
+        "o": [
+          "Tired",
+          "Afraid",
+          "Proud"
+        ],
+        "a": 2
       }
     ]
   },
@@ -568,6 +946,33 @@
           "The wife's parents"
         ],
         "a": 0
+      },
+      {
+        "q": "Why did the writer clean the house?",
+        "o": [
+          "Everything had to be perfect",
+          "The house was very dirty",
+          "The wife asked"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What did the writer cook?",
+        "o": [
+          "Green curry and rice",
+          "Tom yum, fried fish and vegetables",
+          "Only ice cream"
+        ],
+        "a": 1
+      },
+      {
+        "q": "When are the wife's parents really coming?",
+        "o": [
+          "Today",
+          "Next week",
+          "Tomorrow"
+        ],
+        "a": 2
       }
     ]
   },
@@ -615,6 +1020,24 @@
           "Three"
         ],
         "a": 1
+      },
+      {
+        "q": "How many durians did Dad buy?",
+        "o": [
+          "One",
+          "Three",
+          "Five"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did the sister say the car smelled like?",
+        "o": [
+          "Old socks",
+          "Flowers",
+          "Fish"
+        ],
+        "a": 0
       }
     ]
   },
@@ -660,6 +1083,24 @@
           "Red",
           "Black",
           "Blue"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What was Ton's problem?",
+        "o": [
+          "He could not hear the teacher",
+          "He could not read the words on the board",
+          "He had no friends"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did Ton see outside the window?",
+        "o": [
+          "A car",
+          "A cat",
+          "A small bird in a tree"
         ],
         "a": 2
       }
@@ -709,6 +1150,24 @@
           "In the old woman's book"
         ],
         "a": 0
+      },
+      {
+        "q": "What does the old woman always do on the bus?",
+        "o": [
+          "Reads a book",
+          "Sleeps",
+          "Talks on her phone"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why did Fon stand next to the old woman?",
+        "o": [
+          "Fon wanted to talk to her",
+          "The bus was very full",
+          "Fon was getting off"
+        ],
+        "a": 1
       }
     ]
   },
@@ -756,6 +1215,24 @@
           "\"Thank you, babies.\""
         ],
         "a": 2
+      },
+      {
+        "q": "Where does Mom live?",
+        "o": [
+          "In a big house",
+          "In a village",
+          "In a small flat in Bangkok"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What did Mom cook last Sunday?",
+        "o": [
+          "Basil chicken",
+          "Green curry",
+          "Fried rice"
+        ],
+        "a": 0
       }
     ]
   },
@@ -803,6 +1280,24 @@
           "To play one more game"
         ],
         "a": 2
+      },
+      {
+        "q": "Why did the lights go off?",
+        "o": [
+          "There was a big storm",
+          "They did not pay the bill",
+          "The son broke them"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What did the husband do?",
+        "o": [
+          "Fixed the lights",
+          "Told funny stories",
+          "Went to sleep"
+        ],
+        "a": 1
       }
     ]
   },
@@ -848,6 +1343,24 @@
           "Her hair was beautiful",
           "Her hair was too short",
           "Her dress was nice"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What colour was the hairdresser's hair?",
+        "o": [
+          "Black",
+          "Blue",
+          "Pink"
+        ],
+        "a": 2
+      },
+      {
+        "q": "How often does Mali go to the salon now?",
+        "o": [
+          "Every month",
+          "Every week",
+          "Never"
         ],
         "a": 0
       }
@@ -897,6 +1410,24 @@
           "His rice fields and chickens"
         ],
         "a": 2
+      },
+      {
+        "q": "Where does Grandpa live?",
+        "o": [
+          "In Bangkok",
+          "In a village in Nan",
+          "In Chiang Mai"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Who went to the post office with the writer?",
+        "o": [
+          "Grandpa",
+          "Beam",
+          "The writer's mom"
+        ],
+        "a": 2
       }
     ]
   },
@@ -942,6 +1473,24 @@
           "Arm",
           "Arm's dad",
           "Arm's mom"
+        ],
+        "a": 1
+      },
+      {
+        "q": "When did Arm finish university?",
+        "o": [
+          "In March",
+          "In April",
+          "In May"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What did Dad ask Arm to do?",
+        "o": [
+          "Buy a new car",
+          "Take them out again next month",
+          "Pay the bill now"
         ],
         "a": 1
       }
@@ -991,6 +1540,24 @@
           "Five minutes"
         ],
         "a": 2
+      },
+      {
+        "q": "Where does Nid live?",
+        "o": [
+          "In Bangkok",
+          "In Japan",
+          "In Chiang Mai"
+        ],
+        "a": 2
+      },
+      {
+        "q": "Why was Nid sad on the fifth day?",
+        "o": [
+          "There was no snow",
+          "She was ill",
+          "She lost her coat"
+        ],
+        "a": 0
       }
     ]
   },
@@ -1038,6 +1605,24 @@
           "Fruit"
         ],
         "a": 0
+      },
+      {
+        "q": "Why did Aunt Lek ask the writer for help?",
+        "o": [
+          "The rice cooker was broken",
+          "She did not understand the English words",
+          "She wanted to cook"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did the writer put on the kitchen wall?",
+        "o": [
+          "Photos",
+          "A map",
+          "Words on small pieces of paper"
+        ],
+        "a": 2
       }
     ]
   }

@@ -127,6 +127,8 @@ function storyHTML(text) {
     return w ? `<span class="rw ${status(w)}" data-i="${w.idx}">${tok}</span>` : tok;
   });
 }
+// Words too common to point at a paragraph (🔎 ดูในเรื่อง)
+const STOP_EN = new Set('the and was were what who why how when where which did does that this with for from they them their there then than she her his him had has have not but are you your our its into about after before because would could should will can only very just also some what\'s'.split(' '));
 const RLEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 const RLV_TH = { A1: 'ง่ายมาก', A2: 'ง่าย', B1: 'ปานกลาง', B2: 'ท้าทาย', C1: 'ขั้นสูง', C2: 'ระดับเชี่ยวชาญ' };
 const FONT_SIZES = [16, 18, 21];
@@ -185,7 +187,7 @@ function renderRead(id) {
       <button class="tool" id="rShadow"><span>🗣️</span>พูดตาม</button>
       <button class="tool" id="rBook"><span>📖</span>โหมดหนังสือ</button>
     </div>
-    <article class="card-box story${st.kind ? ' k-' + st.kind : ''}" id="rText" style="--st-font:${font()}px">
+    <article class="card-box story lv-${st.level}${st.kind ? ' k-' + st.kind : ''}" id="rText" style="--st-font:${font()}px">
       ${st.en.map((para, k) => `<div class="st-para" data-k="${k}"><p class="st-p" lang="en">${storyHTML(para)}</p>
         <div class="st-row"><button class="st-say" data-para="${k}" aria-label="ฟังย่อหน้านี้">🔊</button><button class="st-thbtn" data-th="${k}">แปลย่อหน้านี้</button></div>
         <p class="st-th" hidden>${esc(st.th[k] || '')}</p></div>`).join('')}
@@ -194,9 +196,11 @@ function renderRead(id) {
     ${inf.fresh.length ? `<div class="h2">✨ คำใหม่ในเรื่องนี้ <span class="small muted">${inf.fresh.length} คำ</span></div>
       <div class="card-box"><div class="chips st-words">${[...inf.fresh].sort((a, b) => LEVELS.indexOf(b.g) - LEVELS.indexOf(a.g)).slice(0, 16).map((w) => `<button class="chip" data-wi="${w.idx}">${esc(w.w)}</button>`).join('')}</div>
       <p class="small muted" style="margin:10px 2px 0">แตะคำเพื่อดูความหมาย แล้วกด ⭐ ติดดาวไว้ทบทวนทีหลังได้</p></div>` : ''}
-    <div class="h2">❓ คำถามท้ายเรื่อง</div>
-    ${st.q.map((q, k) => `<div class="card-box st-q"><div class="st-qn">ข้อ ${k + 1}/${st.q.length}</div><b>${esc(q.q)}</b>
-      <div class="options" style="margin-top:10px" data-q="${k}">${q.o.map((o, j) => `<button class="opt" data-j="${j}">${esc(o)}</button>`).join('')}</div></div>`).join('')}
+    <div class="st-qhead"><div class="h2">❓ คำถามท้ายเรื่อง <span class="small muted">${st.q.length} ข้อ</span></div>
+      <div class="st-qdots" id="rDots" aria-hidden="true">${st.q.map((_, k) => `<i data-d="${k}"></i>`).join('')}</div></div>
+    ${st.q.map((q, k) => `<div class="card-box st-q" data-qk="${k}"><div class="st-qtop"><span class="st-qn">ข้อ ${k + 1}</span><span class="st-qof">จาก ${st.q.length}</span></div><b class="st-qq" lang="en">${esc(q.q)}</b>
+      <div class="options" style="margin-top:10px" data-q="${k}">${q.o.map((o, j) => `<button class="opt" data-j="${j}" lang="en">${esc(o)}</button>`).join('')}</div>
+      <div class="st-qfoot" hidden><span class="st-qres"></span><button class="st-find" data-find="${k}">🔎 ดูในเรื่อง</button></div></div>`).join('')}
     <div id="rDone"></div>`;
   const paras = [...view.querySelectorAll('.st-para')];
   const stop = () => { token++; playing = -1; hlWord(null); paras.forEach((p) => p.classList.remove('playing')); $('#rAll').innerHTML = '<span>▶️</span>ฟังทั้งเรื่อง'; if (window.speechSynthesis) speechSynthesis.cancel(); };
@@ -234,6 +238,34 @@ function renderRead(id) {
   $('#rAll').onclick = () => (playing >= 0 && $('#rAll').textContent.includes('หยุด') ? stop() : play(0, true));
   const onScroll = () => { const max = view.scrollHeight - view.clientHeight; const bar = $('#rProg'); if (bar) bar.style.width = (max > 0 ? Math.min(100, (100 * view.scrollTop) / max) : 100) + '%'; };
   view.addEventListener('scroll', onScroll, { passive: true });
+  // 🔎 the paragraph that shares the most content words with the question + its answer
+  const findInStory = (k) => {
+    const q = st.q[k], toks = (q.q + ' ' + q.o[q.a]).toLowerCase().match(/[a-z][a-z']{2,}/g) || [];
+    const keys = toks.filter((t) => !STOP_EN.has(t));
+    let best = 0, bestN = -1;
+    st.en.forEach((p, j) => {
+      const low = p.toLowerCase();
+      const n = keys.reduce((a, t) => a + (low.includes(t) ? (t.length > 5 ? 2 : 1) : 0), 0);
+      if (n > bestN) { bestN = n; best = j; }
+    });
+    if (/last sentence|the ending|final scene/i.test(q.q)) best = paras.length - 1;
+    const el = paras[best]; if (!el) return;
+    if ($('#rText').classList.contains('ear')) el.classList.add('shown');
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+  const retry = () => {
+    answers.length = 0;
+    view.querySelectorAll('.st-q').forEach((c) => {
+      c.classList.remove('ok', 'bad');
+      c.querySelector('[data-q]').removeAttribute('data-done');
+      c.querySelectorAll('.opt').forEach((o) => o.classList.remove('correct', 'wrong'));
+      c.querySelector('.st-qfoot').hidden = true;
+    });
+    view.querySelectorAll('#rDots i').forEach((d) => (d.className = ''));
+    $('#rDone').innerHTML = '';
+    const first = view.querySelector('.st-qhead'); if (first) first.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
   view.onclick = (e) => {
     const pb = e.target.closest('[data-para]'); if (pb) return play(+pb.dataset.para, false);
     const hid = e.target.closest('.ear .st-para:not(.shown) .st-p'); if (hid) { hid.closest('.st-para').classList.add('shown'); return; }
@@ -244,12 +276,19 @@ function renderRead(id) {
       const w = W[+(rw.dataset.i || rw.dataset.wi)]; speak(w.w);
       return openSheet(w, () => { view.querySelectorAll(`.rw[data-i="${w.idx}"]`).forEach((x) => (x.className = 'rw ' + status(w))); });
     }
+    const fb = e.target.closest('[data-find]'); if (fb) return findInStory(+fb.dataset.find);
+    if (e.target.closest('#rRetry')) return retry();
     const ob = e.target.closest('.opt'), box = ob && ob.closest('[data-q]');
     if (!ob || !box || box.dataset.done) return;
     const k = +box.dataset.q, ok = +ob.dataset.j === st.q[k].a;
     box.dataset.done = '1';
     box.querySelectorAll('.opt').forEach((o) => { if (+o.dataset.j === st.q[k].a) o.classList.add('correct'); });
     if (!ok) ob.classList.add('wrong');
+    const card = box.closest('.st-q');
+    card.classList.add(ok ? 'ok' : 'bad');
+    const foot = card.querySelector('.st-qfoot'); foot.hidden = false;
+    foot.querySelector('.st-qres').textContent = ok ? '✓ ถูกต้อง' : '✗ ยังไม่ถูก';
+    const dot = view.querySelector(`#rDots [data-d="${k}"]`); if (dot) dot.className = ok ? 'ok' : 'bad';
     sfx(ok ? 'ok' : 'bad'); markActive();
     if (ok) addXP(5);
     answers[k] = ok;
@@ -264,12 +303,13 @@ function renderRead(id) {
       const nextSt = nextStory();
       const done = STORIES.filter((x) => S.read[x.id]).length;
       $('#rDone').innerHTML = `<div class="card-box center pop st-done">
-        <div class="result-emoji">${right === all ? '🏆' : right ? '📖' : '💪'}</div>
+        <div class="st-ring" style="--p:${Math.round((100 * right) / all)}"><span>${right === all ? '🏆' : right ? '📖' : '💪'}</span></div>
         <div class="h2" style="margin:4px 0">ตอบถูก ${right}/${all}</div>
+        <div class="small muted">${right === all ? 'เข้าใจทั้งเรื่องเลย เยี่ยมมาก!' : right / all >= 0.6 ? 'เข้าใจเรื่องได้ดี ลองกด 🔎 ดูข้อที่พลาดนะ' : 'ลองอ่านอีกรอบแล้วตอบใหม่ได้เลย'}</div>
         <div class="muted small">${first ? 'อ่านจบเรื่องใหม่! ' : ''}ห้องสมุดของคุณ ${done}/${STORIES.length} เรื่อง</div>
         <div class="st-stars">${Array.from({ length: all }, (_, i) => `<span class="${i < right ? 'on' : ''}">★</span>`).join('')}</div>
         ${nextSt ? `<button class="btn primary block" id="rNext">${nextSt.emoji || '📖'} เรื่องถัดไป: ${esc(nextSt.title)}</button>` : '<p>อ่านครบทุกเรื่องแล้ว เก่งมาก! 🎉</p>'}
-        <button class="btn ghost block" id="rLib" style="margin-top:8px">กลับห้องสมุด</button></div>`;
+        <div class="st-done-acts">${right < all ? '<button class="btn ghost" id="rRetry">🔁 ตอบใหม่</button>' : ''}<button class="btn ghost" id="rLib">กลับห้องสมุด</button></div></div>`;
       if (nextSt) $('#rNext').onclick = () => go('read', nextSt.id);
       $('#rLib').onclick = () => go('read');
       $('#rDone').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -334,10 +374,10 @@ function renderLibrary() {
     $('#rList').innerHTML = lvs.map((lv) => {
       const list = counts[lv].filter((st) => (readFilter !== 'unread' || !S.read[st.id]) && (!KIND_LABEL[readFilter] || st.kind === readFilter));
       if (!list.length) return '';
-      return `<div class="h2 lib-lv">${lvBadge(lv)} ${RLV_TH[lv]}</div>${list.map((st) => { const inf = storyInfo(st); return `<button class="st-card${S.read[st.id] ? ' read' : ''}" data-id="${st.id}">
+      return `<div class="h2 lib-lv">${lvBadge(lv)} ${RLV_TH[lv]}</div>${list.map((st) => { const inf = storyInfo(st); return `<button class="st-card lv-${st.level}${S.read[st.id] ? ' read' : ''}" data-id="${st.id}">
         <span class="st-tile lv-${st.level}">${st.emoji || '📖'}</span>
         <span class="grow"><b>${esc(st.title)}</b><span class="small muted st-th2">${esc(st.titleTh)}</span>
-        <span class="st-sub">${st.kind ? KIND_LABEL[st.kind] + ' · ' : ''}⏱ ${inf.mins} นาที · ${!inf.fresh.length ? '🧠 รู้ทุกคำแล้ว' : inf.known ? `🧠 รู้แล้ว ${inf.known}%` : `📝 ${inf.words} คำ`}</span></span>${scoreTag(st) || '<span class="muted">›</span>'}</button>`; }).join('')}`;
+        <span class="st-sub">${st.kind ? KIND_LABEL[st.kind] + ' · ' : ''}⏱ ${inf.mins} นาที · ❓ ${st.q.length} ข้อ · ${!inf.fresh.length ? '🧠 รู้ทุกคำแล้ว' : inf.known ? `🧠 รู้แล้ว ${inf.known}%` : `📝 ${inf.words} คำ`}</span></span>${scoreTag(st) || '<span class="muted">›</span>'}</button>`; }).join('')}`;
     }).join('') || '<p class="center muted">อ่านครบทุกเรื่องในหมวดนี้แล้ว 🎉</p>';
   };
   paint();
