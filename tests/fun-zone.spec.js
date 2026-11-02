@@ -283,6 +283,8 @@ test('ghost race: survival shows the best run and saves a new one; time attack g
     if (await page.locator('.result-emoji').count()) return;
     const k = await page.evaluate(() => { // the right option of a survival question (en2th / th2en / listen / cloze)
       const words = [...document.querySelectorAll('.opt')].map((o) => W[+o.dataset.i]);
+      const cur = playQuiz.cur, at = cur ? words.findIndex((w) => w && w.idx === cur.idx) : -1;
+      if (at >= 0) return at; // the engine says which word is asked (guessing from the prompt failed now and then on CI)
       const wd = document.querySelector('.q-prompt .word'), th = document.querySelector('.q-prompt .th'), cz = document.querySelector('.q-prompt .cloze');
       if (wd) return words.findIndex((w) => w.w === wd.textContent.trim());
       if (th) return words.findIndex((w) => w.t === th.textContent.trim());

@@ -102,6 +102,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (ENDLESS && i >= items.length) items.push(...(SURV ? [survivalPick()] : shuffle(src).filter((x) => x !== items[items.length - 1])));
     if (i >= items.length) return result();
     const w = items[i];
+    playQuiz.cur = w; // the word being asked (read by tests)
     reach = Math.max(reach, LEVELS.indexOf(w.g));
     const m = STAGE ? stagePick(w) : SURV ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'cloze'] : ['en2th', 'th2en', 'listen'])
       : TIMED ? pick(['en2th', 'th2en'])
