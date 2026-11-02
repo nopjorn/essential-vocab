@@ -243,7 +243,7 @@ test('drag & drop: a dropped article opens the checker, one word opens its sheet
   expect(errors).toEqual([]);
 });
 
-test('thumb answers in games: options on both sides of the question, next button in reach; off = usual layout', async ({ page }) => {
+test('thumb answers in games: options in one column beside the question (right, or left by setting), next button in reach; off = usual layout', async ({ page }) => {
   await page.setViewportSize({ width: 1133, height: 744 });
   const errors = await openApp(page, { settings: { levels: ['A1'], thumbs: 'on' } });
   expect(await page.evaluate(() => document.documentElement.classList.contains('thumbs'))).toBe(true);
@@ -251,8 +251,9 @@ test('thumb answers in games: options on both sides of the question, next button
   await expect(page.locator('.options .opt').first()).toBeVisible();
   const q = await page.locator('.q-prompt').boundingBox();
   const b = async (k) => page.locator('.options .opt').nth(k).boundingBox();
-  for (const k of [0, 1]) { const o = await b(k); expect(o.x + o.width).toBeLessThanOrEqual(q.x + 1); }
-  for (const k of [2, 3]) { const o = await b(k); expect(o.x).toBeGreaterThanOrEqual(q.x + q.width - 1); }
+  // 1.150: all the answers in one column on the right of the question, top to bottom in order
+  for (const k of [0, 1, 2, 3]) { const o = await b(k); expect(o.x).toBeGreaterThanOrEqual(q.x + q.width - 1); }
+  for (const k of [1, 2, 3]) expect((await b(k)).y).toBeGreaterThan((await b(k - 1)).y);
   for (const k of [0, 1, 2, 3]) { const o = await b(k); expect(o.y + o.height).toBeLessThanOrEqual(744); }
   // a wrong answer: the next button is on screen without scrolling
   await page.evaluate(() => { const c = playQuiz.cur; [...document.querySelectorAll('.opt')].find((x) => +x.dataset.i !== c.idx).click(); });
@@ -261,6 +262,16 @@ test('thumb answers in games: options on both sides of the question, next button
   expect(n.x).toBeGreaterThan(q.x + q.width - 1);
   await page.locator('#nextQ').click();
   await expect(page.locator('#title')).toContainText('2/');
+  // left by setting: the column moves to the left of the question, the next button with it
+  await page.evaluate(() => { S.settings.optSide = 'left'; applyThumbs(); startGame('en2th'); });
+  await expect(page.locator('.options .opt').first()).toBeVisible();
+  await page.waitForTimeout(500);
+  const ql = await page.locator('.q-prompt').boundingBox();
+  for (const k of [0, 1, 2, 3]) { const o = await b(k); expect(o.x + o.width).toBeLessThanOrEqual(ql.x + 1); }
+  await page.evaluate(() => { const c = playQuiz.cur; [...document.querySelectorAll('.opt')].find((x) => +x.dataset.i !== c.idx).click(); });
+  const nl = await page.locator('#nextQ').boundingBox();
+  expect(nl.x + nl.width).toBeLessThanOrEqual(ql.x + 1);
+  await page.evaluate(() => { S.settings.optSide = 'right'; applyThumbs(); });
   // off: answers stay in one column beside the question
   await page.evaluate(() => { S.settings.thumbs = 'off'; applyThumbs(); startGame('en2th'); });
   await expect(page.locator('.options .opt').first()).toBeVisible();

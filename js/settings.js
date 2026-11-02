@@ -66,8 +66,10 @@ function renderSettings() {
         <select class="sel" id="start"><option value="home" ${st.start === 'home' ? 'selected' : ''}>🏠 หน้าแรก</option><option value="feed" ${st.start === 'feed' ? 'selected' : ''}>📱 ไถศัพท์</option><option value="cards" ${st.start === 'cards' ? 'selected' : ''}>🃏 แฟลชการ์ด</option></select></div>
       <div class="set-row"><span>ด้านหน้าการ์ด</span>
         <select class="sel" id="front"><option value="en" ${st.front === 'en' ? 'selected' : ''}>อังกฤษ → ไทย</option><option value="th" ${st.front === 'th' ? 'selected' : ''}>ไทย → อังกฤษ</option><option value="mix" ${st.front === 'mix' ? 'selected' : ''}>สลับกัน (คำที่แม่นแล้วถามกลับด้านบ้าง)</option></select></div>
-      <div class="set-row"><span>👐 ปุ่มสองข้าง (ถือสองมือ)<br><span class="small muted">iPad แนวนอน: แฟลชการ์ด ลืม/ยาก อยู่ซ้าย จำได้/ง่าย อยู่ขวา · เกมแบบเลือกตอบ ตัวเลือกแบ่งอยู่สองข้างของโจทย์ ใกล้นิ้วโป้ง (อัตโนมัติ = ใช้บนจอสัมผัส)</span></span>
+      <div class="set-row"><span>👐 ปุ่มสองข้าง (ถือสองมือ)<br><span class="small muted">iPad แนวนอน: แฟลชการ์ด ลืม/ยาก อยู่ซ้าย จำได้/ง่าย อยู่ขวา · เกมแบบเลือกตอบ ตัวเลือกเรียงอยู่ข้างโจทย์ฝั่งเดียว ใกล้นิ้วโป้ง (อัตโนมัติ = ใช้บนจอสัมผัส)</span></span>
         <select class="sel" id="thumbs" aria-label="ปุ่มสองข้าง (ถือสองมือ)">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.thumbs || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="set-row"><span>🎮 ตัวเลือกในเกม (iPad แนวนอน ถือสองมือ)<br><span class="small muted">ตัวเลือกคำตอบเรียงอยู่ฝั่งเดียวข้างโจทย์ เลือกฝั่งที่ถนัด</span></span>
+        <select class="sel" id="optSide" aria-label="ตัวเลือกในเกมอยู่ฝั่งไหน">${[['right', '👉 ขวา'], ['left', '👈 ซ้าย']].map(([v, t]) => `<option value="${v}" ${(st.optSide || 'right') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <details class="set-row stack ng-box" id="ngBox"><summary><span>เกมเพิ่มเติมหลังทำแฟลชการ์ดครบ<br><span class="small muted" id="ngSum">${nextGamesSummary(st.nextGames)}</span></span></summary>
         <div class="small muted ng-help">แตะเลือกได้หลายเกม จะขึ้นเป็นปุ่มต่อจาก "เล่นด่วน" ในหน้าจบรอบ</div>
         <div class="chips" id="nextGames">${Object.keys(GAMES).map((g) => `<button class="chip ${(st.nextGames || []).includes(g) ? 'on' : ''}" data-v="${g}">${GAMES[g].icon} ${GAMES[g].name}</button>`).join('')}</div></details>
@@ -239,6 +241,7 @@ function renderSettings() {
   $('#winGap').onchange = (e) => { st.winGap = e.target.value; save(); applyWinGap(); };
   $('#penMode').onchange = (e) => { st.penMode = e.target.value; save(); applyPen(); };
   $('#thumbs').onchange = (e) => { st.thumbs = e.target.value; save(); applyThumbs(); };
+  $('#optSide').onchange = (e) => { st.optSide = e.target.value; save(); applyThumbs(); };
   $('#auto').onchange = (e) => { st.autoSpeak = e.target.checked; save(); };
   $('#questShow').onchange = (e) => { st.questShowDone = e.target.checked; save(); };
   $('#badge').onchange = async (e) => {

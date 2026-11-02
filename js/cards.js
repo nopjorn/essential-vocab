@@ -381,5 +381,8 @@ function thumbsOn() {
   return v === 'on' || (v === 'auto' && matchMedia('(pointer: coarse)').matches);
 }
 // html.thumbs (1.141): the same switch for multiple-choice games (answers on both sides of the question, CSS at the end of style.css)
-function applyThumbs() { document.documentElement.classList.toggle('thumbs', thumbsOn()); }
+function applyThumbs() {
+  document.documentElement.classList.toggle('thumbs', thumbsOn());
+  document.documentElement.classList.toggle('opt-left', S.settings.optSide === 'left'); // 1.150: game answers on the left (default right)
+}
 applyThumbs();
