@@ -612,7 +612,7 @@ function openBook(st, opt = {}) {
     if (document.querySelector('.sheet-wrap')) return;
     if (e.key === 'ArrowRight' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) { e.preventDefault(); e.stopPropagation(); turn(page + 1); }
     else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) { e.preventDefault(); e.stopPropagation(); turn(page - 1); }
-    else if (e.key === 'Escape') { e.preventDefault(); closeBook(); }
+    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeBook(); }
   };
   document.addEventListener('keydown', key, true);
   let rt = 0;

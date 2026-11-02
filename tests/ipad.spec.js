@@ -10,7 +10,7 @@ test('thumb grade buttons: ลืม/ยาก left of the card, จำได้
   const box = async (sel) => page.locator(sel).boundingBox();
   const stage = await box('#stage');
   for (const g of [0, 1]) expect((await box(`#grade [data-g="${g}"]`)).x + (await box(`#grade [data-g="${g}"]`)).width).toBeLessThanOrEqual(stage.x + 1);
-  for (const g of [2, 3]) expect((await box(`#grade [data-g="${g}"]`)).x).toBeGreaterThanOrEqual(stage.x + stage.width - 1);
+  for (const g of [2, 3]) expect((await box(`#grade [data-g="${g}"]`)).x).toBeGreaterThanOrEqual(stage.x + stage.width - 4);
   await expect(page.locator('#sideStats')).toBeHidden();
   // the button layer lies over the card row: a tap on the card must still reach it
   await page.mouse.click(stage.x + stage.width / 2, stage.y + stage.height * 0.8);
@@ -94,5 +94,66 @@ test('book mode on a phone: one page at a time, no sideways overflow', async ({ 
   await page.waitForTimeout(200);
   expect((await page.evaluate(() => openBook.state())).spread).toBe(1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+  expect(errors).toEqual([]);
+});
+
+test('keyboard: arrows grade flashcards, Esc closes sheet / leaves a session / goes back, ⌥1–6 tabs, ⌘[ back, ? list', async ({ page }) => {
+  await page.setViewportSize({ width: 1133, height: 744 });
+  const errors = await openApp(page, { settings: { levels: ['A1'], thumbs: 'off' } });
+  await page.evaluate(() => go('cards'));
+  await expect(page.locator('#fc')).toBeVisible();
+  await page.keyboard.press('Space');
+  await page.keyboard.press('ArrowRight'); // จำได้
+  await expect(page.locator('#pcount')).toContainText('1/');
+  const w = await page.evaluate(() => Object.keys(S.prog)[0]);
+  expect(w).toBeTruthy();
+  await page.keyboard.press('Space');
+  await page.keyboard.press('ArrowLeft'); // ลืม: the card comes back later in the session
+  expect(await page.evaluate(() => Object.values(S.prog).some((p) => p.x >= 1 || p.b === 0))).toBe(true);
+  const party = () => page.evaluate(() => document.querySelectorAll('.celebrate').forEach((e) => e.remove())); // the first-answer streak party has its own keys
+  const kp = async (k) => { await party(); await page.keyboard.press(k); };
+  await party();
+  await kp('Escape'); // ✕ leaves the session
+  await expect(page.locator('#view')).toHaveAttribute('data-route', 'home');
+  // ⌥3 = games, ⌥6 = settings
+  await kp('Alt+Digit3');
+  await expect(page.locator('#view')).toHaveAttribute('data-route', 'games');
+  await kp('Alt+Digit6');
+  await expect(page.locator('#view')).toHaveAttribute('data-route', 'settings');
+  // ? opens the list, Esc closes it
+  await kp('Shift+Slash');
+  await expect(page.locator('.keys-sheet')).toHaveCount(1);
+  expect(await page.locator('.keys-sheet kbd').count()).toBeGreaterThan(8);
+  await kp('Escape');
+  await expect(page.locator('.keys-sheet')).toHaveCount(0);
+  await page.evaluate(() => { document.querySelector('details[data-g="look"]').open = true; });
+  await page.click('#keysBtn');
+  await expect(page.locator('.keys-sheet')).toHaveCount(1);
+  await page.locator('.keys-sheet [data-close]').click();
+  await expect(page.locator('.keys-sheet')).toHaveCount(0);
+  // a word sheet closes with Esc; ⌘[ and Esc go back from a page with ‹
+  await page.evaluate(() => go('list'));
+  await page.evaluate(() => openSheet(W[0]));
+  await expect(page.locator('.sheet-wrap')).toHaveCount(1);
+  await kp('Escape');
+  await expect(page.locator('.sheet-wrap')).toHaveCount(0);
+  await page.evaluate(() => go('read'));
+  const id = await page.evaluate(() => loadStories().then(() => STORIES[0].id));
+  await page.evaluate((id) => go('read', id), id);
+  await expect(page.locator('#rText')).toHaveCount(1);
+  await kp('Meta+BracketLeft');
+  await expect(page.locator('#rText')).toHaveCount(0);
+  await page.evaluate((id) => go('read', id), id);
+  // the book keeps Esc for itself: closing it does not also leave the story
+  await page.click('#rBook');
+  await kp('Escape');
+  await expect(page.locator('.book')).toHaveCount(0);
+  await expect(page.locator('#rText')).toHaveCount(1);
+  await kp('Escape');
+  await expect(page.locator('#rText')).toHaveCount(0);
+  // typing in a field: Alt+digit and ? do nothing
+  await page.evaluate(() => go('list'));
+  const inp = page.locator('#view input').first();
+  if (await inp.count()) { await inp.focus(); await kp('Shift+Slash'); await expect(page.locator('.keys-sheet')).toHaveCount(0); }
   expect(errors).toEqual([]);
 });

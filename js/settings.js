@@ -93,6 +93,7 @@ function renderSettings() {
         <select class="sel" id="fsz" aria-label="ขนาดตัวอักษร">${[['sm', 'เล็ก'], ['md', 'ปกติ'], ['lg', 'ใหญ่'], ['xl', 'ใหญ่มาก']].map(([v, t]) => `<option value="${v}" ${(st.fsz || 'md') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>⌨️ คีย์บอร์ดของแอปในเกมพิมพ์คำ<br><span class="small muted">ไม่บังหน้าจอ และพิมพ์อังกฤษได้ทันที (อัตโนมัติ = ใช้บนจอสัมผัส)</span></span>
         <select class="sel" id="appKbd" aria-label="คีย์บอร์ดของแอปในเกมพิมพ์คำ">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.appKbd || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <button class="set-row set-link" id="keysBtn"><span>⌨️ คีย์ลัด<br><span class="small muted">สำหรับ iPad ที่ต่อคีย์บอร์ด หรือคอมพิวเตอร์ (กด ? ที่หน้าไหนก็ได้)</span></span><span class="muted">›</span></button>
       <div class="set-row"><span>ธีม</span>
         <select class="sel" id="theme" aria-label="ธีม">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด'], ['black', '⚫ ดำสนิท']].map(([v, t]) => `<option value="${v}" ${(st.theme || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row" style="flex-wrap:wrap"><span>🎨 สีหลัก<br><span class="small muted" id="palName"></span></span>
@@ -228,6 +229,7 @@ function renderSettings() {
   $('#goal').onchange = (e) => { st.goal = e.target.value; save(); newCnt(); };
   $('#start').onchange = (e) => { st.start = e.target.value; save(); };
   $('#front').onchange = (e) => { st.front = e.target.value; save(); };
+  $('#keysBtn').onclick = () => showKeys();
   $('#thumbs').onchange = (e) => { st.thumbs = e.target.value; save(); };
   $('#auto').onchange = (e) => { st.autoSpeak = e.target.checked; save(); };
   $('#questShow').onchange = (e) => { st.questShowDone = e.target.checked; save(); };

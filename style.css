@@ -2469,3 +2469,10 @@ html[data-theme="dark"] input, html[data-theme="black"] input { color-scheme: da
 .book.pen .bk-vp { cursor: crosshair; }
 @media (max-height: 520px) { .bk-top { min-height: 40px; } .bk-emoji { font-size: 32px; } .bk-foot { min-height: 44px; } .bk-turn { width: 44px; height: 44px; } }
 @media (prefers-reduced-motion: reduce) { .bk-flow { transition: none; } }
+
+/* ⌨️ keyboard shortcut list (1.138, showKeys() in js/boot.js) */
+.keys-h { font-weight: 800; margin: 12px 0 4px; }
+.keys { display: grid; gap: 4px; }
+.keys-r { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
+.keys-r kbd { flex: none; min-width: 112px; font: 700 var(--fs-sm, 14px)/1.2 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); border-bottom-width: 2px; background: var(--surface-2); color: var(--text); text-align: center; }
+.keys-r span { color: var(--text); }
