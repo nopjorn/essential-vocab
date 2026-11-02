@@ -495,3 +495,23 @@ test('flashcards still loading their data do not draw over the page the user mov
   await expect(page.locator('#thumbs')).toBeAttached();
   expect(errors).toEqual([]);
 });
+
+test('room for the iPad window buttons: off by default in a browser, on moves a narrow top bar right, wide layouts unchanged', async ({ page }) => {
+  await page.setViewportSize({ width: 566, height: 744 });
+  const errors = await openApp(page);
+  expect(await page.evaluate(() => [winGapOn(), document.documentElement.classList.contains('win-gap')])).toEqual([false, false]); // not a home-screen app
+  const x0 = await page.locator('#title').boundingBox();
+  await page.evaluate(() => { go('settings'); document.querySelector('details[data-g="look"]').open = true; });
+  await page.locator('#winGap').selectOption('on');
+  expect(await page.evaluate(() => [S.settings.winGap, document.documentElement.classList.contains('win-gap')])).toEqual(['on', true]);
+  const x1 = await page.locator('#title').boundingBox();
+  expect(x1.x - x0.x).toBeGreaterThanOrEqual(60);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+  // wide window: the top-left corner is the tab rail, the top bar stays where it was
+  await page.setViewportSize({ width: 1133, height: 744 });
+  const pad = await page.locator('.topbar').evaluate((el) => getComputedStyle(el).paddingLeft);
+  expect(parseFloat(pad)).toBeLessThan(60);
+  await page.locator('#winGap').selectOption('off');
+  expect(await page.evaluate(() => document.documentElement.classList.contains('win-gap'))).toBe(false);
+  expect(errors).toEqual([]);
+});

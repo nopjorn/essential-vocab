@@ -2598,3 +2598,7 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
 .off-box { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; margin: 0 0 12px; border-radius: 14px; background: var(--surface-2); }
 .off-box .btn { margin-top: 6px; }
 .off-box .btn[hidden] { display: none; }
+
+/* 🪟 room for the iPadOS window buttons (1.149, html.win-gap = applyWinGap()): narrow windows keep their top bar clear of the
+   top-left corner; wide ones have the tab rail there (its logo sits under the buttons, nothing to tap) */
+@media (max-width: 699.98px) { html.win-gap .topbar { padding-left: calc(env(safe-area-inset-left) + 88px); } }

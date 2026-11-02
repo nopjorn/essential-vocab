@@ -95,6 +95,8 @@ function renderSettings() {
         <select class="sel" id="appKbd" aria-label="คีย์บอร์ดของแอปในเกมพิมพ์คำ">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.appKbd || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>✏️ โหมด Apple Pencil<br><span class="small muted">ช่องคำตอบใหญ่ขึ้น เขียนด้วย Scribble ได้ตั้งแต่เส้นแรก และพับแป้นพิมพ์ของแอปไว้ (อัตโนมัติ = เปิดเองเมื่อเครื่องนี้เคยใช้ Apple Pencil กับแอป)</span></span>
         <select class="sel" id="penMode" aria-label="โหมด Apple Pencil">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.penMode || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="set-row"><span>🪟 เว้นที่ให้ปุ่มหน้าต่าง iPad<br><span class="small muted">เปิดแอปเป็นหน้าต่างเล็กแล้วปุ่มปิด/ย่อหน้าต่างมุมซ้ายบนทับปุ่ม ‹ หรือชื่อหน้า ให้เลือก “เปิด” (อัตโนมัติ = เว้นเมื่อแอปจากหน้าจอโฮมเปิดเป็นหน้าต่างบน iPad)</span></span>
+        <select class="sel" id="winGap" aria-label="เว้นที่ให้ปุ่มหน้าต่าง iPad">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.winGap || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <button class="set-row set-link" id="keysBtn"><span>⌨️ คีย์ลัด<br><span class="small muted">สำหรับ iPad ที่ต่อคีย์บอร์ด หรือคอมพิวเตอร์ (กด ? ที่หน้าไหนก็ได้)</span></span><span class="muted">›</span></button>
       <div class="set-row"><span>ธีม</span>
         <select class="sel" id="theme" aria-label="ธีม">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด'], ['black', '⚫ ดำสนิท']].map(([v, t]) => `<option value="${v}" ${(st.theme || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
@@ -234,6 +236,7 @@ function renderSettings() {
   $('#start').onchange = (e) => { st.start = e.target.value; save(); };
   $('#front').onchange = (e) => { st.front = e.target.value; save(); };
   $('#keysBtn').onclick = () => showKeys();
+  $('#winGap').onchange = (e) => { st.winGap = e.target.value; save(); applyWinGap(); };
   $('#penMode').onchange = (e) => { st.penMode = e.target.value; save(); applyPen(); };
   $('#thumbs').onchange = (e) => { st.thumbs = e.target.value; save(); applyThumbs(); };
   $('#auto').onchange = (e) => { st.autoSpeak = e.target.checked; save(); };
@@ -504,3 +507,19 @@ function netBadge(say) {
 }
 addEventListener('online', () => netBadge(true));
 addEventListener('offline', () => netBadge(true));
+
+/* ---------- iPad window controls (1.149) ---------- */
+// iPadOS draws its window buttons (close / minimise / resize) at the top-left corner of an app running in a window.
+// In a narrow window the app's top bar starts there (‹ back, page title), so it moves right to stay clear of them.
+// settings.winGap: 'auto' = only the home-screen app on an iPad, in a window smaller than the screen · 'on' · 'off'.
+function winGapOn() {
+  const m = S.settings.winGap || 'auto';
+  if (m !== 'auto') return m === 'on';
+  const standalone = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  const ipad = navigator.maxTouchPoints > 1 && /iPad|Macintosh/.test(navigator.userAgent);
+  const full = innerWidth > innerHeight ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+  return standalone && ipad && innerWidth < full - 2;
+}
+function applyWinGap() { document.documentElement.classList.toggle('win-gap', winGapOn()); }
+addEventListener('resize', applyWinGap);
+applyWinGap();
