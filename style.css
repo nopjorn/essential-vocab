@@ -2413,3 +2413,12 @@ html[data-theme="dark"] input, html[data-theme="black"] input { color-scheme: da
 .mine-text.only-new .rw:not(.new) { background: none; text-decoration: none; }
 .wk-act { display: grid; grid-template-columns: 1fr 1fr; }
 .wk-act .primary { grid-column: 1 / -1; order: -1; }
+
+/* very narrow (iPad Slide Over / Split View ≈320px, 1.136): tab labels stay apart, hero tiles keep their words */
+@media (max-width: 379.98px) {
+  .tabbar { padding-left: 2px; padding-right: 2px; }
+  .tabbar button { min-width: 0; font-size: 9.5px; letter-spacing: -.3px; }
+  .tabbar button > span:last-child { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hero .stats { gap: 6px; }
+  .hero .stat { padding: 8px 4px; }
+}

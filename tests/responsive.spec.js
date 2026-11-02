@@ -1,8 +1,10 @@
-// Main screens fit every target size (iPhone portrait/landscape, iPad mini/Air/Pro both ways): no sideways scroll.
+// Main screens fit every target size (iPhone portrait/landscape, iPad mini/Air/Pro both ways, iPad mini Split View / Slide Over): no sideways scroll.
 const { test, expect } = require('@playwright/test');
 const { openApp } = require('./helpers');
 
-const SIZES = [[440, 956], [956, 440], [834, 1210], [1210, 834], [1032, 1376], [1376, 1032], [1440, 900], [1920, 1080]];
+const SIZES = [[440, 956], [956, 440], [834, 1210], [1210, 834], [1032, 1376], [1376, 1032], [1440, 900], [1920, 1080],
+  // iPad mini (8.3") both ways, and the widths it gets in Split View / Slide Over (1.136)
+  [744, 1133], [1133, 744], [372, 1133], [320, 1133], [566, 744], [320, 744]];
 const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read', 'decks', 'ref', 'print', 'mine'];
 
 for (const [w, h] of SIZES) {
@@ -22,6 +24,22 @@ for (const [w, h] of SIZES) {
       expect(over.doc, `${name}: page wider than the screen`).toBeLessThanOrEqual(1);
       expect(over.view, `${name}: #view scrolls sideways`).toBeLessThanOrEqual(1);
     }
+    expect(errors).toEqual([]);
+  });
+}
+
+// iPad Slide Over / narrow Split View (1.136): the bottom tab labels must not run into each other.
+for (const [w, h] of [[320, 744], [372, 1133]]) {
+  test(`tab labels apart at ${w}×${h}`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
+    const errors = await openApp(page);
+    const boxes = await page.evaluate(() => [...document.querySelectorAll('#tabbar > button > span:last-child')].map((s) => {
+      const r = s.getBoundingClientRect();
+      return { l: r.left, r: r.right, fits: s.scrollWidth <= s.clientWidth + 1 };
+    }));
+    expect(boxes.length).toBe(6);
+    for (let i = 1; i < boxes.length; i++) expect(boxes[i].l, `label ${i} runs into the one before`).toBeGreaterThanOrEqual(boxes[i - 1].r + 3);
+    expect(boxes.every((b) => b.fits), 'a label is cut off').toBe(true);
     expect(errors).toEqual([]);
   });
 }

@@ -169,7 +169,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 - CSS block "responsive: iPad + landscape" at the end of `style.css`: ≥700px wide → left tab rail and
   centred content (`--maxw` 760, 1100 for home/list/stats/games menu/library); ≥1100×700 → sidebar with labels;
   ≤520px tall → compact, flashcards/quizzes/feed split into two columns via `:has()`; ≥900px → multi-column grids.
-- Check every change at 440×956, 956×440, 834×1210, 1210×834, 1032×1376, 1376×1032 (scratchpad `pw/resp.js`).
+- Check every change at 440×956, 956×440, 834×1210, 1210×834, 1032×1376, 1376×1032, iPad mini 744×1133 / 1133×744 (scratchpad `pw/resp.js`); responsive.spec.js also covers Split View / Slide Over widths (320, 372, 566). ≤380px wide: smaller tab labels (`max-width: 379.98px` block at the end of style.css).
 
 ## Accessibility (1.36.1+)
 - Every control needs a readable name: icon-only buttons get `aria-label`; settings rows get it from `labelRows(view)` (row text).
