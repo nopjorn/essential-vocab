@@ -183,6 +183,7 @@ function renderRead(id) {
       <button class="tool" id="rFont"><span>Aa</span>ขนาดตัวอักษร</button>
       <button class="tool" id="rSlow" aria-pressed="false"><span>🐢</span>อ่านช้า</button>
       <button class="tool" id="rShadow"><span>🗣️</span>พูดตาม</button>
+      <button class="tool" id="rBook"><span>📖</span>โหมดหนังสือ</button>
     </div>
     <article class="card-box story${st.kind ? ' k-' + st.kind : ''}" id="rText" style="--st-font:${font()}px">
       ${st.en.map((para, k) => `<div class="st-para" data-k="${k}"><p class="st-p" lang="en">${storyHTML(para)}</p>
@@ -229,6 +230,7 @@ function renderRead(id) {
   $('#rFont').onclick = () => { S.settings.rFont = ((S.settings.rFont != null ? S.settings.rFont : 1) + 1) % FONT_SIZES.length; save(); $('#rText').style.setProperty('--st-font', font() + 'px'); };
   $('#rSlow').onclick = () => { slow = !slow; $('#rSlow').classList.toggle('on', slow); $('#rSlow').setAttribute('aria-pressed', slow); toast(slow ? 'อ่านออกเสียงช้าลง 🐢' : 'กลับมาอ่านความเร็วปกติ'); };
   $('#rShadow').onclick = () => { cleanup(); cleanup = null; shadowStory(st, slow); };
+  $('#rBook').onclick = () => { stop(); openBook(st, { done: () => { const q = view.querySelector('.st-q'); if (q) q.scrollIntoView({ block: 'start' }); } }); };
   $('#rAll').onclick = () => (playing >= 0 && $('#rAll').textContent.includes('หยุด') ? stop() : play(0, true));
   const onScroll = () => { const max = view.scrollHeight - view.clientHeight; const bar = $('#rProg'); if (bar) bar.style.width = (max > 0 ? Math.min(100, (100 * view.scrollTop) / max) : 100) + '%'; };
   view.addEventListener('scroll', onScroll, { passive: true });
@@ -273,7 +275,7 @@ function renderRead(id) {
       $('#rDone').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
-  cleanup = () => { view.onclick = null; view.removeEventListener('scroll', onScroll); token++; if (window.speechSynthesis) speechSynthesis.cancel(); };
+  cleanup = () => { closeBook(); view.onclick = null; view.removeEventListener('scroll', onScroll); token++; if (window.speechSynthesis) speechSynthesis.cancel(); };
 }
 // "Ready to read" (1.62): share of the words in each level's stories you already know (storyInfo().known, averaged).
 // 90% = ready, 95% = reads smoothly; crossing a threshold the first time is celebrated once (S.readyAt, per level).
@@ -480,4 +482,144 @@ function shadowStory(st, slowStart) {
   $('#shThBtn').onclick = () => { showTh = !showTh; $('#shTh').hidden = !showTh; $('#shThBtn').textContent = showTh ? '🇹🇭 ซ่อนคำแปล' : '🇹🇭 ดูคำแปลย่อหน้านี้'; };
   show();
   cleanup = () => { halt(); clips.forEach((u) => URL.revokeObjectURL(u)); clips.clear(); };
+}
+
+/* ---------- book mode (1.137) ---------- */
+// 📖 A full-screen, paginated reader made for an iPad held like a book: CSS columns cut the story into pages
+// (two side by side when the screen is wide and in landscape), tap the left/right edge, swipe or use the arrow keys
+// to turn a page, tap a list word for its sheet. 🖍️ highlighter: an Apple Pencil always highlights the list words it
+// passes over (a finger does too while 🖍️ is on); the marked words go to a set with pickDeck().
+let bookEl = null;
+function closeBook() {
+  if (!bookEl) return;
+  const b = bookEl; bookEl = null;
+  if (b._off) b._off();
+  b.remove();
+}
+function openBook(st, opt = {}) {
+  closeBook();
+  let page = 0, pages = 1, spread = 1, th = false, pen = false;
+  const marked = new Map(); // word idx -> word
+  const font = () => FONT_SIZES[S.settings.rFont != null ? S.settings.rFont : 1];
+  const el = document.createElement('div');
+  el.className = 'book';
+  el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'โหมดหนังสือ: ' + st.title);
+  el.innerHTML = `<div class="bk-top">
+      <button class="icon-btn" id="bkClose" aria-label="ปิดโหมดหนังสือ">✕</button>
+      <div class="bk-title grow">${esc(st.title)}</div>
+      <button class="bk-tool" id="bkTh" aria-pressed="false" aria-label="คำแปลภาษาไทย">🇹🇭</button>
+      <button class="bk-tool" id="bkFont" aria-label="ขนาดตัวอักษร">Aa</button>
+      <button class="bk-tool" id="bkPen" aria-pressed="false" aria-label="ปากกาไฮไลต์">🖍️</button>
+    </div>
+    <div class="bk-vp" id="bkVp"><div class="bk-flow" id="bkFlow" style="--st-font:${font()}px">
+      <div class="bk-head"><div class="bk-emoji">${st.emoji || '📖'}</div><h2 lang="en">${esc(st.title)}</h2><div class="bk-sub">${esc(st.titleTh)} · ${LV_LABEL[st.level]}</div></div>
+      ${st.en.map((p, k) => `<p class="bk-p" lang="en">${storyHTML(p)}</p><p class="bk-th" hidden>${esc(st.th[k] || '')}</p>`).join('')}
+      <div class="bk-end"><div class="bk-emoji">🏁</div><b>จบเรื่อง</b><button class="btn primary" id="bkDone">❓ ไปทำคำถามท้ายเรื่อง</button></div>
+    </div></div>
+    <div class="bk-foot">
+      <button class="bk-turn" id="bkPrev" aria-label="หน้าก่อน">‹</button>
+      <div class="grow center"><div class="bk-bar"><i id="bkBar"></i></div><span class="small muted" id="bkNum"></span></div>
+      <button class="bk-mark" id="bkMark" hidden></button>
+      <button class="bk-turn" id="bkNext" aria-label="หน้าถัดไป">›</button>
+    </div>`;
+  document.body.appendChild(el);
+  bookEl = el;
+  const vp = el.querySelector('#bkVp'), flow = el.querySelector('#bkFlow');
+  const layout = () => {
+    const at = pages > 1 ? page / pages : 0;
+    const w = vp.clientWidth, gap = 56;
+    spread = w >= 900 && innerWidth > innerHeight ? 2 : 1;
+    const col = (w - gap * (spread - 1)) / spread;
+    flow.style.width = w + 'px'; flow.style.columnWidth = col + 'px'; flow.style.columnGap = gap + 'px';
+    flow.style.transform = 'none';
+    const cols = Math.max(1, Math.round((flow.scrollWidth + gap) / (col + gap)));
+    pages = Math.max(1, Math.ceil(cols / spread));
+    el.classList.toggle('spread', spread === 2);
+    turn(Math.min(pages - 1, Math.round(at * pages)), true);
+  };
+  const turn = (n, quiet) => {
+    n = Math.max(0, Math.min(pages - 1, n));
+    if (n === page && !quiet) { if (n === pages - 1) toast('หน้าสุดท้ายแล้ว'); return; }
+    page = n;
+    flow.style.transform = `translateX(${-page * (vp.clientWidth + 56)}px)`;
+    el.querySelector('#bkNum').textContent = `หน้า ${page + 1}/${pages}`;
+    el.querySelector('#bkBar').style.width = (100 * (page + 1)) / pages + '%';
+    el.querySelector('#bkPrev').disabled = page === 0;
+    el.querySelector('#bkNext').disabled = page === pages - 1;
+    if (!quiet) markActive();
+  };
+  const showMarked = () => {
+    const b = el.querySelector('#bkMark');
+    b.hidden = !marked.size;
+    b.textContent = `🖍️ ${marked.size} คำ → เก็บเข้าชุด`;
+  };
+  const mark = (rw) => {
+    const w = W[+rw.dataset.i];
+    if (!w || marked.has(w.idx)) return;
+    marked.set(w.idx, w);
+    flow.querySelectorAll(`.rw[data-i="${w.idx}"]`).forEach((x) => x.classList.add('hl'));
+    showMarked();
+  };
+  // gestures on the page: pen (or finger with 🖍️) = highlight, a sideways swipe = turn, a tap on the outer thirds = turn
+  let g = null;
+  vp.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button')) { g = null; return; } // the end-of-story button is a plain button
+    const hl = e.pointerType === 'pen' || pen;
+    g = { x: e.clientX, y: e.clientY, hl, id: e.pointerId, moved: false };
+    if (hl) { try { vp.setPointerCapture(e.pointerId); } catch (err) {} const rw = e.target.closest('.rw[data-i]'); if (rw) mark(rw); }
+  });
+  vp.addEventListener('pointermove', (e) => {
+    if (!g || e.pointerId !== g.id) return;
+    if (Math.abs(e.clientX - g.x) + Math.abs(e.clientY - g.y) > 8) g.moved = true;
+    if (g.hl) { const t = document.elementFromPoint(e.clientX, e.clientY); const rw = t && t.closest && t.closest('.bk-flow .rw[data-i]'); if (rw) mark(rw); }
+  });
+  vp.addEventListener('pointerup', (e) => {
+    if (!g || e.pointerId !== g.id) return;
+    const d = g; g = null;
+    if (d.hl) { if (d.moved || e.target.closest('.rw[data-i]')) vp._skip = true; return; } // a pen tap on plain text still turns the page
+    const dx = e.clientX - d.x, dy = e.clientY - d.y;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) { vp._skip = true; turn(page + (dx < 0 ? 1 : -1)); }
+  });
+  vp.addEventListener('pointercancel', () => { g = null; });
+  vp.addEventListener('click', (e) => {
+    if (vp._skip) { vp._skip = false; return; }
+    if (e.target.closest('#bkDone')) { closeBook(); if (opt.done) opt.done(); return; }
+    const rw = e.target.closest('.rw[data-i]');
+    if (rw) { const w = W[+rw.dataset.i]; speak(w.w); return openSheet(w, () => flow.querySelectorAll(`.rw[data-i="${w.idx}"]`).forEach((x) => (x.className = 'rw ' + status(w) + (marked.has(w.idx) ? ' hl' : '')))); }
+    const r = vp.getBoundingClientRect(), x = (e.clientX - r.left) / r.width;
+    if (x < 0.3) turn(page - 1); else if (x > 0.7) turn(page + 1);
+  });
+  el.querySelector('#bkPrev').onclick = () => turn(page - 1);
+  el.querySelector('#bkNext').onclick = () => turn(page + 1);
+  el.querySelector('#bkClose').onclick = () => closeBook();
+  el.querySelector('#bkTh').onclick = (e) => {
+    th = !th; e.currentTarget.setAttribute('aria-pressed', th); e.currentTarget.classList.toggle('on', th);
+    flow.querySelectorAll('.bk-th').forEach((x) => (x.hidden = !th)); layout();
+  };
+  el.querySelector('#bkFont').onclick = () => {
+    S.settings.rFont = ((S.settings.rFont != null ? S.settings.rFont : 1) + 1) % FONT_SIZES.length; save();
+    flow.style.setProperty('--st-font', font() + 'px');
+    const rt = document.getElementById('rText'); if (rt) rt.style.setProperty('--st-font', font() + 'px');
+    layout();
+  };
+  el.querySelector('#bkPen').onclick = (e) => {
+    pen = !pen; e.currentTarget.setAttribute('aria-pressed', pen); e.currentTarget.classList.toggle('on', pen);
+    el.classList.toggle('pen', pen);
+    toast(pen ? '🖍️ ลากนิ้วผ่านคำที่ขีดเส้นใต้เพื่อไฮไลต์ (Apple Pencil ไฮไลต์ได้เสมอ)' : 'ปิดปากกาไฮไลต์แล้ว แตะ/ปัดเพื่อพลิกหน้า');
+  };
+  el.querySelector('#bkMark').onclick = () => pickDeck([...marked.values()].map((w) => w.w));
+  const key = (e) => {
+    if (document.querySelector('.sheet-wrap')) return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) { e.preventDefault(); e.stopPropagation(); turn(page + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) { e.preventDefault(); e.stopPropagation(); turn(page - 1); }
+    else if (e.key === 'Escape') { e.preventDefault(); closeBook(); }
+  };
+  document.addEventListener('keydown', key, true);
+  let rt = 0;
+  const onResize = () => { clearTimeout(rt); rt = setTimeout(() => { if (bookEl === el) layout(); }, 120); };
+  addEventListener('resize', onResize);
+  el._off = () => { document.removeEventListener('keydown', key, true); removeEventListener('resize', onResize); };
+  openBook.state = () => ({ page, pages, spread, marked: [...marked.values()].map((w) => w.w) }); // read by tests
+  requestAnimationFrame(layout);
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => { if (bookEl === el) layout(); });
 }

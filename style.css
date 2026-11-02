@@ -2437,3 +2437,35 @@ html[data-theme="dark"] input, html[data-theme="black"] input { color-scheme: da
   .view > #grade.thumbs .btn:nth-child(3) { grid-column: 3; grid-row: 2; }
   .view > #grade.thumbs .btn:nth-child(4) { grid-column: 3; grid-row: 3; }
 }
+
+/* 📖 book mode (1.137, openBook() in js/reading.js): full-screen paginated reader, two pages side by side on a wide landscape screen */
+.st-tools #rBook { grid-column: 1 / -1; flex-direction: row; justify-content: center; gap: 8px; }
+@media (min-width: 700px) { .st-tools:not(.ear-ctl) { grid-template-columns: repeat(7, 1fr); } .st-tools #rBook { grid-column: auto; flex-direction: column; gap: 2px; } }
+.book { --ui-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Sukhumvit Set", "Thonburi", "Noto Sans Thai", "Segoe UI", sans-serif; position: fixed; inset: 0; z-index: 35; display: flex; flex-direction: column; background: var(--surface); color: var(--text);
+  padding: calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 20px) calc(env(safe-area-inset-bottom) + 10px) calc(env(safe-area-inset-left) + 20px); }
+.bk-top { display: flex; align-items: center; gap: 8px; min-height: 48px; }
+.bk-title { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: var(--fs-md); }
+.bk-tool { min-width: 44px; height: 44px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit; font-weight: 800; cursor: pointer; }
+.bk-tool.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.bk-vp { flex: 1; min-height: 0; overflow: hidden; position: relative; touch-action: none; margin: 8px 0; }
+.bk-flow { height: 100%; column-fill: auto; transition: transform .35s cubic-bezier(.2, .8, .2, 1); font-family: "New York", "Iowan Old Style", Georgia, "Noto Serif", serif; font-size: calc(var(--st-font, 18px) * 1.12); line-height: 1.8; }
+.bk-flow .rw { -webkit-user-select: none; user-select: none; }
+.bk-flow .rw.hl { background: color-mix(in srgb, #ffd83d 62%, transparent); border-radius: 4px; box-shadow: 0 0 0 2px color-mix(in srgb, #ffd83d 62%, transparent); }
+.bk-p { margin: 0 0 .9em; orphans: 2; widows: 2; } /* no hyphenation: learners see every word whole */
+@media (min-width: 700px) { .bk-p { text-align: justify; } }
+.bk-th { margin: -.5em 0 1em; padding: 8px 12px; border-radius: 12px; background: color-mix(in srgb, var(--primary-2) 14%, transparent); font-family: var(--ui-font); font-size: var(--fs-md); line-height: 1.65; break-inside: avoid; }
+.bk-head { text-align: center; margin: 4px 0 1.2em; break-inside: avoid; }
+.bk-head h2 { margin: 4px 0; font-size: 1.5em; line-height: 1.25; }
+.bk-sub { font-family: var(--ui-font); color: var(--muted); font-size: var(--fs-sm, 14px); }
+.bk-emoji { font-size: 44px; line-height: 1.2; }
+.bk-end { break-inside: avoid; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 1.2em 0; font-family: var(--ui-font); text-align: center; }
+.bk-foot { display: flex; align-items: center; gap: 12px; min-height: 52px; }
+.bk-turn { width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 28px; line-height: 1; cursor: pointer; }
+.bk-turn:disabled { opacity: .35; }
+.bk-bar { height: 4px; border-radius: 4px; background: var(--surface-2); overflow: hidden; margin: 0 auto 6px; max-width: 320px; }
+.bk-bar i { display: block; height: 100%; background: var(--primary); transition: width .3s; }
+.bk-mark { border: 0; border-radius: 999px; padding: 10px 14px; background: #ffd83d; color: #1b1530; font: inherit; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.book.spread .bk-vp::after { content: ""; position: absolute; top: 4%; bottom: 4%; left: 50%; width: 1px; background: var(--border); pointer-events: none; }
+.book.pen .bk-vp { cursor: crosshair; }
+@media (max-height: 520px) { .bk-top { min-height: 40px; } .bk-emoji { font-size: 32px; } .bk-foot { min-height: 44px; } .bk-turn { width: 44px; height: 44px; } }
+@media (prefers-reduced-motion: reduce) { .bk-flow { transition: none; } }

@@ -37,3 +37,62 @@ test('thumb grade buttons: off keeps the usual row, auto follows the pointer, se
   expect(g0.y).toBeGreaterThanOrEqual(stage.y + stage.height - 1);
   expect(errors).toEqual([]);
 });
+
+test('book mode: pages, two-page spread in landscape, turn by key/tap/swipe, pen highlight → set, questions', async ({ page }) => {
+  await page.setViewportSize({ width: 1133, height: 744 });
+  const errors = await openApp(page, { settings: { levels: ['B1'], rFont: 2 } });
+  const id = await page.evaluate(() => loadStories().then(() => STORIES.find((s) => s.level === 'B2').id));
+  await page.evaluate((id) => go('read', id), id);
+  await page.click('#rBook');
+  await expect(page.locator('.book')).toBeVisible();
+  await page.click('#bkTh'); // Thai under each paragraph makes it longer than one spread
+  await page.waitForTimeout(200);
+  let s = await page.evaluate(() => openBook.state());
+  expect(s.spread).toBe(2);
+  expect(s.pages).toBeGreaterThan(1);
+  await page.keyboard.press('ArrowRight');
+  expect((await page.evaluate(() => openBook.state())).page).toBe(1);
+  // a tap on the left third goes back
+  const vp = await page.locator('#bkVp').boundingBox();
+  await page.mouse.click(vp.x + 10, vp.y + vp.height - 5);
+  expect((await page.evaluate(() => openBook.state())).page).toBe(0);
+  // swipe left = next page
+  await page.mouse.move(vp.x + vp.width * 0.5, vp.y + vp.height - 5);
+  await page.mouse.down(); await page.mouse.move(vp.x + vp.width * 0.2, vp.y + vp.height - 5, { steps: 5 }); await page.mouse.up();
+  expect((await page.evaluate(() => openBook.state())).page).toBe(1);
+  await page.keyboard.press('ArrowLeft');
+  // highlighter on (finger/mouse), drag across the first visible list word
+  await page.click('#bkPen');
+  const r = await page.evaluate(() => { const x = [...document.querySelectorAll('.bk-flow .rw')].find((e) => { const b = e.getBoundingClientRect(); return b.left > 0 && b.right < innerWidth / 2; }); const b = x.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2, w: x.textContent }; });
+  await page.mouse.move(r.x - 2, r.y); await page.mouse.down(); await page.mouse.move(r.x + 2, r.y, { steps: 3 }); await page.mouse.up();
+  s = await page.evaluate(() => openBook.state());
+  expect(s.page).toBe(0); // highlighting never turns the page
+  expect(s.marked.length).toBe(1);
+  await expect(page.locator('.bk-flow .rw.hl').first()).toBeVisible();
+  await page.click('#bkMark');
+  await page.locator('[data-pd="new"]').click();
+  expect(await page.evaluate(() => S.decks.filter((d) => !d.del).map((d) => d.words.length))).toEqual([1]);
+  // last page → questions; leaving the route closes the book
+  await page.evaluate(() => { const s = openBook.state(); for (let i = 0; i < s.pages; i++) document.getElementById('bkNext').click(); });
+  await page.click('#bkDone');
+  await expect(page.locator('.book')).toHaveCount(0);
+  await page.click('#rBook');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.book')).toHaveCount(0);
+  await page.click('#rBook');
+  await page.evaluate(() => go('home'));
+  await expect(page.locator('.book')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('book mode on a phone: one page at a time, no sideways overflow', async ({ page }) => {
+  await page.setViewportSize({ width: 440, height: 956 });
+  const errors = await openApp(page);
+  const id = await page.evaluate(() => loadStories().then(() => STORIES[0].id));
+  await page.evaluate((id) => go('read', id), id);
+  await page.click('#rBook');
+  await page.waitForTimeout(200);
+  expect((await page.evaluate(() => openBook.state())).spread).toBe(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+  expect(errors).toEqual([]);
+});
