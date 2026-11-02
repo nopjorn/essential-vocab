@@ -337,3 +337,66 @@ function drillWeek(off) {
   gameSource = 'custom';
   startGame(pick(['en2th', 'th2en', 'listen']));
 }
+
+/* ---------- word menu (1.146) ---------- */
+// Right-click (mouse / trackpad on an iPad with a keyboard) or a long press with a finger on any list word — in stories,
+// the book, my article, the word list, sets and result lists — opens a small menu: 🔊 listen · 📖 meaning · ⭐ star ·
+// 📚 into a set · 📋 copy. A pencil long press is left alone (the pencil highlights in the book). Game answers are not targets.
+const WM_SEL = '.rw[data-i], .wrow[data-i], .wl[data-i], [data-wi]';
+let wmEl = null, wmSkipClick = false;
+function wmClose() { if (wmEl) { wmEl.remove(); wmEl = null; } }
+function wordMenu(w, x, y) {
+  wmClose();
+  const el = document.createElement('div');
+  el.className = 'wmenu'; el.setAttribute('role', 'menu'); el.setAttribute('aria-label', 'เมนูคำ ' + w.w);
+  el.innerHTML = `<div class="wm-h"><b lang="en">${esc(w.w)}</b><span>${esc(w.t)}</span></div>
+    <button role="menuitem" data-wm="say">🔊 ฟังเสียง</button>
+    <button role="menuitem" data-wm="sheet">📖 ดูความหมาย</button>
+    <button role="menuitem" data-wm="star">${isStar(w) ? '☆ เอาดาวออก' : '⭐ ติดดาว'}</button>
+    <button role="menuitem" data-wm="deck">📚 ใส่ชุดของฉัน</button>
+    <button role="menuitem" data-wm="copy">📋 คัดลอก</button>`;
+  document.body.appendChild(el);
+  const r = el.getBoundingClientRect();
+  el.style.left = Math.max(8, Math.min(innerWidth - r.width - 8, x)) + 'px';
+  el.style.top = Math.max(8, Math.min(innerHeight - r.height - 8, y)) + 'px';
+  wmEl = el; wmEl._at = Date.now();
+  el.querySelector('button').focus({ preventScroll: true });
+  el.onclick = (e) => {
+    const b = e.target.closest('[data-wm]'); if (!b) return;
+    const a = b.dataset.wm; wmClose();
+    if (a === 'say') speak(w.w);
+    else if (a === 'sheet') { speak(w.w); openSheet(w); }
+    else if (a === 'star') toggleStar(w);
+    else if (a === 'deck') pickDeck([w.w]);
+    else if (a === 'copy') {
+      const t = `${w.w} – ${w.t}`; wordMenu.copied = t; // read by tests
+      (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('📋 คัดลอกแล้ว'), () => toast('คัดลอกไม่ได้ในเครื่องนี้'));
+    }
+  };
+  el.addEventListener('keydown', (e) => {
+    const items = [...el.querySelectorAll('button')], k = items.indexOf(document.activeElement);
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); wmClose(); }
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); items[(k + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus(); }
+  });
+}
+const wmWord = (t) => { const el = t && t.closest && t.closest(WM_SEL); if (!el || el.closest('.wmenu, .opt, .tile')) return null; const w = W[+(el.dataset.i != null ? el.dataset.i : el.dataset.wi)]; return w || null; };
+document.addEventListener('contextmenu', (e) => {
+  const w = wmWord(e.target); if (!w) return;
+  e.preventDefault(); wordMenu(w, e.clientX, e.clientY);
+});
+(() => {
+  let lp = null;
+  const stop = () => { if (lp) { clearTimeout(lp.t); lp = null; } };
+  document.addEventListener('pointerdown', (e) => {
+    if (wmEl && !e.target.closest('.wmenu')) wmClose();
+    if (e.pointerType !== 'touch' || e.target.closest('.book.pen')) return;
+    const w = wmWord(e.target); if (!w) return;
+    lp = { x: e.clientX, y: e.clientY, t: setTimeout(() => { lp = null; wmSkipClick = true; wordMenu(w, e.clientX, e.clientY + 12); }, 550) };
+  }, true);
+  document.addEventListener('pointermove', (e) => { if (lp && Math.abs(e.clientX - lp.x) + Math.abs(e.clientY - lp.y) > 10) stop(); }, true);
+  document.addEventListener('pointerup', stop, true);
+  document.addEventListener('pointercancel', stop, true);
+  // the click that ends a long press must not also open the word / turn the page
+  document.addEventListener('click', (e) => { if (wmSkipClick) { wmSkipClick = false; if (!e.target.closest('.wmenu')) { e.preventDefault(); e.stopPropagation(); } } }, true);
+  addEventListener('scroll', () => { if (wmEl && Date.now() - wmEl._at > 400) wmClose(); }, true); // not the scroll that brought the word into view
+})();

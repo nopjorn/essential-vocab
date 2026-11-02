@@ -402,3 +402,56 @@ test('match by drawing a line: right pair done, wrong pair counted, a tapped til
   await expect(page.locator('#view')).toContainText('ผิด 1 ครั้ง');
   expect(errors).toEqual([]);
 });
+
+test('word menu: right-click or a finger long press on a word → listen / meaning / star / set / copy; Esc closes; game answers are left alone', async ({ page }) => {
+  await page.setViewportSize({ width: 1133, height: 744 });
+  const errors = await openApp(page);
+  const id = await page.evaluate(() => loadStories().then(() => STORIES[0].id));
+  await page.evaluate((id) => go('read', id), id);
+  const rw = page.locator('#rText .rw').first();
+  const word = await rw.evaluate((el) => W[+el.dataset.i].w);
+  await rw.click({ button: 'right' });
+  await expect(page.locator('.wmenu')).toBeVisible();
+  await expect(page.locator('.wmenu .wm-h')).toContainText(word);
+  await page.locator('[data-wm="star"]').click();
+  expect(await page.evaluate((w) => !!S.star[w], word)).toBe(true);
+  await expect(page.locator('.wmenu')).toHaveCount(0);
+  await rw.click({ button: 'right' });
+  await page.locator('[data-wm="copy"]').click();
+  expect(await page.evaluate(() => wordMenu.copied)).toMatch(new RegExp('^' + word + ' – '));
+  await rw.click({ button: 'right' });
+  await page.locator('[data-wm="sheet"]').click();
+  await expect(page.locator('.sheet .sheet-word')).toContainText(word);
+  await page.evaluate(() => document.querySelectorAll('.sheet-wrap').forEach((x) => x.remove()));
+  await rw.click({ button: 'right' });
+  await page.locator('[data-wm="deck"]').click();
+  await expect(page.locator('.pick-decks')).toBeVisible();
+  await page.evaluate(() => document.querySelectorAll('.sheet-wrap').forEach((x) => x.remove()));
+  // keyboard: arrows move, Esc closes
+  await rw.click({ button: 'right' });
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('[data-wm="sheet"]')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.wmenu')).toHaveCount(0);
+  await expect(page.locator('#rText')).toBeVisible(); // Esc closed only the menu
+  // finger long press: the menu opens and the click that ends the press does not open the sheet
+  const r = await rw.boundingBox();
+  await page.evaluate(([x, y]) => { const t = document.elementFromPoint(x, y); t.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', bubbles: true, clientX: x, clientY: y })); }, [r.x + 3, r.y + r.height / 2]);
+  await page.waitForTimeout(700);
+  await expect(page.locator('.wmenu')).toBeVisible();
+  await page.evaluate(([x, y]) => { const t = document.elementFromPoint(x, y); t.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'touch', bubbles: true, clientX: x, clientY: y })); t.click(); }, [r.x + 3, r.y + r.height / 2]);
+  await expect(page.locator('.sheet-wrap')).toHaveCount(0);
+  // a moving finger (a scroll) never opens it
+  await page.evaluate(() => wmClose());
+  await page.evaluate(([x, y]) => { const t = document.elementFromPoint(x, y); t.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', bubbles: true, clientX: x, clientY: y })); document.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'touch', bubbles: true, clientX: x, clientY: y + 40 })); }, [r.x + 3, r.y + r.height / 2]);
+  await page.waitForTimeout(700);
+  await expect(page.locator('.wmenu')).toHaveCount(0);
+  // the word list too; a game answer keeps the browser's own menu
+  await page.evaluate(() => go('list'));
+  await page.locator('#view .wrow[data-i]').first().click({ button: 'right' });
+  await expect(page.locator('.wmenu')).toBeVisible();
+  await page.evaluate(() => { wmClose(); startGame('en2th'); });
+  const caught = await page.evaluate(() => { const o = document.querySelector('.opt'), e = new MouseEvent('contextmenu', { bubbles: true, cancelable: true }); o.dispatchEvent(e); return e.defaultPrevented; });
+  expect(caught).toBe(false);
+  expect(errors).toEqual([]);
+});

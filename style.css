@@ -2575,3 +2575,12 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
   .match-grid { gap: 8px; }
   .match-grid .tile { min-height: 0; height: clamp(44px, calc((100dvh - 230px) / 6 - 8px), 64px); padding: 4px 10px; }
 }
+
+/* word menu (1.146, wordMenu() in js/words.js): right-click / long press on a word */
+.rw, .wrow[data-i], .wl[data-i], [data-wi] { -webkit-touch-callout: none; }
+.wmenu { position: fixed; z-index: 70; min-width: 210px; max-width: min(300px, calc(100vw - 16px)); padding: 6px; border-radius: 16px; background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: 0 12px 36px rgba(20, 16, 50, .22); display: flex; flex-direction: column; }
+.wm-h { display: flex; flex-direction: column; padding: 8px 10px 6px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.wm-h span { color: var(--muted); font-size: var(--fs-sm, 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wmenu button { text-align: left; border: 0; background: none; color: inherit; font: inherit; padding: 10px 12px; border-radius: 10px; cursor: pointer; min-height: 44px; }
+.wmenu button:hover, .wmenu button:focus-visible { background: var(--surface-2); outline: none; }
+@media (prefers-reduced-motion: no-preference) { .wmenu { animation: wmIn .14s ease-out; } @keyframes wmIn { from { opacity: 0; transform: scale(.96); } } }
