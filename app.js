@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.141.0';
+const APP_VERSION = '1.142.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -236,6 +236,8 @@ const defaults = () => ({
   note: {},            // word -> the user's own memory hook
   ret: [[0, 0], [0, 0], [0, 0], [0, 0]], // due reviews by gap [1–2, 3–6, 7–20, 21+ days]: [reviewed, remembered] → real retention vs the target (1.107)
   noteAt: {},          // word -> ms of the last edit or delete of its hook (newest wins when syncing; 1.105.4)
+  sketch: {},          // word -> the user's drawn memory hook: SVG path data in a 300×180 box (1.142, sketchD() checks it)
+  sketchAt: {},        // word -> ms of the last edit or delete of its drawing (newest wins, like noteAt)
   starAt: {},          // word -> ms the star was last set or removed (1.105.4)
   miss: {},            // 'YYYY-MM-DD' -> { word: times wrong that day } (last 21 days)
   weekSeen: '',        // Monday key of the last weekly summary the user dismissed
@@ -428,6 +430,7 @@ function mergeBackup(d) {
   if (Array.isArray(d.ret) && d.ret.length === 4) d.ret.forEach((x, b) => { if (Array.isArray(x) && isNum(x[0]) && isNum(x[1]) && x[0] > S.ret[b][0]) S.ret[b] = [x[0], Math.min(x[0], x[1])]; });
   for (const [w, at] of Object.entries(d.starAt || {})) if (isNum(at) && at > (S.starAt[w] || 0)) { S.starAt[w] = at; if (d.star && d.star[w]) S.star[w] = 1; else delete S.star[w]; }
   for (const w of Object.keys(d.star || {})) if (!(w in (d.starAt || {})) && !(w in S.starAt)) S.star[w] = 1;
+  for (const [w, at] of Object.entries(d.sketchAt || {})) if (isNum(at) && at > (S.sketchAt[w] || 0)) { S.sketchAt[w] = at; const sk = sketchD((d.sketch || {})[w]); if (sk) S.sketch[w] = sk; else delete S.sketch[w]; }
   for (const [w, at] of Object.entries(d.noteAt || {})) if (isNum(at) && at > (S.noteAt[w] || 0)) { S.noteAt[w] = at; if (typeof (d.note || {})[w] === 'string' && d.note[w]) S.note[w] = d.note[w]; else delete S.note[w]; }
   for (const [k, v] of Object.entries(d.ach || {})) if (!S.ach[k]) S.ach[k] = v;
   if (d.mascot && d.mascot.equip && (d.mascot.at || 0) > (S.mascot.at || 0)) S.mascot = d.mascot;
@@ -660,6 +663,15 @@ function setNote(word, text) {
   if (text) S.note[word] = text; else delete S.note[word];
   S.noteAt[word] = Date.now();
 }
+// Drawn memory hooks (1.142): SVG path data only ("M x y L x y …" in whole numbers, 300×180 box); anything else is dropped.
+const SKETCH_MAX = 12000;
+function sketchD(d) { return typeof d === 'string' && d.length <= SKETCH_MAX && /^M[\d MLl-]*$/.test(d) ? d : ''; }
+function setSketch(word, d) {
+  d = sketchD(d);
+  if (d) S.sketch[word] = d; else delete S.sketch[word];
+  S.sketchAt[word] = Date.now();
+}
+const sketchSvg = (word, cls = '') => { const d = sketchD(S.sketch && S.sketch[word]); return d ? `<svg class="sketch ${cls}" viewBox="0 0 300 180" role="img" aria-label="รูปวิธีจำ ${esc(word)}"><path d="${d}"/></svg>` : ''; };
 
 /* ---------- screen wake lock (1.108) ---------- */
 // Long listening (listening review) must not let the screen sleep: iOS stops speech when it does. Asked again when the app
@@ -1531,7 +1543,7 @@ function grade(w, g, map = S.prog) {
   };
   if (g === 0) {
     if (main) logMiss(w);
-    if (map[w.w].x === LEECH && !S.note[w.w]) setTimeout(() => toast(`🐢 "${w.w}" ลืมบ่อยแล้ว ลองเขียนวิธีจำดูนะ`), 600);
+    if (map[w.w].x === LEECH && !S.note[w.w] && !S.sketch[w.w]) setTimeout(() => toast(`🐢 "${w.w}" ลืมบ่อยแล้ว ลองเขียนวิธีจำดูนะ`), 600);
   }
   addXP(g === 0 ? 1 : 2);
   S.chist[today()] = (S.chist[today()] || 0) + 1;

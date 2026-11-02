@@ -268,3 +268,47 @@ test('thumb answers in games: options on both sides of the question, next button
   expect(o2.x).toBeGreaterThanOrEqual(q2.x + q2.width - 1);
   expect(errors).toEqual([]);
 });
+
+test('drawn memory hook: draw with a pen, palm ignored, save, shown on the sheet / card / game hint, undo, sync newest wins, bad data dropped', async ({ page }) => {
+  await page.setViewportSize({ width: 744, height: 1133 });
+  const errors = await openApp(page);
+  await page.evaluate(() => editNote(W.find((w) => w.w === 'apple')));
+  const pad = page.locator('#skPad');
+  await expect(pad).toBeVisible();
+  const b = await pad.boundingBox();
+  const stroke = (type, x0, y0, x1, y1) => page.evaluate(([type, x0, y0, x1, y1]) => {
+    const cv = document.getElementById('skPad'), o = { pointerType: type, pointerId: type === 'pen' ? 7 : 8, bubbles: true };
+    cv.dispatchEvent(new PointerEvent('pointerdown', { ...o, clientX: x0, clientY: y0 }));
+    for (let k = 1; k <= 10; k++) cv.dispatchEvent(new PointerEvent('pointermove', { ...o, clientX: x0 + (x1 - x0) * k / 10, clientY: y0 + (y1 - y0) * k / 10 }));
+    cv.dispatchEvent(new PointerEvent('pointerup', { ...o, clientX: x1, clientY: y1 }));
+  }, [type, x0, y0, x1, y1]);
+  await stroke('pen', b.x + 20, b.y + 20, b.x + b.width - 20, b.y + b.height - 20);
+  await stroke('touch', b.x + 20, b.y + b.height - 20, b.x + b.width - 20, b.y + 20); // the palm after a pencil: ignored
+  await stroke('pen', b.x + b.width / 2, b.y + 10, b.x + b.width / 2, b.y + b.height - 10);
+  await page.locator('[data-sk="undo"]').click(); // takes back the last pen stroke
+  await page.locator('#noteIn').fill('แอปเปิ้ลแดง');
+  await page.locator('[data-act="save"]').click();
+  const st = await page.evaluate(() => [S.sketch.apple, S.note.apple, S.sketchAt.apple > 0]);
+  expect(st[0]).toMatch(/^M\d+ \d+( L\d+ \d+)+$/); // exactly one stroke
+  expect(st[1]).toBe('แอปเปิ้ลแดง');
+  expect(st[2]).toBe(true);
+  // shown on the word sheet, the card back and in a game hint
+  await page.evaluate(() => openSheet(W.find((w) => w.w === 'apple')));
+  await expect(page.locator('.sheet .note-box svg.sketch path')).toHaveCount(1);
+  expect(await page.evaluate(() => hookBox(W.find((w) => w.w === 'apple')))).toContain('<svg class="sketch');
+  // reopening the editor shows the drawing again
+  await page.evaluate(() => { document.querySelectorAll('.sheet-wrap').forEach((x) => x.remove()); editNote(W.find((w) => w.w === 'apple')); });
+  // sync: a newer delete from another device wins; an older drawing does not come back; junk is dropped
+  await page.evaluate(() => { document.querySelectorAll('.sheet-wrap').forEach((x) => x.remove()); });
+  await page.evaluate(() => mergeBackup({ sketch: { apple: 'M1 1 L5 5' }, sketchAt: { apple: 1 } }));
+  expect(await page.evaluate(() => S.sketch.apple)).toBe(st[0]);
+  await page.evaluate(() => mergeBackup({ sketch: {}, sketchAt: { apple: Date.now() + 1000 } }));
+  expect(await page.evaluate(() => S.sketch.apple)).toBeUndefined();
+  await page.evaluate(() => mergeBackup({ sketch: { bad: 'M1 1"/><script>window.__x=1</script>', banana: 'M10 10 L20 20' }, sketchAt: { bad: Date.now() + 5000, banana: Date.now() + 5000 } }));
+  expect(await page.evaluate(() => [S.sketch.bad, S.sketch.banana, sketchSvg('bad')])).toEqual([undefined, 'M10 10 L20 20', '']);
+  // delete clears both
+  await page.evaluate(() => { S.note.apple = 'x'; S.sketch.apple = 'M1 1 L2 2'; editNote(W.find((w) => w.w === 'apple')); });
+  await page.locator('[data-act="del"]').click();
+  expect(await page.evaluate(() => [S.note.apple, S.sketch.apple])).toEqual([undefined, undefined]);
+  expect(errors).toEqual([]);
+});

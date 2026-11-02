@@ -80,12 +80,12 @@ function wordRing(w) {
 /* ---------- memory notes ---------- */
 // Card/sheet snippet: the user's own memory hook, or a prompt to write one for leeches.
 function noteBox(w) {
-  if (S.note[w.w]) return `<button class="note-box" data-note>💡 <b>วิธีจำของฉัน:</b> ${esc(S.note[w.w])} <span class="muted">✏️</span></button>`;
+  if (S.note[w.w] || S.sketch[w.w]) return `<button class="note-box${S.sketch[w.w] ? ' has-sk' : ''}" data-note>${sketchSvg(w.w)}<span>💡 <b>วิธีจำของฉัน:</b> ${esc(S.note[w.w] || '')} <span class="muted">✏️</span></span></button>`;
   return isLeech(w) ? '<button class="note-box empty" data-note>🐢 คำนี้ลืมบ่อย แตะเพื่อเขียนวิธีจำของตัวเอง</button>'
     : '<button class="note-add" data-note>✏️ เขียนวิธีจำ</button>';
 }
 // Read-only memory hook shown in game feedback (1.64); '' for words without one and for skill-game items (idx < 0).
-const hookBox = (w) => (w.idx >= 0 && S.note[w.w] ? `<div class="note-box hook">💡 <b>วิธีจำของฉัน:</b> ${esc(S.note[w.w])}</div>` : '');
+const hookBox = (w) => (w.idx >= 0 && (S.note[w.w] || S.sketch[w.w]) ? `<div class="note-box hook${S.sketch[w.w] ? ' has-sk' : ''}">${sketchSvg(w.w)}<span>💡 <b>วิธีจำของฉัน:</b> ${esc(S.note[w.w] || '')}</span></div>` : '');
 function editNote(w, onDone) {
   const el = document.createElement('div');
   el.className = 'sheet-wrap';
@@ -95,18 +95,64 @@ function editNote(w, onDone) {
       <div class="muted small">${esc(w.t)}</div>
       <textarea class="note-in" id="noteIn" maxlength="200" placeholder="เช่น เสียงคล้ายคำไทย, แต่งประโยคตลกๆ, นึกภาพ…">${esc(S.note[w.w] || '')}</textarea>
       <div class="small muted">ตัวอย่าง: abandon = "อะ-แบน-ดอน" ทิ้งรถไว้จนยางแบน 🚗</div>
-      <div class="row" style="margin-top:12px">${S.note[w.w] ? '<button class="btn grow" data-act="del">ลบ</button>' : ''}<button class="btn primary grow" data-act="save">บันทึก</button></div>
+      <div class="sk-head"><b>🎨 วาดรูปช่วยจำ</b><span class="small muted">Apple Pencil หรือนิ้ว</span><span class="grow"></span><button class="btn ghost small" data-sk="undo" aria-label="ย้อนเส้นล่าสุด">↩︎</button><button class="btn ghost small" data-sk="clear" aria-label="ล้างรูป">🗑</button></div>
+      <canvas class="sk-pad" id="skPad" width="600" height="360" aria-label="ช่องวาดรูปช่วยจำ"></canvas>
+      <div class="row" style="margin-top:12px">${S.note[w.w] || S.sketch[w.w] ? '<button class="btn grow" data-act="del">ลบ</button>' : ''}<button class="btn primary grow" data-act="save">บันทึก</button></div>
     </div>`;
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('open'));
+  const pad = sketchPad($('#skPad', el), S.sketch[w.w]);
   const close = () => { el.classList.remove('open'); setTimeout(() => el.remove(), 250); if (onDone) onDone(); };
   el.onclick = (e) => {
     if (e.target === el) return close();
+    const sk = e.target.closest('[data-sk]'); if (sk) { if (sk.dataset.sk === 'undo') pad.undo(); else pad.clear(); return; }
     const act = e.target.closest('[data-act]'); if (!act) return;
-    const v = $('#noteIn', el).value.trim();
-    setNote(w.w, act.dataset.act === 'del' ? '' : v);
-    save(); toast(S.note[w.w] ? 'บันทึกวิธีจำแล้ว 💡' : 'ลบวิธีจำแล้ว'); close();
+    const v = $('#noteIn', el).value.trim(), del = act.dataset.act === 'del', d = del ? '' : pad.path();
+    if (del || v !== (S.note[w.w] || '')) setNote(w.w, del ? '' : v);
+    if (del || d !== (S.sketch[w.w] || '')) setSketch(w.w, d);
+    save(); toast(S.note[w.w] || S.sketch[w.w] ? 'บันทึกวิธีจำแล้ว 💡' : 'ลบวิธีจำแล้ว'); close();
   };
+}
+
+// 🎨 Drawing pad for a memory hook (1.142): strokes kept as point lists in a 300×180 box, saved as SVG path data.
+// A pencil draws; once a pencil has been used, finger/palm touches are ignored (palm rest). Returns {path, undo, clear, strokes}.
+function sketchPad(cv, d) {
+  const W0 = 300, H0 = 180, ctx = cv.getContext('2d');
+  let strokes = [], cur = null, penSeen = false;
+  // read back a saved drawing: "M x y L x y L … M …"
+  (sketchD(d).match(/M[^M]*/g) || []).forEach((s) => { const n = (s.match(/-?\d+/g) || []).map(Number), pts = []; for (let k = 0; k + 1 < n.length; k += 2) pts.push([n[k], n[k + 1]]); if (pts.length) strokes.push(pts); });
+  const ink = () => getComputedStyle(cv).color || '#222';
+  const draw = () => {
+    ctx.setTransform(cv.width / W0, 0, 0, cv.height / H0, 0, 0);
+    ctx.clearRect(0, 0, W0, H0);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 3.2; ctx.strokeStyle = ink();
+    for (const s of strokes) {
+      ctx.beginPath(); ctx.moveTo(s[0][0], s[0][1]);
+      if (s.length === 1) ctx.lineTo(s[0][0] + 0.1, s[0][1]);
+      for (const [x, y] of s.slice(1)) ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+  };
+  const at = (e) => { const r = cv.getBoundingClientRect(); return [Math.max(0, Math.min(W0, Math.round((e.clientX - r.left) / r.width * W0))), Math.max(0, Math.min(H0, Math.round((e.clientY - r.top) / r.height * H0)))]; };
+  cv.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'pen') penSeen = true; else if (penSeen && e.pointerType === 'touch') return;
+    e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+    cur = { id: e.pointerId, pts: [at(e)] }; strokes.push(cur.pts); draw();
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (!cur || e.pointerId !== cur.id) return;
+    const p = at(e), q = cur.pts[cur.pts.length - 1];
+    if (Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]) >= 2) { cur.pts.push(p); draw(); }
+  });
+  const end = (e) => { if (cur && e.pointerId === cur.id) cur = null; };
+  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  draw();
+  const path = () => {
+    let out = '';
+    for (const s of strokes) { const t = 'M' + s.map(([x, y], k) => (k ? 'L' : '') + x + ' ' + y).join(' '); if ((out + t).length > SKETCH_MAX) break; out += t; }
+    return out;
+  };
+  return { path, undo: () => { strokes.pop(); draw(); }, clear: () => { strokes = []; draw(); }, strokes: () => strokes.length };
 }
 
 /* ---------- word detail sheet ---------- */
