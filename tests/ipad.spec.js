@@ -455,3 +455,33 @@ test('word menu: right-click or a finger long press on a word → listen / meani
   expect(caught).toBe(false);
   expect(errors).toEqual([]);
 });
+
+test('hover meaning: a hovering pencil (or a resting mouse) over a story word shows its meaning; touch never; gone on leave / press / page change', async ({ page }) => {
+  await page.setViewportSize({ width: 1133, height: 744 });
+  const errors = await openApp(page);
+  const id = await page.evaluate(() => loadStories().then(() => STORIES[0].id));
+  await page.evaluate((id) => go('read', id), id);
+  const over = (type, k = 2) => page.evaluate(([type, k]) => { const rw = document.querySelectorAll('#rText .rw')[k]; rw.dispatchEvent(new PointerEvent('pointerover', { pointerType: type, bubbles: true })); return W[+rw.dataset.i]; }, [type, k]);
+  const out = (k = 2) => page.evaluate((k) => { const rw = document.querySelectorAll('#rText .rw')[k]; rw.dispatchEvent(new PointerEvent('pointerout', { pointerType: 'pen', bubbles: true, relatedTarget: document.body })); }, k);
+  const w = await over('pen');
+  await expect(page.locator('.whov')).toBeVisible();
+  await expect(page.locator('.whov')).toContainText(w.t);
+  expect(await page.locator('.whov').evaluate((el) => getComputedStyle(el).pointerEvents)).toBe('none');
+  await out();
+  await expect(page.locator('.whov')).toHaveCount(0);
+  // touch: nothing
+  await over('touch');
+  await page.waitForTimeout(600);
+  await expect(page.locator('.whov')).toHaveCount(0);
+  // mouse rests a little longer, a press hides it
+  await over('mouse', 4);
+  await expect(page.locator('.whov')).toBeVisible();
+  await page.evaluate(() => document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })));
+  await expect(page.locator('.whov')).toHaveCount(0);
+  // leaving the page hides it
+  await over('pen', 5);
+  await expect(page.locator('.whov')).toBeVisible();
+  await page.evaluate(() => go('home'));
+  await expect(page.locator('.whov')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

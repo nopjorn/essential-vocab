@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.146.0';
+const APP_VERSION = '1.147.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1657,6 +1657,7 @@ const TITLES = { print: 'ใบงานพิมพ์', mine: 'เก็บค
 function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (cleanup) { cleanup(); cleanup = null; }
+  if (typeof hovHide === 'function') hovHide(); // a hover-meaning bubble (js/words.js) never outlives its page
   if (window.speechSynthesis) speechSynthesis.cancel();
   const prev = current;
   current = tab;

@@ -400,3 +400,39 @@ document.addEventListener('contextmenu', (e) => {
   document.addEventListener('click', (e) => { if (wmSkipClick) { wmSkipClick = false; if (!e.target.closest('.wmenu')) { e.preventDefault(); e.stopPropagation(); } } }, true);
   addEventListener('scroll', () => { if (wmEl && Date.now() - wmEl._at > 400) wmClose(); }, true); // not the scroll that brought the word into view
 })();
+
+/* ---------- hover meaning (1.147) ---------- */
+// An Apple Pencil hovering over the screen (iPads with pencil hover) or a mouse / trackpad pointer resting on a list word in
+// reading text (stories, the book, my article, cases) shows its meaning in a small bubble after a short pause. Touch never
+// hovers, so phones are untouched. The bubble ignores the pointer and goes away on leave, press, scroll or page change.
+let hovEl = null, hovT = 0, hovOn = null;
+function hovHide() { clearTimeout(hovT); hovOn = null; if (hovEl) { hovEl.remove(); hovEl = null; } }
+function hovShow(rw) {
+  const w = W[+rw.dataset.i]; if (!w || !rw.isConnected) return;
+  hovHide(); hovOn = rw;
+  const el = document.createElement('div');
+  el.className = 'whov'; el.setAttribute('role', 'tooltip');
+  const st = status(w);
+  el.innerHTML = `<b lang="en">${esc(w.w)}</b> <span class="whov-p">${esc(w.p)}</span><div>${esc(w.t)}</div>${st !== 'new' ? `<div class="whov-s">${st === 'mastered' ? '🟢 จำได้แล้ว' : '🟡 กำลังเรียน'}</div>` : ''}`;
+  document.body.appendChild(el);
+  const r = rw.getBoundingClientRect(), b = el.getBoundingClientRect();
+  const below = r.top - b.height - 10 < 8;
+  el.style.left = Math.max(8, Math.min(innerWidth - b.width - 8, r.left + r.width / 2 - b.width / 2)) + 'px';
+  el.style.top = (below ? r.bottom + 10 : r.top - b.height - 10) + 'px';
+  el.classList.toggle('below', below);
+  hovEl = el;
+}
+document.addEventListener('pointerover', (e) => {
+  if ((e.pointerType !== 'pen' && e.pointerType !== 'mouse') || e.buttons) return;
+  const rw = e.target.closest && e.target.closest('.rw[data-i]');
+  if (!rw || rw === hovOn || rw.closest('.wmenu')) return;
+  hovHide(); hovOn = rw;
+  hovT = setTimeout(() => { if (hovOn === rw) hovShow(rw); }, e.pointerType === 'pen' ? 180 : 450);
+});
+document.addEventListener('pointerout', (e) => {
+  const rw = e.target.closest && e.target.closest('.rw[data-i]');
+  if (rw && rw === hovOn && !(e.relatedTarget && rw.contains(e.relatedTarget))) hovHide();
+});
+document.addEventListener('pointerdown', hovHide, true);
+addEventListener('scroll', hovHide, true);
+document.addEventListener('keydown', hovHide, true);

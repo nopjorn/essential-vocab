@@ -2584,3 +2584,10 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
 .wmenu button { text-align: left; border: 0; background: none; color: inherit; font: inherit; padding: 10px 12px; border-radius: 10px; cursor: pointer; min-height: 44px; }
 .wmenu button:hover, .wmenu button:focus-visible { background: var(--surface-2); outline: none; }
 @media (prefers-reduced-motion: no-preference) { .wmenu { animation: wmIn .14s ease-out; } @keyframes wmIn { from { opacity: 0; transform: scale(.96); } } }
+
+/* hover meaning bubble (1.147, hovShow() in js/words.js): pencil hover / mouse over a word in reading text */
+.whov { position: fixed; z-index: 65; pointer-events: none; max-width: min(280px, calc(100vw - 16px)); padding: 8px 12px; border-radius: 12px; background: var(--text); color: var(--surface); font-size: var(--fs-md, 16px); line-height: 1.4; box-shadow: 0 8px 24px rgba(20, 16, 50, .25); }
+.whov b { font-size: 1.05em; }
+.whov-p { opacity: .75; font-style: italic; font-size: .85em; }
+.whov-s { margin-top: 2px; font-size: .82em; opacity: .85; }
+@media (prefers-reduced-motion: no-preference) { .whov { animation: wmIn .12s ease-out; } }
