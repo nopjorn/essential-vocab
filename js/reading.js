@@ -490,6 +490,10 @@ function shadowStory(st, slowStart) {
 // to turn a page, tap a list word for its sheet. 🖍️ highlighter: an Apple Pencil always highlights the list words it
 // passes over (a finger does too while 🖍️ is on); the marked words go to a set with pickDeck().
 let bookEl = null;
+// Per-device book memory (1.143, localStorage o3k.book): paper colour, where each story was left, highlighted words per story.
+const BOOK_KEY = 'o3k.book', BOOK_THEMES = [['paper', '📄', 'กระดาษขาว'], ['sepia', '📜', 'ซีเปีย'], ['gray', '🌫️', 'เทา'], ['night', '🌙', 'กลางคืน']];
+function bookMem() { try { const v = JSON.parse(localStorage.getItem(BOOK_KEY) || '{}'); return v && typeof v === 'object' ? { t: v.t, pos: v.pos || {}, hl: v.hl || {} } : { pos: {}, hl: {} }; } catch (e) { return { pos: {}, hl: {} }; } }
+function bookKeep(fn) { const m = bookMem(); fn(m); try { localStorage.setItem(BOOK_KEY, JSON.stringify(m)); } catch (e) { /* private mode */ } }
 function closeBook() {
   if (!bookEl) return;
   const b = bookEl; bookEl = null;
@@ -499,16 +503,20 @@ function closeBook() {
 function openBook(st, opt = {}) {
   closeBook();
   let page = 0, pages = 1, spread = 1, th = false, pen = false;
+  const mem = bookMem();
+  let theme = BOOK_THEMES.some(([id]) => id === mem.t) ? mem.t : 'paper';
+  let resume = typeof mem.pos[st.id] === 'number' && mem.pos[st.id] > 0 && mem.pos[st.id] < 1 ? mem.pos[st.id] : 0; // fraction of the story
   const marked = new Map(); // word idx -> word
   const font = () => FONT_SIZES[S.settings.rFont != null ? S.settings.rFont : 1];
   const el = document.createElement('div');
-  el.className = 'book';
+  el.className = 'book t-' + theme;
   el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'โหมดหนังสือ: ' + st.title);
   el.innerHTML = `<div class="bk-top">
       <button class="icon-btn" id="bkClose" aria-label="ปิดโหมดหนังสือ">✕</button>
       <div class="bk-title grow">${esc(st.title)}</div>
       <button class="bk-tool" id="bkTh" aria-pressed="false" aria-label="คำแปลภาษาไทย">🇹🇭</button>
       <button class="bk-tool" id="bkFont" aria-label="ขนาดตัวอักษร">Aa</button>
+      <button class="bk-tool" id="bkTheme" aria-label="สีกระดาษ"></button>
       <button class="bk-tool" id="bkPen" aria-pressed="false" aria-label="ปากกาไฮไลต์">🖍️</button>
     </div>
     <div class="bk-vp" id="bkVp"><div class="bk-flow" id="bkFlow" style="--st-font:${font()}px">
@@ -519,14 +527,14 @@ function openBook(st, opt = {}) {
     <div class="bk-foot">
       <button class="bk-turn" id="bkPrev" aria-label="หน้าก่อน">‹</button>
       <div class="grow center"><div class="bk-bar"><i id="bkBar"></i></div><span class="small muted" id="bkNum"></span></div>
-      <button class="bk-mark" id="bkMark" hidden></button>
+      <button class="bk-mark" id="bkMark" hidden></button><button class="bk-turn bk-clr" id="bkClr" hidden aria-label="ลบไฮไลต์ทั้งหมด">✕</button>
       <button class="bk-turn" id="bkNext" aria-label="หน้าถัดไป">›</button>
     </div>`;
   document.body.appendChild(el);
   bookEl = el;
   const vp = el.querySelector('#bkVp'), flow = el.querySelector('#bkFlow');
   const layout = () => {
-    const at = pages > 1 ? page / pages : 0;
+    const at = resume != null ? resume : pages > 1 ? page / pages : 0; // resume holds until the reader turns a page (fonts may re-lay the pages first)
     const w = vp.clientWidth, gap = 56;
     spread = w >= 900 && innerWidth > innerHeight ? 2 : 1;
     const col = (w - gap * (spread - 1)) / spread;
@@ -535,7 +543,7 @@ function openBook(st, opt = {}) {
     const cols = Math.max(1, Math.round((flow.scrollWidth + gap) / (col + gap)));
     pages = Math.max(1, Math.ceil(cols / spread));
     el.classList.toggle('spread', spread === 2);
-    turn(Math.min(pages - 1, Math.round(at * pages)), true);
+    turn(Math.min(pages - 1, Math.floor(at * pages + 1e-6)), true);
   };
   const turn = (n, quiet) => {
     n = Math.max(0, Math.min(pages - 1, n));
@@ -546,19 +554,37 @@ function openBook(st, opt = {}) {
     el.querySelector('#bkBar').style.width = (100 * (page + 1)) / pages + '%';
     el.querySelector('#bkPrev').disabled = page === 0;
     el.querySelector('#bkNext').disabled = page === pages - 1;
-    if (!quiet) markActive();
+    if (!quiet) {
+      markActive(); resume = null;
+      const f = page === pages - 1 ? 0 : (page + 0.5) / pages; // the middle of the page; finished = the first page next time
+      bookKeep((m) => { if (f) m.pos[st.id] = +f.toFixed(4); else delete m.pos[st.id]; });
+    }
   };
   const showMarked = () => {
     const b = el.querySelector('#bkMark');
-    b.hidden = !marked.size;
+    b.hidden = !marked.size; el.querySelector('#bkClr').hidden = !marked.size;
     b.textContent = `🖍️ ${marked.size} คำ → เก็บเข้าชุด`;
   };
-  const mark = (rw) => {
+  const keepMarks = () => bookKeep((m) => { const l = [...marked.values()].map((w) => w.w); if (l.length) m.hl[st.id] = l; else delete m.hl[st.id]; });
+  const mark = (rw, quiet) => {
     const w = W[+rw.dataset.i];
     if (!w || marked.has(w.idx)) return;
     marked.set(w.idx, w);
     flow.querySelectorAll(`.rw[data-i="${w.idx}"]`).forEach((x) => x.classList.add('hl'));
     showMarked();
+    if (!quiet) keepMarks();
+  };
+  // highlights kept from last time (by spelling, so a re-sorted word list still finds them)
+  (mem.hl[st.id] || []).forEach((s) => { const w = W.find((x) => x.w === s); const rw = w && flow.querySelector(`.rw[data-i="${w.idx}"]`); if (rw) mark(rw, true); });
+  const themeBtn = () => { const t = BOOK_THEMES.find(([id]) => id === theme); const b = el.querySelector('#bkTheme'); b.textContent = t[1]; b.setAttribute('aria-label', 'สีกระดาษ: ' + t[2]); };
+  themeBtn();
+  el.querySelector('#bkTheme').onclick = () => {
+    const k = (BOOK_THEMES.findIndex(([id]) => id === theme) + 1) % BOOK_THEMES.length;
+    el.classList.remove('t-' + theme); theme = BOOK_THEMES[k][0]; el.classList.add('t-' + theme);
+    themeBtn(); bookKeep((m) => { m.t = theme; }); toast(BOOK_THEMES[k][1] + ' ' + BOOK_THEMES[k][2]);
+  };
+  el.querySelector('#bkClr').onclick = () => {
+    marked.clear(); flow.querySelectorAll('.rw.hl').forEach((x) => x.classList.remove('hl')); showMarked(); keepMarks(); toast('ลบไฮไลต์แล้ว');
   };
   // gestures on the page: pen (or finger with 🖍️) = highlight, a sideways swipe = turn, a tap on the outer thirds = turn
   let g = null;
@@ -593,11 +619,11 @@ function openBook(st, opt = {}) {
   el.querySelector('#bkNext').onclick = () => turn(page + 1);
   el.querySelector('#bkClose').onclick = () => closeBook();
   el.querySelector('#bkTh').onclick = (e) => {
-    th = !th; e.currentTarget.setAttribute('aria-pressed', th); e.currentTarget.classList.toggle('on', th);
+    resume = null; th = !th; e.currentTarget.setAttribute('aria-pressed', th); e.currentTarget.classList.toggle('on', th);
     flow.querySelectorAll('.bk-th').forEach((x) => (x.hidden = !th)); layout();
   };
   el.querySelector('#bkFont').onclick = () => {
-    S.settings.rFont = ((S.settings.rFont != null ? S.settings.rFont : 1) + 1) % FONT_SIZES.length; save();
+    S.settings.rFont = ((S.settings.rFont != null ? S.settings.rFont : 1) + 1) % FONT_SIZES.length; save(); resume = null;
     flow.style.setProperty('--st-font', font() + 'px');
     const rt = document.getElementById('rText'); if (rt) rt.style.setProperty('--st-font', font() + 'px');
     layout();
@@ -619,7 +645,7 @@ function openBook(st, opt = {}) {
   const onResize = () => { clearTimeout(rt); rt = setTimeout(() => { if (bookEl === el) layout(); }, 120); };
   addEventListener('resize', onResize);
   el._off = () => { document.removeEventListener('keydown', key, true); removeEventListener('resize', onResize); };
-  openBook.state = () => ({ page, pages, spread, marked: [...marked.values()].map((w) => w.w) }); // read by tests
+  openBook.state = () => ({ page, pages, spread, theme, marked: [...marked.values()].map((w) => w.w) }); // read by tests
   requestAnimationFrame(layout);
   (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => { if (bookEl === el) layout(); });
 }

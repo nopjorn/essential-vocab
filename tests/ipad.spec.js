@@ -312,3 +312,46 @@ test('drawn memory hook: draw with a pen, palm ignored, save, shown on the sheet
   expect(await page.evaluate(() => [S.note.apple, S.sketch.apple])).toEqual([undefined, undefined]);
   expect(errors).toEqual([]);
 });
+
+test('book memory: paper colour, page left off and highlights come back next time; the last page starts over; ✕ clears highlights', async ({ page }) => {
+  await page.setViewportSize({ width: 560, height: 720 }); // a small Split View window: one page at a time = several pages
+  const errors = await openApp(page, { settings: { levels: ['B1'], rFont: 2 } });
+  const id = await page.evaluate(() => loadStories().then(() => STORIES.filter((s) => s.level === 'B2').sort((a, b) => b.en.join(' ').length - a.en.join(' ').length)[0].id));
+  await page.evaluate((id) => go('read', id), id);
+  await page.click('#rBook');
+  await page.click('#bkTh');
+  await page.waitForTimeout(200);
+  expect((await page.evaluate(() => openBook.state())).pages).toBeGreaterThan(2);
+  // paper: paper → sepia → gray
+  await page.click('#bkTheme'); await page.click('#bkTheme');
+  expect((await page.evaluate(() => openBook.state())).theme).toBe('gray');
+  await expect(page.locator('.book')).toHaveClass(/t-gray/);
+  // page 2 and one highlighted word
+  await page.keyboard.press('ArrowRight');
+  await page.click('#bkPen');
+  await page.evaluate(() => { const x = [...document.querySelectorAll('.bk-flow .rw')].find((e) => { const b = e.getBoundingClientRect(); return b.left > 0 && b.right < innerWidth; }); const b = x.getBoundingClientRect(), o = { pointerType: 'pen', pointerId: 3, bubbles: true, clientX: b.left + 2, clientY: b.top + b.height / 2 }; x.dispatchEvent(new PointerEvent('pointerdown', o)); document.getElementById('bkVp').dispatchEvent(new PointerEvent('pointerup', o)); });
+  const s1 = await page.evaluate(() => openBook.state());
+  expect(s1.page).toBe(1);
+  expect(s1.marked.length).toBe(1);
+  await page.keyboard.press('Escape');
+  // the Thai lines were on when the page was left: open with them off → still near the same place in the story
+  await page.click('#rBook');
+  await page.waitForTimeout(300);
+  let s2 = await page.evaluate(() => openBook.state());
+  expect(s2.theme).toBe('gray');
+  expect(s2.page).toBeGreaterThanOrEqual(1);
+  expect(s2.marked).toEqual(s1.marked);
+  await expect(page.locator('.bk-flow .rw.hl').first()).toBeAttached();
+  // ✕ clears the highlights (and they stay cleared)
+  await page.click('#bkClr');
+  expect((await page.evaluate(() => openBook.state())).marked).toEqual([]);
+  // the last page → next time from the start
+  await page.evaluate(() => { for (let k = 0; k < 40; k++) document.getElementById('bkNext').click(); });
+  await page.keyboard.press('Escape');
+  await page.click('#rBook');
+  await page.waitForTimeout(300);
+  s2 = await page.evaluate(() => openBook.state());
+  expect([s2.page, s2.marked]).toEqual([0, []]);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('o3k.book')).t)).toBe('gray');
+  expect(errors).toEqual([]);
+});

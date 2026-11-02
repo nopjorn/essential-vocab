@@ -2520,3 +2520,13 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
 .sketch path { fill: none; stroke: currentColor; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
 .note-box.has-sk { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
 .note-box.has-sk > span { display: block; }
+
+/* 📖 book paper colours (1.143, #bkTheme): text contrast stays ≥ 7:1 on each paper */
+.book.t-sepia { --surface: #f4ecd8; --surface-2: #eadfc4; --text: #3a2e20; --muted: #6b5a43; --border: #d9c9a6; background: #f4ecd8; color: #3a2e20; }
+.book.t-gray { --surface: #e4e5e9; --surface-2: #d6d8de; --text: #1c1e23; --muted: #4a4e57; --border: #c4c7cf; background: #e4e5e9; color: #1c1e23; }
+.book.t-night { --surface: #141311; --surface-2: #24221e; --text: #d9d2c5; --muted: #a39b8c; --border: #3a3631; background: #141311; color: #d9d2c5; }
+.book.t-night .bk-flow .rw.learning { background: color-mix(in srgb, var(--warn) 22%, transparent); }
+.book.t-night .bk-flow .rw.mastered { background: color-mix(in srgb, var(--good) 18%, transparent); }
+.book.t-night .bk-flow .rw.hl { background: color-mix(in srgb, #ffd83d 34%, transparent); box-shadow: 0 0 0 2px color-mix(in srgb, #ffd83d 34%, transparent); }
+.book.t-sepia .bk-th, .book.t-gray .bk-th, .book.t-night .bk-th { background: var(--surface-2); color: var(--text); }
+.bk-clr { width: 40px; height: 40px; font-size: 16px; }
