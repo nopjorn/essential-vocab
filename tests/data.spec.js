@@ -308,9 +308,11 @@ test('every word row uses a topic id from TOPICS (and no retired id)', () => {
 
 test('iOS splash images: every apple-touch-startup-image exists, light + dark, portrait + landscape', () => {
   const links = [...read('index.html').matchAll(/<link rel="apple-touch-startup-image" href="([^"]+)" media="([^"]+)">/g)];
-  expect(links.length).toBe(12);
+  expect(links.length).toBe(24);
   links.forEach(([, f]) => expect(fs.existsSync(path.join(root, f)), f).toBe(true));
-  ['light', 'dark', 'portrait', 'landscape'].forEach((k) => expect(links.filter((l) => l[2].includes(k)).length).toBe(6));
+  ['light', 'dark', 'portrait', 'landscape'].forEach((k) => expect(links.filter((l) => l[2].includes(k)).length).toBe(12));
+  // 1.146: iPad mini and iPad Air have their own launch images too
+  ['(device-width: 744px) and (device-height: 1133px)', '(device-width: 820px) and (device-height: 1180px)', '(device-width: 1024px) and (device-height: 1366px)'].forEach((d) => expect(links.filter((l) => l[2].includes(d)).length, d).toBe(4));
 });
 
 test('icons are valid PNGs and stay small (lossless recompression, tools/optimize-icons.py)', () => {

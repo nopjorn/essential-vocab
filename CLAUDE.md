@@ -75,6 +75,7 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
 | `reminders/HHMM.ics` | Static daily-reminder calendar files (app URL hardcoded inside) |
 | `icons/`, `manifest.webmanifest` | PWA install assets |
 | `tools/make-icons.js` | Playwright script that renders the icon SVG to all `icons/*.png` sizes |
+| `tools/make-splash.js` | iOS launch images `icons/splash/<device>-<light|dark>-<portrait|landscape>.png` + the `<link rel="apple-touch-startup-image">` tags it prints; devices (1.146): iPhone 17 Pro Max, iPad Pro 11/13, iPad mini 744×1133, iPad Air 11 (820×1180) / 13 (1024×1366); data.spec checks 24 links |
 
 Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` = Oxford 5000-only
 (rows with trailing `5`).

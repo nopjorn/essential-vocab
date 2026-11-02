@@ -10,6 +10,9 @@ const DEVICES = [ // [name, css width, css height, pixel ratio]
   ['iphone-17-pro-max', 440, 956, 3],
   ['ipad-pro-11', 834, 1210, 2],
   ['ipad-pro-13', 1032, 1376, 2],
+  ['ipad-mini', 744, 1133, 2], // 1.146: iPad mini (A17 Pro / later)
+  ['ipad-air-11', 820, 1180, 2], // 1.146: iPad Air 11" and iPad (10th gen on)
+  ['ipad-air-13', 1024, 1366, 2], // 1.146: iPad Air 13" and the older 12.9" iPad Pro
 ];
 const THEMES = { light: { bg: '#f5f3ff', text: '#6c5ce7', sub: '#6b6890' }, dark: { bg: '#12111c', text: '#a29bfe', sub: '#a6a3c7' } };
 const icon = 'data:image/png;base64,' + fs.readFileSync(path.join(ROOT, 'icons/icon-512.png')).toString('base64');
