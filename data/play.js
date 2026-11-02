@@ -1373,6 +1373,42 @@ function resultExtras(log, xp0) {
   const strip = log.length > 1 && log.length <= 60 ? `<div class="res-strip" role="img" aria-label="ผลทีละข้อ ถูก ${log.filter(Boolean).length} จาก ${log.length} ข้อ ถูกติดกันยาวสุด ${best} ข้อ">${log.map((ok, k) => `<i class="${ok ? 'ok' : 'no'}" style="--k:${k}"></i>`).join('')}</div>` : '';
   return `${strip}${gain ? `<div class="res-xp"><span class="small"><b>+${gain}</b> XP · Lv.${L}${levelOf(xp0) < L ? ' ⬆️' : ''}</span><div class="bar"><div class="l" style="--from:${from.toFixed(1)}%;width:${to.toFixed(1)}%"></div></div></div>` : ''}`;
 }
+// ✏️ Draw-a-line matching (1.144): drag from a tile with Apple Pencil or a finger; a line follows to the pointer and letting go
+// on a tile of the other column pairs them through the same logic as two taps. A short press is still an ordinary tap.
+function matchLines(grid, pair) {
+  if (!grid) return;
+  let d = null;
+  const NS = 'http://www.w3.org/2000/svg';
+  const mid = (el) => { const g = grid.getBoundingClientRect(), r = el.getBoundingClientRect(); return [r.left - g.left + r.width / 2, r.top - g.top + r.height / 2]; };
+  const local = (e) => { const g = grid.getBoundingClientRect(); return [e.clientX - g.left, e.clientY - g.top]; };
+  const stop = () => { if (d && d.svg) d.svg.remove(); if (d && d.t) d.t.classList.remove('drag'); d = null; };
+  grid.addEventListener('pointerdown', (e) => {
+    const t = e.target.closest('.tile'); if (!t || t.classList.contains('done') || (d && d.id !== e.pointerId)) return;
+    d = { id: e.pointerId, t, x: e.clientX, y: e.clientY, svg: null };
+  });
+  grid.addEventListener('pointermove', (e) => {
+    if (!d || e.pointerId !== d.id) return;
+    if (!d.svg) {
+      if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) < 14) return;
+      try { grid.setPointerCapture(e.pointerId); } catch (err) {}
+      d.svg = document.createElementNS(NS, 'svg'); d.svg.setAttribute('class', 'mt-lines'); d.svg.setAttribute('aria-hidden', 'true');
+      d.line = document.createElementNS(NS, 'line'); d.svg.appendChild(d.line); grid.appendChild(d.svg);
+      d.t.classList.add('drag');
+    }
+    const [x1, y1] = mid(d.t), [x2, y2] = local(e);
+    d.line.setAttribute('x1', x1); d.line.setAttribute('y1', y1); d.line.setAttribute('x2', x2); d.line.setAttribute('y2', y2);
+    e.preventDefault();
+  });
+  grid.addEventListener('pointerup', (e) => {
+    if (!d || e.pointerId !== d.id) return;
+    const from = d.t, drew = !!d.svg; stop();
+    if (!drew) return; // a tap: the click handler does it
+    const hit = document.elementFromPoint(e.clientX, e.clientY), to = hit && hit.closest && hit.closest('.match-grid .tile');
+    if (!to || to === from || to.classList.contains('done') || to.dataset.k === from.dataset.k) return;
+    pair(from, to);
+  });
+  grid.addEventListener('pointercancel', stop);
+}
 function playMatch(src, deckRun = {}) {
   const PAIRS = 6, ROUNDS = 3;
   let round = 0, mistakes = 0, start = Date.now(), timer;
@@ -1394,14 +1430,14 @@ function playMatch(src, deckRun = {}) {
         <button class="icon-btn" id="quit" aria-label="ออก">✕</button>
         <div class="progress"><div style="width:${round / ROUNDS * 100}%"></div></div>
         <span class="small" id="clock">0.0s</span></div>
-      <p class="center muted small">รอบ ${round + 1}/${ROUNDS} · แตะคำอังกฤษแล้วแตะคำแปลที่ตรงกัน</p>
+      <p class="center muted small">รอบ ${round + 1}/${ROUNDS} · แตะคำอังกฤษแล้วแตะคำแปล หรือ ✏️ ลากเส้นจากคำหนึ่งไปหาอีกคำ</p>
       <div class="match-grid">
         ${en.map((w, k) => `<button class="tile" data-k="en" data-i="${w.idx}" style="grid-column:1;grid-row:${k + 1}">${esc(w.w)}</button>`).join('')}
         ${th.map((w, k) => `<button class="tile th" data-k="th" data-i="${w.idx}" style="grid-column:2;grid-row:${k + 1}">${esc(thFirst(w.t))}</button>`).join('')}
       </div>`;
     $('#quit').onclick = () => go('games');
-    view.querySelector('.match-grid').onclick = (e) => {
-      const t = e.target.closest('.tile'); if (!t || t.classList.contains('done')) return;
+    const pick = (t) => {
+      if (!t || t.classList.contains('done')) return;
       if (t.dataset.k === 'en') speak(W[+t.dataset.i].w);
       if (!sel || sel.dataset.k === t.dataset.k) {
         if (sel) sel.classList.remove('sel');
@@ -1420,6 +1456,9 @@ function playMatch(src, deckRun = {}) {
         if (deckRun.practice) markActive(); else gameResult(W[+enTile.dataset.i], false, deckRun.map);
       }
     };
+    view.querySelector('.match-grid').onclick = (e) => pick(e.target.closest('.tile'));
+    // a drawn line pairs exactly its two ends, whatever was tapped before
+    matchLines(view.querySelector('.match-grid'), (a, b) => { if (sel) { sel.classList.remove('sel'); sel = null; } pick(a); pick(b); });
   }
   timer = setInterval(() => { const c = $('#clock'); if (c) c.textContent = ((Date.now() - start) / 1000).toFixed(1) + 's'; }, 100);
   cleanup = () => clearInterval(timer);

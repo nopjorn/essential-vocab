@@ -355,3 +355,50 @@ test('book memory: paper colour, page left off and highlights come back next tim
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('o3k.book')).t)).toBe('gray');
   expect(errors).toEqual([]);
 });
+
+test('match by drawing a line: right pair done, wrong pair counted, a tapped tile before does not get in the way, taps still work', async ({ page }) => {
+  await page.setViewportSize({ width: 744, height: 1133 });
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => startGame('match'));
+  await expect(page.locator('.match-grid .tile')).toHaveCount(12);
+  const line = (sa, sb, type = 'pen') => page.evaluate(([sa, sb, type]) => {
+    const a = document.querySelector(sa), b = document.querySelector(sb), g = document.querySelector('.match-grid');
+    const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(), o = { pointerType: type, pointerId: 11, bubbles: true };
+    const at = (r) => ({ clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 });
+    a.dispatchEvent(new PointerEvent('pointerdown', { ...o, ...at(ra) }));
+    for (let k = 1; k <= 8; k++) g.dispatchEvent(new PointerEvent('pointermove', { ...o, clientX: ra.left + ra.width / 2 + (rb.left - ra.left) * k / 8, clientY: ra.top + ra.height / 2 + (rb.top - ra.top) * k / 8 }));
+    const shown = !!g.querySelector('.mt-lines line');
+    g.dispatchEvent(new PointerEvent('pointerup', { ...o, ...at(rb) }));
+    return shown && !g.querySelector('.mt-lines');
+  }, [sa, sb, type]);
+  const i0 = await page.locator('.tile[data-k="en"]').first().getAttribute('data-i');
+  // tap a different English word first, then draw the right line for the first one
+  const other = await page.locator('.tile[data-k="en"]').nth(1).getAttribute('data-i');
+  await page.locator(`.tile[data-k="en"][data-i="${other}"]`).click();
+  expect(await line(`.tile[data-k="en"][data-i="${i0}"]`, `.tile[data-k="th"][data-i="${i0}"]`)).toBe(true);
+  await expect(page.locator(`.tile.done[data-i="${i0}"]`)).toHaveCount(2);
+  // a wrong line (finger): not done, shakes
+  const i1 = await page.locator('.tile[data-k="en"]:not(.done)').nth(0).getAttribute('data-i');
+  const wrongTh = await page.locator(`.tile[data-k="th"]:not(.done):not([data-i="${i1}"])`).first().getAttribute('data-i');
+  await line(`.tile[data-k="en"][data-i="${i1}"]`, `.tile[data-k="th"][data-i="${wrongTh}"]`, 'touch');
+  await expect(page.locator('.tile.done')).toHaveCount(2);
+  await expect(page.locator(`.tile.no[data-k="en"][data-i="${i1}"]`)).toHaveCount(1);
+  // a line within one column does nothing
+  const i2 = await page.locator('.tile[data-k="en"]:not(.done)').nth(1).getAttribute('data-i');
+  await line(`.tile[data-k="en"][data-i="${i1}"]`, `.tile[data-k="en"][data-i="${i2}"]`);
+  await expect(page.locator('.tile.done')).toHaveCount(2);
+  // finish the round with taps, the rest of the game with lines
+  for (let r = 0; r < 3; r++) {
+    for (;;) {
+      const left = await page.locator('.tile[data-k="en"]:not(.done)').count();
+      if (!left) break;
+      const i = await page.locator('.tile[data-k="en"]:not(.done)').first().getAttribute('data-i');
+      if (r === 0) { await page.locator(`.tile[data-k="en"][data-i="${i}"]`).click(); await page.locator(`.tile[data-k="th"][data-i="${i}"]`).click(); }
+      else await line(`.tile[data-k="en"][data-i="${i}"]`, `.tile[data-k="th"][data-i="${i}"]`);
+    }
+    if (r < 2) await expect(page.locator('.match-grid .tile.done')).toHaveCount(0);
+  }
+  await expect(page.locator('.result-emoji')).toBeVisible();
+  await expect(page.locator('#view')).toContainText('ผิด 1 ครั้ง');
+  expect(errors).toEqual([]);
+});

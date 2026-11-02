@@ -2530,3 +2530,10 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
 .book.t-night .bk-flow .rw.hl { background: color-mix(in srgb, #ffd83d 34%, transparent); box-shadow: 0 0 0 2px color-mix(in srgb, #ffd83d 34%, transparent); }
 .book.t-sepia .bk-th, .book.t-gray .bk-th, .book.t-night .bk-th { background: var(--surface-2); color: var(--text); }
 .bk-clr { width: 40px; height: 40px; font-size: 16px; }
+
+/* ✏️ draw-a-line matching (1.144, matchLines() in data/play.js) */
+.match-grid { position: relative; }
+.match-grid .tile { touch-action: none; }
+.match-grid .tile.drag { outline: 3px solid var(--primary); outline-offset: 2px; }
+.mt-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 3; }
+.mt-lines line { stroke: var(--primary); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 2 9; }
