@@ -56,3 +56,26 @@ test('story scores: a score on the longer quiz replaces an old 3-question one, m
   expect(await page.evaluate(() => S.readScore.a1_01)).toEqual([4, 5]);
   expect(errors).toEqual([]);
 });
+
+test('games (1.152.0): a due card answered right counts as a "hard" review, a just-missed or not-yet-due card does not move', async ({ page }) => {
+  const DAY = 864e5, now = Date.now();
+  const errors = await openApp(page, { prog: {
+    apple: { b: 3, i: 7, e: 2.5, d: now - DAY, s: 4, c: 4, x: 0 },     // due
+    house: { b: 3, i: 7, e: 2.5, d: now + 3 * DAY, s: 4, c: 4, x: 0 }, // not due yet
+    water: { b: 0, i: 0, e: 2.3, d: now - 1000, s: 3, c: 2, x: 1 },     // just missed
+  } });
+  const r = await page.evaluate(() => {
+    const w = (x) => W.find((y) => y.w === x), before = S.daily.reviews;
+    ['apple', 'house', 'water'].forEach((x) => gameResult(w(x), true));
+    return { reviews: S.daily.reviews - before, apple: S.prog.apple, house: S.prog.house, water: S.prog.water, due: dueList().map((x) => x.w) };
+  });
+  expect(r.reviews).toBe(1);
+  expect(r.apple.i).toBeGreaterThanOrEqual(7);
+  expect(r.apple.d).toBeGreaterThan(now + 6 * DAY);
+  expect([r.apple.s, r.apple.c]).toEqual([5, 5]);
+  expect(r.house.i).toBe(7);
+  expect(r.house.c).toBe(5);
+  expect(r.water.i).toBe(0);
+  expect(r.due).toEqual(['water']);
+  expect(errors).toEqual([]);
+});

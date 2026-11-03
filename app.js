@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.151.1';
+const APP_VERSION = '1.152.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1592,7 +1592,7 @@ function lexStats(game) {
   return { seen, solid, due };
 }
 
-// Lighter update from games: a right answer seeds/advances a little, a wrong one sends it back for review.
+// Lighter update from games: a right answer seeds a new word (or moves a due one on as "hard"), a wrong one sends it back for review.
 function gameResult(w, ok, map = S.prog) {
   markActive();
   const p = map[w.w];
@@ -1600,7 +1600,15 @@ function gameResult(w, ok, map = S.prog) {
   if (!p && map === S.prog) wnewAdd();
   if (ok) {
     if (!p) map[w.w] = { b: 1, i: 1, e: EASE0, d: dueAt(1), s: 1, c: 1, x: 0, t: Date.now() };
-    else { p.c++; p.s++; p.t = Date.now(); }
+    else if (p.d <= Date.now() && (p.i || 0) >= 1) {
+      // 1.152.0: a card that was due for review, answered right in a game or the feed, counts as a review graded "hard":
+      // its next review moves a little further and it leaves today's due list. Picking from options is easier than recalling,
+      // so it never counts as "good". A card just missed (i = 0) stays for the flashcards as before.
+      const main = map === S.prog, n = sched(p, 1);
+      if (main) { S.daily.reviews++; retLog(ivlOf(p), true); }
+      if (main && p.b < MASTERED && n.b >= MASTERED) masteredMoment(w);
+      map[w.w] = { ...p, b: n.b, i: n.i, e: n.e, d: dueAt(n.i), ...fsFields(n), s: (p.s || 0) + 1, c: (p.c || 0) + 1, t: Date.now() };
+    } else { p.c++; p.s++; p.t = Date.now(); }
   } else {
     map[w.w] = { ...(p || {}), ...fsFields(sched(p, 0)), b: 0, i: 0, e: Math.max(EASE_MIN, ((p && p.e) || EASE0) - 0.2), d: Date.now(), s: (p ? p.s : 0) + 1, c: p ? p.c : 0, x: (p ? p.x || 0 : 0) + 1, t: Date.now() };
     if (map === S.prog) logMiss(w);
