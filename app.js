@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.151.0';
+const APP_VERSION = '1.151.1';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -391,12 +391,25 @@ function mergeDecks(d) {
   }
   if (typeof current !== 'undefined' && current === 'decks' && before !== JSON.stringify([S.decks, S.dprog]) && !view.querySelector('#dkBack')) setTimeout(() => go('decks'), 0);
 }
+// Merge helpers (1.151.1): keep the larger number per key, skipping anything that is not a number.
+function maxIn(mine, theirs) {
+  if (!theirs || typeof theirs !== 'object') return;
+  for (const [k, v] of Object.entries(theirs)) if (isNum(v)) mine[k] = Math.max(isNum(mine[k]) ? mine[k] : 0, v);
+}
+// A test result {r, n, at}: the better share of right answers wins.
+const testOk = (v) => !!v && typeof v === 'object' && isNum(v.r) && isNum(v.n) && v.n > 0;
+const testBetter = (cur, v) => testOk(v) && (!testOk(cur) || v.r / v.n > cur.r / cur.n);
+// A story score [right, questions]. 1.151.0 made the quizzes longer (3 → 5 questions): a score on the longer quiz always replaces
+// one on the shorter quiz, so an old 3/3 neither blocks today's result nor comes back from an older device.
+const scoreOk = (v) => Array.isArray(v) && isNum(v[0]) && isNum(v[1]) && v[1] > 0;
+const storyBetter = (cur, v) => scoreOk(v) && (!scoreOk(cur) || v[1] > cur[1] || (v[1] === cur[1] && v[0] > cur[0]));
 function mergeBackup(d) {
   const ahead = progAhead;
   let added = 0, updated = 0;
   const fresh = Object.keys(S.prog).length === 0;
-  for (const [w, p] of Object.entries(d.prog || {})) {
-    if (!p || typeof p.b !== 'number') continue;
+  for (let [w, p] of Object.entries(d.prog || {})) {
+    if (!p || typeof p !== 'object' || !isNum(p.b)) continue;
+    if (!isNum(p.d)) p = { ...p, d: Date.now() }; // without a due time a card would never come up again
     const cur = S.prog[w];
     if (!cur) { S.prog[w] = p; added++; }
     else if (cardWins(p, cur)) { S.prog[w] = p; updated++; }
@@ -405,8 +418,9 @@ function mergeBackup(d) {
     if (!p || typeof p.b !== 'number' || typeof p.d !== 'number') continue;
     if (!S.lex[k] || cardWins(p, S.lex[k])) S.lex[k] = p;
   }
-  for (const [k, v] of Object.entries(d.hist || {})) S.hist[k] = Math.max(S.hist[k] || 0, v);
-  for (const [k, v] of Object.entries(d.best || {})) S.best[k] = Math.max(S.best[k] || 0, v);
+  // Odd values (null, text) from a damaged backup or cloud row are skipped one by one: a throw here would leave the merge half done
+  // and, from the cloud, make every later sync fail the same way (1.151.1).
+  maxIn(S.hist, d.hist); maxIn(S.best, d.best);
   for (const [dev, m] of Object.entries(gplayFix(d.gplay))) {
     const mine = S.gplay[dev] || (S.gplay[dev] = {});
     for (const [k, v] of Object.entries(m || {})) mine[k] = Math.max(mine[k] || 0, v);
@@ -457,7 +471,7 @@ function mergeBackup(d) {
   if (d.wnew && d.wnew.key) {
     if (d.wnew.key > (S.wnew.key || '')) S.wnew = d.wnew; else if (d.wnew.key === S.wnew.key) S.wnew.n = Math.max(S.wnew.n, d.wnew.n || 0);
   }
-  for (const [k, v] of Object.entries(d.readyAt || {})) S.readyAt[k] = Math.max(S.readyAt[k] || 0, v);
+  maxIn(S.readyAt, d.readyAt);
   if (d.repair && d.repair.at && (!S.repair || d.repair.at > S.repair.at)) S.repair = d.repair;
   if (d.wq && d.wq.key) {
     if (d.wq.key > (S.wq.key || '')) S.wq = d.wq;
@@ -466,7 +480,7 @@ function mergeBackup(d) {
       for (const [k, v] of Object.entries(d.wq.c || {})) S.wq.c[k] = Math.max(S.wq.c[k] || 0, v);
     }
   }
-  for (const [k, v] of Object.entries(d.counts || {})) S.counts[k] = Math.max(S.counts[k] || 0, v);
+  maxIn(S.counts, d.counts);
   S.freeze = Math.max(S.freeze || 0, d.freeze || 0);
   if (d.spc && d.spc.n > (S.spc.n || 0)) S.spc = { t: +d.spc.t || 0, n: +d.spc.n || 0 };
   if ((d.weekSeen || '') > (S.weekSeen || '')) S.weekSeen = d.weekSeen;
@@ -474,17 +488,17 @@ function mergeBackup(d) {
   S.xp = Math.max(S.xp || 0, d.xp || 0);
   if (d.chistFrom && (!S.chistFrom || d.chistFrom < S.chistFrom)) S.chistFrom = d.chistFrom;
   for (const [k, v] of Object.entries(d.note || {})) if (!S.note[k] && !(k in S.noteAt) && !(k in (d.noteAt || {}))) S.note[k] = v;
-  for (const [k, v] of Object.entries(d.miss || {})) S.miss[k] = { ...v, ...(S.miss[k] || {}) };
+  for (const [k, v] of Object.entries(d.miss || {})) if (v && typeof v === 'object' && !Array.isArray(v)) S.miss[k] = { ...v, ...(S.miss[k] || {}) };
   if (d.placedAt && !S.placedAt) S.placedAt = d.placedAt;
-  for (const [k, v] of Object.entries(d.xpWeek || {})) S.xpWeek[k] = Math.max(S.xpWeek[k] || 0, v);
+  maxIn(S.xpWeek, d.xpWeek);
   if (d.nick && !S.nick) S.nick = d.nick;
   if (Array.isArray(d.homeCfg) && !S.homeCfg) S.homeCfg = d.homeCfg; // older backups without settingsAt
   for (const [k, v] of Object.entries(d.read || {})) if (!S.read[k]) S.read[k] = v;
-  for (const [k, v] of Object.entries(d.stk || {})) S.stk[k] = Math.max(S.stk[k] || 0, v);
-  for (const [k, v] of Object.entries(d.readScore || {})) if (!S.readScore[k] || v[0] > S.readScore[k][0]) S.readScore[k] = v;
+  maxIn(S.stk, d.stk);
+  for (const [k, v] of Object.entries(d.readScore || {})) if (storyBetter(S.readScore[k], v)) S.readScore[k] = v;
   if (d.riddle && (d.riddle.d > S.riddle.d || (d.riddle.d === S.riddle.d && (d.riddle.g || []).length > S.riddle.g.length))) S.riddle = { d: d.riddle.d, g: d.riddle.g || [], over: !!d.riddle.over, win: !!d.riddle.win, lv: d.riddle.lv || ['A1', 'A2'] };
   if (d.riddleStat && d.riddleStat.played > S.riddleStat.played) S.riddleStat = { ...S.riddleStat, ...d.riddleStat, dist: (d.riddleStat.dist || []).concat([0, 0, 0, 0, 0, 0]).slice(0, 6) };
-  for (const [k, v] of Object.entries(d.ltest || {})) if (v && v.n && (!S.ltest[k] || v.r / v.n > S.ltest[k].r / S.ltest[k].n)) S.ltest[k] = v;
+  for (const [k, v] of Object.entries(d.ltest || {})) if (testBetter(S.ltest[k], v)) S.ltest[k] = v;
   for (const [k, v] of Object.entries(d.lvmap || {})) {
     const a = String(S.lvmap[k] || ''), b = String(v || '').replace(/[^0-3]/g, '');
     S.lvmap[k] = Array.from({ length: Math.max(a.length, b.length) }, (_, i) => Math.max(+a[i] || 0, +b[i] || 0)).join('');
@@ -492,9 +506,9 @@ function mergeBackup(d) {
   if (d.gacc && d.gacc.n > (S.gacc.n || 0)) S.gacc = { a: +d.gacc.a || 0.7, n: d.gacc.n | 0 };
   for (const [k, v] of Object.entries(d.duel || {})) if (Array.isArray(v) && (!Array.isArray(S.duel[k]) || v[0] > S.duel[k][0] || (v[0] === S.duel[k][0] && v[2] < S.duel[k][2]))) S.duel[k] = v;
   S.duel = Object.fromEntries(Object.entries(S.duel).sort((a, b) => b[1][3] - a[1][3]).slice(0, 30));
-  for (const [k, v] of Object.entries(d.mtest || {})) if (!S.mtest[k] || v.r / v.n > S.mtest[k].r / S.mtest[k].n) S.mtest[k] = v;
-  for (const [k, v] of Object.entries(d.chist || {})) S.chist[k] = Math.max(S.chist[k] || 0, v);
-  for (const [k, v] of Object.entries(d.snap || {})) S.snap[k] = (S.snap[k] || [0, 0, 0, 0]).map((x, i) => Math.max(x, v[i] || 0));
+  for (const [k, v] of Object.entries(d.mtest || {})) if (testBetter(S.mtest[k], v)) S.mtest[k] = v;
+  maxIn(S.chist, d.chist);
+  for (const [k, v] of Object.entries(d.snap || {})) if (Array.isArray(v)) S.snap[k] = (S.snap[k] || [0, 0, 0, 0]).map((x, i) => Math.max(x, isNum(v[i]) ? v[i] : 0));
   mergeDecks(d);
   topicMigrate(S);
   save();
