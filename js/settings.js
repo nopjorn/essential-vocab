@@ -28,7 +28,9 @@ function renderSettings() {
   const st = S.settings;
   const lvChip = (l) => `<button class="chip" data-v="${l}">${LV_LABEL[l]} · ${W.filter((w) => w.g === l).length} คำ</button>`;
   view.innerHTML = `
-    <details class="set-group" data-g="lv" ${setIsOpen('lv')}><summary>📚 ระดับคำศัพท์ที่เรียน</summary><div class="card-box">
+    <div class="set-search" role="search"><input type="search" id="setQ" class="sel" placeholder="🔎 ค้นหาการตั้งค่า เช่น เสียง ธีม สำรอง" aria-label="ค้นหาการตั้งค่า" autocomplete="off" enterkeyhint="search">
+      <div class="small muted" id="setQNone" hidden>ไม่เจอการตั้งค่าที่ตรงกับคำนี้ ลองคำอื่น เช่น “เสียง” “สี” “เตือน” “ตัวอักษร”</div></div>
+    <details class="set-group" data-g="lv" ${setIsOpen('lv')}><summary data-k="level cefr ระดับ คำศัพท์ หมวด topic">📚 ระดับคำศัพท์ที่เรียน</summary><div class="card-box">
       <div class="small muted" style="margin-bottom:8px"><b>ชุด 3000 คำ</b> · คำหลักที่ต้องรู้</div>
       <div class="chips grid" id="lvls">${LEVELS_3000.map(lvChip).join('')}</div>
       <div class="small muted" style="margin:14px 0 8px"><b>ชุด 5000 คำ</b> · คำเพิ่มเติมระดับสูง</div>
@@ -42,7 +44,7 @@ function renderSettings() {
       <p class="small muted" style="margin-bottom:0">เลือกหมวดหรือเป้าหมายแล้ว คำใหม่ในแฟลชการ์ดและไถศัพท์จะมาจากหมวด/เป้าหมายนั้น (เลือกทั้งสองอย่าง = ต้องตรงทั้งคู่) ส่วนคำที่ถึงวันทบทวนยังมาตามปกติ <span id="goalCnt"></span></p>
     </div></details>
 
-    <details class="set-group" data-g="learn" ${setIsOpen('learn')}><summary>🧠 การเรียน</summary><div class="card-box">
+    <details class="set-group" data-g="learn" ${setIsOpen('learn')}><summary data-k="learn fsrs sm-2 srs ทบทวน review เป้า goal คำใหม่">🧠 การเรียน</summary><div class="card-box">
       <div class="set-row"><span>คำใหม่ต่อวัน</span>
         <select class="sel" id="npd">${[...new Set([5, 10, 15, 20, 30, 50, 100, st.newPerDay | 0])].filter((n) => n > 0).sort((a, b) => a - b).map((n) => `<option ${n === st.newPerDay ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
       <div class="set-row"><span>ตั้งเป้าเป็นเวลาต่อวัน<br><span class="small muted" id="minInfo"></span></span>
@@ -76,7 +78,7 @@ function renderSettings() {
       <button class="set-row set-link" id="wotdSetBtn"><span>✨ ตั้งค่าคำประจำวัน<br><span class="small muted">เลือกระดับ สถานะคำ และหมวดที่อยากให้ขึ้นในกล่องหน้าแรก</span></span><span class="muted">›</span></button>
     </div></details>
 
-    <details class="set-group" data-g="remind" ${setIsOpen('remind')}><summary>⏰ เตือนให้มาเรียนทุกวัน</summary><div class="card-box">
+    <details class="set-group" data-g="remind" ${setIsOpen('remind')}><summary data-k="reminder notification แจ้งเตือน ปฏิทิน calendar push">⏰ เตือนให้มาเรียนทุกวัน</summary><div class="card-box">
       <div class="set-row"><span>เวลาเตือน</span>
         <select class="sel" id="remind">${REMIND_TIMES.map((t) => `<option value="${t}" ${t === S.remind ? 'selected' : ''}>${t.slice(0, 2)}:${t.slice(2)} น.</option>`).join('')}</select></div>
       ${canPush() && auth ? `<div class="set-row"><span>🔔 แจ้งเตือนในแอป</span>
@@ -90,7 +92,7 @@ function renderSettings() {
         <label class="switch"><input type="checkbox" id="badge" ${st.badge !== false ? 'checked' : ''}><span></span></label></div>
     </div></details>
 
-    <details class="set-group" data-g="look" ${setIsOpen('look')}><summary>🎨 หน้าตา</summary><div class="card-box">
+    <details class="set-group" data-g="look" ${setIsOpen('look')}><summary data-k="theme dark light มืด สว่าง สี color colour ฟอนต์ font ขนาดตัวอักษร ตัวหนังสือ ไอคอน icon">🎨 หน้าตา</summary><div class="card-box">
       <div class="set-row"><span>🔠 ขนาดตัวอักษร<br><span class="small muted">ขยายทุกหน้า (ยกเว้นแถบเมนู)</span></span>
         <select class="sel" id="fsz" aria-label="ขนาดตัวอักษร">${[['sm', 'เล็ก'], ['md', 'ปกติ'], ['lg', 'ใหญ่'], ['xl', 'ใหญ่มาก']].map(([v, t]) => `<option value="${v}" ${(st.fsz || 'md') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>⌨️ คีย์บอร์ดของแอปในเกมพิมพ์คำ<br><span class="small muted">ไม่บังหน้าจอ และพิมพ์อังกฤษได้ทันที (อัตโนมัติ = ใช้บนจอสัมผัส)</span></span>
@@ -143,7 +145,7 @@ function renderSettings() {
       <button class="set-row set-link" id="homeSetBtn"><span>🧩 จัดเรียงหน้าแรก<br><span class="small muted">เปิด/ปิด สลับลำดับ และปรับความกว้างของกล่อง</span></span><span class="muted">›</span></button>
     </div></details>
 
-    <details class="set-group" data-g="sound" ${setIsOpen('sound')}><summary>🔊 เสียง</summary><div class="card-box">
+    <details class="set-group" data-g="sound" ${setIsOpen('sound')}><summary data-k="sound voice speech audio เสียง ลำโพง สำเนียง accent">🔊 เสียง</summary><div class="card-box">
       <div class="set-row"><span>เสียงอ่าน</span><select class="sel" id="voice" style="max-width:62%"></select></div>
       <div class="small muted" id="voiceN" style="margin:-4px 0 6px"></div>
       <div class="set-row"><span>อ่านออกเสียงอัตโนมัติ</span>
@@ -161,7 +163,7 @@ function renderSettings() {
       <button class="btn block" id="test" style="margin-top:8px">🔊 ทดสอบเสียง</button>
     </div></details>
 
-    <details class="set-group" data-g="sync" ${setIsOpen('sync')}><summary>☁️ ซิงก์ข้อมูลอัตโนมัติ</summary><div class="card-box">${!syncOn()
+    <details class="set-group" data-g="sync" ${setIsOpen('sync')}><summary data-k="sync cloud login ซิงก์ คลาวด์ เข้าสู่ระบบ">☁️ ซิงก์ข้อมูลอัตโนมัติ</summary><div class="card-box">${!syncOn()
       ? '<p class="small muted" style="margin:0">ยังไม่ได้เปิดใช้ ต้องตั้งค่า Supabase ในไฟล์ <code>config.js</code> ก่อน (ดูขั้นตอนใน SYNC-SETUP.md ใน GitHub) จากนั้นความคืบหน้าจะซิงก์ขึ้นคลาวด์เอง ลบแอปหรือเปลี่ยนเครื่องก็ไม่หาย</p>'
       : auth ? `<p class="small" style="margin-top:0">เข้าสู่ระบบเป็น <b>${esc(auth.user.email)}</b><br><span class="muted">ซิงก์ล่าสุด: ${syncState.last ? new Date(syncState.last).toLocaleTimeString('th-TH', { timeStyle: 'short' }) : 'ยังไม่ได้ซิงก์ในรอบนี้'}${syncState.error ? ' · ⚠️ ' + esc(syncState.error) : ''}</span></p>
         ${SYNC.leaderboard ? `<div class="set-row"><span>ชื่อในอันดับเพื่อน</span><input class="sel" id="nick" maxlength="20" style="width:140px" value="${esc(S.nick)}" placeholder="${esc(boardDefault())}"></div>` : ''}
@@ -169,7 +171,7 @@ function renderSettings() {
       : '<p class="small muted" style="margin-top:0">เข้าสู่ระบบด้วยอีเมลที่ได้รับเชิญ แล้วความคืบหน้าจะซิงก์ขึ้นคลาวด์อัตโนมัติ ใช้ได้หลายเครื่อง</p><button class="btn primary block" id="login">เข้าสู่ระบบ</button>'}
     </div></details>
 
-    <details class="set-group" data-g="backup" ${setIsOpen('backup')}><summary>💾 สำรองข้อมูล</summary><div class="card-box">
+    <details class="set-group" data-g="backup" ${setIsOpen('backup')}><summary data-k="backup export import offline สำรอง ส่งออก นำเข้า ออฟไลน์ csv anki">💾 สำรองข้อมูล</summary><div class="card-box">
       <p class="small muted" style="margin-top:0">${syncOn() && auth
         ? '☁️ ความคืบหน้าซิงก์ขึ้นคลาวด์อัตโนมัติแล้ว ลบแอปหรือเปลี่ยนเครื่องก็ไม่หาย จะส่งออกเป็นไฟล์เก็บไว้อีกชั้นก็ได้'
         : `ความคืบหน้าเก็บไว้ในเครื่องนี้เท่านั้น ถ้าลบไอคอนแอปออกจากหน้าจอโฮม ข้อมูลจะหายด้วย แนะนำให้สำรองเก็บไว้ใน iCloud Drive (แอปจะเตือนทุก ${BACKUP_EVERY} วัน)`}</p>
@@ -189,13 +191,14 @@ function renderSettings() {
     <button class="card-box guide-link" id="perfBtn"><span>⏱</span><div class="grow"><b>วัดความเร็วเครื่องนี้</b><div class="small muted" id="perfOut">${esc(perfLast || 'วัดเวลาเปิดหน้าแรก หน้าสถิติ และการบันทึกข้อมูลบนเครื่องของคุณ')}</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="clBtn"><span>🆕</span><div class="grow"><b>ประวัติการอัปเดต</b><div class="small muted">ดูว่าแต่ละเวอร์ชันเพิ่มหรือแก้อะไรบ้าง (ตอนนี้ ${APP_VERSION})</div></div><span class="muted">›</span></button>
 
-    <details class="set-group danger-group" data-g="danger" ${setIsOpen('danger')}><summary>⚠️ โซนอันตราย</summary><div class="card-box danger-zone">
+    <details class="set-group danger-group" data-g="danger" ${setIsOpen('danger')}><summary data-k="reset delete ล้าง ลบ">⚠️ โซนอันตราย</summary><div class="card-box danger-zone">
       <p class="small muted">ลบคำที่เรียน สถิติ สตรีค และ XP ทั้งหมด (การตั้งค่ายังอยู่) ย้อนกลับไม่ได้${syncOn() && auth ? ' · ข้อมูลบนคลาวด์จะถูกล้างด้วย' : ''}</p>
       <button class="btn danger block" id="reset">ล้างความคืบหน้าทั้งหมด</button>
     </div></details>
     <p class="center small muted">${W.length} คำ · คำแปลไทยและประโยคตัวอย่างเขียนขึ้นเองสำหรับช่วยจำ<br>รายการคำและระดับ CEFR อ้างอิงจากรายการ Oxford 3000™ และ Oxford 5000™ ซึ่งเป็นเครื่องหมายการค้าของ Oxford University Press<br>แอปนี้ไม่มีส่วนเกี่ยวข้องหรือได้รับการรับรองจาก Oxford University Press<br>เวอร์ชัน ${APP_VERSION}</p>`;
 
-  view.querySelectorAll('details.set-group').forEach((d) => { d.ontoggle = () => { setOpen[d.dataset.g] = d.open; }; });
+  view.querySelectorAll('details.set-group').forEach((d) => { d.ontoggle = () => { if (!setFinding) setOpen[d.dataset.g] = d.open; }; });
+  setSearch();
   const paint = () => view.querySelectorAll('#lvls .chip, #lvls5 .chip').forEach((c) => c.classList.toggle('on', st.levels.includes(c.dataset.v)));
   paint();
   $('#lvls').onclick = $('#lvls5').onclick = (e) => {
@@ -356,7 +359,39 @@ function renderSettings() {
     go('home');
   };
   labelRows(view);
-  masonry([view], 'p');
+  masonry([view], 'p, .set-search');
+}
+// 🔎 Settings search (1.154.0): typing filters the page down to the rows whose text (labels, notes, option names) has the words.
+// A group whose title matches shows whole; other groups show only their matching rows and open while searching; groups with
+// nothing are hidden. Clearing the box puts every group back the way it was (opened groups are not remembered meanwhile).
+let setFinding = false;
+const setNorm = (t) => t.toLowerCase().replace(/\s+/g, ' ');
+function setSearch() {
+  const box = $('#setQ'); if (!box) return;
+  const groups = [...view.querySelectorAll('details.set-group')];
+  const loose = [...view.children].filter((x) => !x.matches('details.set-group, .set-search')); // links between groups, footer
+  // the row's own words: labels, notes, buttons and aria-labels, not the option lists inside <select> (they matched far too much)
+  const textOf = (x) => {
+    let t = (x.dataset && x.dataset.k) || '';
+    const tw = document.createTreeWalker(x, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.parentElement.closest('select') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT) });
+    while (tw.nextNode()) t += ' ' + tw.currentNode.nodeValue;
+    return setNorm(t + ' ' + [...x.querySelectorAll('[aria-label]:not(select, option)')].map((y) => y.getAttribute('aria-label')).join(' '));
+  };
+  box.oninput = () => {
+    const words = setNorm(box.value).trim().split(' ').filter(Boolean), has = (t) => words.every((w) => t.includes(w));
+    setFinding = words.length > 0;
+    let hits = 0;
+    for (const d of groups) {
+      const cb = d.querySelector(':scope > .card-box'), rows = cb && cb.children.length ? [...cb.children] : [cb || d]; // a box of plain text = one row
+      const whole = !setFinding || has(textOf(d.querySelector('summary')));
+      let n = 0;
+      for (const r of rows) { const ok = whole || has(textOf(r)); r.classList.toggle('sq-off', !ok); if (ok) n++; }
+      d.classList.toggle('sq-off', !n);
+      if (setFinding && n) { d.open = true; hits++; } else if (!setFinding) d.open = !!(d.dataset.g in setOpen ? setOpen[d.dataset.g] : d.dataset.g === 'lv' || d.dataset.g === 'learn');
+    }
+    for (const x of loose) { const ok = !setFinding || has(textOf(x)); x.classList.toggle('sq-off', !ok); if (ok && setFinding) hits++; }
+    $('#setQNone').hidden = !setFinding || hits > 0;
+  };
 }
 
 /* ---------- word of the day settings page ---------- */

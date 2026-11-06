@@ -2654,3 +2654,10 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
 .st-ring span { display: grid; place-items: center; width: 76px; height: 76px; border-radius: 50%; background: var(--surface); font-size: 38px; }
 .st-done-acts { display: flex; gap: 8px; margin-top: 8px; }
 .st-done-acts .btn { flex: 1; }
+
+/* 🔎 settings search (1.154.0): stays at the top while scrolling; rows that do not match are hidden */
+.set-search { position: sticky; top: 0; z-index: 3; margin: 0 0 12px; padding: 4px 0 8px; background: var(--bg); }
+.set-search input.sel { width: 100%; box-sizing: border-box; min-height: 46px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; font-size: var(--fs-md); }
+.set-search input.sel:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.set-search #setQNone { margin-top: 8px; }
+.sq-off { display: none !important; }

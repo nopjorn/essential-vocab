@@ -5,13 +5,16 @@ const { fakeSupabase, syncOnce, openApp } = require('./helpers');
 const openAppPlain = (page) => openApp(page, { placedAt: '2026-01-01' });
 
 const DAY = 864e5;
+// The real version: whatsNew() then has nothing to do. (With '99.0.0' it still saved 600 ms after start, and when that landed
+// in the middle of a test's sync it re-armed the push timer: the traffic test failed now and then.)
+const APP_VERSION = require('fs').readFileSync(require('path').join(__dirname, '..', 'app.js'), 'utf8').match(/const APP_VERSION = '([^']+)'/)[1];
 async function device(browser, store, state) {
   const ctx = await browser.newContext({ baseURL: 'http://localhost:8765/', viewport: { width: 440, height: 956 }, serviceWorkers: 'block' });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await fakeSupabase(page, store);
-  await page.addInitScript((st) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('oxford3000.v1', JSON.stringify(st)); sessionStorage.setItem('seeded', '1'); } }, { seenVer: '99.0.0', ...state });
+  await page.addInitScript((st) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('oxford3000.v1', JSON.stringify(st)); sessionStorage.setItem('seeded', '1'); } }, { seenVer: APP_VERSION, ...state });
   await page.goto('index.html');
   await expect(page.locator('#view')).not.toBeEmpty();
   return { ctx, page, errors };
