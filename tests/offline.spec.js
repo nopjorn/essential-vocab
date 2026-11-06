@@ -62,9 +62,70 @@ test.describe('with the service worker', () => {
     expect(st.net).toBe(0);
     expect(st.cache).toBeGreaterThan(40); // style.css, app.js, config.js and every js/ file
     expect(await page.evaluate((x) => startText(x), st)).toContain('มาจากในเครื่อง'); // the line in settings → offline box (real config here = login screen)
-    // the other two lines: a new version was found / the check did not answer (Playwright 1.56 cannot take the worker offline)
+    // the text for the other cases (each case itself runs for real in the next test)
     expect(await page.evaluate(() => startText({ same: false, cache: 0, net: 45 }))).toContain('เวอร์ชันใหม่');
     expect(await page.evaluate(() => startText({ same: null, cache: 0, net: 45 }))).toContain('45 ไฟล์จากเน็ต');
     expect(await page.evaluate(() => startText({ same: null, cache: 0, net: 0 }))).toBe('');
+  });
+
+  // 1.154.1 (Playwright 1.63 sees the worker's own requests): the three other ways an app start can go, for real.
+  test('a new release, no network and a slow network each load the right way', async ({ context }) => {
+    test.setTimeout(120000);
+    await context.addInitScript(() => { localStorage.setItem('o3k.onb', '1'); });
+    const fresh = async () => { const p = await context.newPage(); await p.goto('http://localhost:8765/'); await expect(p.locator('#view')).not.toBeEmpty(); return p; };
+    let p = await fresh();
+    await p.evaluate(() => navigator.serviceWorker.ready);
+    await p.close();
+    p = await fresh();
+    await expect.poll(() => p.evaluate(() => !!navigator.serviceWorker.controller), { timeout: 15000 }).toBe(true);
+    await p.close();
+    // what the worker asks the network for, and a switch that makes its version check see a release / answer late
+    const net = [];
+    let mode = 'same';
+    await context.route('**/*', async (route) => {
+      const r = route.request();
+      if (!r.serviceWorker()) return route.continue();
+      const path = new URL(r.url()).pathname.replace(/^\//, '');
+      net.push(path);
+      const probe = path === 'sw.js' && !r.headers()['service-worker']; // the browser's own update check carries "Service-Worker: script"
+      if (probe && mode === 'release') {
+        const res = await route.fetch();
+        return route.fulfill({ response: res, body: (await res.text()).replace(/const VERSION = '[^']+'/, "const VERSION = 'o3k-9.9.9'") });
+      }
+      if (probe && mode === 'slow') await new Promise((ok) => setTimeout(ok, 8000)); // far longer than NAV_TIMEOUT (2.5 s)
+      return route.continue();
+    });
+    // same version: only the check goes out
+    p = await fresh();
+    let st = (await p.evaluate(() => offlineStatus())).start;
+    expect(st).toMatchObject({ same: true, net: 0 });
+    expect(net.filter((u) => /^(app\.js|style\.css|js\/|index\.html|$)/.test(u))).toEqual([]);
+    await p.close();
+    // a release is out: the page and its files come from the network
+    net.length = 0; mode = 'release';
+    p = await fresh();
+    st = (await p.evaluate(() => offlineStatus())).start;
+    expect(st.same).toBe(false);
+    expect(st.net).toBeGreaterThan(40);
+    expect(net).toEqual(expect.arrayContaining(['', 'app.js', 'js/boot.js', 'style.css']));
+    expect(await p.evaluate((x) => startText(x), st)).toContain('เวอร์ชันใหม่');
+    await p.close();
+    // slow network: after NAV_TIMEOUT the app opens from the device without waiting for the check
+    net.length = 0; mode = 'slow';
+    const t0 = Date.now();
+    p = await fresh();
+    expect(Date.now() - t0).toBeLessThan(6500); // opened without waiting the 8 s for the check (2.5 s + load time, tests run 4 at once)
+    st = (await p.evaluate(() => offlineStatus())).start;
+    expect(st).toMatchObject({ same: null, net: 0 }); // no answer yet, every file from the device
+    await p.close();
+    // no network: the check fails at once, the files are tried and then come from the device
+    mode = 'same';
+    await context.setOffline(true);
+    p = await fresh();
+    st = (await p.evaluate(() => offlineStatus())).start;
+    expect(st.same).not.toBe(true);
+    expect(st.cache + st.net).toBeGreaterThan(40);
+    await expect(p.locator('#offBadge')).toBeVisible();
+    await context.setOffline(false);
   });
 });
