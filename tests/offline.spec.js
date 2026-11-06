@@ -46,4 +46,25 @@ test.describe('with the service worker', () => {
     await expect(page.locator('#view')).not.toBeEmpty();
     await context.setOffline(false);
   });
+
+  // 1.152.1: an app start reads sw.js from the network first. Same version → the app files come from the device (no request each);
+  // no answer → network first as before, then the device. sw.js reports how the last start went (settings → offline box).
+  test('app files come from the device while no new version is out', async ({ page, context }) => {
+    test.setTimeout(120000);
+    await page.addInitScript(() => { localStorage.setItem('o3k.onb', '1'); });
+    await page.goto('http://localhost:8765/');
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.reload();
+    await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller), { timeout: 15000 }).toBe(true);
+    // (the first start under the worker; a quick reload after it would take the files from Chromium's memory cache instead)
+    let st = (await page.evaluate(() => offlineStatus())).start;
+    expect(st.same).toBe(true);
+    expect(st.net).toBe(0);
+    expect(st.cache).toBeGreaterThan(40); // style.css, app.js, config.js and every js/ file
+    expect(await page.evaluate((x) => startText(x), st)).toContain('มาจากในเครื่อง'); // the line in settings → offline box (real config here = login screen)
+    // the other two lines: a new version was found / the check did not answer (Playwright 1.56 cannot take the worker offline)
+    expect(await page.evaluate(() => startText({ same: false, cache: 0, net: 45 }))).toContain('เวอร์ชันใหม่');
+    expect(await page.evaluate(() => startText({ same: null, cache: 0, net: 45 }))).toContain('45 ไฟล์จากเน็ต');
+    expect(await page.evaluate(() => startText({ same: null, cache: 0, net: 0 }))).toBe('');
+  });
 });

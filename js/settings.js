@@ -173,7 +173,7 @@ function renderSettings() {
       <p class="small muted" style="margin-top:0">${syncOn() && auth
         ? '☁️ ความคืบหน้าซิงก์ขึ้นคลาวด์อัตโนมัติแล้ว ลบแอปหรือเปลี่ยนเครื่องก็ไม่หาย จะส่งออกเป็นไฟล์เก็บไว้อีกชั้นก็ได้'
         : `ความคืบหน้าเก็บไว้ในเครื่องนี้เท่านั้น ถ้าลบไอคอนแอปออกจากหน้าจอโฮม ข้อมูลจะหายด้วย แนะนำให้สำรองเก็บไว้ใน iCloud Drive (แอปจะเตือนทุก ${BACKUP_EVERY} วัน)`}</p>
-      <div class="off-box" id="offBox"><b>📴 ใช้งานออฟไลน์</b><div class="small" id="offState">⏳ กำลังตรวจ…</div><div class="small muted" id="offUsed"></div>
+      <div class="off-box" id="offBox"><b>📴 ใช้งานออฟไลน์</b><div class="small" id="offState">⏳ กำลังตรวจ…</div><div class="small muted" id="offUsed"></div><div class="small muted" id="offStart"></div>
         <button class="btn block" id="offGet" hidden>⬇️ โหลดเก็บไว้ในเครื่อง</button></div>
       <p class="small" style="margin-top:0"><b>สำรองล่าสุด:</b> ${S.backupAt ? new Date(S.backupAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : 'ยังไม่เคยสำรอง'}<br><span class="muted" id="persist"></span></p>
       <div class="row"><button class="btn grow" id="exp">📤 ส่งออก</button><button class="btn grow" id="imp">📥 นำเข้า</button></div>
@@ -480,6 +480,13 @@ function offlineStatus(fetch) {
     sw.postMessage({ type: fetch ? 'offline-fetch' : 'offline-status' }, [ch.port2]);
   });
 }
+// How the last app start loaded its files (1.152.1, from sw.js): from the device when no new version was out, else the network.
+function startText(st) {
+  if (!st || !(st.cache + st.net)) return '';
+  if (!st.net) return `⚡ เปิดแอปครั้งล่าสุด: ไฟล์แอป ${st.cache} ไฟล์มาจากในเครื่อง ไม่ต้องรอเน็ต`;
+  if (st.same === false) return '🆕 เปิดแอปครั้งล่าสุดเจอเวอร์ชันใหม่ เลยโหลดไฟล์แอปจากเน็ต';
+  return `🌐 เปิดแอปครั้งล่าสุดโหลดไฟล์แอป ${st.net} ไฟล์จากเน็ต (ตรวจเวอร์ชันไม่ทันหรือเน็ตไม่พร้อม)`;
+}
 const mbText = (b) => (b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
 function offlineBox() {
   const el = document.getElementById('offBox'); if (!el) return;
@@ -490,6 +497,7 @@ function offlineBox() {
       : ok ? `✅ พร้อมใช้ออฟไลน์ครบทั้ง ${r.total} ไฟล์`
       : `⚠️ ยังขาด ${r.miss.length} จาก ${r.total} ไฟล์ · ต่อเน็ตแล้วกด “โหลดเก็บไว้ในเครื่อง”`;
     el.querySelector('#offUsed').textContent = used ? `ใช้พื้นที่ในเครื่องราว ${mbText(used)}` : '';
+    el.querySelector('#offStart').textContent = startText(r && r.start);
     el.querySelector('#offGet').hidden = !r || ok;
   };
   const run = (fetch) => Promise.all([offlineStatus(fetch), navigator.storage && navigator.storage.estimate ? navigator.storage.estimate().then((x) => x.usage).catch(() => 0) : 0])

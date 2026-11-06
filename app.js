@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.152.0';
+const APP_VERSION = '1.152.1';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1754,7 +1754,13 @@ new MutationObserver(() => {
   backDepth = d;
 }).observe(view, { childList: true });
 // Top bar title on one line (1.131): a title too wide for the bar gets the smaller size (.long), then ends in "…".
-function fitTitle() { const t = $('#title'); t.classList.remove('long'); if (t.scrollWidth > t.clientWidth + 1) t.classList.add('long'); }
+// Measured in the next frame (1.152.1): reading scrollWidth right after go() forced a full layout of the new page in the middle of
+// the script (the slowest step at start-up); in a frame it rides on the layout the browser does for painting anyway.
+let fitRaf = 0;
+function fitTitle() {
+  if (fitRaf) return;
+  fitRaf = requestAnimationFrame(() => { fitRaf = 0; const t = $('#title'); t.classList.remove('long'); if (t.scrollWidth > t.clientWidth + 1) t.classList.add('long'); });
+}
 new MutationObserver(fitTitle).observe($('#title'), { childList: true, characterData: true, subtree: true });
 addEventListener('resize', fitTitle);
 $('#topBack').addEventListener('click', () => { const b = view.querySelector('[id$="Back"]'); if (b) b.click(); });

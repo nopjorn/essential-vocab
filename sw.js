@@ -1,5 +1,5 @@
 // Offline cache. Bump VERSION (keep it equal to APP_VERSION in app.js) on every push.
-const VERSION = 'o3k-1.152.0';
+const VERSION = 'o3k-1.152.1';
 // App shell: replaced as a whole with every version.
 const FILES = [
   './',
@@ -129,8 +129,8 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Network first (so updates show up when online), falling back to the cache offline. On a slow network
-// ("lie-fi") the app start waits at most NAV_TIMEOUT, then opens from the cache; the files that page asks
+// Network first when a new version is out (so updates show up when online), falling back to the cache offline. On a slow
+// network ("lie-fi") the app start waits at most NAV_TIMEOUT, then opens from the cache; the files that page asks
 // for next come from the cache too, so it never mixes old and new versions.
 let cacheFirstUntil = 0;
 const fromCache = (req) => caches.match(req, { ignoreSearch: true });
@@ -140,15 +140,50 @@ function network(req) {
     return res;
   });
 }
+// Version probe (1.152.1): opening the app also reads sw.js from the network (tiny, never from the HTTP cache). Same VERSION =
+// nothing was released since this worker installed its copy, so the ~45 app files the page asks for next come straight from
+// the cache (no round trip each, no waiting on a slow network). A different VERSION or a failed check = network first as before,
+// so a new release still shows up on the first open after it.
+let probe = null, probeAt = 0;
+// How the last app start went (shown in settings → offline box): did sw.js match, app files from the device / from the network.
+let start = { same: null, cache: 0, net: 0 };
+const SAME_FOR = 10 * 60 * 1000; // a 'same' answer lasts this long (the page and its lazy files stay on one version)
+function probeVersion() {
+  probeAt = Date.now();
+  probe = fetch(new URL('sw.js', self.registration.scope), { cache: 'no-store' })
+    .then((r) => (r.ok ? r.text() : ''))
+    .then((t) => { const m = /const VERSION = '([^']+)'/.exec(t); const same = !!m && m[1] === VERSION; if (same) cacheFirstUntil = Math.max(cacheFirstUntil, Date.now() + SAME_FOR); start.same = same; return same; })
+    .catch(() => false);
+  return probe;
+}
+// Should this app-file request come from the cache? Waits for a probe still running (at most NAV_TIMEOUT after it started).
+function shellCacheFirst() {
+  if (Date.now() < cacheFirstUntil) return Promise.resolve(true);
+  const left = probeAt + NAV_TIMEOUT - Date.now();
+  if (!probe || left <= 0) return Promise.resolve(false);
+  return Promise.race([probe, new Promise((r) => setTimeout(r, left, false))]);
+}
 async function navigate(e) {
+  cacheFirstUntil = 0;
+  start = { same: null, cache: 0, net: 0 };
+  const cached = async () => (await fromCache(e.request)) || (await fromCache('index.html'));
+  const wait = () => new Promise((r) => setTimeout(r, NAV_TIMEOUT, 'late'));
+  // Same version (or no answer within NAV_TIMEOUT): the page itself comes from the device too, so the page and its files are
+  // always one version (a CDN edge may already hold a newer index.html while it still hands out the old sw.js).
+  const same = await Promise.race([probeVersion(), wait()]);
+  if (same === true || same === 'late') {
+    const c = await cached();
+    if (c) { if (same === 'late') cacheFirstUntil = Date.now() + 15000; return c; }
+  }
+  // A new version, or the check failed fast (offline): network first, the device copy after NAV_TIMEOUT or on failure.
   const net = network(e.request);
   e.waitUntil(net.catch(() => {})); // let a late response still refresh the cache
-  const first = await Promise.race([net.catch(() => 'fail'), new Promise((r) => setTimeout(r, NAV_TIMEOUT, 'late'))]);
-  if (first !== 'late' && first !== 'fail') { cacheFirstUntil = 0; return first; }
-  const cached = (await fromCache(e.request)) || (await fromCache('index.html'));
-  if (!cached) return net; // nothing cached yet: keep waiting for the network
+  const first = await Promise.race([net.catch(() => 'fail'), wait()]);
+  if (first !== 'late' && first !== 'fail') return first;
+  const c = await cached();
+  if (!c) return net; // nothing cached yet: keep waiting for the network
   cacheFirstUntil = Date.now() + 15000;
-  return cached;
+  return c;
 }
 self.addEventListener('fetch', (e) => {
   const req = e.request, url = new URL(req.url);
@@ -168,7 +203,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
   e.respondWith(
-    (Date.now() < cacheFirstUntil ? fromCache(req).then((r) => r || network(req)) : network(req).catch(() => fromCache(req)))
+    shellCacheFirst().then((c) => { start[c ? 'cache' : 'net']++; return c ? fromCache(req).then((r) => r || network(req)) : network(req).catch(() => fromCache(req)); })
       .then((r) => r || fromCache('index.html'))
   );
 });
@@ -196,7 +231,8 @@ self.addEventListener('notificationclick', (e) => {
 });
 
 // 📴 Offline check (1.148): the page asks over a MessageChannel which app files are in the caches ('offline-status'),
-// or to download the missing ones now ('offline-fetch'). Answer: {version, total, miss: [files]}.
+// or to download the missing ones now ('offline-fetch'). Answer: {version, total, miss: [files], start: how the last app start
+// loaded its files (1.152.1: {same: sw.js matched, cache: files from the device, net: files tried on the network first})}.
 async function offlineMissing() {
   const scope = self.registration.scope, shell = await caches.open(VERSION), data = await caches.open(DATA_CACHE), miss = [];
   for (const f of FILES) if (!(await shell.match(new URL(f, scope).href, { ignoreSearch: true }))) miss.push(f);
@@ -213,6 +249,6 @@ self.addEventListener('message', (e) => {
       await Promise.all(miss.map((f) => (DATA.includes(f) ? refreshData(data, f) : shell.add(f)).catch(() => {})));
       miss = await offlineMissing();
     }
-    port.postMessage({ version: VERSION, total: FILES.length + DATA.length, miss });
+    port.postMessage({ version: VERSION, total: FILES.length + DATA.length, miss, start });
   })());
 });
