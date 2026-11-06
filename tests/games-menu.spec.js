@@ -23,3 +23,42 @@ test('skill colours: every tile and group heading carries its skill, the icon si
   expect(r.bar).not.toMatch(/rgba\(0, 0, 0, 0\)/);
   expect(errors).toEqual([]);
 });
+
+const d = (n) => { const t = new Date(Date.now() - n * 864e5); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
+
+test("today's pick for someone who has never played: the easy one first", async ({ page }) => {
+  const errors = await openApp(page, {});
+  await page.evaluate(() => go('games'));
+  await expect(page.locator('#gPick [data-pick]')).toHaveAttribute('data-pick', 'en2th');
+  await expect(page.locator('#gPick')).toContainText('เริ่มจากเกมง่ายๆ');
+  expect(errors).toEqual([]);
+});
+
+test("today's pick: a game with a reason, cycles with 🔄, starts the game and remembers the day; glast merges newest", async ({ page }) => {
+  // wrong answers lately → review; then the most stale skill; 🔄 steps through the list
+  const gplay = { me: { en2th: 9, listen: 4, spell: 3, speak: 2, wform: 1, colloc: 1, survival: 1, review: 1 } };
+  const errors = await openApp(page, { gplay, glast: { en2th: d(0), listen: d(6), spell: d(1), speak: d(2), wform: d(1), colloc: d(1), review: d(9) },
+    miss: { [d(1)]: { apple: 1, house: 1, water: 2, tree: 1, cat: 1 } }, prog: { apple: { b: 0, i: 0, e: 2.5, d: 0, s: 2, c: 0, x: 2 } }, settings: { gameHide: ['minpair'] } });
+  await page.evaluate(() => go('games'));
+  const picks = await page.evaluate(() => gamePicks());
+  expect(picks[0][0]).toBe('review');
+  expect(picks[0][1]).toContain('5 คำ');
+  expect(picks[1]).toEqual(['listen', 'ไม่ได้ฝึกฟังและเสียงมา 6 วันแล้ว']);
+  expect(picks.map((p) => p[0])).not.toContain('minpair'); // hidden
+  expect(new Set(picks.map((p) => p[0])).size).toBe(picks.length);
+  await expect(page.locator('#gPick')).toHaveClass(/sk-mean/);
+  await page.click('#gPickNext');
+  await expect(page.locator('#gPick [data-pick]')).toHaveAttribute('data-pick', 'listen');
+  await expect(page.locator('#gPick')).toHaveClass(/sk-hear/);
+  await expect(page.locator('#gPickNext')).toBeFocused();
+  await page.click('#gPick [data-pick]');
+  await expect(page.locator('.quiz, #quit').first()).toBeVisible();
+  expect(await page.evaluate(() => S.glast.listen)).toBe(await page.evaluate(() => today()));
+  // merge keeps the newer day per game and skips odd values
+  const m = await page.evaluate((old) => { mergeBackup({ glast: { listen: old, wform: '2999-01-01', bad: 5, x: 'nope' } }); return S.glast; }, d(30));
+  expect(m.listen).toBe(await page.evaluate(() => today()));
+  expect(m.wform).toBe('2999-01-01');
+  expect(m.bad).toBeUndefined();
+  expect(m.x).toBeUndefined();
+  expect(errors).toEqual([]);
+});

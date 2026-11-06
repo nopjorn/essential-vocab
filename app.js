@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.156.0';
+const APP_VERSION = '1.157.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -137,6 +137,12 @@ const DEV = (() => {
 })();
 // 1.52.0 kept one flat { game: n } map: it becomes this device's bucket.
 const gplayFix = (g) => (g && Object.values(g).some((v) => typeof v === 'number') ? { [DEV]: g } : g || {});
+// Last day a round of each game started (1.157.0, for the games menu's pick of the day); a function declaration: load() runs early.
+function cleanGlast(g) {
+  const out = {};
+  if (g && typeof g === 'object' && !Array.isArray(g)) for (const [k, v] of Object.entries(g)) if (typeof v === 'string' && /^\d{4}-\d\d-\d\d$/.test(v) && k.length <= 20) out[k] = v;
+  return out;
+}
 const gamePlays = (id) => Object.values(S.gplay).reduce((n, dev) => n + ((dev && dev[id]) || 0), 0);
 // My word sets (js/decks.js). Everything read from storage, a backup or the cloud goes through cleanDecks()/cleanDprog().
 const DECK_MAX = { decks: 200, words: 500, name: 40, word: 40, icon: 8, tomb: 90 * 86400000, own: 200, ownT: 80, ownE: 160 }; // own = words of my own (not in the list) per set, counted in `words` too
@@ -261,6 +267,7 @@ const defaults = () => ({
   stk: {},             // topic id -> sticker tier reached (1 bronze … 4 diamond)
   wotdPick: null,      // {day, key, w}: today's word of the day (kept steady even as progress changes)
   seenVer: null,       // app version whose "what's new" prompt was shown (device-local, not merged from backups)
+  glast: {},           // game id -> 'YYYY-MM-DD' last round started (1.157.0, newest wins when merging)
   gplay: {},           // device id -> { game id -> rounds started } (summed for the games menu "เล่นบ่อย" row)
   settingsAt: 0,       // ms when settings/homeCfg last changed on any device: the newest copy wins when syncing
   homeCfg: null,       // home layout [{id, on, w: 'full'|'half'}] in display order; null = default (see HOME_BLOCKS)
@@ -280,7 +287,7 @@ function load() {
     if (raw) {
       const d = defaults(), s = JSON.parse(raw);
       const r = { ...d, ...s, settings: { ...d.settings, ...(s.settings || {}) } };
-      r.gplay = gplayFix(r.gplay);
+      r.gplay = gplayFix(r.gplay); r.glast = cleanGlast(r.glast);
       // A missing/odd riddle record (older backup, sync from another device) must never break the home screen.
       if (!r.mascot || typeof r.mascot !== 'object' || !r.mascot.equip || typeof r.mascot.equip !== 'object') r.mascot = d.mascot;
       if (!Array.isArray(r.ret) || r.ret.length !== 4 || r.ret.some((x) => !Array.isArray(x) || !isNum(x[0]) || !isNum(x[1]))) r.ret = d.ret;
@@ -430,6 +437,7 @@ function mergeBackup(d) {
     const mine = S.gplay[dev] || (S.gplay[dev] = {});
     for (const [k, v] of Object.entries(m || {})) mine[k] = Math.max(mine[k] || 0, v);
   }
+  for (const [k, v] of Object.entries(cleanGlast(d.glast))) if (!S.glast[k] || v > S.glast[k]) S.glast[k] = v;
   if (d.streak && ((d.streak.last || '') > (S.streak.last || '') || (d.streak.last === S.streak.last && d.streak.count > S.streak.count))) S.streak = d.streak;
   if (d.daily && d.daily.date === S.daily.date) {
     S.daily.fresh = Math.max(S.daily.fresh, d.daily.fresh || 0);

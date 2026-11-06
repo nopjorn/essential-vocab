@@ -175,6 +175,49 @@ function gameSections() {
   const sec = (title, ids) => `<div class="small muted games-sec"><b>${title}</b></div><div class="${gridCls()}">${ids.map(gameTile).join('')}</div>`;
   return (pins.length ? sec('📌 เกมโปรด', pins) : '') + (freq.length ? sec('🕘 เล่นบ่อย', freq) : '');
 }
+// Today's pick (1.157.0): a short list of [game id, reason], best first; 🔄 steps through it (gamePickN). Words answered wrong
+// lately → the review game; then a skill not practised for 3+ days (or never) → its most played game; then games never tried
+// (in a daily order); then the games played longest ago. Hidden games and ones that can't start here are left out.
+let gamePickN = 0;
+function gamePicks() {
+  const day = today(), hid = gameHidden();
+  const ok = (id) => GAMES[id] && !hid.has(id) && id !== 'review' && !((id === 'speak' || id === 'speakS') && !canListen) && !(STORY_GAMES.includes(id) && !Object.keys(S.read).length);
+  const out = [], seen = new Set(), add = (id, why) => { if (!seen.has(id)) { seen.add(id); out.push([id, why]); } };
+  const all = Object.keys(GAMES).filter(ok), played = all.filter((id) => gamePlays(id) || S.glast[id]);
+  if (!played.length) add('en2th', 'เริ่มจากเกมง่ายๆ: ดูคำอังกฤษแล้วเลือกคำแปล');
+  const missed = new Set(); for (const [d, m] of Object.entries(S.miss || {})) if (dayDiff(day, d) <= 3) Object.keys(m || {}).forEach((w) => missed.add(w));
+  if (missed.size >= 5 && !hid.has('review') && S.glast.review !== day) add('review', `ช่วงนี้ตอบผิดไป ${missed.size} คำ มาเก็บคำพวกนี้กัน`);
+  GAME_SKILLS.filter(([sk]) => sk !== 'chal').map(([, , name, ids]) => {
+    const games = ids.filter(ok), last = games.map((g) => S.glast[g]).filter(Boolean).sort().pop();
+    const plays = games.reduce((n, g) => n + gamePlays(g), 0);
+    return { name, games, days: last ? dayDiff(day, last) : plays ? -1 : Infinity }; // played before dates were kept: unknown, not stale
+  }).filter((x) => x.games.length && x.days >= 3).sort((a, b) => b.days - a.days).forEach((x) => {
+    const id = x.games.slice().sort((a, b) => gamePlays(b) - gamePlays(a))[0];
+    add(id, x.days === Infinity ? `ยังไม่เคยฝึก${x.name}เลย` : `ไม่ได้ฝึก${x.name}มา ${x.days} วันแล้ว`);
+  });
+  let h = 0; for (const c of day) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const never = all.filter((id) => !played.includes(id));
+  never.map((id, k) => [id, (h + k * 2654435761) >>> 0 & 1023]).sort((a, b) => a[1] - b[1]).forEach(([id]) => add(id, 'ยังไม่เคยลองเกมนี้ ✨'));
+  played.filter((id) => S.glast[id] && S.glast[id] < day).sort((a, b) => (S.glast[a] < S.glast[b] ? -1 : 1))
+    .forEach((id) => { const n = dayDiff(day, S.glast[id]); add(id, n === 1 ? 'เล่นล่าสุดเมื่อวาน' : `เล่นล่าสุดเมื่อ ${n} วันก่อน`); });
+  if (!out.length) add(all.includes('en2th') ? 'en2th' : all[0], 'วันนี้เล่นครบทุกแบบแล้ว เก่งมาก! เล่นอีกรอบไหม');
+  return out.filter(([id]) => id);
+}
+const PLAY_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" fill="currentColor"/></svg>';
+function gamePickCard() {
+  const list = gamePicks(); if (!list.length) return '';
+  const [id, why] = list[gamePickN % list.length], g = GAMES[id];
+  return `<div class="card-box gpick sk-${SKILL_OF[id] || 'mean'}" id="gPick">
+      <button class="gpick-go" data-pick="${id}"><span class="gi" aria-hidden="true">${g.icon}</span><span class="gt"><small>✨ แนะนำวันนี้</small><b>${g.name}</b><span class="gw">${why}</span></span><span class="gpick-play">${PLAY_SVG}</span></button>
+      ${list.length > 1 ? `<button class="icon-btn gpick-next" id="gPickNext" aria-label="แนะนำเกมอื่น" title="แนะนำเกมอื่น">🔄</button>` : ''}
+    </div>`;
+}
+function bindGamePick() {
+  const box = $('#gPick'); if (!box) return;
+  box.querySelector('[data-pick]').onclick = (e) => startGame(e.currentTarget.dataset.pick);
+  const nx = $('#gPickNext');
+  if (nx) nx.onclick = () => { gamePickN++; box.outerHTML = gamePickCard(); bindGamePick(); const b = $('#gPickNext'); if (b) b.focus({ preventScroll: true }); };
+}
 // "ความยากเกมตัวเลือก" text for the games menu and result screen.
 function diffLabel() {
   const d = gameDiff(), auto = !S.settings.gdiff || S.settings.gdiff === 'auto';
@@ -224,7 +267,7 @@ function renderGames() {
       <div class="small muted" id="gDiff" style="margin-top:8px">🎚️ ความยากเกมตัวเลือก: <b>${diffLabel()}</b> · <a href="#" id="gDiffSet">ปรับในตั้งค่า</a></div>
       ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
     </div>
-    ${gameEdit ? '' : gameSections()}
+    ${gameEdit ? '' : gamePickCard() + gameSections()}
     <div class="row games-head"><b class="grow">${gameEdit ? '✏️ จัดหน้าเกม' : (gamePins().length ? '🎮 เกมอื่นๆ' : '🎮 เกมทั้งหมด')}</b>${gameEdit ? '' : `<button class="icon-btn" id="gView" aria-label="${gameView() === 'list' ? 'ดูแบบการ์ดใหญ่' : 'ดูแบบรายการ'}" title="${gameView() === 'list' ? 'ดูแบบการ์ดใหญ่' : 'ดูแบบรายการ'}">${gameView() === 'list' ? '🔲' : '☰'}</button>`}<button class="btn${gameEdit ? ' primary' : ''}" id="gEdit">${gameEdit ? '✓ เสร็จ' : '✏️ จัดเกม'}</button></div>
     ${gameEdit ? gameEditor() : `${gameList()}
     ${gameHidden().size ? `<details class="card-box hidden-games"><summary class="small muted">🙈 เกมที่ซ่อนไว้ (${gameHidden().size})</summary><div class="${gridCls()}" style="margin-top:10px">${[...gameHidden()].map(gameTile).join('')}</div></details>` : ''}
@@ -238,6 +281,7 @@ function renderGames() {
   $('#gEdit').onclick = () => { gameEdit = !gameEdit; renderGames(); if (gameEdit) $('#gEdit').scrollIntoView({ block: 'start' }); };
   if (gameEdit) bindGameEditor();
   if (!gameEdit) {
+    bindGamePick();
     $('#toRead').onclick = () => go('read');
     $('#toRiddle').onclick = () => go('riddle');
     $('#toDuel').onclick = () => go('duel');
@@ -504,7 +548,7 @@ function startGame(id) {
   current = 'games'; view.classList.remove('feed-mode'); view.dataset.route = 'games'; view.scrollTop = 0;
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === 'games'));
   const mine = S.gplay[DEV] || (S.gplay[DEV] = {});
-  mine[id] = (mine[id] || 0) + 1; save();
+  mine[id] = (mine[id] || 0) + 1; S.glast[id] = today(); save();
   if (id === 'match') return playMatch(src, deckRun);
   playQuiz(id === 'review' ? pick(['en2th', 'th2en', 'listen']) : id === 'emojiRun' ? 'emoji' : id === 'survival' || id === 'timeAttack' ? 'en2th' : id, src, id, deckRun);
 }
