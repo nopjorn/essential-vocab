@@ -239,6 +239,18 @@ html.no-ans .ring-burst { display: none; } html.no-ans .hero.ring-party .ring { 
 .games-sec.fold i { margin-left: auto; font-style: normal; transition: transform .2s; }
 .games-sec.fold[aria-expanded="false"] i { transform: rotate(-90deg); }
 .games-sec.fold[aria-expanded="false"] { margin-bottom: 2px; }
+/* skill colours (1.156.0): each skill group has its own hue; the icon sits on a soft tile of it and the group heading
+   gets a bar of it. Decorative only (never text colour), so the text contrast stays the theme's. */
+:root { --sk-hear: #0984e3; --sk-say: #e84393; --sk-mean: #6c5ce7; --sk-write: #e17055; --sk-gram: #00a37a; --sk-phrase: #0097a7; --sk-chal: #f0a020; }
+.sk-hear { --sk: var(--sk-hear); } .sk-say { --sk: var(--sk-say); } .sk-mean { --sk: var(--sk-mean); } .sk-write { --sk: var(--sk-write); }
+.sk-gram { --sk: var(--sk-gram); } .sk-phrase { --sk: var(--sk-phrase); } .sk-chal { --sk: var(--sk-chal); }
+.game-tile .gi { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 16px; line-height: 1; background: var(--surface-2); background: color-mix(in srgb, var(--sk, var(--primary)) 15%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sk, var(--primary)) 22%, transparent); }
+.game-grid.list .game-tile .gi { width: 44px; height: 44px; border-radius: 13px; font-size: 24px; }
+.games-sec.sk-hear b, .games-sec.sk-say b, .games-sec.sk-mean b, .games-sec.sk-write b, .games-sec.sk-gram b, .games-sec.sk-phrase b, .games-sec.sk-chal b { color: var(--text); }
+.games-sec.fold[class*="sk-"]::before { content: ''; flex: none; width: 4px; height: 18px; border-radius: 2px; background: var(--sk); margin-right: 2px; }
+.games-sec.fold[class*="sk-"] { padding-top: 10px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .game-tile .gi { background: color-mix(in srgb, var(--sk, var(--primary)) 24%, var(--surface)); } }
+:root[data-theme="dark"] .game-tile .gi, :root[data-theme="black"] .game-tile .gi { background: color-mix(in srgb, var(--sk, var(--primary)) 24%, var(--surface)); }
 /* other play pages: compact 3×2 shortcut grid */
 .short-h { margin-top: 18px !important; }
 .short-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }

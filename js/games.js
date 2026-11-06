@@ -89,10 +89,12 @@ const GAME_SKILLS = [
   ['chal', '🎉', 'ท้าทาย', ['survival', 'timeAttack', 'emojiRun']],
 ];
 let gameSkill = 'all'; // chip selected in the games menu: 'all' or a GAME_SKILLS id
+// Game id → its skill group id: the tile and its group heading share the skill's colour (1.156.0, CSS `.sk-<id>` → `--sk`).
+const SKILL_OF = Object.fromEntries(GAME_SKILLS.flatMap(([sk, , , ids]) => ids.map((id) => [id, sk])));
 function gameTile(id) {
   const g = GAMES[id];
   const best = S.best[id] != null ? `<span class="gb">🏅 <i>สถิติ: </i>${S.best[id]}</span>` : '';
-  return `<button class="game-tile" data-game="${id}"><div class="gi">${g.icon}</div><div class="gt"><b>${g.name}</b><span class="gd">${g.desc}</span></div>${best}</button>`;
+  return `<button class="game-tile sk-${SKILL_OF[id] || 'mean'}" data-game="${id}"><div class="gi" aria-hidden="true">${g.icon}</div><div class="gt"><b>${g.name}</b><span class="gd">${g.desc}</span></div>${best}</button>`;
 }
 // Games menu look (1.127): 'list' = one slim row per game (default), 'card' = the big two-column tiles.
 const gameView = () => (S.settings.gameView === 'card' ? 'card' : 'list');
@@ -190,7 +192,7 @@ function gameList() {
   const fold = gameFolded(), all = gameSkill === 'all';
   const body = shown.map(([id, ic, name, ids]) => {
     const shut = all && fold.has(id);
-    const head = all ? `<button class="small muted games-sec fold" data-fold="${id}" aria-expanded="${!shut}"><b>${ic} ${name}</b><small>${ids.length}</small><i aria-hidden="true">▾</i></button>` : '';
+    const head = all ? `<button class="small muted games-sec fold sk-${id}" data-fold="${id}" aria-expanded="${!shut}"><b>${ic} ${name}</b><small>${ids.length}</small><i aria-hidden="true">▾</i></button>` : '';
     return head + (shut ? '' : `<div class="${gridCls()}">${ids.map(gameTile).join('')}</div>`);
   }).join('');
   return `<div class="chips skill-chips" id="gSkill" role="group" aria-label="กรองเกมตามทักษะ">${chips}</div>${body}`;
