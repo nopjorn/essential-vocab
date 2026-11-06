@@ -504,6 +504,7 @@ function runMonthTest(items, lv) {
   const q = () => {
     if (i >= items.length) return done();
     const w = items[i], m = modes[i % modes.length], toTh = m !== 'th2en';
+    runMonthTest.cur = w; // read by tests (a listen question speaks 150 ms after it appears)
     const opts = shuffle([w, ...distractors(w, 3, toTh ? 't' : 'w')]);
     $('#title').textContent = `${lv ? 'ทดสอบจบ ' + LV_LABEL[lv] : 'แบบทดสอบ'} · ${i + 1}/${items.length}`;
     const prompt = m === 'en2th' ? `<div class="word" lang="en">${esc(w.w)}</div><div class="pos">${esc(w.p)}</div>`

@@ -8,7 +8,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25 # the Chromium download alone took 10 min once (1.154.1 run was cancelled at 15)
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

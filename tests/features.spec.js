@@ -187,17 +187,12 @@ test('stats: year heatmap levels, tap a day; monthly test with right and wrong a
   for (let k = 0; k < 30; k++) {
     await expect(page.locator('.options .opt')).toHaveCount(4);
     const idx = await page.evaluate((wantRight) => {
-      const t = document.querySelector('#title').textContent;
-      // the right option is the one whose text belongs to the asked word: find it from the prompt
-      const p = document.querySelector('.q-prompt'), opts = [...document.querySelectorAll('.options .opt')].map((o) => o.textContent);
-      let w;
-      if (p.querySelector('.word')) w = W.find((x) => x.w === p.querySelector('.word').textContent);
-      else if (p.querySelector('.th')) w = W.find((x) => x.t === p.querySelector('.th').textContent && S.prog[x.w]);
-      else w = W.find((x) => x.w === window.__said[window.__said.length - 1]);
+      // the asked word (1.155.3: from the app, not from the last word spoken: a listen question speaks 150 ms later, so the
+      // test sometimes read the previous question's word and the wrong count came out 13–14 instead of 15)
+      const w = runMonthTest.cur, opts = [...document.querySelectorAll('.options .opt')].map((o) => o.textContent);
       const right = opts.findIndex((o) => o === w.t || o === w.w);
       return wantRight ? right : (right + 1) % 4;
     }, k % 2 === 1);
-    await page.waitForTimeout(k % 3 === 2 ? 200 : 0); // listen questions speak after a short delay
     await page.locator('.options .opt').nth(idx).click();
     await expect(page.locator('.opt.correct')).toHaveCount(1);
     await expect(page.locator('#title')).toContainText(k === 29 ? 'ผล' : `${k + 2}/30`, { timeout: 4000 });
