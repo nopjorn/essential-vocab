@@ -157,7 +157,7 @@ function renderStats(from) {
   const h = habits();
   const { rate, measured } = learnRate(h);
   const snap = S.snap[today()];
-  const W_ = Math.max(280, view.clientWidth - 68);
+  const W_ = Math.max(280, (viewW || view.clientWidth) - 68); // first draw only: paintChart() redraws at the real width (1.155.1: no forced layout here)
   const sets = [
     { name: 'ชุด 3000 คำ', total: in3000().size, l: snap[0], m: snap[1] },
     { name: 'ครบทั้ง 5000 คำ', total: W.length, l: snap[2], m: snap[3] },

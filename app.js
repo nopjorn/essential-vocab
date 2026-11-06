@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.155.0';
+const APP_VERSION = '1.155.1';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1727,6 +1727,7 @@ let navSeq = 0; // bumped by every go(): a page that finishes loading late check
 function go(tab, ...args) {
   navSeq++;
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
+  if (!firstGo) animPrep();
   if (cleanup) { cleanup(); cleanup = null; }
   if (typeof hovHide === 'function') hovHide(); // a hover-meaning bubble (js/words.js) never outlives its page
   if (window.speechSynthesis) speechSynthesis.cancel();
@@ -1738,7 +1739,7 @@ function go(tab, ...args) {
   const wide = matchMedia('(min-width: 700px)').matches;
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab || (tab === 'decks' && !wide && b.dataset.tab === 'list') || (tab === 'ref' && b.dataset.tab === 'games')));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
-  view.scrollTop = 0;
+  if (firstGo) view.scrollTop = 0; // later pages: done in animPrep() while the layout is still clean
   ({ home: renderHome, cards: renderCards, ear: renderEar, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, mascot: renderMascot, event: renderEvent, riddle: renderRiddle, duel: renderDuel, map: renderMap, wsearch: renderWSearch, decks: renderDecks, adv: renderAdventure, fun: renderFun, tower: renderTower, coinshop: renderCoinShop, puzzle: renderPuzzle, album: renderAlbum, garden: renderGarden, cases: renderCases, cafe: renderCafe, room: renderRoom, paths: renderPaths, pic: renderPic, build: renderBuild, ref: renderRef, print: renderPrint, mine: renderMine }[tab])(...args);
   updateStreak();
   if (firstGo) { firstGo = false; return; } // the first screen at start-up just appears: no fade, no forced layout before the first paint (1.126)
@@ -1748,9 +1749,25 @@ function go(tab, ...args) {
 // Page animation: tabs slide in from the side they sit on, sub pages push in / pop back, the rest fades.
 const TAB_ORDER = ['home', 'cards', 'games', 'stats', 'list', 'settings'];
 const VIEW_ANIMS = ['vin', 'vin-l', 'vin-r', 'vin-push', 'vin-pop'];
+// 1.155.1: restarting the animation needs a style/layout pass with the class off. Done after drawing (as before), that pass laid
+// out the whole new page in the middle of the script (≈ 35 ms a page change on a slow phone), and so did setting scrollTop after
+// the old page's classes had changed. animPrep() does both at the start of go(), while the old page's layout is still clean
+// (almost free); animView() then only adds the class. Pages that change without go() (a sub page found by the back-button
+// observer) still take the old forced pass.
+let animPrepped = false, viewW = 0; // viewW = #view's width read here for free (renderStats sizes its first chart from it)
+function animPrep() {
+  if (vtBusy) return;
+  view.classList.remove(...VIEW_ANIMS);
+  view.scrollTop = 0;
+  viewW = view.clientWidth;
+  animPrepped = true;
+  requestAnimationFrame(() => { animPrepped = false; });
+}
 function animView(cls) {
   if (vtBusy) { document.documentElement.dataset.vt = cls; return; } // a View Transition is animating this change (direction picked here)
-  view.classList.remove(...VIEW_ANIMS); void view.offsetWidth; view.classList.add(cls);
+  view.classList.remove(...VIEW_ANIMS);
+  if (!animPrepped) void view.offsetWidth;
+  view.classList.add(cls);
 }
 // View Transitions (1.100): taps on tabs / links morph between pages (document.startViewTransition, iOS 18+).
 // Only user taps use it (vtRun) - a plain go() stays synchronous. Without support, with settings.animPage off or
