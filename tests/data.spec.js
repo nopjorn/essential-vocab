@@ -39,7 +39,7 @@ test('word rows are well formed', () => {
   const { WORDS } = load(...WORD_FILES);
   expect(WORDS.length).toBeGreaterThan(4900);
   // Collect problems first: one expect() per field of ~5,000 rows is very slow.
-  const seen = new Set(), bad = [];
+  const seen = new Set(), exSeen = new Map(), bad = [];
   for (const r of WORDS) {
     const [w, p, lv, ipa, th, ex, exTh, tp] = r;
     const more = r.slice(8), xe = more.find(Array.isArray);
@@ -50,6 +50,9 @@ test('word rows are well formed', () => {
     const k = `${w}|${p}`;
     if (seen.has(k)) bad.push(`duplicate ${k}`);
     seen.add(k);
+    // 1.153.2: each word has its own example (29 pairs used to share one, e.g. "Can you swim?" for both can and swim)
+    if (exSeen.has(ex)) bad.push(`${w}: same example as ${exSeen.get(ex)} ("${ex}")`);
+    exSeen.set(ex, w);
   }
   expect(bad).toEqual([]);
 });

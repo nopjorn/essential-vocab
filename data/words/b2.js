@@ -556,7 +556,7 @@
   ["transform","v","B2","/trænsˈfɔːrm/","เปลี่ยนรูป","The new owner transformed the old shop.","เจ้าของใหม่เปลี่ยนโฉมร้านเก่า","make"],
   ["transition","n","B2","/trænˈzɪʃn/","การเปลี่ยนผ่าน","The transition to the new system was smooth.","การเปลี่ยนไปใช้ระบบใหม่เป็นไปอย่างราบรื่น","make"],
   ["trial","n","B2","/ˈtraɪəl/","การพิจารณาคดี, การทดลอง","The trial lasted two weeks.","การพิจารณาคดีใช้เวลาสองสัปดาห์","law",[["The new drug is still in trial.","ยาตัวใหม่ยังอยู่ในขั้นทดลอง"]]],
-  ["tropical","adj","B2","/ˈtrɑːpɪkl/","เขตร้อน","Thailand has a tropical climate.","ประเทศไทยมีภูมิอากาศเขตร้อน","weather"],
+  ["tropical","adj","B2","/ˈtrɑːpɪkl/","เขตร้อน","We bought some tropical fruit at the market.","เราซื้อผลไม้เมืองร้อนที่ตลาด","weather"],
   ["truly","adv","B2","/ˈtruːli/","อย่างแท้จริง","I'm truly sorry.","ฉันเสียใจจริงๆ","grammar"],
   ["trust","n/v","B2","/trʌst/","ความไว้วางใจ; ไว้ใจ","I trust you.","ฉันไว้ใจคุณ","mind",[["Trust is important in a relationship.","ความไว้วางใจสำคัญในความสัมพันธ์"]]],
   ["tune","n","B2","/tuːn/","ทำนอง","I know the tune but not the words.","ฉันรู้ทำนองแต่ไม่รู้เนื้อร้อง","arts"],

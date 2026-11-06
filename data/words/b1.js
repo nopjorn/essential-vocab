@@ -470,7 +470,7 @@
   ["prince","n","B1","/prɪns/","เจ้าชาย","The prince married a commoner.","เจ้าชายแต่งงานกับสามัญชน","gov"],
   ["princess","n","B1","/ˈprɪnses/","เจ้าหญิง","The princess lived in a castle.","เจ้าหญิงอาศัยอยู่ในปราสาท","gov"],
   ["printing","n","B1","/ˈprɪntɪŋ/","การพิมพ์","Printing was invented long ago.","การพิมพ์ถูกประดิษฐ์ขึ้นมานานแล้ว","comm"],
-  ["prisoner","n","B1","/ˈprɪznər/","นักโทษ","The prisoner escaped.","นักโทษหลบหนี","law"],
+  ["prisoner","n","B1","/ˈprɪznər/","นักโทษ","The prisoner was set free after ten years.","นักโทษได้รับการปล่อยตัวหลังจากติดคุกสิบปี","law"],
   ["private","adj","B1","/ˈpraɪvət/","ส่วนตัว, เอกชน","This is a private beach.","นี่เป็นชายหาดส่วนตัว","degree",[["He works for a private company.","เขาทำงานให้บริษัทเอกชน"]]],
   ["producer","n","B1","/prəˈduːsər/","ผู้ผลิต","He is a film producer.","เขาเป็นผู้อำนวยการสร้างภาพยนตร์","money"],
   ["production","n","B1","/prəˈdʌkʃn/","การผลิต","Production has increased.","การผลิตเพิ่มขึ้น","money"],
