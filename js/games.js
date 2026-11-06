@@ -231,6 +231,11 @@ function diffLabel() {
   const d = gameDiff(), auto = !S.settings.gdiff || S.settings.gdiff === 'auto';
   return '⭐'.repeat(d) + ' ' + ['ปกติ', 'ตัวเลือกลวงคล้ายขึ้น', 'ตัวเลือกคล้ายขึ้น + จับเวลาข้อละ 12 วินาที'][d - 1] + (auto ? ` · อัตโนมัติ (แม่น ${Math.round(((S.gacc || {}).a || 0.7) * 100)}%)` : ' · ตั้งเอง');
 }
+// Short form for the games menu's 🎚️ pill (1.157.2): stars + a word + the accuracy (auto) or "ตั้งเอง"; the full text is its label.
+function diffShort() {
+  const d = gameDiff(), auto = !S.settings.gdiff || S.settings.gdiff === 'auto';
+  return '⭐'.repeat(d) + ' ' + ['ปกติ', 'ยากขึ้น', 'ยาก + จับเวลา'][d - 1] + (auto ? ` · แม่น ${Math.round(((S.gacc || {}).a || 0.7) * 100)}%` : ' · ตั้งเอง');
+}
 // Games not pinned or hidden, as the "all games" list: chips by skill + the tiles (grouped under headings when "all").
 function gameList() {
   const skip = new Set([...gamePins(), ...gameHidden()]);
@@ -253,10 +258,13 @@ function renderGames() {
   gameDecks = gameDecks.filter((id) => deckById(id)); // a set deleted meanwhile (also by another device) drops out
   if (gameSource === 'deck' && !gameDecks.length) gameSource = 'level';
   const decks = liveDecks();
-  const srcName = { level: `ระดับที่เลือก (${lvNames(S.settings.levels)})`, learned: 'คำที่เรียนแล้ว', all: 'ทุกระดับ', mastered: '🟢 คำที่จำได้แล้ว', star: '⭐ คำติดดาว', leech: '🐢 คำดื้อ', topic: '📂 ตามหมวด', goal: '🎯 ตามเป้าหมาย', deck: gameDecks.length === 1 ? `📚 ${esc(deckById(gameDecks[0]).name || 'ชุดไม่มีชื่อ')}` : `📚 ${gameDecks.length} ชุด (โหมดซ้อม)` }[gameSource] || '';
+  const srcName = { level: `ระดับ ${lvNames(S.settings.levels)}`, learned: 'คำที่เรียนแล้ว', all: 'ทุกระดับ', mastered: '🟢 คำที่จำได้แล้ว', star: '⭐ คำติดดาว', leech: '🐢 คำดื้อ', topic: '📂 ตามหมวด', goal: '🎯 ตามเป้าหมาย', deck: gameDecks.length === 1 ? `📚 ${esc(deckById(gameDecks[0]).name || 'ชุดไม่มีชื่อ')}` : `📚 ${gameDecks.length} ชุด (โหมดซ้อม)` }[gameSource] || '';
   view.innerHTML = `
-    <div class="card-box">
-      <button class="src-btn" id="srcBtn" aria-expanded="${gameSrcOpen}"><span class="small muted">คำจาก:</span><b>${srcName}</b><i>▾</i></button>
+    <div class="card-box src-box">
+      <div class="src-row">
+        <button class="src-btn src-pill" id="srcBtn" aria-expanded="${gameSrcOpen}"><span class="small muted">📚 คำจาก</span><b>${srcName}</b><i aria-hidden="true">▾</i></button>
+        <button class="src-pill diff-pill" id="gDiffSet" aria-label="ความยากเกมตัวเลือก: ${diffLabel()} · แตะเพื่อปรับในตั้งค่า"><span id="gDiff">🎚️ ${diffShort()}</span><i aria-hidden="true">›</i></button>
+      </div>
       <div class="chips" id="src" ${gameSrcOpen ? '' : 'hidden'}>
         <button class="chip" data-s="level">ระดับที่เลือก (${lvNames(S.settings.levels)})</button>
         <button class="chip" data-s="learned">คำที่เรียนแล้ว</button>
@@ -272,11 +280,10 @@ function renderGames() {
         <div class="small muted" style="margin-top:8px">${gameDecks.length === 1 ? 'เล่นชุดเดียว: ผลของเกมอัปเดตความคืบหน้าของชุดนั้น (สถิติหลักไม่เปลี่ยน)' : '🏋️ โหมดซ้อม (เลือกหลายชุด): ไม่นับความคืบหน้าของชุด แต่ยังได้ XP และสตรีค'}</div>` : ''}
       ${gameSource === 'topic' ? `<select class="sel block-sel" id="gTopic" style="margin-top:10px">${topicOptions(gameTopic, (id) => W.filter((w) => topicMatch(id, w.tp)).length)}</select>` : ''}
       ${gameSource === 'goal' ? `<select class="sel block-sel" id="gGoal" style="margin-top:10px" aria-label="เป้าหมาย">${TAGS.map((t) => `<option value="${t.id}" ${gameGoal === t.id ? 'selected' : ''}>${TAG_LABEL[t.id]} (${t.w.length})</option>`).join('')}</select>` : ''}
-      <div class="small muted" id="gDiff" style="margin-top:8px">🎚️ ความยากเกมตัวเลือก: <b>${diffLabel()}</b> · <a href="#" id="gDiffSet">ปรับในตั้งค่า</a></div>
       ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
     </div>
     ${gameEdit ? '' : gamePickCard() + gameShortcuts() + gameSections()}
-    <div class="row games-head"><b class="grow">${gameEdit ? '✏️ จัดหน้าเกม' : (gamePins().length ? '🎮 เกมอื่นๆ' : '🎮 เกมทั้งหมด')}</b>${gameEdit ? '' : `<button class="icon-btn" id="gView" aria-label="${gameView() === 'list' ? 'ดูแบบการ์ดใหญ่' : 'ดูแบบรายการ'}" title="${gameView() === 'list' ? 'ดูแบบการ์ดใหญ่' : 'ดูแบบรายการ'}">${gameView() === 'list' ? '🔲' : '☰'}</button>`}<button class="btn${gameEdit ? ' primary' : ''}" id="gEdit">${gameEdit ? '✓ เสร็จ' : '✏️ จัดเกม'}</button></div>
+    <div class="row games-head"><b class="grow">${gameEdit ? '✏️ จัดหน้าเกม' : (gamePins().length ? '🎮 เกมอื่นๆ' : '🎮 เกมทั้งหมด')}</b>${gameEdit ? '' : `<div class="seg gview-seg" id="gView" role="group" aria-label="รูปแบบรายการเกม">${[['list', '☰', 'รายการ'], ['card', '🔲', 'การ์ด']].map(([v, ic, t]) => `<button data-gv="${v}" class="${gameView() === v ? 'on' : ''}" aria-pressed="${gameView() === v}" aria-label="ดูแบบ${t}"><span aria-hidden="true">${ic}</span><span class="gv-t"> ${t}</span></button>`).join('')}</div>`}<button class="btn${gameEdit ? ' primary' : ''}" id="gEdit">${gameEdit ? '✓ เสร็จ' : '✏️ จัดเกม'}</button></div>
     ${gameEdit ? gameEditor() : `${gameList()}
     ${gameHidden().size ? `<details class="card-box hidden-games"><summary class="small muted">🙈 เกมที่ซ่อนไว้ (${gameHidden().size})</summary><div class="${gridCls()}" style="margin-top:10px">${[...gameHidden()].map(gameTile).join('')}</div></details>` : ''}`}`;
   if ($('#gSkill')) $('#gSkill').onclick = (e) => {
@@ -289,14 +296,18 @@ function renderGames() {
   if (gameEdit) bindGameEditor();
   if (!gameEdit) {
     bindGamePick();
-    edgeFade(view.querySelector('.short-grid'));
+    edgeFade(view.querySelector('.short-grid')); edgeFade($('#gSkill'));
     $('#toRead').onclick = () => go('read');
     $('#toRiddle').onclick = () => go('riddle');
     $('#toDuel').onclick = () => go('duel');
     $('#toMap').onclick = () => go('map');
     $('#toWs').onclick = () => go('wsearch');
     $('#toRef').onclick = () => go('ref');
-    $('#gView').onclick = () => { S.settings.gameView = gameView() === 'list' ? 'card' : 'list'; save(); const top = view.scrollTop; renderGames(); view.scrollTop = top; $('#gView').focus({ preventScroll: true }); };
+    $('#gView').onclick = (e) => {
+      const b = e.target.closest('[data-gv]'); if (!b || b.dataset.gv === gameView()) return;
+      S.settings.gameView = b.dataset.gv; save(); const top = view.scrollTop; renderGames(); view.scrollTop = top;
+      view.querySelector(`[data-gv="${b.dataset.gv}"]`).focus({ preventScroll: true });
+    };
     view.querySelectorAll('[data-fold]').forEach((b) => (b.onclick = () => {
       const f = gameFolded(), id = b.dataset.fold;
       if (f.has(id)) f.delete(id); else f.add(id);
@@ -305,7 +316,12 @@ function renderGames() {
       const nb = view.querySelector(`[data-fold="${id}"]`); if (nb) nb.focus({ preventScroll: true });
     }));
   }
-  $('#gDiffSet').onclick = (e) => { e.preventDefault(); go('settings'); };
+  $('#gDiffSet').onclick = () => { // straight to the setting: settings search filled in (1.157.2)
+    go('settings');
+    const q = $('#setQ'); if (!q) return;
+    q.value = 'ความยากเกม'; q.oninput();
+    const row = $('#gdiff'); if (row) row.scrollIntoView({ block: 'center' });
+  };
   const paint = () => view.querySelectorAll('#src .chip').forEach((c) => c.classList.toggle('on', c.dataset.s === gameSource));
   paint();
   if ($('#gTopic')) $('#gTopic').onchange = (e) => { gameTopic = e.target.value; };

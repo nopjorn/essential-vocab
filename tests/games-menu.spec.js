@@ -88,3 +88,27 @@ test('the other play pages sit right under the pick: a sideways strip on a phone
   expect(ipad).toEqual({ scrolls: false, rows: 1 });
   expect(errors).toEqual([]);
 });
+
+test('top of the menu: source and difficulty as two pills, the difficulty pill opens just that setting, a two-button view switch, chips fade', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => { S.gacc = { a: 0.85, n: 40 }; go('games'); });
+  const box = await page.evaluate(() => { const r = (s) => view.querySelector(s).getBoundingClientRect(); return { a: Math.round(r('#srcBtn').top), b: Math.round(r('#gDiffSet').top) }; });
+  expect(box.a).toBe(box.b); // one row at 440 px
+  await expect(page.locator('#srcBtn')).toContainText('ระดับ A1');
+  await expect(page.locator('#gDiffSet')).toHaveAttribute('aria-label', /ความยากเกมตัวเลือก: ⭐⭐ .*แม่น 85%/);
+  // view switch: two labelled buttons, the current one pressed
+  await expect(page.locator('#gView [data-gv="list"]')).toHaveAttribute('aria-pressed', 'true');
+  await page.click('#gView [data-gv="list"]'); // already on: nothing changes
+  expect(await page.evaluate(() => S.settings.gameView || 'list')).toBe('list');
+  // the skill chips scroll sideways on a phone: faded until the end
+  await expect(page.locator('#gSkill')).not.toHaveClass(/at-end/);
+  await page.evaluate(() => { $('#gSkill').scrollLeft = 9999; });
+  await expect(page.locator('#gSkill')).toHaveClass(/at-end/);
+  // the difficulty pill: settings, searched down to that one row
+  await page.click('#gDiffSet');
+  await expect(page.locator('#setQ')).toHaveValue('ความยากเกม');
+  await expect(page.locator('#gdiff')).toBeVisible();
+  const rows = await page.evaluate(() => [...view.querySelectorAll('details.set-group .card-box > *')].filter((r) => r.offsetParent !== null).length);
+  expect(rows).toBe(1);
+  expect(errors).toEqual([]);
+});

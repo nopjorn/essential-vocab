@@ -205,7 +205,7 @@ html.no-ans .ring-burst { display: none; } html.no-ans .hero.ring-party .ring { 
 .skill-chips .chip small { opacity: .7; margin-left: 2px; }
 .skill-chips .chip.on small { opacity: 1; }
 .skill-chips + .games-sec { margin-top: 2px; }
-@media (max-width: 699px) { .skill-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-16px / var(--uz, 1)); padding-inline: calc(16px / var(--uz, 1)); } .skill-chips::-webkit-scrollbar { display: none; } .skill-chips .chip { flex: none; } }
+@media (max-width: 699px) { .skill-chips:not(.at-end) { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); } .skill-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-16px / var(--uz, 1)); padding-inline: calc(16px / var(--uz, 1)); } .skill-chips::-webkit-scrollbar { display: none; } .skill-chips .chip { flex: none; } }
 .games-sec ~ .games-sec { margin-top: 6px; }
 .hidden-games { margin-top: 14px; }
 .hidden-games summary { cursor: pointer; }
@@ -269,7 +269,7 @@ html.no-ans .ring-burst { display: none; } html.no-ans .hero.ring-party .ring { 
 .short-grid { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-16px / var(--uz, 1)); padding: 2px calc(16px / var(--uz, 1)) 10px; scroll-padding-inline: 16px;
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
 .short-grid::-webkit-scrollbar { display: none; }
-.short-grid.at-end { -webkit-mask-image: none; mask-image: none; }
+.short-grid.at-end { -webkit-mask-image: none; mask-image: none; } /* (1.157.2: #gSkill chips fade the same way) */
 .short-tile { flex: 0 0 88px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 12px 4px 10px; border: 0; border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); color: var(--text); font: inherit; text-align: center; line-height: 1.25; }
 .short-tile .si { font-size: 26px; line-height: 1.1; }
 .short-tile b { font-size: var(--fs-sm); }
@@ -981,6 +981,33 @@ body.has-back .view [id$="Back"]:not(:only-child) { display: none; }
 .src-btn .muted { flex: none; }
 .src-btn i { font-style: normal; color: var(--muted); transition: transform .2s; }
 .src-btn[aria-expanded="true"] i { transform: rotate(180deg); }
+/* 1.157.2: the source and the difficulty as two pills in one row (wraps on a narrow phone) */
+.src-box { padding: 10px; }
+.src-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.src-pill { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 12px; border: 0; border-radius: 999px; background: var(--surface-2); color: var(--text); font: inherit; font-size: var(--fs-sm); text-align: left; cursor: pointer; }
+.src-row .src-btn { width: auto; flex: 1 1 auto; min-width: 0; }
+.src-row .src-btn b { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.src-row .src-btn i { margin-left: auto; }
+.diff-pill { flex: 0 1 auto; color: var(--muted); font-weight: 700; }
+.diff-pill i { font-style: normal; }
+.src-box > .chips, .src-box > .sel, .src-box > .small { margin-inline: 4px; }
+#src:not([hidden]) { margin-top: 10px; }
+.gview-seg button { padding: 6px 10px; white-space: nowrap; }
+.games-head { gap: 8px; }
+.games-head #gEdit { white-space: nowrap; }
+.games-head > b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+@media (max-width: 379.98px) { .games-head #gEdit { padding-inline: 10px; } }
+@media (max-width: 379.98px) {
+  .gview-seg .gv-t { display: none; }
+  .gpick { padding: 10px; }
+  .gpick-go { gap: 10px; }
+  .gpick .gi { width: 48px; height: 48px; border-radius: 14px; font-size: 26px; }
+  .gpick .gt b { font-size: var(--fs-md); }
+  .gpick-play { width: 40px; height: 40px; }
+  .gpick-next { position: absolute; top: 4px; right: 4px; width: 32px; height: 32px; font-size: 14px; }
+  .gpick:has(.gpick-next) .gpick-go { padding-right: 0; }
+  .gpick:has(.gpick-next) .gt small { padding-right: 30px; }
+}
 #src { margin-top: 12px; }
 /* horizontally scrolling filter rows + sticky search (word list) */
 .chips.scroll { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-left: calc(-16px / var(--uz, 1)); margin-right: calc(-16px / var(--uz, 1)); padding: 0 calc(16px / var(--uz, 1)) 2px; }

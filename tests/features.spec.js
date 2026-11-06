@@ -1778,11 +1778,12 @@ test('games menu layout (1.127): list view by default, card toggle, folding skil
   const view = page.locator('#view');
   // list view by default; the toggle switches to cards and is remembered in settings
   await expect(view.locator('.game-grid.list [data-game="listen"]')).toBeVisible();
-  await view.locator('#gView').click();
+  await view.locator('#gView [data-gv="card"]').click();
+  await expect(view.locator('#gView [data-gv="card"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(view.locator('.game-grid.list')).toHaveCount(0);
   await expect(view.locator('.game-grid [data-game="listen"]')).toBeVisible();
   expect(await page.evaluate(() => S.settings.gameView)).toBe('card');
-  await view.locator('#gView').click();
+  await view.locator('#gView [data-gv="list"]').click();
   expect(await page.evaluate(() => S.settings.gameView)).toBe('list');
   // fold a skill group: its games go, the heading stays, the choice is remembered across visits
   const head = view.locator('[data-fold="hear"]');
