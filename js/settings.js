@@ -49,7 +49,7 @@ function renderSettings() {
         <select class="sel" id="mins">${[0, 10, 15, 20, 30].map((n) => `<option value="${n}" ${n === (st.minutes | 0) ? 'selected' : ''}>${n ? n + ' นาที' : 'ปิด'}</option>`).join('')}</select></div>
       <div class="set-row"><span>ตัวจัดรอบทบทวน<br><span class="small muted">FSRS = อัลกอริทึมโอเพนซอร์สที่ Anki ใช้ ทบทวนน้อยลงที่ความจำเท่าเดิม · เปลี่ยนแล้วไม่กระทบกำหนดเดิม มีผลกับการทบทวนครั้งถัดไป</span></span>
         <select class="sel" id="sched"><option value="fsrs" ${st.scheduler !== 'sm2' ? 'selected' : ''}>FSRS (แนะนำ)</option><option value="sm2" ${st.scheduler === 'sm2' ? 'selected' : ''}>แบบเดิม (SM-2)</option></select></div>
-      <div class="set-row"><span>อยากจำได้กี่ %<br><span class="small muted">สูง = ทบทวนถี่ขึ้น จำแม่นขึ้น (ใช้กับ FSRS)</span></span>
+      <div class="set-row"><span>อยากจำได้กี่ %<br><span class="small muted">สูง = ทบทวนถี่ขึ้น จำแม่นขึ้น (ใช้กับ FSRS)${fsK() !== 1 ? ` · 🧠 ใช้ตารางเฉพาะตัว ×${fsK()} (เปลี่ยนที่หน้าสถิติ)` : ''}</span></span>
         <select class="sel" id="ret" ${st.scheduler === 'sm2' ? 'disabled' : ''}>${[80, 85, 90, 95].map((n) => `<option value="${n}" ${n === Math.round((st.retention || 0.9) * 100) ? 'selected' : ''}>${n}%</option>`).join('')}</select></div>
       <div class="set-row"><span>เป้าคำใหม่ต่อสัปดาห์<br><span class="small muted">โชว์แถบความคืบหน้าบนหน้าแรก (ปิด = ไม่แสดง)</span></span>
         <select class="sel" id="wgoal">${[0, 20, 35, 50, 70, 100].map((n) => `<option value="${n}" ${n === (st.weekGoal | 0) ? 'selected' : ''}>${n ? n + ' คำ' : 'ปิด'}</option>`).join('')}</select></div>

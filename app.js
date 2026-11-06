@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.152.1';
+const APP_VERSION = '1.153.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -141,6 +141,7 @@ const gamePlays = (id) => Object.values(S.gplay).reduce((n, dev) => n + ((dev &&
 // My word sets (js/decks.js). Everything read from storage, a backup or the cloud goes through cleanDecks()/cleanDprog().
 const DECK_MAX = { decks: 200, words: 500, name: 40, word: 40, icon: 8, tomb: 90 * 86400000, own: 200, ownT: 80, ownE: 160 }; // own = words of my own (not in the list) per set, counted in `words` too
 const isNum = (n) => typeof n === 'number' && isFinite(n);
+const REV_MAX = 2000; // reviews kept in S.rev (personal FSRS, 1.153.0; cleanRev() runs inside load())
 function cleanDecks(a) {
   const byId = new Map();
   for (const x of Array.isArray(a) ? a : []) {
@@ -193,7 +194,7 @@ function sanitizeDecks(r) {
 }
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, pageBg: true, exam: { date: '', name: '' }, fest: true, season: true, sfxPack: 'chime', qMascot: true, headFont: true, glassBar: true, fsz: 'md', appKbd: 'auto', thumbs: 'auto', optSide: 'right', penMode: 'auto', winGap: 'auto', shareTpl: 'classic', palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], gameView: 'list', gameFold: [], riddleLv: ['A1', 'A2'] },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, fsk: 1, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, pageBg: true, exam: { date: '', name: '' }, fest: true, season: true, sfxPack: 'chime', qMascot: true, headFont: true, glassBar: true, fsz: 'md', appKbd: 'auto', thumbs: 'auto', optSide: 'right', penMode: 'auto', winGap: 'auto', shareTpl: 'classic', palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], gameView: 'list', gameFold: [], riddleLv: ['A1', 'A2'] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -234,6 +235,7 @@ const defaults = () => ({
   snap: {},            // 'YYYY-MM-DD' -> [learned 3000, mastered 3000, learned all, mastered all]
   chistFrom: '',       // first day chist was recorded; earlier hist can't be split into cards/games
   note: {},            // word -> the user's own memory hook
+  rev: [],             // flashcard reviews of cards seen before (1.153.0): [minute stamp, days since the last review, stability then, grade 0–3], last REV_MAX → fsFit()
   ret: [[0, 0], [0, 0], [0, 0], [0, 0]], // due reviews by gap [1–2, 3–6, 7–20, 21+ days]: [reviewed, remembered] → real retention vs the target (1.107)
   noteAt: {},          // word -> ms of the last edit or delete of its hook (newest wins when syncing; 1.105.4)
   sketch: {},          // word -> the user's drawn memory hook: SVG path data in a 300×180 box (1.142, sketchD() checks it)
@@ -280,6 +282,7 @@ function load() {
       // A missing/odd riddle record (older backup, sync from another device) must never break the home screen.
       if (!r.mascot || typeof r.mascot !== 'object' || !r.mascot.equip || typeof r.mascot.equip !== 'object') r.mascot = d.mascot;
       if (!Array.isArray(r.ret) || r.ret.length !== 4 || r.ret.some((x) => !Array.isArray(x) || !isNum(x[0]) || !isNum(x[1]))) r.ret = d.ret;
+      r.rev = cleanRev(r.rev);
       if (!Array.isArray(r.owned)) r.owned = [];
       if (!r.evt || typeof r.evt !== 'object' || Array.isArray(r.evt)) r.evt = {};
       r.adv = cleanAdv(r.adv);
@@ -441,6 +444,7 @@ function mergeBackup(d) {
   }
   S.backupAt = Math.max(S.backupAt || 0, d.backupAt || 0);
   // Stars and memory hooks: the newer edit wins (also a delete / un-star, kept as a time stamp). Without stamps (older data) only additions come in.
+  S.rev = mergeRev(S.rev, cleanRev(d.rev));
   if (Array.isArray(d.ret) && d.ret.length === 4) d.ret.forEach((x, b) => { if (Array.isArray(x) && isNum(x[0]) && isNum(x[1]) && x[0] > S.ret[b][0]) S.ret[b] = [x[0], Math.min(x[0], x[1])]; });
   for (const [w, at] of Object.entries(d.starAt || {})) if (isNum(at) && at > (S.starAt[w] || 0)) { S.starAt[w] = at; if (d.star && d.star[w]) S.star[w] = 1; else delete S.star[w]; }
   for (const w of Object.keys(d.star || {})) if (!(w in (d.starAt || {})) && !(w in S.starAt)) S.star[w] = 1;
@@ -1474,6 +1478,48 @@ const fsRetr = (t, s) => Math.pow(1 + FS_FACTOR * t / s, FS_DECAY);
 const fsIvl = (s, r) => s / FS_FACTOR * (Math.pow(r, 1 / FS_DECAY) - 1);
 const fsD0 = (G) => fsClamp(FSRS_W[4] - Math.exp(FSRS_W[5] * (G - 1)) + 1, 1, 10);
 const fsOn = () => S.settings.scheduler !== 'sm2';
+// Personal FSRS (1.153.0): the default weights describe an average learner. fsFit() reads this learner's own flashcard reviews
+// (S.rev) and finds one factor K for how long their memories really last: recall is predicted as fsRetr(t, K × stability).
+// K > 1 = remembers longer than the default model (longer gaps, fewer reviews); K < 1 = forgets sooner (shorter gaps).
+// Only used once the learner taps "use" on the stats page (settings.fsk), so the schedule never changes behind their back.
+// The log keeps the stability the default model gave (not × K), so a later fit is measured against the same baseline.
+const FIT_MIN = 150, FSK_MIN = 0.5, FSK_MAX = 2.5; // REV_MAX sits next to isNum: load() needs it before this line runs
+const fsK = () => (fsOn() ? fsClamp(+S.settings.fsk || 1, FSK_MIN, FSK_MAX) : 1);
+function revLog(p, g) {
+  const o = fsState(p);
+  if (o.t < 1) return; // another look on the same day says little about the long-term memory
+  S.rev.push([Math.round(Date.now() / 60000), Math.round(o.t * 10) / 10, Math.round(o.s * 100) / 100, g]);
+  if (S.rev.length > REV_MAX) S.rev.splice(0, S.rev.length - REV_MAX);
+}
+// A function declaration on purpose: load() runs before this line.
+function cleanRev(a) {
+  if (!Array.isArray(a)) return [];
+  return a.filter((r) => Array.isArray(r) && r.length === 4 && r.every(isNum) && r[1] >= 0 && r[2] > 0 && [0, 1, 2, 3].includes(r[3])).slice(-REV_MAX);
+}
+// Two devices' logs: every review once (same minute, gap and grade = the same review), oldest first, newest REV_MAX kept.
+function mergeRev(a, b) {
+  const seen = new Set(), out = [];
+  for (const r of a.concat(b)) { const k = r[0] + '|' + r[1] + '|' + r[3]; if (!seen.has(k)) { seen.add(k); out.push(r); } }
+  return out.sort((x, y) => x[0] - y[0]).slice(-REV_MAX);
+}
+// Best K for the logged reviews: least log-loss of "remembered" (grade > 0) against fsRetr(t, K·s), found by golden-section
+// search on ln K, with a light pull towards 1 while there are few reviews. null below FIT_MIN reviews.
+function fsFit(rows = S.rev) {
+  const n = rows.length;
+  if (n < FIT_MIN) return null;
+  const R = (r, k) => fsClamp(fsRetr(r[1], r[2] * k), 1e-4, 1 - 1e-4);
+  const loss = (lk) => { const k = Math.exp(lk); let L = 0; for (const r of rows) L -= r[3] > 0 ? Math.log(R(r, k)) : Math.log(1 - R(r, k)); return L / n + 10 * lk * lk / n; };
+  let a = Math.log(FSK_MIN), b = Math.log(FSK_MAX);
+  const phi = (Math.sqrt(5) - 1) / 2;
+  let c = b - phi * (b - a), d = a + phi * (b - a), fc = loss(c), fd = loss(d);
+  for (let it = 0; it < 40; it++) {
+    if (fc < fd) { b = d; d = c; fd = fc; c = b - phi * (b - a); fc = loss(c); }
+    else { a = c; c = d; fc = fd; d = a + phi * (b - a); fd = loss(d); }
+  }
+  const k = Math.round(Math.exp((a + b) / 2) * 100) / 100;
+  const mean = (f) => rows.reduce((t, r) => t + f(r), 0) / n;
+  return { k, n, actual: mean((r) => (r[3] > 0 ? 1 : 0)), pred: mean((r) => R(r, 1)), predK: mean((r) => R(r, k)) };
+}
 const retention = () => fsClamp(+S.settings.retention || 0.9, 0.7, 0.97);
 // Current memory state of a stored card: { s, d, t } (t = days since the last review).
 function fsState(p) {
@@ -1488,7 +1534,7 @@ function schedFSRS(p, g) {
   let s, d;
   if (!p || (p.s || 0) === 0) { s = w[G - 1]; d = fsD0(G); }
   else {
-    const o = fsState(p), r = fsRetr(o.t, o.s);
+    const o = fsState(p), r = fsRetr(o.t, o.s * fsK());
     d = o.d + (-w[6] * (G - 3)) * (10 - o.d) / 9;
     d = fsClamp(w[7] * fsD0(4) + (1 - w[7]) * d, 1, 10);
     if (o.t < 1) s = o.s * Math.exp(w[17] * (G - 3 + w[18])); // another look on the same day
@@ -1497,7 +1543,7 @@ function schedFSRS(p, g) {
     if (G >= 3) s = Math.max(s, o.s);
   }
   s = fsClamp(s, 0.1, MAX_IVL * 2);
-  const i = g === 0 ? 0 : fsClamp(Math.round(fsIvl(s, retention())), 1, MAX_IVL);
+  const i = g === 0 ? 0 : fsClamp(Math.round(fsIvl(s * fsK(), retention())), 1, MAX_IVL); // × the learner's own K (1.153.0)
   return { i, e, b: boxOf(i), st: Math.round(s * 100) / 100, df: Math.round(d * 100) / 100, lr: Date.now() };
 }
 const sched = (p, g) => (fsOn() ? schedFSRS(p, g) : schedSM2(p, g));
@@ -1544,6 +1590,7 @@ function grade(w, g, map = S.prog) {
     if (S.daily.fresh === newGoal()) setTimeout(() => { confetti(); toast('🎯 ครบเป้าคำใหม่วันนี้แล้ว เก่งมาก!'); }, 300);
   } else S.daily.reviews++;
   if (main && p && (p.s || 0) > 0 && p.d <= Date.now()) retLog(ivlOf(p), g > 0); // a card that was due: did it come back?
+  if (main && p && (p.s || 0) > 0) revLog(p, g); // every recall of a card seen before (due or early) feeds fsFit()
   const n = sched(p, g);
   if (main && g > 0 && p && p.b < MASTERED && n.b >= MASTERED) masteredMoment(w); // 1.128: the moment a word becomes "จำได้แล้ว"
   map[w.w] = {

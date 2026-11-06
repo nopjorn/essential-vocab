@@ -1578,6 +1578,9 @@ html.no-ans .streak.bump { animation: none; }
 .story.k-dialogue .st-para:nth-child(even) { border-radius: 14px 14px 4px 14px; background: color-mix(in srgb, var(--primary) 14%, var(--surface)); }
 .story.k-email .st-para:first-child { font-weight: 800; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
 .ret-sum { font-size: 17px; margin-bottom: 4px; } .ret-sum b { font-size: 22px; }
+/* personal schedule (1.153.0) inside the retention card */
+.fsk-box { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.fsk-k b { font-size: 22px; }
 /* listening review (1.108) */
 .ear-box .sh-en { min-height: 1.4em; }
 .ear-box .sh-th { min-height: 1.5em; font-size: 22px; font-weight: 700; }

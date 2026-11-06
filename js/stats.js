@@ -124,8 +124,33 @@ function retCard() {
   return `<div class="h2">🎯 จำได้จริงเทียบกับเป้า</div><div class="card-box">
     <div class="ret-sum"><b>${enough ? actual + '%' : '–'}</b> <span class="muted">จำได้จริง</span> <span class="muted">·</span> <b>${target}%</b> <span class="muted">เป้า (${tot[0]} ใบที่ทวน)</span></div>
     <table class="g-table"><tr><th>ห่างจากรอบก่อน</th><th>ทวน</th><th>จำได้</th></tr>${S.ret.map((r, b) => `<tr><td>${RET_BUCKETS[b]}</td><td>${r[0]}</td><td>${r[0] >= 5 ? pct(r) : '–'}</td></tr>`).join('')}</table>
-    <div class="small muted" style="margin-top:8px">${advice}</div></div>`;
+    <div class="small muted" style="margin-top:8px">${advice}</div>${fskBox()}</div>`;
 }
+// 🧠 Personal schedule (1.153.0): what fsFit() found in this learner's own reviews, and a button to use it (settings.fsk).
+function fskBox() {
+  if (!fsOn()) return '';
+  const cur = fsK(), f = fsFit(), x = (k) => '×' + k.toFixed(2).replace(/0$/, '');
+  let body;
+  if (!f) body = `<div class="small muted">เก็บข้อมูลการทวนแฟลชการ์ดแล้ว <b>${S.rev.length}/${FIT_MIN}</b> ครั้ง · ครบแล้วแอปจะคำนวณว่าความจำของคุณอยู่ได้นานกว่าหรือสั้นกว่าค่ามาตรฐานของ FSRS</div>`;
+  else {
+    const near = Math.abs(f.k - 1) < 0.1, pct = Math.round(Math.abs(f.k / cur - 1) * 100);
+    const what = near ? '✅ ใกล้ค่ามาตรฐาน: ตารางทบทวนเดิมเข้ากับความจำของคุณดีแล้ว'
+      : f.k > 1 ? `📈 คุณจำได้นานกว่าค่ามาตรฐาน (ทำนายไว้ ${Math.round(f.pred * 100)}% แต่จำได้จริง ${Math.round(f.actual * 100)}%)`
+      : `📉 คุณลืมเร็วกว่าค่ามาตรฐาน (ทำนายไว้ ${Math.round(f.pred * 100)}% แต่จำได้จริง ${Math.round(f.actual * 100)}%)`;
+    const effect = Math.abs(f.k - cur) < 0.05 ? '' : f.k > cur ? `ใช้ค่านี้แล้วรอบทวนจะห่างขึ้น (ราว ${pct}% ในระยะยาว) ทวนน้อยลงโดยความจำยังได้ตามเป้า` : `ใช้ค่านี้แล้วรอบทวนจะถี่ขึ้น (ราว ${pct}% ในระยะยาว) จำได้ตามเป้ามากขึ้น`;
+    body = `<div class="fsk-k"><b>${x(f.k)}</b> <span class="muted small">ความจำของคุณเทียบค่ามาตรฐาน (จาก ${f.n} ครั้งที่ทวน)</span></div>
+      <div class="small">${what}</div>${effect ? `<div class="small muted">${effect}</div>` : ''}
+      ${Math.abs(f.k - cur) >= 0.05 && !(near && cur === 1) ? `<button class="btn primary" data-fsk="${f.k}" style="margin-top:8px">ใช้ ${x(f.k)}</button>` : ''}`;
+  }
+  return `<div class="fsk-box" id="fskBox"><b>🧠 ตารางทบทวนเฉพาะตัว</b> ${cur !== 1 ? `<span class="small muted">· ตอนนี้ใช้ ${x(cur)}</span>` : ''}
+    ${body}${cur !== 1 ? `<button class="btn" data-fsk="1" style="margin-top:8px">กลับไปใช้ค่ามาตรฐาน</button>` : ''}</div>`;
+}
+view.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-fsk]'); if (!b) return;
+  S.settings.fsk = +b.dataset.fsk; save();
+  toast(S.settings.fsk === 1 ? 'กลับไปใช้ค่ามาตรฐานแล้ว' : `🧠 ใช้ตารางเฉพาะตัว ×${S.settings.fsk} แล้ว มีผลกับการทวนครั้งถัดไปของแต่ละคำ`);
+  const box = $('#fskBox'); if (box) box.outerHTML = fskBox();
+});
 
 function renderStats(from) {
   takeSnap();
