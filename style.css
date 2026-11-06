@@ -264,15 +264,18 @@ html.no-ans .ring-burst { display: none; } html.no-ans .hero.ring-party .ring { 
 .gpick-go:active .gpick-play { transform: scale(.92); }
 .gpick-next { flex: none; }
 /* other play pages: compact 3×2 shortcut grid */
-.short-h { margin-top: 18px !important; }
-.short-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.short-tile { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 12px 4px 10px; border: 0; border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); color: var(--text); font: inherit; text-align: center; line-height: 1.25; }
+.short-h { margin-top: 2px !important; }
+/* 1.157.1: a strip under today's pick; phone = sideways scroll with a fade at the right edge, ≥700 px = one row of 7 */
+.short-grid { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-16px / var(--uz, 1)); padding: 2px calc(16px / var(--uz, 1)) 10px; scroll-padding-inline: 16px;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.short-grid::-webkit-scrollbar { display: none; }
+.short-grid.at-end { -webkit-mask-image: none; mask-image: none; }
+.short-tile { flex: 0 0 88px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 12px 4px 10px; border: 0; border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); color: var(--text); font: inherit; text-align: center; line-height: 1.25; }
 .short-tile .si { font-size: 26px; line-height: 1.1; }
 .short-tile b { font-size: var(--fs-sm); }
 .short-tile small { font-size: var(--fs-xs); color: var(--muted); }
 .short-tile:active { transform: scale(.96); }
-.ref-link { margin-top: 12px; }
-@media (min-width: 700px) { .short-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+@media (min-width: 700px) { .short-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); overflow: visible; margin-inline: 0; padding: 0; -webkit-mask-image: none; mask-image: none; } }
 
 /* flashcards */
 .session-top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }

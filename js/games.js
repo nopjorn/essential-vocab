@@ -112,18 +112,26 @@ function renderRef() {
   $('#refBack').onclick = () => go('games');
   view.querySelector('.ref-grid').onclick = (e) => { const b = e.target.closest('[data-r]'); if (b) REF_PAGES[b.dataset.r](); };
 }
-// The other play pages as a compact 3×2 grid + the reference library button, at the bottom of the games menu.
+// The other play pages + the reference library (1.157.1: a strip near the top, sideways scroll on a phone, one row on wider screens;
+// it used to sit under all 41 games where few found it).
 function gameShortcuts() {
   const t = (attr, ic, name, meta) => `<button class="short-tile" ${attr}><span class="si">${ic}</span><b>${name}</b><small>${meta}</small></button>`;
-  return `<div class="small muted games-sec short-h"><b>✨ เล่นแบบอื่น</b></div><div class="short-grid">
+  return `<div class="small muted games-sec short-h"><b>🎪 เล่นแบบอื่น</b></div><div class="short-grid" role="group" aria-label="เล่นแบบอื่น">
       ${t('data-go="fun"', '🎪', 'โซนสนุก', `🪙 ${coinBal()}`)}
       ${t('id="toRiddle"', '🔤', 'ปริศนาศัพท์', riddleToday().over ? 'ทำแล้ว ✅' : 'คำใหม่วันนี้')}
       ${t('id="toWs"', '🔎', 'ค้นหาคำ', 'ตาราง 10×10')}
       ${t('id="toMap"', '🗺️', 'แผนที่ด่าน', `ผ่าน ${stageTotals()}`)}
       ${t('id="toDuel"', '⚔️', 'ท้าดวลเพื่อน', `${DUEL_N} ข้อ`)}
       ${t('id="toRead"', '📖', 'เรื่องสั้น', `อ่านแล้ว ${Object.keys(S.read).length}/${STORY_COUNT}`)}
-    </div>
-    <button class="card-box guide-link ref-link" id="toRef"><span>📚</span><div class="grow"><b>คลังความรู้</b><div class="small muted">${REF_LIST.length} หัวข้อ: คู่คำสับสน ครอบครัวคำ Phrasal verbs สำนวน IPA …</div></div><span class="muted">›</span></button>`;
+      ${t('id="toRef"', '📚', 'คลังความรู้', `${REF_LIST.length} หัวข้อ`)}
+    </div>`;
+}
+// A sideways-scrolling row fades out at its right edge while there is more to see (CSS); `.at-end` drops the fade (1.157.1).
+function edgeFade(el) {
+  if (!el) return;
+  const f = () => el.classList.toggle('at-end', el.scrollLeft + el.clientWidth >= el.scrollWidth - 4);
+  el.addEventListener('scroll', f, { passive: true });
+  requestAnimationFrame(f); // measured after the page is drawn, never mid-script
 }
 let gameSource = 'level';
 let gameTopic = 'food';
@@ -267,11 +275,10 @@ function renderGames() {
       <div class="small muted" id="gDiff" style="margin-top:8px">🎚️ ความยากเกมตัวเลือก: <b>${diffLabel()}</b> · <a href="#" id="gDiffSet">ปรับในตั้งค่า</a></div>
       ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
     </div>
-    ${gameEdit ? '' : gamePickCard() + gameSections()}
+    ${gameEdit ? '' : gamePickCard() + gameShortcuts() + gameSections()}
     <div class="row games-head"><b class="grow">${gameEdit ? '✏️ จัดหน้าเกม' : (gamePins().length ? '🎮 เกมอื่นๆ' : '🎮 เกมทั้งหมด')}</b>${gameEdit ? '' : `<button class="icon-btn" id="gView" aria-label="${gameView() === 'list' ? 'ดูแบบการ์ดใหญ่' : 'ดูแบบรายการ'}" title="${gameView() === 'list' ? 'ดูแบบการ์ดใหญ่' : 'ดูแบบรายการ'}">${gameView() === 'list' ? '🔲' : '☰'}</button>`}<button class="btn${gameEdit ? ' primary' : ''}" id="gEdit">${gameEdit ? '✓ เสร็จ' : '✏️ จัดเกม'}</button></div>
     ${gameEdit ? gameEditor() : `${gameList()}
-    ${gameHidden().size ? `<details class="card-box hidden-games"><summary class="small muted">🙈 เกมที่ซ่อนไว้ (${gameHidden().size})</summary><div class="${gridCls()}" style="margin-top:10px">${[...gameHidden()].map(gameTile).join('')}</div></details>` : ''}
-    ${gameShortcuts()}`}`;
+    ${gameHidden().size ? `<details class="card-box hidden-games"><summary class="small muted">🙈 เกมที่ซ่อนไว้ (${gameHidden().size})</summary><div class="${gridCls()}" style="margin-top:10px">${[...gameHidden()].map(gameTile).join('')}</div></details>` : ''}`}`;
   if ($('#gSkill')) $('#gSkill').onclick = (e) => {
     const c = e.target.closest('[data-skill]'); if (!c) return;
     gameSkill = c.dataset.skill;
@@ -282,6 +289,7 @@ function renderGames() {
   if (gameEdit) bindGameEditor();
   if (!gameEdit) {
     bindGamePick();
+    edgeFade(view.querySelector('.short-grid'));
     $('#toRead').onclick = () => go('read');
     $('#toRiddle').onclick = () => go('riddle');
     $('#toDuel').onclick = () => go('duel');

@@ -1799,10 +1799,10 @@ test('games menu layout (1.127): list view by default, card toggle, folding skil
   await view.locator('#gSkill [data-skill="all"]').click();
   await view.locator('[data-fold="hear"]').click();
   await expect(view.locator('[data-game="listen"]')).toBeVisible();
-  // shortcuts come after the games; the reference library is its own page and its pages come back to it
-  const order = await page.evaluate(() => { const a = view.querySelector('#gSkill'), b = view.querySelector('.short-grid'); return !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING); });
+  // shortcuts (1.157.1: above the games, คลังความรู้ is the 7th); the reference library is its own page and its pages come back to it
+  const order = await page.evaluate(() => { const a = view.querySelector('#gSkill'), b = view.querySelector('.short-grid'); return !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_PRECEDING); });
   expect(order).toBe(true);
-  await expect(view.locator('.short-tile')).toHaveCount(6);
+  await expect(view.locator('.short-tile')).toHaveCount(7);
   await expect(view.locator('.ref-tile')).toHaveCount(0);
   await view.locator('#toRef').click();
   await expect(page.locator('#title')).toHaveText('คลังความรู้');

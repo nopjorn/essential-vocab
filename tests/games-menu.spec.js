@@ -62,3 +62,29 @@ test("today's pick: a game with a reason, cycles with 🔄, starts the game and 
   expect(m.x).toBeUndefined();
   expect(errors).toEqual([]);
 });
+
+test('the other play pages sit right under the pick: a sideways strip on a phone (fades while there is more), one row on an iPad', async ({ page }) => {
+  const errors = await openApp(page, {});
+  await page.evaluate(() => go('games'));
+  const r = await page.evaluate(() => {
+    const g = view.querySelector('.short-grid'), pick = view.querySelector('#gPick'), first = view.querySelector('.game-grid');
+    return { after: !!(pick.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING), before: !!(first.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_PRECEDING),
+      ids: [...g.querySelectorAll('.short-tile')].map((b) => b.id || b.dataset.go), scrolls: g.scrollWidth > g.clientWidth, top: g.getBoundingClientRect().top < innerHeight };
+  });
+  expect(r.after).toBe(true);
+  expect(r.before).toBe(true);
+  expect(r.ids).toEqual(['fun', 'toRiddle', 'toWs', 'toMap', 'toDuel', 'toRead', 'toRef']);
+  expect(r.scrolls).toBe(true);
+  expect(r.top).toBe(true); // seen without scrolling the page
+  await expect(page.locator('.short-grid')).not.toHaveClass(/at-end/);
+  await page.evaluate(() => { view.querySelector('.short-grid').scrollLeft = 9999; });
+  await expect(page.locator('.short-grid')).toHaveClass(/at-end/);
+  await page.click('#toRef');
+  await expect(page.locator('#title')).toHaveText('คลังความรู้');
+  // iPad: one row of 7, no sideways scroll
+  await page.setViewportSize({ width: 1032, height: 1376 });
+  await page.evaluate(() => go('games'));
+  const ipad = await page.evaluate(() => { const g = view.querySelector('.short-grid'); return { scrolls: g.scrollWidth > g.clientWidth, rows: new Set([...g.children].map((c) => Math.round(c.getBoundingClientRect().top))).size }; });
+  expect(ipad).toEqual({ scrolls: false, rows: 1 });
+  expect(errors).toEqual([]);
+});
