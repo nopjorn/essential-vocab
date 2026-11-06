@@ -160,12 +160,14 @@ function renderYear(arg) {
   }
   const slides = yearSlides(s); let i = 0;
   const show = () => {
-    const sl = slides[i];
+    const sl = slides[i], last = i === slides.length - 1;
+    // 1.153.1: the share button has a row of its own on the last slide (three buttons in one row were squeezed to 3 lines at 320 px)
     view.innerHTML = `<div class="card-box center pop year-slide"><div class="result-emoji" aria-hidden="true">${sl.e}</div>
-      <div class="h1 year-big">${esc(String(sl.big))}</div><p>${yearLine(sl.line)}</p>
+      <div class="h1 year-big${String(sl.big).length > 10 ? ' long' : ''}">${esc(String(sl.big))}</div><p>${yearLine(sl.line)}</p>
       <div class="year-dots" aria-label="${i + 1}/${slides.length}">${slides.map((_, k) => `<i${k === i ? ' class="on"' : ''}></i>`).join('')}</div>
+      ${last ? '<button class="btn primary block year-share" id="yShare">📤 แชร์สรุปปี</button>' : ''}
       <div class="row year-nav">${i ? '<button class="btn" id="yPrev">‹ ก่อนหน้า</button>' : ''}
-      ${i < slides.length - 1 ? '<button class="btn primary grow" id="yNext">ต่อไป ›</button>' : '<button class="btn primary grow" id="yShare">📤 แชร์สรุปปี</button><button class="btn" id="yDone">เสร็จ</button>'}</div></div>`;
+      ${!last ? '<button class="btn primary grow" id="yNext">ต่อไป ›</button>' : '<button class="btn grow" id="yDone">เสร็จ</button>'}</div></div>`;
     const on = (id, fn) => { const b = $(id); if (b) b.onclick = fn; };
     on('#yPrev', () => { i--; show(); });
     on('#yNext', () => { i++; show(); });

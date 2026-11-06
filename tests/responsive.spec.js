@@ -75,3 +75,31 @@ test('short window 900×600: the six matching rows fit without scrolling', async
   expect(last.y + last.height).toBeLessThanOrEqual(600);
   expect(errors).toEqual([]);
 });
+
+// 1.153.1 (checked ahead of the year in review, shown from 15 Dec): at 320 px the last slide's share button gets a row of its own
+// and a long "most forgotten" word fits; the "updated to …" bar keeps its ✕ on screen (its text wraps instead).
+test('narrow window 320×744: year in review slides and the update bar fit', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 744 });
+  const errors = await openApp(page, { placedAt: '2026-01-01', hist: { '2026-03-01': 20, '2026-03-02': 15 }, prog: { 'thought-provoking': { b: 1, i: 1, e: 2.5, d: Date.now(), s: 9, c: 2, x: 7 } } });
+  await page.evaluate(() => go('year', 2026));
+  const seen = [];
+  for (;;) {
+    const r = await page.evaluate(() => {
+      const big = document.querySelector('.year-big'), out = [...document.querySelectorAll('.year-slide *')].some((e) => { const b = e.getBoundingClientRect(); return b.width && (b.right > innerWidth + 0.5 || b.left < -0.5); });
+      const sh = document.getElementById('yShare'), lines = (b) => Math.round(b.getBoundingClientRect().height / parseFloat(getComputedStyle(b).lineHeight || 20));
+      return { big: big.textContent, fits: big.scrollWidth <= big.clientWidth + 1, out, share: sh ? sh.getBoundingClientRect().height : 0, next: !!document.getElementById('yNext') };
+    });
+    seen.push(r.big);
+    expect(r.fits, `"${r.big}" is wider than its slide`).toBe(true);
+    expect(r.out, `slide "${r.big}" has something off the screen`).toBe(false);
+    if (!r.next) { expect(r.share).toBeGreaterThan(0); expect(r.share).toBeLessThan(60); break; } // one line
+    await page.click('#yNext');
+  }
+  expect(seen).toContain('thought-provoking');
+  // the bar shown after an update
+  await page.evaluate(() => { S.seenVer = '1.0.0'; whatsNew(); });
+  await expect(page.locator('#newBar')).toBeVisible();
+  const bar = await page.evaluate(() => [...document.querySelectorAll('#newBar button')].map((b) => b.getBoundingClientRect().right));
+  for (const right of bar) expect(right).toBeLessThanOrEqual(320);
+  expect(errors).toEqual([]);
+});
