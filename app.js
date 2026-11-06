@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.155.1';
+const APP_VERSION = '1.155.2';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -242,6 +242,8 @@ const defaults = () => ({
   sketchAt: {},        // word -> ms of the last edit or delete of its drawing (newest wins, like noteAt)
   starAt: {},          // word -> ms the star was last set or removed (1.105.4)
   miss: {},            // 'YYYY-MM-DD' -> { word: times wrong that day } (last 21 days)
+  missY: {},           // 'YYYY' -> device id -> { word: times wrong that year } (this year and last; 1.155.2, year in review)
+  missYFrom: '',       // first day missY was kept: a year counts only if its whole year was logged (otherwise all-time `x` is shown)
   weekSeen: '',        // Monday key of the last weekly summary the user dismissed
   monthSeen: '',       // 'YYYY-MM' of the month whose summary card was dismissed
   read: {},            // story id -> date finished
@@ -282,7 +284,7 @@ function load() {
       // A missing/odd riddle record (older backup, sync from another device) must never break the home screen.
       if (!r.mascot || typeof r.mascot !== 'object' || !r.mascot.equip || typeof r.mascot.equip !== 'object') r.mascot = d.mascot;
       if (!Array.isArray(r.ret) || r.ret.length !== 4 || r.ret.some((x) => !Array.isArray(x) || !isNum(x[0]) || !isNum(x[1]))) r.ret = d.ret;
-      r.rev = cleanRev(r.rev);
+      r.rev = cleanRev(r.rev); r.missY = cleanMissY(r.missY);
       if (!Array.isArray(r.owned)) r.owned = [];
       if (!r.evt || typeof r.evt !== 'object' || Array.isArray(r.evt)) r.evt = {};
       r.adv = cleanAdv(r.adv);
@@ -445,6 +447,11 @@ function mergeBackup(d) {
   S.backupAt = Math.max(S.backupAt || 0, d.backupAt || 0);
   // Stars and memory hooks: the newer edit wins (also a delete / un-star, kept as a time stamp). Without stamps (older data) only additions come in.
   S.rev = mergeRev(S.rev, cleanRev(d.rev));
+  for (const [y, devs] of Object.entries(cleanMissY(d.missY))) for (const [dev, m] of Object.entries(devs)) {
+    const mine = ((S.missY[y] = S.missY[y] || {})[dev] = S.missY[y][dev] || {});
+    for (const [w, n] of Object.entries(m)) mine[w] = Math.max(mine[w] || 0, n); // each device counts its own: max, never a sum twice
+  }
+  if (typeof d.missYFrom === 'string' && /^\d{4}-\d\d-\d\d$/.test(d.missYFrom) && (!S.missYFrom || d.missYFrom < S.missYFrom)) S.missYFrom = d.missYFrom;
   if (Array.isArray(d.ret) && d.ret.length === 4) d.ret.forEach((x, b) => { if (Array.isArray(x) && isNum(x[0]) && isNum(x[1]) && x[0] > S.ret[b][0]) S.ret[b] = [x[0], Math.min(x[0], x[1])]; });
   for (const [w, at] of Object.entries(d.starAt || {})) if (isNum(at) && at > (S.starAt[w] || 0)) { S.starAt[w] = at; if (d.star && d.star[w]) S.star[w] = 1; else delete S.star[w]; }
   for (const w of Object.keys(d.star || {})) if (!(w in (d.starAt || {})) && !(w in S.starAt)) S.star[w] = 1;
@@ -1567,6 +1574,25 @@ function logMiss(w) {
   const t = today();
   (S.miss[t] = S.miss[t] || {})[w.w] = (S.miss[t][w.w] || 0) + 1;
   for (const k of Object.keys(S.miss)) if (dayDiff(t, k) > 21) delete S.miss[k];
+  // the year's tally for the year in review (1.155.2): this device's own bucket; years before last are dropped
+  const y = t.slice(0, 4), m = ((S.missY[y] = S.missY[y] || {})[DEV] = S.missY[y][DEV] || {});
+  m[w.w] = (m[w.w] || 0) + 1;
+  if (!S.missYFrom) S.missYFrom = t;
+  for (const k of Object.keys(S.missY)) if (+k < +y - 1) delete S.missY[k];
+}
+// A function declaration on purpose: load() runs before this line. { 'YYYY': { device: { word: count > 0 } } }, nothing else.
+function cleanMissY(o) {
+  const out = {};
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return out;
+  for (const [y, devs] of Object.entries(o)) {
+    if (!/^\d{4}$/.test(y) || !devs || typeof devs !== 'object' || Array.isArray(devs)) continue;
+    for (const [dev, m] of Object.entries(devs)) {
+      if (!m || typeof m !== 'object' || Array.isArray(m)) continue;
+      const ok = Object.entries(m).filter(([, n]) => isNum(n) && n > 0);
+      if (ok.length) (out[y] = out[y] || {})[dev] = Object.fromEntries(ok);
+    }
+  }
+  return out;
 }
 // Real retention (1.107): every review of a card that was due counts in a bucket by the gap it had (1–2, 3–6, 7–20, 21+ days):
 // [reviewed, remembered]. Cards pressed "forgot" are not remembered. Halved at 400 so it follows recent weeks.

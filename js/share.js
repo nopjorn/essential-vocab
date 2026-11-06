@@ -108,13 +108,23 @@ function yearStats(y) {
   const busiest = keys.reduce((b, k) => (!b || S.hist[k] > S.hist[b] ? k : b), null);
   const snaps = Object.keys(S.snap).sort(), inY = snaps.filter((k) => k.startsWith(pre)), before = snaps.filter((k) => k < pre + '-01-01');
   const learned = inY.length ? S.snap[inY[inY.length - 1]][2] - (before.length ? S.snap[before[before.length - 1]][2] : 0) : null;
-  const top = Object.entries(S.prog).filter(([, p]) => (p.x || 0) > 0).sort((a, b) => b[1].x - a[1].x).slice(0, 5);
+  // Most forgotten words: the year's own tally once the whole year was logged (missY, from 1.155.2), else the all-time count
+  // (p.x, which also holds earlier years: the slide says so).
+  const yl = S.missY[pre], whole = !!S.missYFrom && S.missYFrom <= pre + '-01-01';
+  let top, topAll = false;
+  if (yl && whole) {
+    const sum = {}; for (const m of Object.values(yl)) for (const [w, n] of Object.entries(m)) sum[w] = (sum[w] || 0) + n;
+    top = Object.entries(sum).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([w, n]) => [w, { x: n }]);
+  } else {
+    top = Object.entries(S.prog).filter(([, p]) => (p.x || 0) > 0).sort((a, b) => b[1].x - a[1].x).slice(0, 5);
+    topAll = true;
+  }
   return {
     y, days: keys.length, total, cards, games: Math.max(0, total - cards), longest, busiest, busiestN: busiest ? S.hist[busiest] : 0, learned,
     stories: Object.values(S.read).filter((d) => d.startsWith(pre)).length,
     medals: Object.values(S.ach).filter((d) => String(d).startsWith(pre)).length,
     xp: Object.entries(S.xpWeek).filter(([k]) => k.startsWith(pre)).reduce((a, [, v]) => a + v, 0),
-    top,
+    top, topAll,
   };
 }
 // The year to show on home: from 15 Dec this year, and during 1–10 Jan the year that just ended.
@@ -134,7 +144,7 @@ function yearSlides(s) {
   if (s.busiest) slides.push({ e: '⚡', big: `${s.busiestN} ข้อ`, line: `ขยันที่สุดในวันเดียว คือ ${thDate(Date.parse(s.busiest + 'T12:00:00'))}` });
   if (s.stories) slides.push({ e: '📖', big: `${s.stories} เรื่อง`, line: 'เรื่องสั้นที่อ่านจบ' });
   if (s.medals) slides.push({ e: '🏅', big: `${s.medals} เหรียญ`, line: 'ที่ได้ในปีนี้' });
-  if (s.top.length) slides.push({ e: '🐢', big: s.top[0][0], line: `คำที่ลืมบ่อยที่สุด (${s.top[0][1].x} ครั้ง)${s.top.length > 1 ? ' · ตามด้วย ' + s.top.slice(1, 4).map(([w]) => w).join(', ') : ''}` });
+  if (s.top.length) slides.push({ e: '🐢', big: s.top[0][0], line: `${s.topAll ? `คำที่ลืมบ่อยที่สุด (${s.top[0][1].x} ครั้ง นับตั้งแต่เริ่มเรียน)` : `คำที่ลืมบ่อยที่สุดในปีนี้ (${s.top[0][1].x} ครั้ง)`}${s.top.length > 1 ? ' · ตามด้วย ' + s.top.slice(1, 4).map(([w]) => w).join(', ') : ''}` });
   slides.push({ e: '🚀', big: 'ปีหน้าไปต่อ!', line: `Lv.${levelOf(S.xp)} · ${(S.xp || 0).toLocaleString()} XP` });
   return slides;
 }
