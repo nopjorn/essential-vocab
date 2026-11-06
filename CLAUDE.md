@@ -141,6 +141,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
   achievements live on the stats page.
 - Leaderboard (`pushBoard`/`loadBoard`, table `leaderboard`) and Web Push (`enablePush`, table `push_subs`,
   `sw.js` push/notificationclick) only appear when sync is configured and signed in.
+- Compact cloud row (1.155.0, `js/sync.js`): `cloudPack()` sends `Z_KEYS` (prog lex rev snap chist dprog) gzipped + base64 in `z` with `zv: 1`, the rest plain, and `prog` as a stub `{word: {d}}` of cards due within `STUB_DAYS` (14) so the daily-reminder Edge Function keeps working unchanged; `cloudUnpack()` restores it before `mergeBackup()` (a damaged `z` throws = no upload). No CompressionStream → plain as before. Older app versions skip the stub cards (no `b`). When adding a big table, add it to `Z_KEYS`. Test `tests/sync-compact.spec.js`.
 - Sync: `syncNow()` = GET row → `mergeBackup()` → upsert; `save()` debounces a push (4 s); also on
   start/visibility. Email OTP code login (`create_user:false` = invite-only). `requireLogin` locks the UI.
   Tests: `fakeSupabase(page, store)` in `tests/helpers.js` mocks the `progress` table with `page.route` (see `tests/decks.spec.js`; before 1.54 there were no sync tests).

@@ -42,6 +42,47 @@ async function verifyCode(email, token) {
   const j = await r.json();
   setAuth({ access_token: j.access_token, refresh_token: j.refresh_token, user: { id: j.user.id, email: j.user.email } });
 }
+/* ---------- compact cloud row (1.155.0) ---------- */
+// The whole state was sent as plain JSON (≈ 780 KB for someone who has studied all 5,000 words, every 30 s while studying).
+// Now the big tables go gzipped + base64 in `z` (the row is about a quarter of the plain size); everything else stays plain as before, so an
+// older app version still merges what it can read and simply skips the rest. `prog` stays as a stub {word: {d}} of the cards
+// due within STUB_DAYS: the daily reminder (supabase/functions/daily-reminder) counts due cards from it and needs no change.
+// Stub entries have no `b`, so mergeBackup() of an older version skips them. Local backups (export) stay plain.
+const Z_KEYS = ['prog', 'lex', 'rev', 'snap', 'chist', 'dprog'], STUB_DAYS = 14; // after 2 weeks away the reminder's count stops growing (still sent)
+const zOk = () => typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
+async function gzipB64(str) {
+  const buf = new Uint8Array(await new Response(new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+  let bin = ''; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+async function gunzipB64(b64) {
+  const bin = atob(b64), buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+}
+// The text sent as the row's data (falls back to the plain state when this browser cannot gzip).
+async function cloudPack(plainStr) {
+  if (!zOk()) return plainStr;
+  try {
+    const heavy = {}, rest = {}, stub = {}, lim = Date.now() + STUB_DAYS * DAY;
+    for (const [k, v] of Object.entries(S)) (Z_KEYS.includes(k) ? heavy : rest)[k] = v;
+    for (const [w, p] of Object.entries(S.prog)) if (p && p.d <= lim) stub[w] = { d: p.d };
+    const head = JSON.stringify({ ...rest, prog: stub, zv: 1 }), heavyStr = JSON.stringify(heavy); // both now, before the await: one moment of S
+    return head.slice(0, -1) + ',"z":' + JSON.stringify(await gzipB64(heavyStr)) + '}';
+  } catch (e) { return plainStr; }
+}
+// A downloaded row back to the full state shape for mergeBackup(). A compact row this browser cannot open loses its stub
+// (never merged as real cards); a damaged `z` throws, so nothing is uploaded over the cloud copy.
+async function cloudUnpack(d) {
+  if (!d || d.zv !== 1 || typeof d.z !== 'string') return d;
+  const out = { ...d }; delete out.z; delete out.zv; delete out.prog;
+  if (!zOk()) return out;
+  let heavy;
+  try { heavy = JSON.parse(await gunzipB64(d.z)); } catch (e) { throw new Error('อ่านข้อมูลจากคลาวด์ไม่ได้ (ไฟล์เสีย)'); }
+  for (const k of Z_KEYS) if (heavy && k in heavy) out[k] = heavy[k];
+  return out;
+}
+
 let pushTimer = null, pulling = false;
 // While the app is in use, changes go to the cloud at most once per PUSH_EVERY ms (the first change starts the clock; later ones
 // ride along). Leaving the app syncs at once (boot.js). Before 1.106.1 every answer re-uploaded the whole state ~4 s later.
@@ -67,15 +108,15 @@ async function syncNow(manual, overwrite) {
       const d = await sbFetch(`/rest/v1/progress?select=data&user_id=eq.${q}`);
       if (!d.ok) throw new Error('โหลดข้อมูลไม่สำเร็จ (' + d.status + ')');
       const row = (await d.json())[0];
-      if (row && row.data) { pulling = true; try { mergeBackup(row.data); } finally { pulling = false; } pulled = true; }
+      if (row && row.data) { const full = await cloudUnpack(row.data); pulling = true; try { mergeBackup(full); } finally { pulling = false; } pulled = true; }
     }
     flushSave(); // the merge (or the last answers) must be in S before it is compared and sent
     const dataStr = JSON.stringify(S);
     if (overwrite || !head || dataStr !== syncState.pushed) {
-      const at = new Date().toISOString();
+      const at = new Date().toISOString(), sent = await cloudPack(dataStr);
       const w = await sbFetch('/rest/v1/progress', {
         method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-        body: `{"user_id":${JSON.stringify(uid)},"data":${dataStr},"updated_at":${JSON.stringify(at)}}`,
+        body: `{"user_id":${JSON.stringify(uid)},"data":${sent},"updated_at":${JSON.stringify(at)}}`,
       });
       if (!w.ok) throw new Error('บันทึกขึ้นคลาวด์ไม่สำเร็จ (' + w.status + ')');
       syncState.remoteAt = Date.parse(at); syncState.pushed = dataStr;
