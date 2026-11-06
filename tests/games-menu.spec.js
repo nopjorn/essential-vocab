@@ -112,3 +112,29 @@ test('top of the menu: source and difficulty as two pills, the difficulty pill o
   expect(rows).toBe(1);
   expect(errors).toEqual([]);
 });
+
+test('tile badges: the best score says สถิติ, untried games say ใหม่ once 3 games were played, descriptions fit (one line at 440 px, never cut)', async ({ page }) => {
+  // only 2 games played: no "new" badges yet (for a beginner every game would be new)
+  let errors = await openApp(page, { gplay: { me: { en2th: 2, listen: 1 } }, best: { en2th: 12 } });
+  await page.evaluate(() => go('games'));
+  await expect(page.locator('.gnew')).toHaveCount(0);
+  await expect(page.locator('#view [data-game="en2th"] .gb').first()).toHaveText(/สถิติ\s*🏅 12/);
+  await page.evaluate(() => { S.glast.spell = today(); go('games'); }); // a third one
+  const r = await page.evaluate(() => ({
+    newIds: [...new Set([...view.querySelectorAll('.game-tile:has(.gnew)')].map((t) => t.dataset.game))],
+    tall: [...view.querySelectorAll('.game-grid.list .gd')].filter((d) => d.getClientRects().length && d.clientHeight > parseFloat(getComputedStyle(d).lineHeight) * 1.5).map((d) => d.textContent),
+    cut: [...view.querySelectorAll('.game-grid.list .gd')].filter((d) => d.scrollHeight > d.clientHeight + 1).map((d) => d.textContent),
+  }));
+  expect(r.newIds).not.toContain('en2th');
+  expect(r.newIds).not.toContain('spell');
+  expect(r.newIds).toContain('minpair');
+  expect(r.newIds.length).toBe(Object.keys(await page.evaluate(() => GAMES)).length - 3);
+  expect(r.tall).toEqual([]);
+  expect(r.cut).toEqual([]);
+  // a narrow phone: long ones wrap to a second line instead of being cut off
+  await page.setViewportSize({ width: 320, height: 744 });
+  await page.evaluate(() => go('games'));
+  const narrow = await page.evaluate(() => [...view.querySelectorAll('.game-grid.list .gd')].filter((d) => d.scrollHeight > d.clientHeight + 1).length);
+  expect(narrow).toBe(0);
+  expect(errors).toEqual([]);
+});

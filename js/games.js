@@ -43,22 +43,22 @@ const GAMES = {
   wform: { icon: '🧬', name: 'เปลี่ยนรูปคำ', desc: 'เลือกรูปคำให้เข้ากับประโยค เช่น decide → decision' },
   phrasal: { icon: '🧩', name: 'Phrasal verbs', desc: 'เติมคำเล็กๆ ให้ครบ เช่น give ___ = เลิก' },
   syn: { icon: '≈', name: 'คำเหมือน–ตรงข้าม', desc: 'big ≈ large, big ↔ small เลือกให้ถูก' },
-  root: { icon: '🌱', name: 'รากศัพท์', desc: 'ส่วนที่ไฮไลต์ในคำ เช่น spect = มอง เลือกความหมายให้ถูก' },
+  root: { icon: '🌱', name: 'รากศัพท์', desc: 'เช่น spect = มอง เลือกความหมายของรากศัพท์' },
   affix: { icon: '🧱', name: 'เติมหน้า–ท้ายคำ', desc: 'un-, -ful, -less … เลือกให้ได้ความหมาย' },
   idiom: { icon: '🎭', name: 'สำนวน', desc: 'piece of cake = ? เลือกความหมายหรือสำนวนให้ถูก' },
   sit: { icon: '🗨️', name: 'ตอบให้เข้าสถานการณ์', desc: 'เลือกประโยคถัดไปในบทสนทนา' },
-  guess: { icon: '🕵️', name: 'เดาความหมายจากบริบท', desc: 'อ่านประโยคจริง เดาความหมายของคำใหม่ก่อนดูเฉลย' },
+  guess: { icon: '🕵️', name: 'เดาความหมายจากบริบท', desc: 'อ่านประโยคจริง เดาความหมายคำใหม่ก่อนดูเฉลย' },
   dictW: { icon: '🔠', name: 'พิมพ์คำที่ได้ยิน', desc: 'ฟังคำเดี่ยวแล้วพิมพ์ทั้งคำ ไม่มีคำแปลช่วย' },
-  hand: { icon: '✏️', name: 'เขียนด้วยมือ', desc: 'ดูคำแปล เขียนคำด้วยนิ้วหรือ Apple Pencil แล้วเทียบกับเฉลย' },
-  compose: { icon: '🖊️', name: 'แต่งประโยคเอง', desc: 'แต่งประโยคด้วยคำนี้ แล้วเทียบกับตัวอย่างของแอป เก็บประโยคไว้ในโน้ต' },
+  hand: { icon: '✏️', name: 'เขียนด้วยมือ', desc: 'ดูคำแปล เขียนด้วยนิ้วหรือ Apple Pencil' },
+  compose: { icon: '🖊️', name: 'แต่งประโยคเอง', desc: 'แต่งประโยคเอง เทียบตัวอย่าง เก็บไว้ในโน้ต' },
   dictS: { icon: '📜', name: 'พิมพ์ประโยคที่ได้ยิน', desc: 'ฟังประโยคแล้วพิมพ์ให้ครบ ตรวจทีละคำ' },
   ipa: { icon: '🔡', name: 'อ่าน IPA', desc: 'ดูวิธีออกเสียง /ˈæpl/ แล้วเลือกคำที่ถูก' },
   real: { icon: '🪧', name: 'ข้อความจริง', desc: 'ป้าย ประกาศ เมนู ใบเสร็จ ฉลาก เลือกคำที่หายไป' },
-  gpat: { icon: '📐', name: 'เลือกรูปที่ถูก (ไวยากรณ์ผูกกับคำ)', desc: 'some advice / enjoy swimming / let me go เลือกรูปให้ถูก' },
+  gpat: { icon: '📐', name: 'เลือกรูปที่ถูก (ไวยากรณ์ผูกกับคำ)', desc: 'some advice / enjoy swimming เลือกให้ถูก' },
   thaierr: { icon: '🩹', name: 'ประโยคไหนถูก', desc: 'ข้อผิดที่คนไทยพบบ่อย เช่น discuss about, advices' },
   dprep: { icon: '🔗', name: 'บุพบทที่ตามหลังคำ', desc: 'interested ___ sports เลือก in / on / at ให้ถูก' },
   irreg: { icon: '⏪', name: 'กริยาไม่ปกติ', desc: 'go → went → gone เลือกกริยาช่อง 2–3 ให้ถูก' },
-  num: { icon: '🔢', name: 'ฟังตัวเลข ราคา เวลา', desc: 'ฟัง fifteen / fifty, $12.50, 7:45, 3 May แล้วเลือกให้ถูก' },
+  num: { icon: '🔢', name: 'ฟังตัวเลข ราคา เวลา', desc: 'ฟัง fifteen / fifty, $12.50, 7:45 เลือกให้ถูก' },
   emoji: { icon: '🖼️', name: 'ทายจากภาพอีโมจิ', desc: 'ดูอีโมจิ เลือกคำอังกฤษที่ตรงกับภาพ' },
   emojiRun: { icon: '♾️', name: 'อีโมจิไม่จำกัด', desc: 'เล่นไปเรื่อยๆ ดูว่าถูกติดต่อกันได้กี่ข้อ' },
   hangman: { icon: '🔡', name: 'ทายตัวอักษร (แฮงแมน)', desc: 'ดูคำแปล แตะเดาตัวอักษรของคำ พลาดได้ 6 ครั้ง' },
@@ -91,10 +91,14 @@ const GAME_SKILLS = [
 let gameSkill = 'all'; // chip selected in the games menu: 'all' or a GAME_SKILLS id
 // Game id → its skill group id: the tile and its group heading share the skill's colour (1.156.0, CSS `.sk-<id>` → `--sk`).
 const SKILL_OF = Object.fromEntries(GAME_SKILLS.flatMap(([sk, , , ids]) => ids.map((id) => [id, sk])));
+// Tile badges (1.157.3): the best score is labelled "สถิติ"; once 3+ different games have been played, the ones never tried say "ใหม่".
+let gameNewOn = false; // set by renderGames()
+const gameTried = (id) => gamePlays(id) > 0 || !!S.glast[id];
 function gameTile(id) {
   const g = GAMES[id];
-  const best = S.best[id] != null ? `<span class="gb">🏅 <i>สถิติ: </i>${S.best[id]}</span>` : '';
-  return `<button class="game-tile sk-${SKILL_OF[id] || 'mean'}" data-game="${id}"><div class="gi" aria-hidden="true">${g.icon}</div><div class="gt"><b>${g.name}</b><span class="gd">${g.desc}</span></div>${best}</button>`;
+  const best = S.best[id] != null ? `<span class="gb"><i>สถิติ</i> 🏅 ${S.best[id]}</span>` : '';
+  const isNew = gameNewOn && !gameTried(id) ? ' <span class="gnew">ใหม่</span>' : '';
+  return `<button class="game-tile sk-${SKILL_OF[id] || 'mean'}" data-game="${id}"><div class="gi" aria-hidden="true">${g.icon}</div><div class="gt"><b>${g.name}${isNew}</b><span class="gd">${g.desc}</span></div>${best}</button>`;
 }
 // Games menu look (1.127): 'list' = one slim row per game (default), 'card' = the big two-column tiles.
 const gameView = () => (S.settings.gameView === 'card' ? 'card' : 'list');
@@ -258,6 +262,7 @@ function renderGames() {
   gameDecks = gameDecks.filter((id) => deckById(id)); // a set deleted meanwhile (also by another device) drops out
   if (gameSource === 'deck' && !gameDecks.length) gameSource = 'level';
   const decks = liveDecks();
+  gameNewOn = Object.keys(GAMES).filter(gameTried).length >= 3;
   const srcName = { level: `ระดับ ${lvNames(S.settings.levels)}`, learned: 'คำที่เรียนแล้ว', all: 'ทุกระดับ', mastered: '🟢 คำที่จำได้แล้ว', star: '⭐ คำติดดาว', leech: '🐢 คำดื้อ', topic: '📂 ตามหมวด', goal: '🎯 ตามเป้าหมาย', deck: gameDecks.length === 1 ? `📚 ${esc(deckById(gameDecks[0]).name || 'ชุดไม่มีชื่อ')}` : `📚 ${gameDecks.length} ชุด (โหมดซ้อม)` }[gameSource] || '';
   view.innerHTML = `
     <div class="card-box src-box">

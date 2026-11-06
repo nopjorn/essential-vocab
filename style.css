@@ -231,7 +231,11 @@ html.no-ans .ring-burst { display: none; } html.no-ans .hero.ring-party .ring { 
 .game-grid.list .game-tile b { font-size: var(--fs-md, 16px); line-height: 1.3; }
 .game-grid.list .gd { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .game-grid.list .gb { flex: none; font-weight: 700; }
-.game-grid.list .gb i { display: none; }
+.game-grid.list .gb { display: flex; flex-direction: column; align-items: center; gap: 0; font-size: var(--fs-sm); color: var(--text); line-height: 1.2; }
+.game-grid.list .gb i { font-size: var(--fs-xs); font-weight: 400; color: var(--muted); }
+/* 1.157.3: a description that doesn't fit wraps to a second line instead of being cut off */
+.game-grid.list .gd { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.game-tile .gnew { display: inline-block; vertical-align: 2px; margin-left: 4px; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 700; line-height: 1.5; color: var(--primary-text); background: var(--surface-2); }
 @media (min-width: 700px) { .game-grid.list { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); } }
 /* skill headings under "ทั้งหมด" fold open/shut */
 .games-sec.fold { display: flex; align-items: center; gap: 6px; width: calc(100% - 8px); background: none; border: 0; padding: 6px 0; font: inherit; color: var(--muted); text-align: left; cursor: pointer; }
