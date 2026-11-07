@@ -186,6 +186,25 @@ function bindHubPick() {
   upd();
   go_.onclick = () => { const { lv, tp } = upd(); cardsFromHub = true; renderCards(`f:${lv}:${tp}`); };
 }
+// ⏸️ An unfinished round (today, not a word set) is kept on this device in localStorage, so leaving with ✕, closing the app
+// or a phone call doesn't lose it: the start screen offers ▶︎ ทำต่อ. {day, q: words still queued, total, done, stats, missed, relearn}.
+const RESUME_KEY = 'o3k.cardq';
+function cardResume() {
+  try {
+    const r = JSON.parse(localStorage.getItem(RESUME_KEY) || 'null');
+    if (!r || r.day !== today() || !Array.isArray(r.q)) return null;
+    const by = new Map(W.map((w) => [w.w, w])), get = (xs) => (Array.isArray(xs) ? xs.map((x) => by.get(x)).filter(Boolean) : []);
+    const q = get(r.q);
+    if (!q.length) return null;
+    return { q, total: Math.max(q.length, r.total | 0), done: Math.max(0, r.done | 0), stats: { ok: (r.stats && r.stats.ok) | 0, again: (r.stats && r.stats.again) | 0 }, missed: get(r.missed), relearn: Array.isArray(r.relearn) ? r.relearn.filter((x) => by.has(x)) : [] };
+  } catch (e) { return null; }
+}
+function cardResumeSet(v) { try { if (v) localStorage.setItem(RESUME_KEY, JSON.stringify(v)); else localStorage.removeItem(RESUME_KEY); } catch (e) { /* private mode */ } }
+function hubResumeBox() {
+  const r = cardResume(); if (!r) return '';
+  return `<div class="card-box ch-resume"><div class="grow"><b>⏸️ รอบที่ทำค้างไว้</b><div class="small muted">ทำไป ${r.done}/${r.total} ใบ · เหลือ ${r.q.length} ใบ</div></div>
+    <button class="btn primary" id="hubResume">▶︎ ทำต่อ</button><button class="icon-btn" id="hubDrop" aria-label="ทิ้งรอบที่ค้าง">✕</button></div>`;
+}
 function hubToday() {
   const q = buildQueueRaw();
   const due = q.filter((w) => S.prog[w.w]), nw = q.length - due.length;
@@ -195,15 +214,15 @@ function hubToday() {
 }
 function renderCardHub() {
   const t = hubToday(), plan = backlogPlan();
-  if (!t.total) return renderCards(); // nothing today: the "done" page with its what-next menu
+  if (!t.total && !cardResume()) return renderCards(); // nothing today: the "done" page with its what-next menu
   const stat = (n, label, cls = '') => `<div class="ch-st${cls}"><b>${n}</b><span>${label}</span></div>`;
   const b = (id, ic, title, sub) => `<button class="quick-btn" data-hub="${id}"><span>${ic}</span><b>${title}</b><small>${sub}</small></button>`;
-  view.innerHTML = `<div class="card-box ch-top">
+  view.innerHTML = `${hubResumeBox()}<div class="card-box ch-top">
       <div class="ch-h">🗂️ การ์ดวันนี้ <span class="small muted">· ระดับ ${lvNames(S.settings.levels)}</span></div>
       <div class="ch-stats">${stat(t.due, 'ทบทวน')}${stat(t.nw, 'คำใหม่')}${t.leech ? stat(t.leech, '🐢 คำดื้อ') : ''}${stat('~' + t.mins, 'นาที')}</div>
       ${plan.on ? '<p class="small muted ch-note">🧹 การ์ดค้างเยอะ วันนี้พักคำใหม่ไว้ก่อน ทวนทีละ 50 ใบที่ค้างนานสุด</p>' : ''}
       <div class="ch-front"><span class="small muted" id="hubFrontL">ด้านหน้าการ์ด</span><div class="seg" id="hubFront" role="group" aria-labelledby="hubFrontL">${[['en', 'อังกฤษ → ไทย'], ['th', 'ไทย → อังกฤษ'], ['mix', 'สลับกัน']].map(([v, t]) => `<button data-front="${v}" class="${(S.settings.front || 'en') === v ? 'on' : ''}" aria-pressed="${(S.settings.front || 'en') === v}">${t}</button>`).join('')}</div></div>
-      <button class="btn primary block ch-go" id="hubStart">▶︎ เริ่มเลย (${t.total} ใบ)</button></div>
+      <button class="btn primary block ch-go" id="hubStart" ${t.total ? '' : 'disabled'}>${t.total ? `▶︎ เริ่มเลย (${t.total} ใบ)` : '🎉 การ์ดวันนี้ครบแล้ว'}</button></div>
     <div class="quick next-steps ch-modes">
       ${b('short', '⏱️', '3 นาที', SHORT_N + ' ใบ ค้างนานสุดก่อน')}
       ${t.due && t.nw ? b('rev', '🔁', 'เฉพาะทบทวน', t.due + ' ใบที่ถึงกำหนด') : ''}
@@ -211,6 +230,10 @@ function renderCardHub() {
     </div>
     ${hubPickBox()}<h2 class="ns-more">อยากฝึกแบบอื่น</h2>${nextSteps(W.filter((w) => S.prog[w.w]).length, true)}`;
   $('#hubStart').onclick = () => { cardsFromHub = true; renderCards(); };
+  if ($('#hubResume')) {
+    $('#hubResume').onclick = () => { cardsFromHub = true; renderCards('resume'); };
+    $('#hubDrop').onclick = () => { cardResumeSet(null); renderCardHub(); };
+  }
   bindHubPick();
   view.querySelectorAll('[data-front]').forEach((el) => { // same switch as ⚙️ ตั้งค่า → การเรียน → ด้านหน้าการ์ด
     el.onclick = () => {
@@ -231,10 +254,13 @@ function renderCards(extra) {
   const deck = extra && typeof extra === 'object' ? deckById(extra.deck) : null;
   if (extra && typeof extra === 'object' && !deck) return go('decks');
   const map = deck ? deckMap(deck.id) : S.prog;
-  const queue = deck ? buildDeckQueue(deck, extra) : buildQueue(extra);
-  const total = queue.length;
-  let done = 0, stats = { again: 0, ok: 0 };
-  const t0 = Date.now(), xp0 = S.xp; let missed = []; // for the summary at the end of the round
+  const res = !deck && extra === 'resume' ? cardResume() : null;
+  if (extra === 'resume' && !res) return renderCardHub();
+  if (!deck && !res) cardResumeSet(null); // a new round replaces the unfinished one
+  const queue = deck ? buildDeckQueue(deck, extra) : res ? res.q : buildQueue(extra);
+  const total = res ? res.total : queue.length;
+  let done = res ? res.done : 0, stats = res ? res.stats : { again: 0, ok: 0 };
+  const t0 = Date.now(), xp0 = S.xp; let missed = res ? res.missed : []; // for the summary at the end of the round
   if (deck) { deck.used = Date.now(); save(); }
   if (deck && !total) { view.innerHTML = deckEmptyHtml(deck); bindDeckSteps(deck); return; }
   if (!total) {
@@ -265,7 +291,7 @@ function renderCards(extra) {
   // Undo stack: snapshots taken before each answer so a mis-tap can be reverted.
   const history = [];
   // Words marked "ยาก" while new: shown again later this session before they're scheduled for tomorrow.
-  let relearn = new Set();
+  let relearn = new Set(res ? res.relearn : []);
   const gradeLabel = (p, g) => {
     const re = relearn.has(card.w);
     if ((!p || re) && g === 1) return 'วนอีกรอบ';
@@ -306,6 +332,7 @@ function renderCards(extra) {
   const landMQ = matchMedia('(min-width: 700px) and (orientation: landscape), (min-width: 520px) and (max-height: 520px)'); // 1.145: squat windows too
   let frontEn = true; // side shown first for the current card (settings.front: en, th or mix)
   function show() {
+    if (!deck) cardResumeSet(queue.length && (done || stats.again) ? { day: today(), q: queue.map((w) => w.w), total, done, stats, missed: missed.map((w) => w.w), relearn: [...relearn] } : null);
     if (!queue.length) return finish();
     card = queue[0]; flipped = false;
     updSide();

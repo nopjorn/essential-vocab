@@ -154,3 +154,33 @@ test('swipe up = easy, swipe down = hard, off in settings', async ({ page }) => 
   await expect(page.locator('#swipeUD')).not.toBeChecked();
   expect(errors).toEqual([]);
 });
+
+test('an unfinished round can be resumed from the start screen (same day, this device) or dropped', async ({ page }) => {
+  const errors = await openApp(page, { ...state(), settings: { levels: ['A1'], newPerDay: 0, autoSpeak: false } });
+  await page.click('#tabbar > button[data-tab="cards"]');
+  await expect(page.locator('.ch-resume')).toHaveCount(0);
+  await page.click('#hubStart');
+  const first = await page.locator('#fc .word').first().textContent();
+  await page.click('#fc'); await page.click('[data-g="0"]'); // forgotten: comes back later in the round
+  await page.click('#fc'); await page.click('[data-g="2"]');
+  await page.click('#quit');
+  await expect(page.locator('.ch-resume')).toContainText('ทำไป 1/5');
+  await expect(page.locator('.ch-resume')).toContainText('เหลือ 4');
+  // survives a reload
+  await page.reload();
+  await page.waitForFunction(() => typeof playOn !== 'undefined' && playOn);
+  await page.evaluate(() => go('cards', 'hub'));
+  await page.click('#hubResume');
+  await expect(page.locator('#pcount')).toHaveText('1/5');
+  // finish it: the summary still lists the word forgotten before the break
+  for (let k = 0; k < 10 && !(await page.locator('.rsum').count()); k++) { await page.click('#fc'); await page.click('[data-g="2"]'); }
+  await expect(page.locator('.rsum-miss')).toContainText(first);
+  expect(await page.evaluate(() => localStorage.getItem('o3k.cardq'))).toBeNull();
+  // drop: ✕ removes the box; another day's leftovers are ignored
+  await page.evaluate(() => { localStorage.setItem('o3k.cardq', JSON.stringify({ day: today(), q: ['apple'], total: 3, done: 2, stats: { ok: 2, again: 0 } })); go('cards', 'hub'); });
+  await page.click('#hubDrop');
+  await expect(page.locator('.ch-resume')).toHaveCount(0);
+  await page.evaluate(() => { localStorage.setItem('o3k.cardq', JSON.stringify({ day: '2020-01-01', q: ['apple'], total: 3, done: 2 })); go('cards', 'hub'); });
+  await expect(page.locator('.ch-resume')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
