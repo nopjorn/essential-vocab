@@ -1310,11 +1310,15 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if ((SURV || TIMED) && isBest && ghostRun.length) { S.ghost = S.ghost || {}; S.ghost[gameId] = ghostRun.slice(0, 400); save(); }
     const ghostEnd = GHOST ? (TIMED ? GHOST.length : GHOST[GHOST.length - 1]) : null;
     const ghostMsg = ghostEnd == null ? '' : `<p class="small">${right_ > ghostEnd ? `👻 แซงเงาตัวเองได้ ${right_ - ghostEnd} ข้อ!` : right_ === ghostEnd ? '👻 เสมอกับเงาตัวเอง' : `👻 เงาตัวเองยังนำอยู่ ${ghostEnd - right_} ข้อ`}</p>`;
+    // 1.163.0: the record is spelled out — new (and the old one), or how far off it was ("เกือบแล้ว" when within 15%)
+    const unit = SURV || TIMED || ENDLESS ? 'ข้อ' : 'แต้ม';
+    const recLine = STAGE ? '' : isBest ? `<p class="res-best new">🏅 สถิติใหม่!${prev != null ? ` <span>(เดิม ${prev} ${unit})</span>` : ''}</p>`
+      : prev != null ? `<p class="res-best">${prev - mark_ + 1 <= Math.max(1, prev * 0.15) ? '😮 เกือบแล้ว! ' : ''}ขาดอีก <b>${prev - mark_ + 1}</b> ${unit} จะทำลายสถิติ <span>(🏅 ${prev})</span></p>` : '';
     const total = ENDLESS || (BOSS && hearts <= 0) ? asked : items.length;
     const correct = total - wrong.length;
     if (!ENDLESS && correct === items.length && items.length >= 10) S.counts.perfect = (S.counts.perfect || 0) + 1;
     questEvent('round', { game: gameId, correct, bestCombo, perfect: !ENDLESS && correct === items.length && items.length >= 10 });
-    if (STAGE ? done.stars >= 2 : SURV || TIMED ? right_ >= 20 : ENDLESS ? bestCombo >= 10 : correct >= 8) confetti(STAGE && done.stars === 3 ? 'burst' : undefined);
+    if ((isBest && prev != null) || (STAGE ? done.stars >= 2 : SURV || TIMED ? right_ >= 20 : ENDLESS ? bestCombo >= 10 : correct >= 8)) confetti(STAGE && done.stars === 3 ? 'burst' : undefined);
     const emoji = STAGE && done.stars === 3 && typeof mascotSvg === 'function' ? `<div class="dance">${mascotSvg({ mood: 'happy', size: 104 })}</div>` : STAGE ? (done.stars === 3 ? '🏆' : done.stars ? '🎉' : '💪') : SURV || TIMED ? (right_ >= 30 ? '🏆' : right_ >= 15 ? '🎉' : '💪') : ENDLESS ? (bestCombo >= 20 ? '🏆' : bestCombo >= 10 ? '🎉' : '💪') : correct === items.length ? '🏆' : correct >= 7 ? '🎉' : correct >= 4 ? '💪' : '📚';
     // 1.129: a normal round gets stars (3 = 9+/10, 2 = 7+, 1 = 4+), น้องคำ acting out the result, and its score counting up
     const PLAIN = !STAGE && !ENDLESS, ratio = items.length ? correct / items.length : 0;
@@ -1323,24 +1327,27 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     const rSay = ratio === 1 ? 'เต็มทุกข้อ! เก่งที่สุดเลย 🎉' : ratio >= 0.8 ? 'เยี่ยมมาก! เกือบเต็มแล้ว ✨' : ratio >= 0.5 ? 'ดีขึ้นเรื่อยๆ นะ ทวนคำที่ผิดอีกนิด 💪' : 'ไม่เป็นไรนะ ลองรอบหน้าด้วยกัน 💛';
     const plainHead = PLAIN && typeof mascotSvg === 'function' ? `<div class="result-emoji res-m${rMood === 'happy' ? ' dance' : ''}" aria-hidden="true">${mascotSvg({ mood: rMood, size: 96, equip: festEquip().equip })}</div>
         <div class="res-stars" role="img" aria-label="${rStars} ดาวจาก 3">${[0, 1, 2].map((k) => `<i class="${k < rStars ? 'on' : ''}" style="--k:${k}">★</i>`).join('')}</div><p class="small res-say">${rSay}</p>` : '';
-    view.innerHTML = `<div class="card-box center pop">
+    view.innerHTML = `<div class="card-box center pop res-top sk-${(typeof SKILL_OF === 'object' && SKILL_OF[gameId]) || 'mean'}">
         ${plainHead || `<div class="result-emoji">${emoji}</div>`}
         ${STAGE ? `<div class="h2" aria-label="${done.stars} ดาว">${starRow(done.stars)}</div>
         <p>${BOSS ? (done.stars ? `🐲 ชนะบอสแล้ว!${done.badge ? ' ได้ 🏅 ตราบอสหมวดนี้ (+25 XP)' : ''}` : '💔 หัวใจหมด บอสชนะรอบนี้ ลองใหม่นะ') : done.stars ? (done.first ? 'ผ่านด่านแล้ว! ปลดล็อกด่านต่อไป 🔓' : 'ผ่านด่านแล้ว') : `ยังไม่ผ่าน ต้องถูกอย่างน้อย ${needFor(items.length)} ข้อ ลองใหม่นะ`} · ถูก ${correct}/${items.length}</p>`
-        : SURV ? `<div class="h2">❤️ รอดมาได้ ${right_} ข้อ ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
-        <p>ไปถึงคำระดับ ${LV_LABEL[LEVELS[reach]]} · คอมโบสูงสุด ${bestCombo}${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>${ghostMsg}`
-        : TIMED ? `<div class="h2">⏱️ ตอบถูก ${right_} ข้อใน ${TIME_LIMIT} วินาที ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
-        <p>ตอบไป ${asked} ข้อ · คอมโบสูงสุด ${bestCombo}${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>${ghostMsg}`
-        : ENDLESS ? `<div class="h2">🔥 ถูกติดต่อกันสูงสุด ${bestCombo} ข้อ ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
-        <p>เล่นไป ${total} ข้อ · ถูก ${correct} · ${score} แต้ม${isBest ? '' : ` · สถิติเดิม ${prev}`}</p>`
-        : `<div class="h2"><b class="res-cnt">${score}</b> แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
-        <p>ถูก ${correct}/${items.length} · คอมโบสูงสุด ${bestCombo}</p>`}
+        : SURV ? `<div class="h2">❤️ รอดมาได้ ${right_} ข้อ</div>
+        <p>ไปถึงคำระดับ ${LV_LABEL[LEVELS[reach]]} · คอมโบสูงสุด ${bestCombo}</p>${recLine}${ghostMsg}`
+        : TIMED ? `<div class="h2">⏱️ ตอบถูก ${right_} ข้อใน ${TIME_LIMIT} วินาที</div>
+        <p>ตอบไป ${asked} ข้อ · คอมโบสูงสุด ${bestCombo}</p>${recLine}${ghostMsg}`
+        : ENDLESS ? `<div class="h2">🔥 ถูกติดต่อกันสูงสุด ${bestCombo} ข้อ</div>
+        <p>เล่นไป ${total} ข้อ · ถูก ${correct} · ${score} แต้ม</p>${recLine}`
+        : `<div class="res-stats">
+          <div><b><span class="res-cnt">${correct}</span><small>/${items.length}</small></b><span>ตอบถูก</span></div>
+          <div><b>${bestCombo}</b><span>🔥 คอมโบ</span></div>
+          <div><b class="res-cnt">${score}</b><span>แต้ม</span></div>
+        </div>${recLine}`}
         ${['en2th', 'th2en', 'listen', 'cloze'].includes(gameId) ? `<p class="small muted">🎚️ ความยากตอนนี้ ${diffLabel()}</p>` : ''}
         ${resultExtras(runLog, xp0)}
       </div>
-      ${wrong.length ? `<div class="card-box wrong-list"><b>${gameId.startsWith('speak') ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b> <span class="small muted">${gameId.startsWith('speak') ? '(แตะคำเพื่อฟังเสียง)' : SKILL_GAMES.includes(gameId) ? '(แตะเพื่อฟังเสียง)' : deckRun.practice ? '(โหมดซ้อม) · กด ☆ เพื่อติดดาว' : deckRun.map ? '(ใส่ในการทบทวนของชุดให้แล้ว) · กด ☆ เพื่อติดดาว' : '(ใส่ในแฟลชการ์ดให้แล้ว) · กด ☆ เพื่อติดดาว'}</span>
-        ${[...new Set(wrong)].map((w) => w.idx < 0 ? `<div class="wl" data-i="-1" data-say="${esc(w._q ? w._q[0].replace('___', w._q[1]) : w._m[0] + ', ' + w._m[2])}"><span><b>${esc(w.w)}</b></span><span class="muted grow" style="text-align:right">${esc(w._q ? w._q[3] : w.t)}</span></div>`
-          : `<div class="wl" data-i="${w.idx}"><span><b>${esc(w.w)}</b> <span class="pos">${esc(w.p)}</span></span><span class="muted grow" style="text-align:right">${esc(w.t)}</span><button class="star-btn" data-star>${starIcon(w)}</button></div>`).join('')}</div>` : ''}
+      ${wrong.length ? `<div class="card-box wrong-list"><div class="wl-h"><b>${gameId.startsWith('speak') ? 'คำที่ควรฝึกออกเสียง' : 'คำที่ควรทบทวน'}</b><span class="wl-n">${new Set(wrong).size}</span></div><div class="small muted wl-hint">${gameId.startsWith('speak') || SKILL_GAMES.includes(gameId) ? '🔊 แตะเพื่อฟังเสียง' : deckRun.practice ? 'โหมดซ้อม · 🔊 ฟังเสียง · ☆ ติดดาว' : deckRun.map ? 'ใส่ในการทบทวนของชุดให้แล้ว · 🔊 ฟังเสียง · ☆ ติดดาว' : 'ใส่ในแฟลชการ์ดให้แล้ว · 🔊 ฟังเสียง · ☆ ติดดาว'}</div>
+        ${[...new Set(wrong)].map((w) => w.idx < 0 ? `<div class="wl" data-i="-1" data-say="${esc(w._q ? w._q[0].replace('___', w._q[1]) : w._m[0] + ', ' + w._m[2])}"><span><b>${esc(w.w)}</b></span><span class="muted grow" style="text-align:right">${esc(w._q ? w._q[3] : w.t)}</span><button class="wl-say" aria-label="ฟังเสียง ${esc(w.w)}">🔊</button></div>`
+          : `<div class="wl" data-i="${w.idx}"><span><b>${esc(w.w)}</b> <span class="pos">${esc(w.p)}</span></span><span class="muted grow" style="text-align:right">${esc(w.t)}</span><button class="wl-say" aria-label="ฟังเสียง ${esc(w.w)}">🔊</button><button class="star-btn" data-star>${starIcon(w)}</button></div>`).join('')}</div>` : ''}
       <div class="res-acts">${wrong.some((w) => w.idx >= 0) && !deckRun.map ? '<button class="btn block" id="wrongDeck">📚 ใส่คำที่ผิดเข้าชุดของฉัน</button>' : ''}
       ${STAGE && done.hasNext ? '<button class="btn primary block" id="stNext">ด่านต่อไป →</button>' : ''}
       <button class="btn ${STAGE && done.hasNext ? '' : 'primary '}block" id="again">${STAGE ? 'เล่นด่านนี้อีกครั้ง' : 'เล่นอีกรอบ'}</button>
@@ -1473,16 +1480,18 @@ function playMatch(src, deckRun = {}) {
     addXP(mistakes <= 2 ? 12 : 6);
     questEvent('match', { mistakes });
     if (isBest || mistakes === 0) confetti();
-    view.innerHTML = `<div class="card-box center pop">
+    view.innerHTML = `<div class="card-box center pop res-top sk-mean">
         <div class="result-emoji">⚡</div>
-        <div class="h2">${score} แต้ม ${isBest ? '· สถิติใหม่! 🏅' : ''}</div>
+        <div class="h2"><b class="res-cnt">${score}</b> แต้ม</div>
         <p>เวลา ${((Date.now() - start) / 1000).toFixed(1)} วินาที · ผิด ${mistakes} ครั้ง (+3 วิ/ครั้ง)</p>
+        ${isBest ? `<p class="res-best new">🏅 สถิติใหม่!${prev != null ? ` <span>(เดิม ${prev} แต้ม)</span>` : ''}</p>` : `<p class="res-best">ขาดอีก <b>${prev - score + 1}</b> แต้ม จะทำลายสถิติ <span>(🏅 ${prev})</span></p>`}
       </div>
       <div class="res-acts"><button class="btn primary block" id="again">เล่นอีกรอบ</button>
       <button class="btn block" id="back">เลือกเกมอื่น</button></div>`;
     $('#again').onclick = () => startGame('match');
     $('#back').onclick = () => go('games');
     updateStreak();
+    countUp(view.querySelectorAll('.res-cnt'));
   }
   deal();
 }

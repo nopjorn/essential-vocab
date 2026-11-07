@@ -2789,3 +2789,22 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
 .set-search input.sel:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
 .set-search #setQNone { margin-top: 8px; }
 .sq-off { display: none !important; }
+
+/* result screen (1.163.0): tinted with the game's skill colour, three stat tiles, the record line, a speaker on each word to review */
+.res-top { background: var(--surface); background: linear-gradient(180deg, color-mix(in srgb, var(--sk, var(--primary)) 12%, var(--surface)), var(--surface) 55%); }
+.res-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 10px 0 6px; }
+.res-stats > div { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; border-radius: 16px; background: var(--surface-2); }
+.res-stats b { font-family: var(--num); font-size: 26px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.res-stats b small { font-size: 15px; color: var(--muted); font-weight: 700; }
+.res-stats > div > span { font-size: var(--fs-xs); color: var(--muted); font-weight: 700; }
+.res-best { display: inline-block; margin: 6px 0 4px; padding: 6px 12px; border-radius: 999px; background: var(--surface-2); font-size: var(--fs-sm); }
+.res-best span { color: var(--muted); }
+.res-best.new span { color: inherit; font-weight: 600; } /* muted grey was 2.8:1 on the gold in dark mode */
+.res-best.new { font-weight: 800; color: var(--text); background: color-mix(in srgb, var(--warn) 35%, var(--surface)); animation: resBest .6s cubic-bezier(.3, 1.6, .5, 1) both .25s; }
+@keyframes resBest { from { transform: scale(.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .res-best.new { animation: none; } }
+.wl-h { display: flex; align-items: center; gap: 8px; }
+.wl-n { min-width: 24px; padding: 0 7px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: var(--fs-xs); font-weight: 800; line-height: 22px; text-align: center; }
+.wl-hint { margin: 2px 0 4px; }
+.wl-say { flex: none; width: 34px; height: 34px; margin-left: 6px; border: 0; border-radius: 50%; background: var(--surface-2); font-size: 15px; cursor: pointer; }
+.wl-say:active { transform: scale(.9); }
