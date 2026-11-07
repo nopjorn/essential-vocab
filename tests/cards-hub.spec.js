@@ -104,3 +104,22 @@ test('start screen: the front-side switch saves settings.front and the next card
   expect(await page.evaluate(() => S.settings.front)).toBe('mix');
   expect(errors).toEqual([]);
 });
+
+test('start screen: review one level and/or topic, soonest due first, choice remembered', async ({ page }) => {
+  const errors = await openApp(page, state());
+  await page.evaluate(() => go('cards', 'hub'));
+  const info = await page.evaluate(() => { const f = W.find((w) => w.w === 'bread'); return { lv: f.g, tp: f.tp, n: W.filter((w) => S.prog[w.w] && w.tp === f.tp).length }; });
+  await page.selectOption('#hubTp', info.tp);
+  await expect(page.locator('#hubPickGo')).toContainText(`ทบทวน ${info.n} ใบ`);
+  expect(await page.evaluate(() => S.settings.cardPick.tp)).toBe(info.tp);
+  await page.click('#hubPickGo');
+  await expect(page.locator('#pcount')).toHaveText(`0/${info.n}`);
+  // a level with no learned words is not offered; an empty group cannot start
+  await page.click('#quit');
+  await expect(page.locator('#hubTp')).toHaveValue(info.tp);
+  const opts = await page.locator('#hubLv option').evaluateAll((os) => os.map((o) => o.value));
+  expect(opts).toEqual(['', 'A1']);
+  expect(await page.evaluate(() => hubPick('A1', 'x-none').length)).toBe(0);
+  expect(await page.evaluate(() => hubPick('', '').map((w) => w.w))).toEqual(['dog', 'bread', 'water', 'house', 'apple']); // most overdue first
+  expect(errors).toEqual([]);
+});

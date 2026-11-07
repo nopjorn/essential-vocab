@@ -68,6 +68,7 @@ function buildQueueRaw(extra) {
   const plan = backlogPlan();
   const due = dueList().slice(0, plan.on ? plan.show : 200);
   if (extra === 'again') return cardsAgain.slice(); // 🔁 the words forgotten in the round just finished
+  if (typeof extra === 'string' && extra.startsWith('f:')) return hubPick(...extra.slice(2).split(':')).slice(0, HUB_PICK_N); // 🎯 one level and/or topic
   if (extra === 'rev') return due; // 🔁 start screen (1.169): today's reviews only
   let fresh = p.filter((w) => !S.prog[w.w] && inTopic(w));
   if (S.settings.order === 'shuffle') fresh = shuffle(fresh);
@@ -157,6 +158,34 @@ function bindNextSteps() {
 // It shows what today holds (reviews, new words, stubborn ones, about how long) and how to study it.
 let cardsFromHub = false;
 let cardsAgain = []; // words forgotten in the last round (summary → 🔁 ฝึกคำที่ลืมอีกรอบ) // ✕ in a session started here goes back here, not home
+// 🎯 Review one level and/or topic (start screen): learned words of that group, the ones due soonest (overdue first).
+const HUB_PICK_N = 20;
+function hubPick(lv, tp) {
+  return W.filter((w) => S.prog[w.w] && (!lv || w.g === lv) && (!tp || w.tp === tp)).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d);
+}
+function hubPickBox() {
+  const seen = W.filter((w) => S.prog[w.w]);
+  if (seen.length < 5) return '';
+  const f = S.settings.cardPick || {}, lv = LEVELS.includes(f.lv) ? f.lv : '', tp = TOPIC_IC[f.tp] ? f.tp : '';
+  const lvs = LEVELS.filter((l) => seen.some((w) => w.g === l)), tps = TOPICS.filter(([id]) => seen.some((w) => w.tp === id));
+  return `<div class="card-box ch-pick"><div class="ch-h">🎯 ทบทวนเฉพาะระดับ / หมวด</div>
+    <div class="sel-pair"><select class="sel block-sel" id="hubLv" aria-label="ระดับ"><option value="">ทุกระดับ</option>${lvs.map((l) => `<option value="${l}" ${l === lv ? 'selected' : ''}>${LV_LABEL[l]}</option>`).join('')}</select>
+      <select class="sel block-sel" id="hubTp" aria-label="หมวด"><option value="">ทุกหมวด</option>${tps.map(([id, ic, name]) => `<option value="${id}" ${id === tp ? 'selected' : ''}>${ic} ${esc(name)}</option>`).join('')}</select></div>
+    <button class="btn block" id="hubPickGo"></button></div>`;
+}
+function bindHubPick() {
+  const go_ = $('#hubPickGo'); if (!go_) return;
+  const upd = () => {
+    const lv = $('#hubLv').value, tp = $('#hubTp').value, ws = hubPick(lv, tp), n = Math.min(HUB_PICK_N, ws.length);
+    const due = ws.filter((w) => S.prog[w.w].d <= Date.now()).length;
+    go_.disabled = !n;
+    go_.textContent = n ? `▶︎ ทบทวน ${n} ใบ${due ? ` (ถึงกำหนด ${due})` : ''}` : 'ยังไม่มีคำที่เรียนแล้วในกลุ่มนี้';
+    return { lv, tp };
+  };
+  $('#hubLv').onchange = $('#hubTp').onchange = () => { S.settings.cardPick = upd(); save(); };
+  upd();
+  go_.onclick = () => { const { lv, tp } = upd(); cardsFromHub = true; renderCards(`f:${lv}:${tp}`); };
+}
 function hubToday() {
   const q = buildQueueRaw();
   const due = q.filter((w) => S.prog[w.w]), nw = q.length - due.length;
@@ -180,8 +209,9 @@ function renderCardHub() {
       ${t.due && t.nw ? b('rev', '🔁', 'เฉพาะทบทวน', t.due + ' ใบที่ถึงกำหนด') : ''}
       ${t.due && t.nw ? b('new', '✨', 'เฉพาะคำใหม่', t.nw + ' คำของวันนี้') : ''}
     </div>
-    <h2 class="ns-more">อยากฝึกแบบอื่น</h2>${nextSteps(W.filter((w) => S.prog[w.w]).length, true)}`;
+    ${hubPickBox()}<h2 class="ns-more">อยากฝึกแบบอื่น</h2>${nextSteps(W.filter((w) => S.prog[w.w]).length, true)}`;
   $('#hubStart').onclick = () => { cardsFromHub = true; renderCards(); };
+  bindHubPick();
   view.querySelectorAll('[data-front]').forEach((el) => { // same switch as ⚙️ ตั้งค่า → การเรียน → ด้านหน้าการ์ด
     el.onclick = () => {
       S.settings.front = el.dataset.front; save();
@@ -212,8 +242,8 @@ function renderCards(extra) {
     view.innerHTML = `<div class="card-box center pop" style="margin-top:20px">
       <div class="result-emoji">${mascotSvg({ mood: 'happy', size: 110 })}</div><div class="h2">วันนี้ทำครบแล้ว!</div>
       <p class="muted">ไม่มีการ์ดค้างสำหรับระดับ ${lvNames(S.settings.levels)} · อยากทำอะไรต่อดี?</p></div>
-      ${tomorrowBox()}${nextSteps(learned)}`;
-    bindNextSteps();
+      ${tomorrowBox()}${hubPickBox()}${nextSteps(learned)}`;
+    bindNextSteps(); bindHubPick();
     return;
   }
 

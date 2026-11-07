@@ -981,6 +981,8 @@ input.sel { color: var(--text); font: inherit; }
 .ch-note { margin: 0; }
 .ch-front { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
 .ch-front .seg button { padding: 7px 9px; }
+.ch-pick { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.ch-pick .block-sel { margin: 0; }
 .ch-go { font-size: 18px; padding: 14px; }
 .quick.ch-modes { margin-top: 12px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
 @media (min-width: 900px) { .quick.ch-modes { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); } }
