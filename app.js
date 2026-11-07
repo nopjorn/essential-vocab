@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.168.0';
+const APP_VERSION = '1.169.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -2087,7 +2087,7 @@ $('#tabbar').addEventListener('click', (e) => {
     try { localStorage.setItem(RAIL_FOLD_KEY, JSON.stringify(f)); } catch (err) {}
     railFold(); return;
   }
-  if (!b.dataset.ref) return vtRun(() => go(b.dataset.tab));
+  if (!b.dataset.ref) return vtRun(() => (b.dataset.tab === 'cards' ? go('cards', 'hub') : go(b.dataset.tab))); // 1.169: the flashcard tab opens its start screen
   vtRun(() => {
     go('ref'); REF_PAGES[b.dataset.ref]();
     document.querySelectorAll('.tabbar button').forEach((x) => x.classList.toggle('active', x === b));

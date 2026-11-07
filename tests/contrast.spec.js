@@ -58,6 +58,7 @@ for (const theme of ['dark', 'light']) {
     const bad = {};
     const check = async (name) => { await page.waitForTimeout(150); const v = await page.evaluate(scan); if (v.length) bad[name] = v; };
     for (const r of ROUTES) { await page.evaluate((r) => go(r), r); await check(r); }
+    await page.evaluate(() => go('cards', 'hub')); await check('cards hub');
     for (const r of REFS) { await page.evaluate((r) => { go('ref'); REF_PAGES[r](); }, r); await check('ref:' + r); }
     await page.evaluate(() => openSheet(W.find((w) => w.w === 'decide'))); await check('sheet'); await page.keyboard.press('Escape');
     await page.evaluate(() => openSearch()); await page.evaluate(() => { document.querySelector('#gsq').value = 'a'; document.querySelector('#gsq').dispatchEvent(new Event('input')); }); await check('search');

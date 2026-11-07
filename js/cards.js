@@ -67,8 +67,10 @@ function buildQueueRaw(extra) {
   if (extra === 'backlog') return dueList().slice(0, BACKLOG_CAP);
   const plan = backlogPlan();
   const due = dueList().slice(0, plan.on ? plan.show : 200);
+  if (extra === 'rev') return due; // 🔁 start screen (1.169): today's reviews only
   let fresh = p.filter((w) => !S.prog[w.w] && inTopic(w));
   if (S.settings.order === 'shuffle') fresh = shuffle(fresh);
+  if (extra === 'new') return plan.on ? [] : separateNew(fresh, Math.max(0, newGoal() - S.daily.fresh)); // ✨ start screen: today's new words only
   if (extra === 'short') {
     // 3-minute session: the most overdue cards, topped up with new words (unless a backlog is being cleared).
     const d = dueList().slice(0, SHORT_N);
@@ -141,10 +143,42 @@ function bindNextSteps() {
   });
 }
 
-// extra: undefined (today's cards), true (10 more new), 'ahead', 'mastered', 'learning' (random 20 learning words), 'leech' (stubborn words, 15), or { deck: id, ahead? } = study one of my word sets.
+/* ---------- start screen (1.169) ---------- */
+// The แฟลชการ์ด tab opens this page first (go('cards', 'hub')); other ways in (home ▶︎ เริ่มเรียนเลย, quests …) still start right away.
+// It shows what today holds (reviews, new words, stubborn ones, about how long) and how to study it.
+let cardsFromHub = false; // ✕ in a session started here goes back here, not home
+function hubToday() {
+  const q = buildQueueRaw();
+  const due = q.filter((w) => S.prog[w.w]), nw = q.length - due.length;
+  const leech = due.filter(isLeech).length;
+  const mins = Math.max(1, Math.round((due.length + nw * NEW_COST) * secPerCard() / 60));
+  return { total: q.length, due: due.length, nw, leech, mins };
+}
+function renderCardHub() {
+  const t = hubToday(), plan = backlogPlan();
+  if (!t.total) return renderCards(); // nothing today: the "done" page with its what-next menu
+  const stat = (n, label, cls = '') => `<div class="ch-st${cls}"><b>${n}</b><span>${label}</span></div>`;
+  const b = (id, ic, title, sub) => `<button class="quick-btn" data-hub="${id}"><span>${ic}</span><b>${title}</b><small>${sub}</small></button>`;
+  view.innerHTML = `<div class="card-box ch-top">
+      <div class="ch-h">🗂️ การ์ดวันนี้ <span class="small muted">· ระดับ ${lvNames(S.settings.levels)}</span></div>
+      <div class="ch-stats">${stat(t.due, 'ทบทวน')}${stat(t.nw, 'คำใหม่')}${t.leech ? stat(t.leech, '🐢 คำดื้อ') : ''}${stat('~' + t.mins, 'นาที')}</div>
+      ${plan.on ? '<p class="small muted ch-note">🧹 การ์ดค้างเยอะ วันนี้พักคำใหม่ไว้ก่อน ทวนทีละ 50 ใบที่ค้างนานสุด</p>' : ''}
+      <button class="btn primary block ch-go" id="hubStart">▶︎ เริ่มเลย (${t.total} ใบ)</button></div>
+    <div class="quick next-steps ch-modes">
+      ${b('short', '⏱️', '3 นาที', SHORT_N + ' ใบ ค้างนานสุดก่อน')}
+      ${t.due && t.nw ? b('rev', '🔁', 'เฉพาะทบทวน', t.due + ' ใบที่ถึงกำหนด') : ''}
+      ${t.due && t.nw ? b('new', '✨', 'เฉพาะคำใหม่', t.nw + ' คำของวันนี้') : ''}
+    </div>`;
+  $('#hubStart').onclick = () => { cardsFromHub = true; renderCards(); };
+  view.querySelectorAll('[data-hub]').forEach((el) => { el.onclick = () => { cardsFromHub = true; renderCards(el.dataset.hub); }; });
+}
+
+// extra: undefined (today's cards), 'hub' (the start screen), 'short' (3 minutes), 'rev' / 'new' (today's reviews / new words only), true (10 more new), 'ahead', 'mastered', 'learning' (random 20 learning words), 'leech' (stubborn words, 15), or { deck: id, ahead? } = study one of my word sets.
 // A set uses its own progress table `map` (S.dprog[id]); the main S.prog and the daily counts stay untouched.
 function renderCards(extra) {
-  if (!FAMILIES || !CONFUSE) { const nav = navSeq; withLoading(Promise.all([loadFamilies(), loadPairs()])).then(() => { if (navSeq === nav) renderCards(extra); }); return; } // 1.148.0: not when the user has left meanwhile // spreadFamilies() needs the family and confusable-pair data
+  if (extra === 'hub') { cardsFromHub = false; return renderCardHub(); }
+  const fromHub = cardsFromHub; cardsFromHub = false;
+  if (!FAMILIES || !CONFUSE) { const nav = navSeq; withLoading(Promise.all([loadFamilies(), loadPairs()])).then(() => { if (navSeq === nav) { cardsFromHub = fromHub; renderCards(extra); } }); return; } // 1.148.0: not when the user has left meanwhile // spreadFamilies() needs the family and confusable-pair data
   const deck = extra && typeof extra === 'object' ? deckById(extra.deck) : null;
   if (extra && typeof extra === 'object' && !deck) return go('decks');
   const map = deck ? deckMap(deck.id) : S.prog;
@@ -173,7 +207,7 @@ function renderCards(extra) {
     <div class="stage" id="stage"></div>
     <div class="grade" id="grade"></div>
     <aside class="side-stats" id="sideStats" aria-label="สถิติวันนี้"></aside>`;
-  $('#quit').onclick = () => (deck ? go('decks', deck.id) : go('home'));
+  $('#quit').onclick = () => (deck ? go('decks', deck.id) : fromHub ? go('cards', 'hub') : go('home'));
 
   let card = null, flipped = false;
   const gradeBox = $('#grade');

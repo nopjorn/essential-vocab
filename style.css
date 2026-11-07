@@ -971,6 +971,17 @@ input.sel { color: var(--text); font: inherit; }
 /* done-for-today hub (flashcards) + word of the day (home) */
 .quick.next-steps { display: grid; grid-template-columns: 1fr 1fr; margin-top: 14px; }
 @media (min-width: 900px) { .quick.next-steps { grid-template-columns: repeat(4, 1fr); } }
+/* flashcard start screen (1.169, js/cards.js renderCardHub) */
+.ch-top { display: flex; flex-direction: column; gap: 12px; }
+.ch-h { font-weight: 800; font-size: 18px; }
+.ch-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 8px; }
+.ch-st { background: var(--surface-2); border-radius: 12px; padding: 10px 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.ch-st b { font-size: 24px; line-height: 1.1; }
+.ch-st span { font-size: var(--fs-xs); color: var(--muted); }
+.ch-note { margin: 0; }
+.ch-go { font-size: 18px; padding: 14px; }
+.ch-modes { margin-top: 12px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+@media (min-width: 900px) { .ch-modes { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); } }
 .wotd { cursor: pointer; }
 .wotd-word { font-size: 26px; font-weight: 800; margin-top: 6px; }
 .wotd mark { background: var(--accent-soft, rgba(var(--glow), .2)); color: inherit; border-radius: 3px; }
