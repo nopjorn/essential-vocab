@@ -158,7 +158,7 @@ test('quest card hides once everything is done, unless the setting keeps it', as
   await page.evaluate(() => { S.settings.questShowDone = true; go('home'); });
   await expect(page.locator('.card-box.quest')).toContainText('ครบชุดแล้ว');
   await page.evaluate(() => { S.quest.q[0].done = false; go('home'); });
-  await expect(page.locator('[data-qgo]').first()).toBeVisible();
+  await expect(page.locator('.q-next[data-qgo="0"]')).toBeVisible();
   expect(errors).toEqual([]);
 });
 

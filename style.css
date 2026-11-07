@@ -547,6 +547,18 @@ body { touch-action: manipulation; }
 .quick-btn.feed-btn { background: linear-gradient(135deg, var(--pink), var(--pink-2)); color: #fff; }
 .quick-btn.feed-btn small { color: rgba(255, 255, 255, .9); }
 .quick-btn:active { transform: scale(.97); }
+/* 1.181.1: quest card folded to one line */
+.q-fold > summary { display: flex; align-items: center; gap: 10px; list-style: none; cursor: pointer; }
+.q-fold > summary::-webkit-details-marker { display: none; }
+.q-sum { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.q-segs { display: flex; gap: 4px; }
+.q-segs i { width: 18px; height: 8px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--border); overflow: hidden; }
+.q-segs i span { display: block; height: 100%; background: var(--primary); }
+.q-segs i.on span { background: #087f5b; }
+.q-chev { color: var(--muted); transition: transform .2s; }
+.q-fold[open] .q-chev { transform: rotate(180deg); }
+.q-body { margin-top: 6px; }
+.q-next { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 10px; padding: 10px 12px; border: 0; border-radius: 12px; background: var(--surface-2); color: var(--text); font: inherit; font-size: var(--fs-sm); text-align: left; cursor: pointer; }
 /* 1.179.8: home strip "วันนี้เล่นอะไรดี" - the short / event / adventure / riddle / fun blocks as sideways tiles */
 .day-strip { padding: 14px 0 12px; }
 .day-strip .ds-h { display: block; padding: 0 18px 8px; }

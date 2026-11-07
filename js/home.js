@@ -225,6 +225,7 @@ function renderHome() {
   };
   bindNoticeDeck();
   edgeFade($('#dsTrack'));
+  const qf = $('#qFold'); if (qf) qf.ontoggle = () => { try { localStorage.setItem('o3k.qopen', qf.open ? '1' : '0'); } catch (e) { /* ignore */ } masonry([view.querySelector('.home-grid')]); };
   if (party) ringParty();
 }
 // Goal ring closed: rays + confetti + น้องคำ once a day per device (localStorage o3k.ring = the day it was shown).
@@ -448,11 +449,17 @@ function questCard() {
     <span class="qic" aria-hidden="true">${tier}</span>
     <span class="grow"><span class="qtx">${def.text}</span><span class="qbar"><span style="width:${done ? 100 : Math.min(100, n / target * 100)}%"></span></span></span>
     <span class="small muted qn">${done ? '✅' : `${Math.min(n, target)}/${target}`}</span></button>`;
-  return `<div class="card-box quest">
-    <div class="row" style="justify-content:space-between"><b>🎯 ภารกิจวันนี้</b><span class="small muted">${doneAll ? 'ครบชุดแล้ว 🎁' : `${ndone}/3 · ครบชุด +${QSET_XP} XP`}</span></div>
-    ${list.map(({ def, st }, i) => row(def, st.n, questTarget(def), st.done, QTIER[def.tier].icon, i)).join('')}
+  // 1.181.1: folded to one line (counts, one segment per quest and a button for the next one); tap ▾ for every row. Open/closed per device (localStorage o3k.qopen).
+  const next = list.findIndex((x) => !x.st.done), nextDef = next >= 0 ? list[next].def : !wk.st.done ? wk.def : null;
+  let open = false; try { open = localStorage.getItem('o3k.qopen') === '1'; } catch (e) { /* ignore */ }
+  const seg = (done, f) => `<i class="${done ? 'on' : ''}"><span style="width:${done ? 100 : Math.round(Math.min(1, f) * 100)}%"></span></i>`;
+  const segs = list.map(({ def, st }) => seg(st.done, st.n / questTarget(def))).join('') + seg(wk.st.done, wk.n / wk.def.target);
+  return `<div class="card-box quest"><details class="q-fold" id="qFold"${open ? ' open' : ''}>
+    <summary><span class="q-sum"><b>🎯 ภารกิจวันนี้ ${ndone}/3</b><span class="small muted">${doneAll ? 'ครบชุดแล้ว 🎁' : `ครบชุด +${QSET_XP} XP`} · 🗓️ ${wk.st.done ? '✅' : `${Math.min(wk.n, wk.def.target)}/${wk.def.target}`}</span></span><span class="q-segs" aria-hidden="true">${segs}</span><span class="q-chev" aria-hidden="true">▾</span></summary>
+    <div class="q-body">${list.map(({ def, st }, i) => row(def, st.n, questTarget(def), st.done, QTIER[def.tier].icon, i)).join('')}
     <div class="row" style="justify-content:space-between;margin-top:10px"><b>🗓️ ภารกิจสัปดาห์</b><span class="small muted">รางวัล +${WQ_XP} XP และ 🧊</span></div>
-    ${row(wk.def, wk.n, wk.def.target, wk.st.done, '🗓️', 'w')}
+    ${row(wk.def, wk.n, wk.def.target, wk.st.done, '🗓️', 'w')}</div></details>
+    ${nextDef ? `<button class="q-next" data-qgo="${next >= 0 ? next : 'w'}"><span class="grow">▶︎ ต่อ: ${nextDef.text}</span><span class="muted">›</span></button>` : ''}
   </div>`;
 }
 // Cards coming due in each of the next 7 days (selected levels), so the daily load is predictable.
