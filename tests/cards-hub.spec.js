@@ -199,3 +199,16 @@ test('the flashcard tab shows how many cards are left today', async ({ page }) =
   await expect(tab).toHaveAttribute('aria-label', 'แฟลชการ์ด');
   expect(errors).toEqual([]);
 });
+
+test('back of a card: which look it is, when it was last reviewed, how often it was remembered', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1'], newPerDay: 1, autoSpeak: false, order: 'alpha' },
+    prog: { apple: { ...due(0), s: 3, c: 2, lr: Date.now() - 3 * DAY } } });
+  expect(await page.evaluate(() => cardHist(null))).toContain('เจอครั้งแรก');
+  expect(await page.evaluate(() => cardHist({ s: 1, c: 1, lr: Date.now() - 864e5 }))).toContain('เมื่อวาน');
+  await page.evaluate(() => go('cards', 'rev'));
+  await expect(page.locator('#fc .back .fc-hist')).toHaveText('🔁 ครั้งที่ 4 · ทวนล่าสุด 3 วันก่อน · จำได้ 2/3');
+  await page.click('#fc'); await page.click('[data-g="2"]');
+  await page.evaluate(() => go('cards', 'new'));
+  await expect(page.locator('#fc .back .fc-hist')).toHaveText('✨ เจอครั้งแรก');
+  expect(errors).toEqual([]);
+});

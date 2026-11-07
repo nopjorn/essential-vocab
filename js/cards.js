@@ -153,6 +153,20 @@ function bindNextSteps() {
   });
 }
 
+// Back of a flashcard: which look this is and when the word was last reviewed, e.g. "🔁 ครั้งที่ 4 · ทวนล่าสุด 3 วันก่อน · จำได้ 2/3".
+function agoText(ms) {
+  const d = Math.floor((Date.now() - ms) / DAY);
+  return d <= 0 ? 'วันนี้' : d === 1 ? 'เมื่อวาน' : d < 60 ? d + ' วันก่อน' : Math.round(d / 30) + ' เดือนก่อน';
+}
+function cardHist(p) {
+  if (!p) return '<div class="fc-hist">✨ เจอครั้งแรก</div>';
+  const seen = p.s | 0, last = p.lr || p.t || (p.d ? p.d - ivlOf(p) * DAY : 0);
+  const parts = [`🔁 ครั้งที่ ${seen + 1}`];
+  if (last && last <= Date.now()) parts.push('ทวนล่าสุด ' + agoText(last));
+  if (seen) parts.push(`จำได้ ${Math.min(p.c | 0, seen)}/${seen}`);
+  return `<div class="fc-hist">${parts.join(' · ')}</div>`;
+}
+
 /* ---------- start screen (1.169) ---------- */
 // The แฟลชการ์ด tab opens this page first (go('cards', 'hub')); other ways in (home ▶︎ เริ่มเรียนเลย, quests …) still start right away.
 // It shows what today holds (reviews, new words, stubborn ones, about how long) and how to study it.
@@ -348,7 +362,7 @@ function renderCards(extra) {
       <button class="speak" data-say aria-label="ฟังเสียง">🔊</button>`;
     const thFace = `<div class="top">${lvBadge(card.g)}<span class="pos">${esc(card.p)}</span>${star}</div>
       <div class="th">${esc(card.t)}</div>`;
-    const backExtra = emojiBox(card) + noteBox(card) + exampleBox(card) + `<a class="oxl" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(card.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">📖 ดูใน Oxford ↗</a>`;
+    const backExtra = cardHist(p) + emojiBox(card) + noteBox(card) + exampleBox(card) + `<a class="oxl" href="https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(card.w.toLowerCase().replace(/ /g, '-'))}" target="_blank" rel="noopener">📖 ดูใน Oxford ↗</a>`;
     $('#stage').innerHTML = `
       ${queue.length > 1 ? `<div class="fc-stack n${Math.min(queue.length - 1, 2)}" aria-hidden="true"><i></i><i></i></div>` : ''}
       <div class="fc lvc-${card.g}${tintStyle(card) ? ' tint' : ''}${S.settings.frame === 'gold' && itemOpen('frame:gold') ? ' gold' : ''}" id="fc"${tintStyle(card)}>
