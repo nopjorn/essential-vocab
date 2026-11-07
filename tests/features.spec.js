@@ -1181,14 +1181,18 @@ test('save() is batched (1.74): one write after a burst, flushed on hide, medals
   expect(errors).toEqual([]);
 });
 
-test('speed check (1.76): settings button measures boot, home, stats and save and shows the numbers', async ({ page }) => {
+test('speed check (1.76): the button (end of the changelog page since 1.160.0) measures boot, home, stats and save and shows the numbers', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   await page.evaluate(() => go('settings'));
+  await expect(page.locator('#perfBtn')).toHaveCount(0);
+  await page.locator('#clBtn').click();
   await page.locator('#perfBtn').click();
   await expect(page.locator('#perfOut')).toContainText('หน้าสถิติ', { timeout: 15000 });
   const txt = await page.locator('#perfOut').innerText();
   expect(txt).toMatch(/เปิดแอป \d+ ms · หน้าแรก \d+ ms · หน้าสถิติ \d+ ms · บันทึก [\d.]+ ms/);
   await expect(page.locator('#perfBtn')).toBeVisible();
+  expect(await page.evaluate(() => current)).toBe('changelog');
+  expect(await page.evaluate(() => { $('#clBack').click(); return current; })).toBe('settings'); // ‹ (hidden by the top bar's own back button) still goes to settings
   expect(errors).toEqual([]);
 });
 

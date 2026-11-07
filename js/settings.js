@@ -4,7 +4,7 @@
 
 /* ---------- settings ---------- */
 // ⏱ Speed check (1.76): numbers to read off a real iPhone / iPad (milliseconds, smaller = faster): first screen after launch,
-// home, stats page (drawn to the next frame, average of 3) and one batched save. Ends on settings showing the result.
+// home, stats page (drawn to the next frame, average of 3) and one batched save. Button at the end of the changelog page (1.160.0).
 let perfLast = '';
 async function perfCheck() {
   const frame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
@@ -192,7 +192,6 @@ function renderSettings() {
     </div></details>
 
     <button class="card-box guide-link" id="guideBtn" style="margin-top:24px"><span>📘</span><div class="grow"><b>คู่มือการใช้งาน & ทริก</b><div class="small muted">วิธีใช้ทุกส่วนของแอป และวิธีจำศัพท์ให้ได้ผลที่สุด</div></div><span class="muted">›</span></button>
-    <button class="card-box guide-link" id="perfBtn"><span>⏱</span><div class="grow"><b>วัดความเร็วเครื่องนี้</b><div class="small muted" id="perfOut">${esc(perfLast || 'วัดเวลาเปิดหน้าแรก หน้าสถิติ และการบันทึกข้อมูลบนเครื่องของคุณ')}</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="clBtn"><span>🆕</span><div class="grow"><b>ประวัติการอัปเดต</b><div class="small muted">ดูว่าแต่ละเวอร์ชันเพิ่มหรือแก้อะไรบ้าง (ตอนนี้ ${APP_VERSION})</div></div><span class="muted">›</span></button>
 
     <details class="set-group danger-group" data-g="danger" ${setIsOpen('danger')}><summary data-k="reset delete ล้าง ลบ">⚠️ โซนอันตราย</summary><div class="card-box danger-zone">
@@ -223,7 +222,6 @@ function renderSettings() {
   };
   $('#guideBtn').onclick = () => go('guide', 'settings');
   $('#clBtn').onclick = () => go('changelog', 'settings');
-  $('#perfBtn').onclick = async () => { $('#perfOut').textContent = 'กำลังวัด…'; perfLast = await perfCheck(); renderSettings(); };
   const minInfo = () => {
     const el = $('#minInfo'); if (!el) return;
     el.textContent = st.minutes ? `ตอนนี้ราว ${newGoal()} คำใหม่/วัน · ใช้เวลา ~${Math.round(secPerCard())} วินาทีต่อใบ${S.spc.n < 30 ? ' (ค่าประมาณ จนกว่าจะเรียนครบ 30 ใบ)' : ''}` : 'เลือกแล้วแอปคำนวณจำนวนคำใหม่ให้เอง (แทน “คำใหม่ต่อวัน”)';
