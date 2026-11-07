@@ -147,7 +147,7 @@ function openBox() {
 
 /* ---------- น้องคำ pops up (1.102) ---------- */
 // A short-lived mascot with a speech bubble in the bottom corner: cheers on a high combo, and wakes up when you come back after 3+ days.
-// Off together with the answer animations (settings → หน้าตา → ปุ่มเด้ง/สั่นตอนตอบ). Never blocks taps.
+// Off together with the answer animations (settings → แอนิเมชันและเอฟเฟกต์ → ปุ่มเด้ง/สั่นตอนตอบ). Never blocks taps.
 let mascotPopTimer = null;
 function mascotPop(text, moods = ['happy'], ms = 2400) {
   const old = document.querySelector('.m-cheer'); if (old) old.remove();
