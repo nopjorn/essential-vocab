@@ -147,6 +147,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'toeic5') return qP5(w);
     if (m === 'toeic7') return qP7(w);
     if (m === 'toeic6') return qP6(w);
+    if (m === 'toeic2') return qP2(w);
     const toTh = m !== 'th2en' && m !== 'cloze' && m !== 'ipa';
     const diff = gameDiff();
     const opts = shuffle([w, ...(m === 'ipa' ? ipaDistractors(w) : distractors(w, 3, toTh ? 't' : 'w', diff >= 2))]);
@@ -1199,6 +1200,49 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       mark(w, ok);
       $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ที่ถูกคือ'} <b lang="en">${esc(right)}</b>
         <div class="small p7-why" style="margin-top:8px">💡 ${esc(r.th)}</div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      $('#nextQ').onclick = next;
+    };
+  }
+
+  // TOEIC Part 2 (1.186.0): listening only, like the test: the question, then (A) (B) (C) are spoken (responses in another accent).
+  // 📝 shows the text (practice help); after the answer every line is shown with the Thai and a tip about the trap.
+  function qP2(w) {
+    const r = w._p2, [ic, kind] = P2_TYPE[r.type] || P2_TYPE.wh, opts = shuffle([r.right, ...r.wrong]), L = 'ABC';
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit p2-card pop"><div class="small muted">🎧 TOEIC Part 2 · ${ic} ${kind}</div>
+        <div class="p2-ear" aria-hidden="true">🎧</div><div class="small muted" id="p2Now" aria-live="polite">ฟังคำถาม แล้วเลือกคำตอบที่เหมาะที่สุด</div>
+        <div class="p2-btns"><button class="btn" id="p2Play">🔁 ฟังอีกครั้ง</button><button class="btn" id="p2Slow">🐢 ช้า</button></div>
+        <button class="hint-btn" id="p2Hint">📝 ดูข้อความ</button><div class="p2-q" id="p2Q" lang="en" hidden>${esc(r.q)}</div></div>
+      <div class="options abc">${opts.map((o) => `<button class="opt p2-opt" data-o="${esc(o)}" aria-label="${L[opts.indexOf(o)]}"><span class="p2-t" lang="en" hidden>${esc(o)}</span></button>`).join('')}</div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => { tvStop(); go('games'); };
+    const btns = [...view.querySelectorAll('.p2-opt')], card = view.querySelector('.p2-card');
+    const lines = [[0, r.q], ...opts.map((o, k) => [1, L[k] + '. ' + o])];
+    const on = (k) => {
+      btns.forEach((b, j) => b.classList.toggle('p2-on', j === k - 1));
+      $('#p2Now').textContent = k ? `กำลังฟังตัวเลือก ${L[k - 1]}` : 'กำลังฟังคำถาม';
+    };
+    const done = () => { btns.forEach((b) => b.classList.remove('p2-on')); if (!answered) $('#p2Now').textContent = 'เลือกคำตอบ A, B หรือ C'; };
+    const play = (slow) => tvPlay(lines, { on, done, slow, el: card });
+    $('#p2Play').onclick = () => play(false);
+    $('#p2Slow').onclick = () => play(true);
+    const showText = () => { $('#p2Q').hidden = false; btns.forEach((b) => { b.querySelector('.p2-t').hidden = false; b.removeAttribute('aria-label'); }); };
+    $('#p2Hint').onclick = () => { showText(); $('#p2Hint').remove(); };
+    let answered = false;
+    play(false);
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true; tvStop(); on(-1);
+      const ok = b.dataset.o === r.right;
+      btns.forEach((o) => { if (o.dataset.o === r.right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      showText(); const h = $('#p2Hint'); if (h) h.remove();
+      $('#p2Now').textContent = '';
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : `❌ ที่ถูกคือ ${L[opts.indexOf(r.right)]}`}
+        <div class="thx" style="margin-top:6px">${esc(r.th)}</div>
+        <div class="small p7-why" style="margin-top:8px">💡 ${esc(r.tip)}</div>
         <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
       $('#nextQ').onclick = next;
     };

@@ -1918,6 +1918,14 @@ html.no-ans .dance, html.no-ans .confetti.burst i { animation: none; }
   max-height: 42vh; overflow-y: auto; line-height: 1.55; font-size: var(--fs-sm); text-align: left; }
 .p7-doc b { display: block; margin-bottom: 6px; }
 .p7-chat .p7-text { font-family: inherit; }
+.p2-card { text-align: center; }
+.p2-ear { font-size: 54px; line-height: 1; margin: 10px 0 4px; }
+.p2-btns { display: flex; gap: 8px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
+.p2-q { margin-top: 10px; font-weight: 800; font-size: var(--fs-md); }
+.options.abc .opt:not(.correct):not(.wrong)::before { content: counter(opt, upper-alpha); }
+.p2-opt { min-height: 56px; text-align: left; }
+.p2-opt.p2-on { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent); }
+.p2-opt.p2-on::before { background: var(--primary); color: #fff; }
 .p6-doc { position: relative; } /* offsetTop of the current blank is measured from the text box */
 .p6-now { display: inline-block; min-width: 4.5em; padding: 0 4px; border-bottom: 3px solid var(--primary); color: var(--primary-ink); font-weight: 800; }
 .p6-gap { color: var(--muted); font-weight: 700; }

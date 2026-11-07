@@ -136,6 +136,38 @@ const p6Items = () => TOEICP6.flatMap((d) => d.q.map(([opts, a, th], k) => {
   const r = { d, k, opts, a, th };
   return { idx: -1, w: opts[a], t: d.id + ' ' + (k + 1), p: '', g: '', _p6: r, _set: r, _q: [d.title + ' [' + (k + 1) + ']', opts[a], '', th] };
 }));
+/* ---------- TOEIC listening helpers (1.186.0) ---------- */
+// tvPlay(lines, o) speaks [[voice, text], …] one after another: voice 0 = the learner's voice/accent, 1 = the other accent
+// (US ↔ UK), 2 = Australian, like the mixed accents of the real test. o.on(k) before each line, o.done() at the end,
+// o.slow, o.gap (ms between lines), o.el = stop once this element has left the page. A new tvPlay / tvStop() cancels the old one.
+let tvTok = 0;
+const tvAlt = () => (/GB/i.test(S.settings.accent || '') ? 'en-US' : 'en-GB');
+function tvPlay(lines, o = {}) {
+  const tok = ++tvTok;
+  const step = (k) => {
+    if (tok !== tvTok || (o.el && !document.body.contains(o.el))) return;
+    if (k >= lines.length) { if (o.done) o.done(); return; }
+    if (o.on) o.on(k);
+    const [v, text] = lines[k], opt = { slow: !!o.slow };
+    if (v === 1) opt.lang = tvAlt(); else if (v === 2) opt.lang = 'en-AU';
+    const u = speak(text, opt);
+    const nxt = () => setTimeout(() => step(k + 1), o.gap != null ? o.gap : 450);
+    if (u) { u.onend = nxt; u.onerror = () => { if (tok === tvTok && o.done) o.done(); }; } else if (o.done) o.done();
+  };
+  step(0);
+}
+function tvStop() { tvTok++; if (window.speechSynthesis) speechSynthesis.cancel(); }
+/* ---------- TOEIC Part 2 (1.186.0) ---------- */
+// data/toeicp2.js rows: [type, question, right, [2 wrong], Thai, tip]. Game `toeic2` (qP2): question + (A) (B) (C) are spoken, text hidden
+// until 📝 or the answer; own SRS in S.lex.
+let TOEICP2 = null;
+const P2_TYPE = { wh: ['❓', 'คำถาม Wh-'], yn: ['✅', 'คำถาม Yes/No'], choice: ['🔀', 'คำถามให้เลือก'], request: ['🙏', 'ขอร้อง ชวน เสนอ'],
+  statement: ['💬', 'ประโยคบอกเล่า'], neg: ['🔁', 'คำถามปฏิเสธ/หางคำถาม'] };
+const loadP2 = () => loadData('data/toeicp2.js', 'TOEICP2').then((rows) => {
+  if (!TOEICP2) TOEICP2 = rows.map(([type, q, right, wrong, th, tip]) => ({ type, q, right, wrong, th, tip }));
+  return TOEICP2;
+});
+const p2Items = () => TOEICP2.map((r) => ({ idx: -1, w: r.right, t: r.q, p: '', g: '', _p2: r, _q: [r.q, r.right, '', r.th] }));
 const p5Plain = (r) => r.text.replace('___', r.right);
 const p5Items = () => TOEICP5.map((r) => ({ idx: -1, w: r.right, t: r.th, p: '', g: '', _p5: r, _q: [r.text, r.right, '', r.th] }));
 const rtItems = () => REALTEXT.map((r) => ({ idx: -1, w: r.key, t: r.th, p: '', g: '', _rt: r, _q: [r.text.replace(/\n/g, ' '), r.right, '', r.th] }));

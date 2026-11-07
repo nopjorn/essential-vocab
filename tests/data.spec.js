@@ -493,6 +493,25 @@ test('TOEIC Part 7 texts (1.184): known kind, Thai summary, 2–4 questions with
   expect(bad).toEqual([]);
 });
 
+test('TOEIC Part 2 items (1.186): known type, question, 3 distinct responses, Thai and tip, every type used', () => {
+  const { TOEICP2 } = load('data/toeicp2.js');
+  expect(TOEICP2.length).toBeGreaterThanOrEqual(50);
+  const bad = [], seen = new Set(), types = {};
+  TOEICP2.forEach(([type, q, right, wrong, th, tip], i) => {
+    const id = `#${i} ${q}`;
+    types[type] = (types[type] || 0) + 1;
+    if (!['wh', 'yn', 'choice', 'request', 'statement', 'neg'].includes(type)) bad.push(`${id}: type ${type}`);
+    if (!/^[A-Z].*[.?!]$/.test(q) || !/^[A-Z].*[.?!]$/.test(right)) bad.push(`${id}: full sentences`);
+    if (!Array.isArray(wrong) || wrong.length !== 2 || new Set([right, ...wrong].map((x) => x.toLowerCase())).size !== 3) bad.push(`${id}: answer + 2 different wrong responses`);
+    if (!/[ก-๙]/.test(th || '') || !/[ก-๙]/.test(tip || '')) bad.push(`${id}: Thai and tip`);
+    if (seen.has(q)) bad.push(`${id}: duplicate`);
+    seen.add(q);
+  });
+  Object.entries(types).forEach(([k, n]) => { if (n < 6) bad.push(`type ${k} has only ${n}`); });
+  expect(Object.keys(types).length).toBe(6);
+  expect(bad).toEqual([]);
+});
+
 test('TOEIC Part 6 texts (1.185): blanks [1]–[4] in order, 4 distinct options each, a sentence blank, Thai summary and explanations', () => {
   const { TOEICP6 } = load('data/toeicp6.js');
   expect(TOEICP6.length).toBeGreaterThanOrEqual(10);

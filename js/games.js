@@ -54,6 +54,7 @@ const GAMES = {
   dictS: { icon: '📜', name: 'พิมพ์ประโยคที่ได้ยิน', desc: 'ฟังประโยคแล้วพิมพ์ให้ครบ ตรวจทีละคำ' },
   ipa: { icon: '🔡', name: 'อ่าน IPA', desc: 'ดูวิธีออกเสียง /ˈæpl/ แล้วเลือกคำที่ถูก' },
   real: { icon: '🪧', name: 'ข้อความจริง', desc: 'ป้าย ประกาศ เมนู ใบเสร็จ ฉลาก เลือกคำที่หายไป' },
+  toeic2: { icon: '🎧', name: 'TOEIC Part 2', desc: 'ฟังคำถาม เลือกคำตอบที่เหมาะ A B C' },
   toeic6: { icon: '📝', name: 'TOEIC Part 6', desc: 'เติมคำและประโยคในอีเมล ประกาศ' },
   toeic7: { icon: '📧', name: 'TOEIC Part 7', desc: 'อ่านอีเมล ประกาศ แชต แล้วตอบคำถาม' },
   toeic5: { icon: '💼', name: 'TOEIC Part 5', desc: 'เติมคำในประโยคงาน แบบข้อสอบ TOEIC' },
@@ -79,11 +80,11 @@ const PAIR_GAMES = ['confuse', 'minpair'];
 // Skill games with their own items (idx -1): practice only, no flashcard scheduling.
 // Generated skill games: the questions are made up on the spot, so they are not scheduled (no S.lex keys).
 const GEN_GAMES = ['num'];
-const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix', 'root', 'idiom', 'sit', 'irreg', 'dprep', 'thaierr', 'gpat', 'real', 'toeic5', 'toeic6', 'toeic7', ...GEN_GAMES];
+const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix', 'root', 'idiom', 'sit', 'irreg', 'dprep', 'thaierr', 'gpat', 'real', 'toeic2', 'toeic5', 'toeic6', 'toeic7', ...GEN_GAMES];
 // The games menu groups every game by the skill it trains (1.106): chips filter, and "all" lists them under these headings.
 // Every game id is in exactly one group (a test checks).
 const GAME_SKILLS = [
-  ['hear', '👂', 'ฟังและเสียง', ['listen', 'minpair', 'num', 'dict', 'dictW', 'dictS', 'ipa']],
+  ['hear', '👂', 'ฟังและเสียง', ['listen', 'minpair', 'num', 'dict', 'dictW', 'dictS', 'ipa', 'toeic2']],
   ['say', '🗣️', 'พูด', ['speak', 'speakS']],
   ['mean', '📖', 'ความหมาย', ['en2th', 'th2en', 'match', 'emoji', 'guess', 'syn', 'confuse', 'review', 'toeic7']],
   ['write', '✍️', 'สะกดและเขียน', ['spell', 'hand', 'hangman', 'anagram', 'cloze', 'sCloze', 'order', 'sOrder', 'compose']],
@@ -430,6 +431,7 @@ function gamePool(id) {
   if (id === 'toeic5') return p5Items();
   if (id === 'toeic7') return p7Items();
   if (id === 'toeic6') return p6Items();
+  if (id === 'toeic2') return p2Items();
   if (id === 'num') return numItems();
   if (id === 'sit') return sitItems().map(({ st, k }) => ({ idx: -1, w: st.d[k][1], t: st.d[k][2], p: '', g: '', _sit: st, _k: k, _q: [st.d[k][1], '', '', st.d[k][2]] }));
   if (id === 'minpair') return MINPAIRS.map((m) => ({ idx: -1, w: `${m[0]} / ${m[2]}`, t: `${m[1]} / ${m[3]}`, p: '', g: '', _m: m }));
@@ -553,6 +555,7 @@ function startGame(id) {
   if (id === 'idiom' && !IDIOMS) { withLoading(loadIdioms()).then(() => startGame(id)); return; }
   if (id === 'real' && !REALTEXT) { withLoading(loadRealText()).then(() => startGame(id)); return; }
   if (id === 'toeic7' && !TOEICP7) { withLoading(loadP7()).then(() => startGame(id)); return; }
+  if (id === 'toeic2' && !TOEICP2) { withLoading(loadP2()).then(() => startGame(id)); return; }
   if (id === 'toeic6' && !TOEICP6) { withLoading(loadP6()).then(() => startGame(id)); return; }
   if (id === 'toeic5' && !TOEICP5) { withLoading(loadP5()).then(() => startGame(id)); return; }
   if (id === 'gpat' && !GRAMPAT) { withLoading(loadGramPat()).then(() => startGame(id)); return; }
