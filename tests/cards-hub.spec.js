@@ -87,3 +87,20 @@ test('round summary: cards, % remembered, XP, time, forgotten words to practise 
   await expect(page.locator('#fc .word').first()).toHaveText(forgot);
   expect(errors).toEqual([]);
 });
+
+test('start screen: the front-side switch saves settings.front and the next card follows it', async ({ page }) => {
+  const errors = await openApp(page, state());
+  await page.evaluate(() => go('cards', 'hub'));
+  await expect(page.locator('[data-front="en"]')).toHaveClass(/on/);
+  await page.click('[data-front="th"]');
+  await expect(page.locator('[data-front="th"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-front="en"]')).not.toHaveClass(/on/);
+  expect(await page.evaluate(() => S.settings.front)).toBe('th');
+  await page.click('#hubStart');
+  await expect(page.locator('#fc .front .th')).toBeVisible();
+  await expect(page.locator('#fc .front .word')).toHaveCount(0);
+  await page.click('#quit');
+  await page.click('[data-front="mix"]');
+  expect(await page.evaluate(() => S.settings.front)).toBe('mix');
+  expect(errors).toEqual([]);
+});

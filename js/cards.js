@@ -173,6 +173,7 @@ function renderCardHub() {
       <div class="ch-h">🗂️ การ์ดวันนี้ <span class="small muted">· ระดับ ${lvNames(S.settings.levels)}</span></div>
       <div class="ch-stats">${stat(t.due, 'ทบทวน')}${stat(t.nw, 'คำใหม่')}${t.leech ? stat(t.leech, '🐢 คำดื้อ') : ''}${stat('~' + t.mins, 'นาที')}</div>
       ${plan.on ? '<p class="small muted ch-note">🧹 การ์ดค้างเยอะ วันนี้พักคำใหม่ไว้ก่อน ทวนทีละ 50 ใบที่ค้างนานสุด</p>' : ''}
+      <div class="ch-front"><span class="small muted" id="hubFrontL">ด้านหน้าการ์ด</span><div class="seg" id="hubFront" role="group" aria-labelledby="hubFrontL">${[['en', 'อังกฤษ → ไทย'], ['th', 'ไทย → อังกฤษ'], ['mix', 'สลับกัน']].map(([v, t]) => `<button data-front="${v}" class="${(S.settings.front || 'en') === v ? 'on' : ''}" aria-pressed="${(S.settings.front || 'en') === v}">${t}</button>`).join('')}</div></div>
       <button class="btn primary block ch-go" id="hubStart">▶︎ เริ่มเลย (${t.total} ใบ)</button></div>
     <div class="quick next-steps ch-modes">
       ${b('short', '⏱️', '3 นาที', SHORT_N + ' ใบ ค้างนานสุดก่อน')}
@@ -181,6 +182,12 @@ function renderCardHub() {
     </div>
     <h2 class="ns-more">อยากฝึกแบบอื่น</h2>${nextSteps(W.filter((w) => S.prog[w.w]).length, true)}`;
   $('#hubStart').onclick = () => { cardsFromHub = true; renderCards(); };
+  view.querySelectorAll('[data-front]').forEach((el) => { // same switch as ⚙️ ตั้งค่า → การเรียน → ด้านหน้าการ์ด
+    el.onclick = () => {
+      S.settings.front = el.dataset.front; save();
+      view.querySelectorAll('[data-front]').forEach((x) => { x.classList.toggle('on', x === el); x.setAttribute('aria-pressed', x === el); });
+    };
+  });
   view.querySelectorAll('[data-hub]').forEach((el) => { el.onclick = () => { cardsFromHub = true; renderCards(el.dataset.hub); }; });
   bindNextSteps();
 }
