@@ -99,6 +99,16 @@ const loadRealText = () => loadData('data/realtext.js', 'REALTEXT').then((rows) 
   return REALTEXT;
 });
 const rtPlain = (r) => r.text.replace(/\n/g, ' ').replace('___', r.right);
+/* ---------- TOEIC Part 5 (1.183.0) ---------- */
+// data/toeicp5.js rows: [type, sentence with ___, answer, [3 wrong], Thai, tip]. Game `toeic5` (qP5 in data/play.js), own SRS in S.lex.
+let TOEICP5 = null;
+const P5_TYPE = { form: ['🔤', 'รูปคำ'], vocab: ['💡', 'ความหมาย'], gram: ['📐', 'ไวยากรณ์'] };
+const loadP5 = () => loadData('data/toeicp5.js', 'TOEICP5').then((rows) => {
+  if (!TOEICP5) TOEICP5 = rows.map(([type, text, right, wrong, th, tip]) => ({ type, text, right, wrong, th, tip }));
+  return TOEICP5;
+});
+const p5Plain = (r) => r.text.replace('___', r.right);
+const p5Items = () => TOEICP5.map((r) => ({ idx: -1, w: r.right, t: r.th, p: '', g: '', _p5: r, _q: [r.text, r.right, '', r.th] }));
 const rtItems = () => REALTEXT.map((r) => ({ idx: -1, w: r.key, t: r.th, p: '', g: '', _rt: r, _q: [r.text.replace(/\n/g, ' '), r.right, '', r.th] }));
 
 /* ---------- word sheet boxes ---------- */

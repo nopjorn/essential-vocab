@@ -450,6 +450,26 @@ test('real-life texts are valid practice data', () => {
   expect(bad).toEqual([]);
 });
 
+test('TOEIC Part 5 questions (1.183): one blank, the answer + 3 different options, valid type, Thai and tip, no duplicates', () => {
+  const { TOEICP5 } = load('data/toeicp5.js');
+  expect(TOEICP5.length).toBeGreaterThanOrEqual(60);
+  const bad = [], seen = new Set(), types = {};
+  TOEICP5.forEach(([type, text, right, wrong, th, tip], i) => {
+    const id = `#${i} ${text}`;
+    types[type] = (types[type] || 0) + 1;
+    if (!['form', 'vocab', 'gram'].includes(type)) bad.push(`${id}: type ${type}`);
+    if ((text.match(/___/g) || []).length !== 1) bad.push(`${id}: needs exactly one ___`);
+    if (!Array.isArray(wrong) || wrong.length !== 3 || new Set([right, ...wrong].map((x) => x.toLowerCase())).size !== 4) bad.push(`${id}: answer + 3 different wrong options`);
+    if (!th || !tip || !/[ก-๙]/.test(th) || !/[ก-๙]/.test(tip)) bad.push(`${id}: Thai translation and tip`);
+    if (!/^[A-Z_].*[.?!]$/.test(text)) bad.push(`${id}: a full sentence`);
+    if (seen.has(text)) bad.push(`${id}: duplicate`);
+    seen.add(text);
+  });
+  Object.entries(types).forEach(([k, n]) => { if (n < 12) bad.push(`type ${k} has only ${n}`); });
+  expect(Object.keys(types).length).toBe(3);
+  expect(bad).toEqual([]);
+});
+
 test('the manual states the real number of games', () => {
   const games = read('js/games.js'), body = games.slice(games.indexOf('const GAMES = {'));
   const n = (body.slice(0, body.indexOf('\n};')).match(/^  [a-zA-Z0-9]+: \{/gm) || []).length;

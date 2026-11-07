@@ -143,6 +143,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'thaierr') return qMistake(w);
     if (m === 'gpat') return qGpat(w);
     if (m === 'real') return qReal(w);
+    if (m === 'toeic5') return qP5(w);
     const toTh = m !== 'th2en' && m !== 'cloze' && m !== 'ipa';
     const diff = gameDiff();
     const opts = shuffle([w, ...(m === 'ipa' ? ipaDistractors(w) : distractors(w, 3, toTh ? 't' : 'w', diff >= 2))]);
@@ -1137,6 +1138,38 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       view.querySelector('[data-sayex]').onclick = () => speak(rtPlain(r));
       $('#nextQ').onclick = next;
       speak(rtPlain(r));
+    };
+  }
+
+  // TOEIC Part 5 (1.183.0): a workplace sentence with one blank and four options (word form / meaning / grammar); the tip says why.
+  function qP5(w) {
+    const r = w._p5, [ic, kind] = P5_TYPE[r.type] || P5_TYPE.gram, opts = shuffle([r.right, ...r.wrong]);
+    const blank = (x) => esc(r.text).replace('___', x);
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit pop"><div class="small muted">💼 TOEIC Part 5 · ${ic} ${kind}</div>
+        <div class="h2 p5-s" lang="en" style="margin-top:8px">${blank('<span class="blank">_____</span>')}</div>
+        <button class="hint-btn" id="p5Hint">💡 ดูคำแปล</button><div class="thx" id="p5Th" hidden>${esc(r.th)}</div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" lang="en" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    $('#p5Hint').onclick = () => { $('#p5Th').hidden = false; $('#p5Hint').remove(); };
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === r.right;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === r.right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ที่ถูกคือ'} <b lang="en">${esc(r.right)}</b>
+        <div class="example"><div class="en" lang="en">${blank(`<mark>${esc(r.right)}</mark>`)}</div>
+          <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button><div class="thx">${esc(r.th)}</div></div>
+        <div class="small p5-tip" style="margin-top:8px">💡 ${esc(r.tip)}</div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      const say = view.querySelector('[data-sayex]');
+      if (say) say.onclick = () => speak(p5Plain(r));
+      $('#nextQ').onclick = next;
+      speak(p5Plain(r));
     };
   }
 
