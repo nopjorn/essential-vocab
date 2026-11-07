@@ -197,6 +197,8 @@ function renderSettings() {
     <details class="set-group danger-group" data-g="danger" ${setIsOpen('danger')}><summary data-k="reset delete ล้าง ลบ">⚠️ โซนอันตราย</summary><div class="card-box danger-zone">
       <p class="small muted">ลบคำที่เรียน สถิติ สตรีค และ XP ทั้งหมด (การตั้งค่ายังอยู่) ย้อนกลับไม่ได้${syncOn() && auth ? ' · ข้อมูลบนคลาวด์จะถูกล้างด้วย' : ''}</p>
       <button class="btn danger block" id="reset">ล้างความคืบหน้าทั้งหมด</button>
+      <p class="small muted" style="margin-top:16px">คืนค่าหน้าตา เสียง และการใช้งานทั้งหมดเป็นแบบเริ่มต้น ความคืบหน้าและแผนการเรียน (ระดับ หมวด คำใหม่ต่อวัน วันสอบ) ยังอยู่</p>
+      <button class="btn block" id="resetSet">↺ คืนค่าการตั้งค่าเริ่มต้น</button>
     </div></details>
     <p class="center small muted">${W.length} คำ · คำแปลไทยและประโยคตัวอย่างเขียนขึ้นเองสำหรับช่วยจำ<br>รายการคำและระดับ CEFR อ้างอิงจากรายการ Oxford 3000™ และ Oxford 5000™ ซึ่งเป็นเครื่องหมายการค้าของ Oxford University Press<br>แอปนี้ไม่มีส่วนเกี่ยวข้องหรือได้รับการรับรองจาก Oxford University Press<br>เวอร์ชัน ${APP_VERSION}</p>`;
 
@@ -349,6 +351,12 @@ function renderSettings() {
       toast(`นำเข้าแล้ว ✅ เพิ่ม ${added} คำ · อัปเดต ${updated} คำ`); go('home');
     } catch (err) { toast('ไฟล์ไม่ถูกต้อง'); }
   };
+  $('#resetSet').onclick = () => {
+    if (!confirm('คืนค่าการตั้งค่าเป็นแบบเริ่มต้น?\nความคืบหน้า ระดับ หมวด คำใหม่ต่อวัน และวันสอบยังอยู่')) return;
+    S.settings = settingsDefault(S.settings); save();
+    applyTheme(); applyIcon(); applyAnim(); applyPen(); applyThumbs(); applyWinGap(); updateBadge();
+    toast('คืนค่าการตั้งค่าแล้ว'); renderSettings();
+  };
   $('#reset').onclick = async () => {
     const cloud = syncOn() && auth;
     if (!confirm('ล้างความคืบหน้าทั้งหมดใช่ไหม? (ย้อนกลับไม่ได้)\nชุดของฉันไม่ถูกลบ (แต่ความคืบหน้าในชุดไม่ถูกล้างด้วย)' + (cloud ? '\nข้อมูลบนคลาวด์จะถูกล้างด้วย ถ้ามีเครื่องอื่นที่ซิงก์อยู่ ให้ล้างที่เครื่องนั้นด้วย ไม่อย่างนั้นข้อมูลจะซิงก์กลับมา' : ''))) return;
@@ -404,6 +412,14 @@ function setSearch() {
     for (const x of loose) { const ok = !setFinding || has(textOf(x)); x.classList.toggle('sq-off', !ok); if (ok && setFinding) hits++; }
     $('#setQNone').hidden = !setFinding || hits > 0;
   };
+}
+
+// ↺ Default settings (1.160.0): everything back to defaults() except the learning plan and the user's own lists/fits.
+const SETTINGS_KEEP = ['levels', 'topic', 'goal', 'newPerDay', 'minutes', 'weekGoal', 'exam', 'fsk', 'frame', 'nextGames', 'gamePin', 'gameHide', 'gameFold', 'gameView', 'riddleLv', 'wotd', 'ws'];
+function settingsDefault(cur) {
+  const d = defaults().settings;
+  for (const k of SETTINGS_KEEP) if (cur && cur[k] !== undefined) d[k] = cur[k];
+  return d;
 }
 
 /* ---------- word of the day settings page ---------- */

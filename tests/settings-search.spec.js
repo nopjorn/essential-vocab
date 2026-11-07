@@ -80,3 +80,16 @@ test('advanced learning rows are folded under ⚙️ ขั้นสูง, foun
   await expect(page.locator('#sched')).toBeHidden();
   expect(errors).toEqual([]);
 });
+
+test('↺ default settings: looks, sound and input go back to defaults, the learning plan and progress stay (1.160.0)', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01', prog: { apple: { b: 2, i: 3, e: 2.5, d: Date.now(), s: 1, c: 1, x: 0 } },
+    settings: { levels: ['B1'], newPerDay: 30, exam: { date: '2030-01-01', name: 'TOEIC' }, theme: 'dark', fsz: 'xl', sfx: false, gdiff: '3', animPage: false, thumbs: 'on' } });
+  await page.evaluate(() => { go('settings'); document.querySelector('details[data-g="danger"]').open = true; });
+  page.once('dialog', (d) => d.accept());
+  await page.locator('#resetSet').click();
+  const st = await page.evaluate(() => S.settings);
+  expect([st.theme, st.fsz, st.sfx, st.gdiff, st.animPage, st.thumbs]).toEqual(['auto', 'md', true, undefined, true, 'auto']);
+  expect([st.levels, st.newPerDay, st.exam.name]).toEqual([['B1'], 30, 'TOEIC']);
+  expect(await page.evaluate(() => [!!S.prog.apple, document.documentElement.dataset.theme, document.documentElement.classList.contains('no-vt')])).toEqual([true, undefined, false]);
+  expect(errors).toEqual([]);
+});
