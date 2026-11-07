@@ -1887,6 +1887,10 @@ html.no-ans .dance, html.no-ans .confetti.burst i { animation: none; }
 .fx-prop { left: 42%; top: 17%; height: 58px; aspect-ratio: 2 / 1; }
 .hb.hw-half .fx-prop { display: none; }
 .fest g[class^="fx-"], .fest .fx-fall, .fest .fx-rise { transform-box: view-box; }
+/* 1.179.5: the moving sky layer fades out behind the card text (greeting, big number, legend, left side of the tiles) so it never covers the words */
+.hero .fest .fx-sky { -webkit-mask-image: radial-gradient(ellipse 62% 58% at 22% 34%, transparent 45%, #000 85%); mask-image: radial-gradient(ellipse 62% 58% at 22% 34%, transparent 45%, #000 85%); }
+.hero.sky-art .stat { background: rgba(255, 255, 255, .22); }
+.hero.sky-time.sky-art .stat { background: rgba(6, 14, 44, .3); }
 .fx-glow { filter: drop-shadow(0 0 3px #ffd34d); }
 @media (prefers-reduced-motion: no-preference) {
   html:not(.no-ans) .fx-fall { animation: fxFall 9s linear infinite; }
