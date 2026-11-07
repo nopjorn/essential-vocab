@@ -14,7 +14,8 @@ test('settings search filters rows, opens matching groups and restores the page 
   await page.evaluate(() => go('settings'));
   await expect(page.locator('#setQ')).toBeVisible();
   const before = await shown(page);
-  expect(before.groups.length).toBe(10);
+  expect(before.groups.length).toBe(9); // 1.160.0: no ☁️ sync group while sync is not set up (config.js empty in tests)
+  expect(before.groups).not.toContain("sync");
 
   // a row label: only that row (and others with the word) are shown, its group opens, the others hide
   await page.fill('#setQ', 'อยากจำได้');
