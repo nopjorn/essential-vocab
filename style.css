@@ -142,6 +142,7 @@ button { touch-action: manipulation; cursor: pointer; }
   color: #fff; border-radius: 24px; padding: 22px; box-shadow: var(--shadow); margin-bottom: 16px;
 }
 .hero .big { font-size: 44px; font-weight: 900; line-height: 1; }
+.hero-min small { font-size: .42em; font-weight: 700; margin-left: 2px; }
 .hero .stats { display: flex; gap: 10px; margin: 16px 0; }
 .hero .stat { flex: 1; background: rgba(255,255,255,.18); border-radius: 14px; padding: 10px; text-align: center; }
 .hero .stat b { display: block; font-size: 24px; }

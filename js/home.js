@@ -47,6 +47,8 @@ function renderHome() {
   const todo = due + Math.min(newLeft, unseen);
   const doneToday = S.daily.fresh + S.daily.reviews;
   const goal = newGoal();
+  // 1.179.6: the big number is the time today's cards take (a new word ≈ 2 cards: learn + relearn), so it no longer repeats the 'due' tile
+  const mins = Math.max(1, Math.round((due + 2 * Math.min(newLeft, unseen)) * secPerCard() / 60));
   const standalone = window.navigator.standalone || matchMedia('(display-mode: standalone)').matches;
 
   let party = false; // today's goal ring just closed: celebrate once a day (1.134)
@@ -68,8 +70,9 @@ function renderHome() {
       <div class="hero-top">
         <div class="hero-main">
           <div class="small" style="opacity:.9">${greeting()}</div>
-          <div class="big" style="margin-top:6px">${todo}</div>
-          <div>การ์ดที่รอวันนี้ (${lvNames(S.settings.levels)})</div>
+          ${todo ? `<div class="big hero-min" style="margin-top:6px">~${mins}<small> นาที</small></div>
+          <div>การ์ดรอ ${todo} ใบ (${lvNames(S.settings.levels)})</div>` : `<div class="big" style="margin-top:6px">0</div>
+          <div>ไม่มีการ์ดรอแล้ววันนี้ (${lvNames(S.settings.levels)})</div>`}
         </div>
         <div class="ring" role="img" aria-label="ความคืบหน้าวันนี้ ${pct}% ทบทวน ${S.daily.reviews} จาก ${revTot} ใบ คำใหม่ ${S.daily.fresh} จาก ${goal} คำ">
           ${sk.disc}<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="rt" cx="50" cy="50" r="43"/><circle class="rt" cx="50" cy="50" r="30"/>${arc(43, rfv, 'r1')}${arc(30, nfv, 'r2')}</svg>
