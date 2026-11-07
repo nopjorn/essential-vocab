@@ -2876,3 +2876,20 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
 .wb-dmg.crit { font-size: 28px; color: var(--pink-ink); }
 @keyframes wbDmg { from { transform: translateY(8px); opacity: 0; } 25% { opacity: 1; } to { transform: translateY(-26px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .wb-intro .wb-face, .wb-arena .wb-face.hit, .wb-dmg { animation: none; } }
+
+/* word chain (1.167.0, js/chain.js) */
+.ch-demo { display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 22px; font-weight: 800; }
+.ch-demo span, .ch-trail span { padding: 4px 10px; border-radius: 12px; background: var(--surface-2); }
+.ch-demo b, .ch-trail b { color: var(--primary-ink); }
+.ch-demo i, .ch-trail i { font-style: normal; color: var(--muted); }
+.ch-trail { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; margin: 2px 0 10px; font-size: 18px; font-weight: 700; }
+.ch-trail span.last { background: color-mix(in srgb, var(--primary) 16%, var(--surface)); }
+.ch-trail span.last b { font-size: 1.25em; text-decoration: underline; text-underline-offset: 3px; }
+.ch-all { font-size: var(--fs-sm); margin: 12px 0 6px; }
+.ch-note { text-align: center; margin: -4px 0 8px; }
+.ch-l { font-size: 22px; color: var(--primary-ink); }
+.ch-time { flex: 1; height: 10px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.ch-time > div { height: 100%; width: 100%; border-radius: 99px; background: var(--good); transition: width .1s linear; }
+.ch-n { font-weight: 800; }
+.ch-opts .opt b { color: var(--primary-ink); }
+.ch-q { padding: 18px 14px; }
