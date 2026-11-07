@@ -94,7 +94,8 @@ const GAME_SKILLS = [
   ['phrase', '🧩', 'วลีและสำนวน', ['colloc', 'phrasal', 'idiom', 'sit', 'real']],
   ['chal', '🎉', 'ท้าทาย', ['survival', 'timeAttack', 'emojiRun']],
 ];
-let gameSkill = 'all'; // chip selected in the games menu: 'all' or a GAME_SKILLS id
+let gameSkill = 'all'; // chip selected in the games menu: 'all', 'toeic' or a GAME_SKILLS id
+const TOEIC_GAMES = ['toeic1', 'toeic2', 'toeic3', 'toeic4', 'toeic5', 'toeic6', 'toeic7']; // the 💼 TOEIC chip, in part order (missing ids are skipped)
 // Game id → its skill group id: the tile and its group heading share the skill's colour (1.156.0, CSS `.sk-<id>` → `--sk`).
 const SKILL_OF = Object.fromEntries(GAME_SKILLS.flatMap(([sk, , , ids]) => ids.map((id) => [id, sk])));
 // Tile badges (1.157.3): the best score is labelled "สถิติ"; once 3+ different games have been played, the ones never tried say "ใหม่".
@@ -250,11 +251,13 @@ function diffShort() {
 function gameList() {
   const skip = new Set([...gamePins(), ...gameHidden()]);
   const groups = GAME_SKILLS.map(([id, ic, name, ids]) => [id, ic, name, ids.filter((g) => GAMES[g] && !skip.has(g))]).filter((g) => g[3].length);
-  if (gameSkill !== 'all' && !groups.some((g) => g[0] === gameSkill)) gameSkill = 'all';
+  // 💼 TOEIC chip (1.188.0): every TOEIC Part game in part order, whatever skill group it sits in.
+  const toeic = ['toeic', '💼', 'TOEIC', TOEIC_GAMES.filter((g) => GAMES[g] && !skip.has(g))];
+  if (gameSkill !== 'all' && !(gameSkill === 'toeic' ? toeic[3].length : groups.some((g) => g[0] === gameSkill))) gameSkill = 'all';
   const n = groups.reduce((a, g) => a + g[3].length, 0);
-  const chips = [['all', '🎮', 'ทั้งหมด', n], ...groups.map((g) => [g[0], g[1], g[2], g[3].length])]
+  const chips = [['all', '🎮', 'ทั้งหมด', n], ...(toeic[3].length ? [toeic] : []).map((g) => [g[0], g[1], g[2], g[3].length]), ...groups.map((g) => [g[0], g[1], g[2], g[3].length])]
     .map(([id, ic, name, c]) => `<button class="chip${gameSkill === id ? ' on' : ''}" data-skill="${id}" aria-pressed="${gameSkill === id}">${ic} ${name} <small>${c}</small></button>`).join('');
-  const shown = gameSkill === 'all' ? groups : groups.filter((g) => g[0] === gameSkill);
+  const shown = gameSkill === 'all' ? groups : gameSkill === 'toeic' ? [toeic] : groups.filter((g) => g[0] === gameSkill);
   const fold = gameFolded(), all = gameSkill === 'all';
   const body = shown.map(([id, ic, name, ids]) => {
     const shut = all && fold.has(id);

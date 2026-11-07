@@ -138,3 +138,18 @@ test('tile badges: the best score says สถิติ, untried games say ให
   expect(narrow).toBe(0);
   expect(errors).toEqual([]);
 });
+
+test('games menu: the 💼 TOEIC chip shows only the TOEIC games, in part order (1.188.0)', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => go('games'));
+  const view = page.locator('#view'), chip = view.locator('#gSkill [data-skill="toeic"]');
+  const ids = await page.evaluate(() => TOEIC_GAMES.filter((g) => GAMES[g]));
+  await expect(chip).toContainText(String(ids.length));
+  await chip.click();
+  await expect(view.locator('#gSkill [data-skill="toeic"]')).toHaveAttribute('aria-pressed', 'true');
+  const shown = await view.locator('.game-grid [data-game]').evaluateAll((els) => els.map((e) => e.dataset.game));
+  expect(shown).toEqual(ids);
+  await view.locator('#gSkill [data-skill="all"]').click();
+  expect(await view.locator('.game-grid [data-game]').count()).toBeGreaterThan(ids.length);
+  expect(errors).toEqual([]);
+});

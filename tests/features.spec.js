@@ -1755,7 +1755,7 @@ test('games menu by skill (1.106): every game is in exactly one group, chips fil
   const view = page.locator('#view');
   const grid = (sel = '') => view.locator('.game-grid:not(.hidden-games .game-grid)' + sel);
   // "all": headings per skill, every visible game once (pinned only on top, hidden only in its box)
-  await expect(view.locator('#gSkill .chip')).toHaveCount(8);
+  await expect(view.locator('#gSkill .chip')).toHaveCount(9); // ทั้งหมด + 💼 TOEIC (1.188.0) + 7 skills
   expect(await view.locator('.games-sec b', { hasText: 'ฟังและเสียง' }).count()).toBe(1);
   await expect(view.locator('[data-game="emoji"]')).toHaveCount(1);
   await expect(grid('[data-game="spell"]')).toHaveCount(0);
