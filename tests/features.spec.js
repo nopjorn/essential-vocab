@@ -1852,8 +1852,19 @@ test('polish (1.131): notices share one box, option badges, one-line title, A–
   const heads = await page.locator('#rows .lt-h').allTextContents();
   expect(heads.length).toBeGreaterThan(0);
   expect(new Set(heads).size).toBe(heads.length);
+  // 1.164: status chips carry counts, the summary bar is drawn, the A–Z rail jumps to a letter
+  await expect(page.locator('#st .chip[data-v="all"] .cn')).toHaveText(/^[\d,]+$/);
+  await expect(page.locator('#ltSum .lt-bar')).toBeVisible();
+  expect(await page.locator('#azRail [data-c]').count()).toBeGreaterThan(20);
+  await page.evaluate(() => { view.scrollTop = 900; });
+  await expect(page.locator('#azRail')).toHaveClass(/show/);
+  await page.locator('#azRail [data-c="M"]').click();
+  await expect(page.locator('#rows .lt-h[data-c="M"]')).toHaveCount(1);
+  const mTop = await page.evaluate(() => { const r = document.querySelector('#rows .lt-h[data-c="M"]').nextElementSibling.getBoundingClientRect(); return r.top > 0 && r.bottom < innerHeight; });
+  expect(mTop).toBe(true);
   await page.locator('#q').fill('app');
   await expect(page.locator('#rows .lt-h')).toHaveCount(0);
+  await expect(page.locator('#azRail [data-c]')).toHaveCount(0);
   // stats: per-level bars carry the level colour
   await page.evaluate(() => go('stats'));
   await expect(page.locator('.lvl-row.lv-A1')).toHaveCount(1);
