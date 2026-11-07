@@ -1563,7 +1563,7 @@ test('wide screens (1.96): home, stats, settings, guide and reference pages pack
   // phones keep one column
   await page.setViewportSize({ width: 440, height: 956 });
   await page.evaluate(() => go('stats'));
-  expect(await cols('#view > *:not(.row)')).toBe(1);
+  expect(await cols('#view > *:not(.row):not(.st-nav)')).toBe(1); // the stats jump bar (1.165.0) runs edge to edge
   expect(errors).toEqual([]);
 });
 

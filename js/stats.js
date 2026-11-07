@@ -208,6 +208,8 @@ function renderStats(from) {
   view.innerHTML = `
     <div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="sBack">‹ กลับ</button></div>
     ${starterCard()}
+    ${statNav()}
+    ${statSum(snap, rate, h)}
     ${levelCard()}
     <div id="todayHost">${todayCard()}</div>
     ${weekCmpCard()}
@@ -294,7 +296,72 @@ function renderStats(from) {
   bindAct();
   watchCharts();
   sectionize(view, '[data-lz="stk"]');
-  masonry([view], '.row, .m-sec:has([data-lz="heat"], #ach), [data-lz="stk"]');
+  masonry([view], '.row, .st-nav, .st-sum, .m-sec:has([data-lz="heat"], #ach), [data-lz="stk"]');
+  bindStatNav();
+}
+
+// Jump bar (1.165.0): the stats page runs to ~11 screens, so a sticky row of chips jumps to each part and lights the one in
+// view. Targets are found by their heading's text (the cards come from many functions), a missing one just hides its chip.
+const STAT_NAV = [['today', '☀️', 'วันนี้', '#todayHost'], ['habit', '📊', 'นิสัย', 'นิสัยการเล่น'], ['lv', '📈', 'ระดับ', 'ความคืบหน้าแต่ละระดับ'],
+  ['due', '📅', 'ทบทวน', '📅 การ์ดที่ต้องทบทวน'], ['weak', '🎯', 'จุดอ่อน', '🎯 ความแม่นแยกตามระดับ'], ['cal', '🗓️', 'ปฏิทิน', '🗓️ ปฏิทินการเล่น'],
+  ['sum', '🧾', 'สรุป', 'สรุปรายสัปดาห์'], ['test', '📝', 'ทดสอบ', '📝 แบบทดสอบประจำเดือน'], ['future', '🔮', 'คาดการณ์', 'แนวโน้มคำศัพท์'], ['award', '🏅', 'รางวัล', '🏅 เหรียญรางวัล']];
+const statNav = () => `<nav class="st-nav" aria-label="ไปยังหัวข้อในหน้าสถิติ">${STAT_NAV.map(([k, ic, t]) => `<button class="chip" data-sec="${k}"><span aria-hidden="true">${ic}</span> ${t}</button>`).join('')}</nav>`;
+function statTargets() {
+  const heads = [...view.querySelectorAll('.h2')];
+  return STAT_NAV.map(([k, , , f]) => {
+    const el = f.startsWith('#') ? view.querySelector(f) : heads.find((h) => h.textContent.trim().startsWith(f));
+    return [k, el && (el.closest('.m-sec') || el)];
+  });
+}
+let jumpSeq = 0;
+function bindStatNav() {
+  const nav = view.querySelector('.st-nav'); if (!nav) return;
+  edgeFade(nav);
+  const tg = new Map(statTargets());
+  nav.querySelectorAll('[data-sec]').forEach((b) => { if (!tg.get(b.dataset.sec)) b.hidden = true; });
+  let lit = '';
+  const light = (k) => {
+    if (k === lit) return; lit = k;
+    nav.querySelectorAll('[data-sec]').forEach((b) => { const on = b.dataset.sec === k; b.classList.toggle('on', on); if (on) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+    const b = nav.querySelector('.on'); if (b) nav.scrollTo({ left: b.offsetLeft - (nav.clientWidth - b.offsetWidth) / 2, behavior: 'smooth' });
+  };
+  const topOf = (el) => el.getBoundingClientRect().top - view.getBoundingClientRect().top; // from #view's top edge
+  nav.onclick = (e) => {
+    const b = e.target.closest('[data-sec]'); const el = b && tg.get(b.dataset.sec); if (!el) return;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const off = () => topOf(el) - nav.offsetHeight - 8;
+    view.scrollTo({ top: view.scrollTop + off(), behavior: reduce ? 'auto' : 'smooth' });
+    light(b.dataset.sec);
+    // parts above load as they scroll into view (calendar, trend, stories): put the heading back under the bar once they have
+    const seq = ++jumpSeq;
+    [700, 1400].forEach((ms) => setTimeout(() => { if (seq === jumpSeq && el.isConnected && Math.abs(off()) > 4) view.scrollTo({ top: view.scrollTop + off() }); }, ms));
+  };
+  // the part in view: the last one whose top has passed just under the bar (measured in a frame while scrolling)
+  let raf = 0;
+  const onScroll = () => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = 0; if (!nav.isConnected) return;
+      const line = nav.getBoundingClientRect().bottom - view.getBoundingClientRect().top + 24;
+      let k = [...tg].find(([, el]) => el)?.[0] || ''; // above the first part: the first chip
+      for (const [key, el] of tg) if (el && el.isConnected && topOf(el) <= line) k = key;
+      light(k);
+    });
+  };
+  view.addEventListener('scroll', onScroll, { passive: true });
+  const onTouch = () => { jumpSeq++; }; // a finger on the page cancels a pending correction
+  view.addEventListener('touchstart', onTouch, { passive: true });
+  const prev = cleanup; cleanup = () => { view.removeEventListener('scroll', onScroll); view.removeEventListener('touchstart', onTouch); jumpSeq++; if (prev) prev(); };
+}
+// Three numbers on top (1.165.0): words remembered, cards due today, and when the 3000 list should be done.
+function statSum(snap, rate, h) {
+  const due = dueList().length, d = etaDays(in3000().size, snap[0], rate, h);
+  const eta = snap[1] >= in3000().size ? '🎉 ครบแล้ว' : d == null ? '–' : `~${durTxt(d)}`;
+  return `<div class="st-sum">
+      <div><b>${snap[3].toLocaleString()}</b><span>🟢 จำได้แล้ว</span></div>
+      <div><b>${due.toLocaleString()}</b><span>📅 ต้องทวนวันนี้</span></div>
+      <div><b>${eta}</b><span>🏁 ครบ 3000 คำ</span></div>
+    </div>`;
 }
 
 // First days: a friendly card instead of letting the empty charts speak first (1.134). Days played = days with any
