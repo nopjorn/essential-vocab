@@ -846,7 +846,7 @@ test('gentle comeback (1.60): big backlog pauses new words, caps the round at 50
   expect(await page.evaluate(() => backlogPlan().on)).toBe(false);
   expect(await page.evaluate(() => buildQueue().filter((w) => !S.prog[w.w]).length)).toBe(10);
   // switch off in settings
-  await page.evaluate(() => { dueList(pool()); W.filter((w) => w.g === 'A1' && !S.prog[w.w]).slice(0, 60).forEach((w) => { S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: Date.now() - DAY, s: 1, c: 1, x: 0 }; }); go('settings'); });
+  await page.evaluate(() => { dueList(pool()); W.filter((w) => w.g === 'A1' && !S.prog[w.w]).slice(0, 60).forEach((w) => { S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: Date.now() - DAY, s: 1, c: 1, x: 0 }; }); go('settings'); $('#advBox').open = true; });
   await expect(page.locator('#gentle')).toBeChecked();
   expect(await page.evaluate(() => backlogPlan().on)).toBe(true);
   await page.locator('label.switch:has(#gentle)').click();
@@ -1047,7 +1047,7 @@ test('FSRS scheduler (1.67): first reviews, growth with good answers, lapse, ret
   expect(r.oldUp).toBe(true); expect(r.stored).toEqual([3, true, true, true]);
   expect(r.sm).toBe(1); expect(r.smFields).toEqual({});
   // settings: switch + retention
-  await page.evaluate(() => { S.settings.scheduler = 'fsrs'; go('settings'); });
+  await page.evaluate(() => { S.settings.scheduler = 'fsrs'; go('settings'); $('#advBox').open = true; });
   await expect(page.locator('#sched')).toHaveValue('fsrs');
   await page.locator('#ret').selectOption('95');
   expect(await page.evaluate(() => S.settings.retention)).toBe(0.95);

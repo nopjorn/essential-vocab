@@ -49,29 +49,31 @@ function renderSettings() {
         <select class="sel" id="npd">${[...new Set([5, 10, 15, 20, 30, 50, 100, st.newPerDay | 0])].filter((n) => n > 0).sort((a, b) => a - b).map((n) => `<option ${n === st.newPerDay ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
       <div class="set-row"><span>ตั้งเป้าเป็นเวลาต่อวัน<br><span class="small muted" id="minInfo"></span></span>
         <select class="sel" id="mins">${[0, 10, 15, 20, 30].map((n) => `<option value="${n}" ${n === (st.minutes | 0) ? 'selected' : ''}>${n ? n + ' นาที' : 'ปิด'}</option>`).join('')}</select></div>
-      <div class="set-row"><span>ตัวจัดรอบทบทวน<br><span class="small muted">FSRS = อัลกอริทึมโอเพนซอร์สที่ Anki ใช้ ทบทวนน้อยลงที่ความจำเท่าเดิม · เปลี่ยนแล้วไม่กระทบกำหนดเดิม มีผลกับการทบทวนครั้งถัดไป</span></span>
-        <select class="sel" id="sched"><option value="fsrs" ${st.scheduler !== 'sm2' ? 'selected' : ''}>FSRS (แนะนำ)</option><option value="sm2" ${st.scheduler === 'sm2' ? 'selected' : ''}>แบบเดิม (SM-2)</option></select></div>
-      <div class="set-row"><span>อยากจำได้กี่ %<br><span class="small muted">สูง = ทบทวนถี่ขึ้น จำแม่นขึ้น (ใช้กับ FSRS)${fsK() !== 1 ? ` · 🧠 ใช้ตารางเฉพาะตัว ×${fsK()} (เปลี่ยนที่หน้าสถิติ)` : ''}</span></span>
-        <select class="sel" id="ret" ${st.scheduler === 'sm2' ? 'disabled' : ''}>${[80, 85, 90, 95].map((n) => `<option value="${n}" ${n === Math.round((st.retention || 0.9) * 100) ? 'selected' : ''}>${n}%</option>`).join('')}</select></div>
       <div class="set-row"><span>เป้าคำใหม่ต่อสัปดาห์<br><span class="small muted">โชว์แถบความคืบหน้าบนหน้าแรก (ปิด = ไม่แสดง)</span></span>
         <select class="sel" id="wgoal">${[0, 20, 35, 50, 70, 100].map((n) => `<option value="${n}" ${n === (st.weekGoal | 0) ? 'selected' : ''}>${n ? n + ' คำ' : 'ปิด'}</option>`).join('')}</select></div>
       <div class="set-row" style="flex-wrap:wrap"><span>🗓️ วันสอบ / วันเดินทาง<br><span class="small muted">แอปคำนวณว่าต้องเรียนคำใหม่วันละกี่คำถึงจะครบทุกคำในระดับที่เลือกทันวันนั้น (โชว์บนหน้าแรก)</span></span>
         <div class="row exam-set"><input class="sel" type="text" id="examName" maxlength="40" placeholder="เช่น สอบ TOEIC" aria-label="ชื่อเป้าหมาย" value="${esc((st.exam && st.exam.name) || '')}">
         <input class="sel" type="date" id="examDate" min="${today()}" aria-label="วันที่" value="${esc((st.exam && st.exam.date) || '')}"><button class="btn ghost" id="examClear" aria-label="ล้างวันสอบ">✕</button></div></div>
-      <div class="set-row"><span>กลับมาแบบไม่ท้อ<br><span class="small muted">การ์ดค้างเกิน 60 ใบ: พักคำใหม่ และทวนวันละ 50 ใบที่ค้างนานสุดก่อน</span></span>
-        <label class="switch"><input type="checkbox" id="gentle" aria-label="กลับมาแบบไม่ท้อ" ${st.gentle !== false ? 'checked' : ''}><span></span></label></div>
-      <div class="set-row"><span>ความยากเกมตัวเลือก<br><span class="small muted">อัตโนมัติ = ถ้าตอบถูกต่อเนื่อง ตัวเลือกลวงจะคล้ายขึ้น และจับเวลาข้อละ 12 วินาทีเมื่อแม่นมาก</span></span>
-        <select class="sel" id="gdiff"><option value="auto" ${!st.gdiff || st.gdiff === 'auto' ? 'selected' : ''}>อัตโนมัติ</option>${['ปกติ', 'คล้ายขึ้น', 'คล้ายขึ้น + จับเวลา'].map((t, k) => `<option value="${k + 1}" ${String(st.gdiff) === String(k + 1) ? 'selected' : ''}>⭐${k + 1} ${t}</option>`).join('')}</select></div>
-      <div class="set-row"><span>ลำดับคำใหม่</span>
-        <select class="sel" id="ord"><option value="shuffle" ${st.order === 'shuffle' ? 'selected' : ''}>สุ่ม</option><option value="alpha" ${st.order === 'alpha' ? 'selected' : ''}>เรียงตามตัวอักษร</option></select></div>
-      <div class="set-row"><span>เปิดแอปแล้วไปที่</span>
-        <select class="sel" id="start"><option value="home" ${st.start === 'home' ? 'selected' : ''}>🏠 หน้าแรก</option><option value="feed" ${st.start === 'feed' ? 'selected' : ''}>📱 ไถศัพท์</option><option value="cards" ${st.start === 'cards' ? 'selected' : ''}>🃏 แฟลชการ์ด</option></select></div>
       <div class="set-row"><span>ด้านหน้าการ์ด</span>
         <select class="sel" id="front"><option value="en" ${st.front === 'en' ? 'selected' : ''}>อังกฤษ → ไทย</option><option value="th" ${st.front === 'th' ? 'selected' : ''}>ไทย → อังกฤษ</option><option value="mix" ${st.front === 'mix' ? 'selected' : ''}>สลับกัน (คำที่แม่นแล้วถามกลับด้านบ้าง)</option></select></div>
+      <div class="set-row"><span>เปิดแอปแล้วไปที่</span>
+        <select class="sel" id="start"><option value="home" ${st.start === 'home' ? 'selected' : ''}>🏠 หน้าแรก</option><option value="feed" ${st.start === 'feed' ? 'selected' : ''}>📱 ไถศัพท์</option><option value="cards" ${st.start === 'cards' ? 'selected' : ''}>🃏 แฟลชการ์ด</option></select></div>
+      <div class="set-row"><span>ความยากเกมตัวเลือก<br><span class="small muted">อัตโนมัติ = ถ้าตอบถูกต่อเนื่อง ตัวเลือกลวงจะคล้ายขึ้น และจับเวลาข้อละ 12 วินาทีเมื่อแม่นมาก</span></span>
+        <select class="sel" id="gdiff"><option value="auto" ${!st.gdiff || st.gdiff === 'auto' ? 'selected' : ''}>อัตโนมัติ</option>${['ปกติ', 'คล้ายขึ้น', 'คล้ายขึ้น + จับเวลา'].map((t, k) => `<option value="${k + 1}" ${String(st.gdiff) === String(k + 1) ? 'selected' : ''}>⭐${k + 1} ${t}</option>`).join('')}</select></div>
       <details class="set-row stack ng-box" id="ngBox"><summary><span>เกมเพิ่มเติมหลังทำแฟลชการ์ดครบ<br><span class="small muted" id="ngSum">${nextGamesSummary(st.nextGames)}</span></span></summary>
         <div class="small muted ng-help">แตะเลือกได้หลายเกม จะขึ้นเป็นปุ่มต่อจาก "เล่นด่วน" ในหน้าจบรอบ</div>
         <div class="chips" id="nextGames">${Object.keys(GAMES).map((g) => `<button class="chip ${(st.nextGames || []).includes(g) ? 'on' : ''}" data-v="${g}">${GAMES[g].icon} ${GAMES[g].name}</button>`).join('')}</div></details>
       <button class="set-row set-link" id="wotdSetBtn"><span>✨ ตั้งค่าคำประจำวัน<br><span class="small muted">เลือกระดับ สถานะคำ และหมวดที่อยากให้ขึ้นในกล่องหน้าแรก</span></span><span class="muted">›</span></button>
+      <details class="set-row stack ng-box set-sub" id="advBox" data-k="⚙️ ขั้นสูง advanced"><summary><span>⚙️ ขั้นสูง<br><span class="small muted" id="advSum">ตัวจัดรอบทบทวน · % ที่อยากจำได้ · กลับมาแบบไม่ท้อ · ลำดับคำใหม่</span></span></summary>
+      <div class="set-row"><span>ตัวจัดรอบทบทวน<br><span class="small muted">FSRS = อัลกอริทึมโอเพนซอร์สที่ Anki ใช้ ทบทวนน้อยลงที่ความจำเท่าเดิม · เปลี่ยนแล้วไม่กระทบกำหนดเดิม มีผลกับการทบทวนครั้งถัดไป</span></span>
+        <select class="sel" id="sched"><option value="fsrs" ${st.scheduler !== 'sm2' ? 'selected' : ''}>FSRS (แนะนำ)</option><option value="sm2" ${st.scheduler === 'sm2' ? 'selected' : ''}>แบบเดิม (SM-2)</option></select></div>
+      <div class="set-row"><span>อยากจำได้กี่ %<br><span class="small muted">สูง = ทบทวนถี่ขึ้น จำแม่นขึ้น (ใช้กับ FSRS)${fsK() !== 1 ? ` · 🧠 ใช้ตารางเฉพาะตัว ×${fsK()} (เปลี่ยนที่หน้าสถิติ)` : ''}</span></span>
+        <select class="sel" id="ret" ${st.scheduler === 'sm2' ? 'disabled' : ''}>${[80, 85, 90, 95].map((n) => `<option value="${n}" ${n === Math.round((st.retention || 0.9) * 100) ? 'selected' : ''}>${n}%</option>`).join('')}</select></div>
+      <div class="set-row"><span>กลับมาแบบไม่ท้อ<br><span class="small muted">การ์ดค้างเกิน 60 ใบ: พักคำใหม่ และทวนวันละ 50 ใบที่ค้างนานสุดก่อน</span></span>
+        <label class="switch"><input type="checkbox" id="gentle" aria-label="กลับมาแบบไม่ท้อ" ${st.gentle !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>ลำดับคำใหม่</span>
+        <select class="sel" id="ord"><option value="shuffle" ${st.order === 'shuffle' ? 'selected' : ''}>สุ่ม</option><option value="alpha" ${st.order === 'alpha' ? 'selected' : ''}>เรียงตามตัวอักษร</option></select></div>
+      </details>
     </div></details>
 
     <details class="set-group" data-g="remind" ${setIsOpen('remind')}><summary data-k="reminder notification แจ้งเตือน ปฏิทิน calendar push">⏰ เตือนให้มาเรียนทุกวัน</summary><div class="card-box">
@@ -388,7 +390,18 @@ function setSearch() {
       const cb = d.querySelector(':scope > .card-box'), rows = cb && cb.children.length ? [...cb.children] : [cb || d]; // a box of plain text = one row
       const whole = !setFinding || has(textOf(d.querySelector('summary')));
       let n = 0;
-      for (const r of rows) { const ok = whole || has(textOf(r)); r.classList.toggle('sq-off', !ok); if (ok) n++; }
+      for (const r of rows) {
+        if (r.matches('details.set-sub')) { // ⚙️ folded rows (1.160.0): searched one by one, the fold opens while it has a match
+          const inner = [...r.children].filter((x) => x.tagName !== 'SUMMARY'), all = whole || has(setNorm(r.dataset.k || '')); // its title words only (the summary line lists the rows inside)
+          let m = 0;
+          for (const x of inner) { const ok = all || has(textOf(x)); x.classList.toggle('sq-off', !ok); if (ok) m++; }
+          r.classList.toggle('sq-off', !m); if (m) n++;
+          if (setFinding && !r.dataset.was) r.dataset.was = r.open ? '1' : '0';
+          if (setFinding) { if (m && (!whole || all || inner.some((x) => has(textOf(x))))) r.open = true; } else if (r.dataset.was) { r.open = r.dataset.was === '1'; delete r.dataset.was; }
+          continue;
+        }
+        const ok = whole || has(textOf(r)); r.classList.toggle('sq-off', !ok); if (ok) n++;
+      }
       d.classList.toggle('sq-off', !n);
       if (setFinding && n) { d.open = true; hits++; } else if (!setFinding) d.open = !!(d.dataset.g in setOpen ? setOpen[d.dataset.g] : d.dataset.g === 'lv' || d.dataset.g === 'learn');
     }

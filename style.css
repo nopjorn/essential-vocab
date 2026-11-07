@@ -1635,6 +1635,9 @@ html.no-ans .streak.bump { animation: none; }
 .ng-box[open] > summary::after { transform: rotate(90deg); }
 .ng-box[open] > summary #ngSum { display: none; }
 .ng-box .ng-help { margin: 10px 0 8px; }
+/* ⚙️ advanced rows folded inside the learning group (1.160.0) */
+.set-sub[open] > summary #advSum { display: none; }
+.set-sub > .set-row:last-child { border-bottom: 0; padding-bottom: 0; }
 
 /* ---------- View Transitions (1.100): vtRun() in app.js sets html[data-vt] = direction ---------- */
 @media (prefers-reduced-motion: no-preference) {

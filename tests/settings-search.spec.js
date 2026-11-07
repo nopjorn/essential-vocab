@@ -64,3 +64,18 @@ test('settings search filters rows, opens matching groups and restores the page 
   expect((await shown(page)).open).toContain('sound');
   expect(errors).toEqual([]);
 });
+
+test('advanced learning rows are folded under ⚙️ ขั้นสูง, found by search and folded again after (1.160.0)', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => go('settings'));
+  await expect(page.locator('#advBox')).not.toHaveAttribute('open', '');
+  await expect(page.locator('#sched')).toBeHidden();
+  await page.fill('#setQ', 'ตัวจัดรอบ');
+  await expect(page.locator('#sched')).toBeVisible();
+  await expect(page.locator('#advBox > .set-row:has(#gentle)')).toBeHidden(); // the other folded rows stay out
+  await page.fill('#setQ', 'ขั้นสูง'); // the fold's own title shows all of it
+  await expect(page.locator('#advBox > .set-row:has(#gentle)')).toBeVisible();
+  await page.fill('#setQ', '');
+  await expect(page.locator('#sched')).toBeHidden();
+  expect(errors).toEqual([]);
+});
