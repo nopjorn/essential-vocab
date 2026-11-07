@@ -107,6 +107,24 @@ const loadP5 = () => loadData('data/toeicp5.js', 'TOEICP5').then((rows) => {
   if (!TOEICP5) TOEICP5 = rows.map(([type, text, right, wrong, th, tip]) => ({ type, text, right, wrong, th, tip }));
   return TOEICP5;
 });
+/* ---------- TOEIC Part 7 (1.184.0) ---------- */
+// data/toeicp7.js: [{id, kind, title, text, th, q: [[question, [4 options], answer index, Thai]]}]. Game `toeic7` (qP7): one item per question,
+// a round keeps the questions of one text together (p7Order); each question has its own SRS card in S.lex.
+let TOEICP7 = null;
+const P7_KIND = { email: ['📧', 'อีเมล'], notice: ['📌', 'ประกาศ'], ad: ['📣', 'โฆษณา'], memo: ['🗒️', 'บันทึกภายใน'], chat: ['💬', 'แชต'],
+  invoice: ['🧾', 'ใบแจ้งหนี้'], schedule: ['🗓️', 'กำหนดการ'], article: ['📰', 'ข่าว'], review: ['⭐', 'รีวิว'] };
+const loadP7 = () => loadData('data/toeicp7.js', 'TOEICP7').then((rows) => { if (!TOEICP7) TOEICP7 = rows; return TOEICP7; });
+const p7Items = () => TOEICP7.flatMap((d) => d.q.map(([q, opts, a, th], k) => ({ idx: -1, w: opts[a], t: q, p: '', g: '', _p7: { d, k, q, opts, a, th }, _q: [q, opts[a], '', th] })));
+// A round = whole texts: the texts of the picked questions (due ones first, as lexPick chose them), each with all its questions
+// in order, until there are at least `n` questions (a text is never cut in half).
+function p7Order(picked, src, n = 10) {
+  const ids = [...new Set(picked.map((w) => w._p7.d.id))], out = [];
+  for (const id of ids) {
+    if (out.length >= n) break;
+    out.push(...src.filter((w) => w._p7.d.id === id).sort((x, y) => x._p7.k - y._p7.k));
+  }
+  return out;
+}
 const p5Plain = (r) => r.text.replace('___', r.right);
 const p5Items = () => TOEICP5.map((r) => ({ idx: -1, w: r.right, t: r.th, p: '', g: '', _p5: r, _q: [r.text, r.right, '', r.th] }));
 const rtItems = () => REALTEXT.map((r) => ({ idx: -1, w: r.key, t: r.th, p: '', g: '', _rt: r, _q: [r.text.replace(/\n/g, ' '), r.right, '', r.th] }));

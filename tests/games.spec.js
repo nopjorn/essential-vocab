@@ -15,7 +15,7 @@ async function setup(page) {
   return errors;
 }
 
-const CHOICE = ['en2th', 'th2en', 'listen', 'cloze', 'colloc', 'sCloze', 'confuse', 'minpair', 'wform', 'idiom', 'sit', 'num', 'irreg', 'dprep', 'thaierr', 'gpat', 'real', 'toeic5', 'ipa', 'guess', 'emoji', 'root'];
+const CHOICE = ['en2th', 'th2en', 'listen', 'cloze', 'colloc', 'sCloze', 'confuse', 'minpair', 'wform', 'idiom', 'sit', 'num', 'irreg', 'dprep', 'thaierr', 'gpat', 'real', 'toeic5', 'toeic7', 'ipa', 'guess', 'emoji', 'root'];
 for (const id of CHOICE) {
   test(`choice game ${id}: right and wrong answers both work`, async ({ page }) => {
     const errors = await setup(page);

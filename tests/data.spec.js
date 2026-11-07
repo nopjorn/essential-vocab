@@ -470,6 +470,29 @@ test('TOEIC Part 5 questions (1.183): one blank, the answer + 3 different option
   expect(bad).toEqual([]);
 });
 
+test('TOEIC Part 7 texts (1.184): known kind, Thai summary, 2–4 questions with 4 distinct options and a valid answer', () => {
+  const { TOEICP7 } = load('data/toeicp7.js');
+  expect(TOEICP7.length).toBeGreaterThanOrEqual(15);
+  const kinds = ['email', 'notice', 'ad', 'memo', 'chat', 'invoice', 'schedule', 'article', 'review'], ids = new Set(), bad = [];
+  let n = 0;
+  TOEICP7.forEach((d) => {
+    if (!d.id || ids.has(d.id)) bad.push(`id ${d.id}`);
+    ids.add(d.id);
+    if (!kinds.includes(d.kind)) bad.push(`${d.id}: kind ${d.kind}`);
+    if (!d.title || !d.text || d.text.length < 150 || !/[ก-๙]/.test(d.th || '')) bad.push(`${d.id}: title, text and Thai summary`);
+    if (!Array.isArray(d.q) || d.q.length < 2 || d.q.length > 4) bad.push(`${d.id}: 2–4 questions`);
+    (d.q || []).forEach(([q, opts, a, th], k) => {
+      n++;
+      if (!/[?]$|to$|of$/.test(q)) bad.push(`${d.id} q${k}: question form`);
+      if (!Array.isArray(opts) || opts.length !== 4 || new Set(opts.map((o) => o.toLowerCase())).size !== 4) bad.push(`${d.id} q${k}: 4 distinct options`);
+      if (!(a >= 0 && a < 4)) bad.push(`${d.id} q${k}: answer index`);
+      if (!/[ก-๙]/.test(th || '')) bad.push(`${d.id} q${k}: Thai explanation`);
+    });
+  });
+  expect(n).toBeGreaterThanOrEqual(45);
+  expect(bad).toEqual([]);
+});
+
 test('the manual states the real number of games', () => {
   const games = read('js/games.js'), body = games.slice(games.indexOf('const GAMES = {'));
   const n = (body.slice(0, body.indexOf('\n};')).match(/^  [a-zA-Z0-9]+: \{/gm) || []).length;

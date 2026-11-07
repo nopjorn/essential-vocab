@@ -27,7 +27,8 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     return (lastMode = pick(ok.filter((x) => x !== lastMode)));
   };
   const TIME_LIMIT = 60;
-  const items = SURV ? [] : SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId) ? lexPick(gameId, src, ROUND) : shuffle(src).slice(0, ENDLESS || STAGE ? src.length : ROUND);
+  const picked = SURV ? [] : SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId) ? lexPick(gameId, src, ROUND) : shuffle(src).slice(0, ENDLESS || STAGE ? src.length : ROUND);
+  const items = gameId === 'toeic7' ? p7Order(picked, src) : picked; // Part 7: questions of one text stay together
   let noSrs = false; // ✏️ hand game in trace mode: copying a faint word is practice, not recall (no SRS change)
   let i = 0, score = 0, combo = 0, bestCombo = 0, asked = 0, hearts = 3, reach = 0, finished = false, timeLeft = TIME_LIMIT;
   let qT0 = 0, curMode = ''; // when the question showed and its kind (⚡ fast answers, 1.168.0)
@@ -144,6 +145,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'gpat') return qGpat(w);
     if (m === 'real') return qReal(w);
     if (m === 'toeic5') return qP5(w);
+    if (m === 'toeic7') return qP7(w);
     const toTh = m !== 'th2en' && m !== 'cloze' && m !== 'ipa';
     const diff = gameDiff();
     const opts = shuffle([w, ...(m === 'ipa' ? ipaDistractors(w) : distractors(w, 3, toTh ? 't' : 'w', diff >= 2))]);
@@ -1170,6 +1172,34 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       if (say) say.onclick = () => speak(p5Plain(r));
       $('#nextQ').onclick = next;
       speak(p5Plain(r));
+    };
+  }
+
+  // TOEIC Part 7 (1.184.0): a short workplace text (email, notice, chat …) stays on top, one question at a time; the Thai summary is a hint.
+  function qP7(w) {
+    const r = w._p7, d = r.d, [ic, kind] = P7_KIND[d.kind] || ['📄', 'ข้อความ'], right = r.opts[r.a], opts = shuffle(r.opts.slice());
+    const nQ = d.q.length;
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit p7-card pop"><div class="small muted">📧 TOEIC Part 7 · ${ic} ${kind} · คำถาม ${r.k + 1}/${nQ}</div>
+        <div class="p7-doc p7-${d.kind}" lang="en"><b>${esc(d.title)}</b><div class="p7-text">${esc(d.text).replace(/\n/g, '<br>')}</div></div>
+        <button class="hint-btn" id="p7Hint">💡 ดูสรุปภาษาไทย</button><div class="thx" id="p7Th" hidden>${esc(d.th)}</div>
+        <div class="p7-q" lang="en">${esc(r.q)}</div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" lang="en" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    $('#p7Hint').onclick = () => { $('#p7Th').hidden = false; $('#p7Hint').remove(); };
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === right;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ที่ถูกคือ'} <b lang="en">${esc(right)}</b>
+        <div class="small p7-why" style="margin-top:8px">💡 ${esc(r.th)}</div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      $('#nextQ').onclick = next;
     };
   }
 

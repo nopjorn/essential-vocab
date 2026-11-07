@@ -1,5 +1,5 @@
 // Offline cache. Bump VERSION (keep it equal to APP_VERSION in app.js) on every push.
-const VERSION = 'o3k-1.183.0';
+const VERSION = 'o3k-1.184.0';
 // App shell: replaced as a whole with every version.
 const FILES = [
   './',
@@ -97,6 +97,7 @@ const DATA = [
   'data/grampat.js',
   'data/realtext.js',
   'data/toeicp5.js',
+  'data/toeicp7.js',
   'data/emoji.js',
   'data/cases.js',
   'data/paths.js',
