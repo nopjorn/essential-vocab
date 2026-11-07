@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.157.3';
+const APP_VERSION = '1.158.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -148,6 +148,13 @@ const gamePlays = (id) => Object.values(S.gplay).reduce((n, dev) => n + ((dev &&
 const DECK_MAX = { decks: 200, words: 500, name: 40, word: 40, icon: 8, tomb: 90 * 86400000, own: 200, ownT: 80, ownE: 160 }; // own = words of my own (not in the list) per set, counted in `words` too
 const isNum = (n) => typeof n === 'number' && isFinite(n);
 const REV_MAX = 2000; // reviews kept in S.rev (personal FSRS, 1.153.0; cleanRev() runs inside load())
+// Activity kinds (1.158.0, see actLog): defined here because load() → cleanAct() runs early.
+const ACT_CATS = [ // stack order bottom → top = the validated colour order (--a-<id> in style.css)
+  ['card', 'แฟลชการ์ด'], ['feed', 'ไถศัพท์'], ['game', 'เกมคำศัพท์'], ['skill', 'เกมทักษะ/ไวยากรณ์'],
+  ['read', 'อ่าน + ฟัง'], ['fun', 'โซนสนุก'], ['other', 'ทดสอบ + อื่นๆ'],
+];
+const ACT_IDS = ACT_CATS.map((c) => c[0]);
+const ACT_DAYS = 400, ACT_GAP = 120, ACT_FIRST = 8;
 function cleanDecks(a) {
   const byId = new Map();
   for (const x of Array.isArray(a) ? a : []) {
@@ -240,6 +247,7 @@ const defaults = () => ({
   chist: {},           // 'YYYY-MM-DD' -> flashcards graded that day (hist minus this = game/feed answers)
   snap: {},            // 'YYYY-MM-DD' -> [learned 3000, mastered 3000, learned all, mastered all]
   chistFrom: '',       // first day chist was recorded; earlier hist can't be split into cards/games
+  act: {},             // 1.158.0: 'YYYY-MM-DD' -> { category (ACT_CATS id) -> [answers, seconds] }, last ACT_DAYS days (actLog in markActive)
   note: {},            // word -> the user's own memory hook
   rev: [],             // flashcard reviews of cards seen before (1.153.0): [minute stamp, days since the last review, stability then, grade 0–3], last REV_MAX → fsFit()
   ret: [[0, 0], [0, 0], [0, 0], [0, 0]], // due reviews by gap [1–2, 3–6, 7–20, 21+ days]: [reviewed, remembered] → real retention vs the target (1.107)
@@ -291,7 +299,7 @@ function load() {
       // A missing/odd riddle record (older backup, sync from another device) must never break the home screen.
       if (!r.mascot || typeof r.mascot !== 'object' || !r.mascot.equip || typeof r.mascot.equip !== 'object') r.mascot = d.mascot;
       if (!Array.isArray(r.ret) || r.ret.length !== 4 || r.ret.some((x) => !Array.isArray(x) || !isNum(x[0]) || !isNum(x[1]))) r.ret = d.ret;
-      r.rev = cleanRev(r.rev); r.missY = cleanMissY(r.missY);
+      r.rev = cleanRev(r.rev); r.missY = cleanMissY(r.missY); r.act = cleanAct(r.act);
       if (!Array.isArray(r.owned)) r.owned = [];
       if (!r.evt || typeof r.evt !== 'object' || Array.isArray(r.evt)) r.evt = {};
       r.adv = cleanAdv(r.adv);
@@ -527,6 +535,7 @@ function mergeBackup(d) {
   S.duel = Object.fromEntries(Object.entries(S.duel).sort((a, b) => b[1][3] - a[1][3]).slice(0, 30));
   for (const [k, v] of Object.entries(d.mtest || {})) if (testBetter(S.mtest[k], v)) S.mtest[k] = v;
   maxIn(S.chist, d.chist);
+  mergeAct(cleanAct(d.act));
   for (const [k, v] of Object.entries(d.snap || {})) if (Array.isArray(v)) S.snap[k] = (S.snap[k] || [0, 0, 0, 0]).map((x, i) => Math.max(x, isNum(v[i]) ? v[i] : 0));
   mergeDecks(d);
   topicMigrate(S);
@@ -654,6 +663,7 @@ function markActive() {
   rollDay();
   const t = today();
   S.hist[t] = (S.hist[t] || 0) + 1;
+  actLog(t);
   // secret medals (1.61): time-of-day / date based
   const now = new Date(), hr = now.getHours();
   if (hr === 5) S.counts.early = 1;
@@ -1506,6 +1516,58 @@ function revLog(p, g) {
   S.rev.push([Math.round(Date.now() / 60000), Math.round(o.t * 10) / 10, Math.round(o.s * 100) / 100, g]);
   if (S.rev.length > REV_MAX) S.rev.splice(0, S.rev.length - REV_MAX);
 }
+// Activity by kind (1.158.0): every answer counted in S.hist is also counted under what was being used (from the page,
+// and for the games page the game id in actGame) with a rough time: the gap since the previous answer when it is under
+// ACT_GAP (thinking + reading time), else ACT_FIRST seconds (the first answer after a break).
+const ACT_ROUTE = { cards: 'card', feed: 'feed', read: 'read', ear: 'read', ref: 'skill' };
+for (const r of ['fun', 'tower', 'cafe', 'puzzle', 'cases', 'paths', 'pic', 'build', 'room', 'riddle', 'wsearch', 'duel', 'adv', 'event', 'map', 'album', 'garden', 'coinshop']) ACT_ROUTE[r] = 'fun';
+let actGame = '', actLast = 0; // actGame: the game started by startGame() (cleared by go()); actLast: ms of the previous answer
+function actCat() {
+  const r = typeof current === 'string' ? current : '';
+  if (r === 'games') {
+    if (!actGame) return 'game';
+    if (typeof SKILL_GAMES !== 'undefined' && SKILL_GAMES.includes(actGame)) return 'skill';
+    if (typeof STORY_GAMES !== 'undefined' && STORY_GAMES.includes(actGame)) return 'read';
+    return ['riddle', 'wsearch', 'duel', 'map'].includes(actGame) ? 'fun' : 'game';
+  }
+  return ACT_ROUTE[r] || 'other';
+}
+function actLog(t) {
+  const now = Date.now(), gap = (now - actLast) / 1000;
+  actLast = now;
+  const sec = gap > 0 && gap <= ACT_GAP ? Math.max(1, Math.round(gap)) : ACT_FIRST;
+  const day = S.act[t] || (S.act[t] = {}), c = actCat(), v = day[c] || (day[c] = [0, 0]);
+  v[0]++; v[1] += sec;
+}
+// A day's numbers {cat: [answers, seconds]} → null when nothing was logged that day.
+function actDay(key) {
+  const d = S.act[key]; if (!d) return null;
+  const out = {}; let n = 0, sec = 0;
+  for (const id of ACT_IDS) { const v = d[id]; out[id] = v ? v[0] : 0; n += out[id]; sec += v ? v[1] : 0; }
+  return n ? { by: out, n, sec, secBy: Object.fromEntries(ACT_IDS.map((id) => [id, d[id] ? d[id][1] : 0])) } : null;
+}
+// Function declarations on purpose: load() runs before these lines.
+function cleanAct(a) {
+  const out = {};
+  if (!a || typeof a !== 'object' || Array.isArray(a)) return out;
+  const keys = Object.keys(a).filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort().slice(-ACT_DAYS);
+  for (const k of keys) {
+    const d = a[k]; if (!d || typeof d !== 'object') continue;
+    const day = {};
+    for (const id of ACT_IDS) { const v = d[id]; if (Array.isArray(v) && isNum(v[0]) && isNum(v[1]) && v[0] > 0) day[id] = [Math.round(v[0]), Math.max(0, Math.round(v[1]))]; }
+    if (Object.keys(day).length) out[k] = day;
+  }
+  return out;
+}
+// Another device's log: per day and kind the larger count and the larger time (like hist / chist).
+function mergeAct(theirs) {
+  for (const [k, d] of Object.entries(theirs)) {
+    const mine = S.act[k] || (S.act[k] = {});
+    for (const [id, v] of Object.entries(d)) mine[id] = mine[id] ? [Math.max(mine[id][0], v[0]), Math.max(mine[id][1], v[1])] : v;
+  }
+  const keys = Object.keys(S.act).sort();
+  for (const k of keys.slice(0, Math.max(0, keys.length - ACT_DAYS))) delete S.act[k];
+}
 // A function declaration on purpose: load() runs before this line.
 function cleanRev(a) {
   if (!Array.isArray(a)) return [];
@@ -1763,6 +1825,7 @@ function go(tab, ...args) {
   if (typeof mustLogin === 'function' && mustLogin() && tab !== 'login') return go('login', true);
   if (!firstGo) animPrep();
   if (cleanup) { cleanup(); cleanup = null; }
+  actGame = '';
   if (typeof hovHide === 'function') hovHide(); // a hover-meaning bubble (js/words.js) never outlives its page
   if (window.speechSynthesis) speechSynthesis.cancel();
   const prev = current;
