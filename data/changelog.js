@@ -1,6 +1,7 @@
 // Changelog shown in the app (settings → ประวัติการอัปเดต). Newest first. Keep in sync with the README table.
 // [version, what changed, release date YYYY-MM-DD (Thailand time)]; loaded lazily by loadChangelog().
 window.CHANGELOG = [
+  ["1.179.3", "ชุดเสริม 💼 TOEIC ชุดที่ 4: เพิ่มอีก 105 คำ (รวม 515 คำ) เช่น reimbursement, refundable, discrepancy, dispatch, fiscal, layoff, auditor พร้อมคำแปลไทยและประโยคตัวอย่าง", "2026-11-07"],
   ["1.179.2", "ชุดเสริม 💼 TOEIC ชุดที่ 3: เพิ่มอีก 105 คำ (รวม 410 คำ) เช่น spreadsheet, amenity, dealership, rebate, flextime, restroom, escalator พร้อมคำแปลไทยและประโยคตัวอย่าง", "2026-11-07"],
   ["1.179.1", "ชุดเสริม 💼 TOEIC ชุดที่ 2: เพิ่มอีก 105 คำ (รวม 305 คำ) เช่น payroll, appraisal, checkout, concierge, postage, beforehand, timetable พร้อมคำแปลไทยและประโยคตัวอย่าง", "2026-11-07"],
   ["1.179.0", "ชุดเสริม 💼 TOEIC นำร่อง 200 คำ: ศัพท์ที่ออกสอบ TOEIC บ่อยแต่ไม่อยู่ในชุด 3000/5000 (เช่น invoice, itinerary, refund, warranty, reschedule) คัดจาก TOEIC Service List (CC BY-SA 4.0) พร้อมคำแปลไทยและประโยคตัวอย่าง · เปิดได้ที่ ⚙️ ตั้งค่า → 📚 ระดับคำศัพท์ที่เรียน → TOEIC · มีชิปกรองในคลังคำ แถบความคืบหน้าในหน้าสถิติ ป้ายสีเขียวหัวเป็ด · ความคืบหน้ารวมเปลี่ยนชื่อเป็น “ทุกคำในแอป”", "2026-11-07"],
