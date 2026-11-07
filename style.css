@@ -678,6 +678,11 @@ body { touch-action: manipulation; }
 .near-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .near-list .chip { padding: 5px 10px; font-size: var(--fs-sm); }
 .up-list { display: grid; gap: 6px; }
+.hard-row { display: flex; gap: 8px; align-items: baseline; width: 100%; padding: 8px 0; border: 0; border-bottom: 1px solid var(--border); background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; flex-wrap: wrap; }
+.hard-row:last-of-type { border-bottom: 0; }
+.hard-row .grow { min-width: 0; overflow-wrap: anywhere; }
+.f30 .mb { margin-top: 8px; }
+.share-row { flex-wrap: wrap; }
 .up-list > div { display: flex; gap: 8px; align-items: baseline; font-size: var(--fs-sm); color: var(--text); }
 .up-list > div > span:first-child { flex: 1; min-width: 0; }
 .today-top { display: flex; gap: 12px; align-items: center; }

@@ -222,15 +222,18 @@ function renderStats(from) {
     <div class="h2">⏱️ ใช้เวลากับอะไรบ้าง</div>
     <div class="card-box" id="actBox">${actBreakdown()}</div>
     ${recordsCard()}
+    ${growthCard()}
     <div id="readyHost"></div>
     <div class="h2">ความคืบหน้าแต่ละระดับ</div>
     <div class="card-box">${lvRows}
       <div class="small muted" style="margin-top:8px"><span class="key bl"></span>เรียนแล้ว &nbsp; <span class="key bm"></span>จำได้แล้ว (ทบทวนผ่านหลายรอบ)</div></div>
     <div class="h2">📅 การ์ดที่ต้องทบทวน 7 วันข้างหน้า</div>
-    <div class="card-box">${forecastChart()}</div>
+    <div class="card-box">${forecastChart()}${forecast30()}</div>
     ${retCard()}
     ${memCard()}
+    ${lvAccCard()}
     ${weakCard()}
+    ${hardCard()}
     ${skillCard()}
     <div class="h2">🗓️ ปฏิทินการเล่น 12 เดือน</div>
     <div class="card-box" data-lz="heat" style="min-height:200px"></div>
@@ -246,7 +249,7 @@ function renderStats(from) {
     <div class="h2">📝 แบบทดสอบประจำเดือน</div>
     <div class="card-box">${mtestSummary()}<button class="btn primary block" data-go="mtest" style="margin-top:10px">${S.mtest[monthKey()] ? 'ทำอีกครั้ง' : 'ทำแบบทดสอบเดือนนี้'}</button></div>
 
-    <div class="card-box row share-row"><button class="btn primary" id="shareProg">📤 แชร์ความก้าวหน้า</button><button class="btn" data-go="year" data-year="${yearToShow() || new Date().getFullYear()}">🎊 สรุปปี</button></div>
+    <div class="card-box row share-row"><button class="btn primary" id="shareProg">📤 แชร์ความก้าวหน้า</button><button class="btn" id="statCsv">📊 ส่งออกสถิติ CSV</button><button class="btn" data-go="year" data-year="${yearToShow() || new Date().getFullYear()}">🎊 สรุปปี</button></div>
     <div class="h2">🎓 ทดสอบจบระดับ</div>
     ${levelTestBox()}
 
@@ -268,6 +271,7 @@ function renderStats(from) {
     <div class="card-box ach-grid" id="ach" data-lz="ach" style="min-height:200px"></div>`;
   loadStories().then(() => { const h = $('#readyHost'); if (h) h.innerHTML = readyBox() + readStatsBox(); });
   bindToday();
+  bindMore();
   { const mb = $('#memBox'); if (mb) mb.onclick = (e) => { const b = e.target.closest('[data-wsi]'); if (b && W[+b.dataset.wsi]) openSheet(W[+b.dataset.wsi]); }; }
   $('#shareProg').onclick = shareProgress;
   { const wk = $('#weak'); if (wk) wk.onclick = (e) => { const b = e.target.closest('[data-weak]'); if (b) weakGo(b.dataset.weak); }; }
@@ -431,6 +435,79 @@ function goalRing(sec) {
   const f = Math.min(1, sec / 60 / g), done = f >= 1;
   return `<div class="tg-ring${done ? ' done' : ''}" style="--f:${f}" role="img" aria-label="เป้าเวลาวันนี้ ${g} นาที ทำไปแล้ว ${Math.round(sec / 60)} นาที"><b>${done ? '✓' : Math.round(f * 100) + '%'}</b><small>${Math.round(sec / 60)}/${g} นาที</small></div>`;
 }
+/* ---------- even more stats (1.161.0) ---------- */
+// 🐢 Hardest words: most wrong answers (2+), with accuracy and a button to practise them.
+function hardWords() {
+  return W.map((w) => [w, S.prog[w.w]]).filter(([, p]) => p && (p.x || 0) >= 2)
+    .sort((a, b) => (b[1].x - a[1].x) || ((a[1].c / a[1].s) - (b[1].c / b[1].s))).slice(0, 10);
+}
+function hardCard() {
+  const l = hardWords();
+  if (!l.length) return '';
+  return `<div class="h2">🐢 คำที่จำยากที่สุด</div><div class="card-box" id="hardBox">
+    ${l.map(([w, p]) => `<button class="hard-row" data-wsi="${W.indexOf(w)}"><span class="grow"><b lang="en">${esc(w.w)}</b> <span class="small muted">${esc(w.t)}</span></span><span class="small muted">ผิด ${p.x} ครั้ง · ถูก ${aPct(p.c, p.s)}%</span></button>`).join('')}
+    <button class="btn primary block" id="hardGo" style="margin-top:10px">🎯 ฝึกคำพวกนี้</button></div>`;
+}
+// 🎯 Accuracy per level from every answer ever given (prog: seen / correct).
+function lvAccCard() {
+  const rows = LEVELS.map((l) => { let s = 0, c = 0, n = 0; for (const w of W) { if (w.g !== l) continue; const p = S.prog[w.w]; if (p && p.s) { s += p.s; c += p.c || 0; n++; } } return [l, s, c, n]; }).filter((r) => r[1] >= 5);
+  if (!rows.length) return '';
+  return `<div class="h2">🎯 ความแม่นแยกตามระดับ</div><div class="card-box">${rows.map(([l, s, c, n]) => `<div class="act-row"><span class="act-n">${lvBadge(l)}</span><span class="act-bar"><i class="a-any" style="width:${aPct(c, s)}%"></i></span><span class="act-v">${aPct(c, s)}%<small>${s.toLocaleString()} ครั้ง · ${n.toLocaleString()} คำ</small></span></div>`).join('')}
+    <div class="small muted" style="margin-top:8px">นับทุกครั้งที่เจอคำในแต่ละระดับ ทั้งแฟลชการ์ดและเกม</div></div>`;
+}
+// ⭐ XP per week (S.xpWeek, last 12 Mondays) and 🌱 words started per day (snapshots, last 28 days).
+function growthCard() {
+  const mons = Array.from({ length: 12 }, (_, i) => { const d = new Date(Date.parse(mondayKey() + 'T12:00:00') - (11 - i) * 7 * DAY); return ymd(d); });
+  const xp = mons.map((m) => S.xpWeek[m] || 0);
+  const nw = Array.from({ length: 28 }, (_, i) => { const k = 27 - i; const g = snapGain(k, k + 1); return g == null ? 0 : g; });
+  const hasN = nw.some((v) => v), hasX = xp.some((v) => v);
+  if (!hasN && !hasX) return '';
+  const md = (k) => thDate(Date.parse(k + 'T12:00:00'));
+  const nwSum = nw.reduce((a, b) => a + b, 0);
+  return `<div class="h2">🌱 การเติบโต</div><div class="card-box" id="growBox">
+    ${hasN ? `<div class="act-h" style="margin-top:0">🌱 คำใหม่ที่เริ่มเรียนต่อวัน <span class="small muted">28 วัน รวม ${nwSum.toLocaleString()} คำ · เฉลี่ย ${(nwSum / 28).toFixed(1)}/วัน</span></div>
+      ${miniBars(nw, nw.map((v, i) => (i === 27 ? 'วันนี้' : `${27 - i}`)), nw.map((v, i) => `${md(dayKey(27 - i))} · ${v} คำใหม่`), 7)}` : ''}
+    ${hasX ? `<div class="act-h">⭐ XP รายสัปดาห์ <span class="small muted">12 สัปดาห์ · สัปดาห์นี้ ${xp[11].toLocaleString()} XP</span></div>
+      ${miniBars(xp, mons.map((m) => md(m).replace(/ \d+$/, '')), mons.map((m, i) => `สัปดาห์ ${md(m)} · ${xp[i].toLocaleString()} XP`), 3)}` : ''}</div>`;
+}
+// 📅 Reviews due over the next 30 days (the 7-day box above stays as it is).
+function forecast30() {
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  const n = Array(30).fill(0);
+  for (const w of W) { const p = S.prog[w.w]; if (!p) continue; const k = Math.max(0, Math.floor((p.d - start.getTime()) / DAY)); if (k < 30) n[k]++; }
+  if (!n.some((v) => v)) return '';
+  return `<details class="act-more f30"><summary>ดูล่วงหน้า 30 วัน (รวม ${n.reduce((a, b) => a + b, 0).toLocaleString()} ใบ)</summary>
+    ${miniBars(n, n.map((v, i) => (i ? `+${i}` : 'วันนี้')), n.map((v, i) => `${thDate(start.getTime() + i * DAY + DAY / 2)} · ${v} ใบ`), 7)}</details>`;
+}
+// 📤 Daily stats as a CSV file (one row per day with any activity).
+function exportStats() {
+  const days = [...new Set([...Object.keys(S.hist), ...Object.keys(S.act)])].filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+  if (!days.length) return toast('ยังไม่มีข้อมูลให้ส่งออก');
+  const q = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const head = ['date', 'answers', 'flashcards', 'minutes', 'judged', 'right', 'app_open_minutes', 'sittings', 'longest_sitting_minutes',
+    ...ACT_IDS.flatMap((id) => [`${id}_answers`, `${id}_minutes`]), ...ACT_EVENTS.map((e) => `${e[0]}_count`), 'words_learned_total', 'words_mastered_total', 'top_games'];
+  const rows = [head];
+  for (const k of days) {
+    const a = actDay(k), x = (S.act[k] && S.act[k].x) || {}, sn = S.snap[k] || [];
+    const games = Object.entries(x.g || {}).sort((p, r) => r[1][1] - p[1][1]).slice(0, 5).map(([id, v]) => `${id}:${v[0]}`).join(' ');
+    rows.push([k, S.hist[k] || 0, S.chist[k] || 0, a ? Math.round(a.sec / 6) / 10 : '', a ? a.jd : '', a ? a.ok : '', x.on ? Math.round(x.on / 6) / 10 : '', x.ss ? x.ss[0] : '', x.ss ? Math.round(x.ss[1] / 6) / 10 : '',
+      ...ACT_IDS.flatMap((id) => (a ? [a.by[id], Math.round(a.secBy[id] / 6) / 10] : ['', ''])), ...ACT_EVENTS.map((e) => (x.e && x.e[e[0]]) || ''), sn[2] == null ? '' : sn[2], sn[3] == null ? '' : sn[3], games]);
+  }
+  exportStats.last = rows;
+  const text = '﻿' + rows.map((r) => r.map(q).join(',')).join('\r\n');
+  saveFile(new File([text], `essential-vocab-stats-${today()}.csv`, { type: 'text/csv' }), 'สถิติรายวันจากศัพท์ต้องรู้').then((ok) => { if (ok) toast(`ส่งออก ${days.length} วันแล้ว ✅`); });
+}
+function bindMore() {
+  const hb = $('#hardBox');
+  if (hb) hb.onclick = (e) => {
+    const r = e.target.closest('[data-wsi]'); if (r && W[+r.dataset.wsi]) return openSheet(W[+r.dataset.wsi]);
+    if (e.target.closest('#hardGo')) { customWords = hardWords().map(([w]) => w); if (customWords.length < 4) customWords = [...new Set(customWords.concat(pool().filter((w) => S.prog[w.w]), pool().slice(0, 10)))].slice(0, 12); gameSource = 'custom'; startGame(pick(['en2th', 'th2en', 'listen'])); }
+  };
+  const gb = $('#growBox'), f30 = view.querySelector('.f30'), ex = $('#statCsv');
+  [gb, f30].forEach((el) => { if (el) el.onclick = (e) => { const b = e.target.closest('.mb-b'); if (b) toast(b.dataset.tip); }; });
+  if (ex) ex.onclick = exportStats;
+}
+
 // Today at a glance (1.159.0; 1.160.0 adds the time-goal ring): from S.act / S.hist, shown above the habits.
 function todayCard() {
   const t = today(), a = actDay(t), x = (S.act[t] && S.act[t].x) || {}, all = S.hist[t] || 0;

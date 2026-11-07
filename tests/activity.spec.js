@@ -139,3 +139,38 @@ test('1.160.0 stats: week compare, records, memory buckets, near mastery, repeat
   await expect(page.locator('#readyHost')).toContainText('80%');
   expect(errors).toEqual([]);
 });
+
+test('1.161.0 stats: hardest words, accuracy by level, growth, 30-day forecast and the CSV export', async ({ page }) => {
+  const key = (k) => { const d = new Date(); d.setDate(d.getDate() - k); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const DAY = 864e5;
+  const errors = await openApp(page, {
+    placedAt: '2026-01-01', settings: { levels: ['A1'] },
+    hist: { [key(0)]: 12, [key(1)]: 5 }, chist: { [key(0)]: 4 },
+    act: { [key(0)]: { card: [4, 60, 4, 3], game: [8, 120, 8, 6], x: { g: { en2th: [8, 120, 8, 6] }, e: { speak: 3 }, ss: [2, 300], on: 900 } } },
+    snap: { [key(1)]: [10, 2, 10, 2], [key(2)]: [4, 1, 4, 1] },
+    prog: { apple: { b: 0, i: 0, e: 2.5, d: Date.now(), s: 8, c: 2, x: 6 }, house: { b: 1, i: 1, e: 2.5, d: Date.now() + 20 * DAY, s: 4, c: 2, x: 2 }, cat: { b: 2, i: 3, e: 2.5, d: Date.now() + 3 * DAY, s: 3, c: 3, x: 0 } },
+  });
+  await page.evaluate(() => { S.xpWeek[mondayKey()] = 250; go('stats'); });
+  const hard = page.locator('#hardBox');
+  await expect(hard.locator('.hard-row')).toHaveCount(2);
+  await expect(hard.locator('.hard-row').first()).toContainText('ผิด 6 ครั้ง · ถูก 25%');
+  await expect(page.locator('.h2', { hasText: 'ความแม่นแยกตามระดับ' })).toBeVisible();
+  const grow = page.locator('#growBox');
+  await expect(grow).toContainText('รวม 6 คำ');
+  await expect(grow).toContainText('สัปดาห์นี้ 250 XP');
+  await page.locator('.f30 summary').click();
+  await expect(page.locator('.f30 .mb-b')).toHaveCount(30);
+  await page.locator('#statCsv').click();
+  const rows = await page.evaluate(() => exportStats.last);
+  expect(rows[0][0]).toBe('date');
+  const last = rows[rows.length - 1], col = (n) => last[rows[0].indexOf(n)];
+  expect(col('answers')).toBe(12);
+  expect(col('flashcards')).toBe(4);
+  expect(col('minutes')).toBe(3);
+  expect(col('right')).toBe(9);
+  expect(col('speak_count')).toBe(3);
+  expect(col('top_games')).toBe('en2th:8');
+  await hard.locator('#hardGo').click();
+  await expect(page.locator('.options .opt').first()).toBeVisible();
+  expect(errors).toEqual([]);
+});
