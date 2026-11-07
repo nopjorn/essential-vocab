@@ -2855,3 +2855,24 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
 .st-sum span { font-size: var(--fs-xs); color: var(--muted); font-weight: 700; }
 .st-nav:not(.at-end) { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
 @media (min-width: 700px) { .st-nav { margin-inline: 0; padding-inline: 0; } }
+
+/* weekly boss (1.166.0, js/wboss.js) */
+.wb-face { display: inline-block; font-size: 84px; line-height: 1.1; }
+.wb-intro .wb-face { font-size: 96px; animation: wbFloat 3s ease-in-out infinite; }
+.wb-face.down { filter: grayscale(.6); transform: rotate(-90deg) translateX(-8px); animation: none; }
+@keyframes wbFloat { 50% { transform: translateY(-6px); } }
+.wb-say { margin: 8px 0 4px; font-weight: 700; }
+.wb-status { display: inline-block; padding: 6px 12px; border-radius: 999px; background: var(--surface-2); font-size: var(--fs-sm); }
+.wb-words { display: flex; flex-wrap: wrap; gap: 6px; }
+.wb-rules { margin: 6px 0 0; padding-left: 20px; line-height: 1.7; }
+.wb-bar { flex: 1; height: 12px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.wb-bar > div { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--bad), var(--warn)); transition: width .45s ease; }
+.wb-arena { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 4px 0 10px; }
+.wb-arena .wb-face { font-size: 64px; }
+.wb-arena .wb-face.hit { animation: wbHit .45s ease; }
+.wb-arena.rage .wb-face { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--bad) 70%, transparent)); }
+@keyframes wbHit { 20% { transform: translateX(-10px) rotate(-8deg); filter: brightness(1.8); } 50% { transform: translateX(8px) rotate(6deg); } }
+.wb-dmg { position: absolute; top: 0; left: 50%; margin-left: 34px; font-weight: 900; font-size: 22px; color: var(--bad-ink); animation: wbDmg .9s ease forwards; pointer-events: none; }
+.wb-dmg.crit { font-size: 28px; color: var(--pink-ink); }
+@keyframes wbDmg { from { transform: translateY(8px); opacity: 0; } 25% { opacity: 1; } to { transform: translateY(-26px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .wb-intro .wb-face, .wb-arena .wb-face.hit, .wb-dmg { animation: none; } }

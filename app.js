@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.165.0';
+const APP_VERSION = '1.166.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -235,6 +235,7 @@ const defaults = () => ({
   cafe: { best: 0, total: 0 }, // ร้านน้องคำ (1.120): most guests served in a day, guests served in total (js/cafe.js)
   ghost: {},           // ghost race (1.120): game id -> best run (time attack: seconds of each right answer; survival: right answers after each question)
   foil: {},            // foil cards in the album (1.119): word -> date won (js/collect.js)
+  wboss: { k: '', win: false, tries: 0, low: 100, wins: 0 }, // weekly boss (1.166.0, js/wboss.js): Monday key, beaten this week, tries, lowest HP left %, weeks won
   tower: { best: 0, cp: 0, runs: 0 }, // endless tower (1.115): highest floor cleared, highest boss floor (checkpoint), runs (js/tower.js)
   adv: {},             // weekly adventure book (1.114): Monday -> { t: tag id, s: '0101100' stamps, done, perfect } (js/adventure.js)
   evt: {},             // 'eventId-year' -> { r, n, pass, at } seasonal event quiz results (1.72)
@@ -305,7 +306,7 @@ function load() {
       if (!Array.isArray(r.owned)) r.owned = [];
       if (!r.evt || typeof r.evt !== 'object' || Array.isArray(r.evt)) r.evt = {};
       r.adv = cleanAdv(r.adv);
-      r.coin = cleanCoin(r.coin); r.tower = cleanTower(r.tower); r.puz = cleanPuz(r.puz); r.foil = cleanFoil(r.foil);
+      r.coin = cleanCoin(r.coin); r.tower = cleanTower(r.tower); r.wboss = cleanWboss(r.wboss); r.puz = cleanPuz(r.puz); r.foil = cleanFoil(r.foil);
       r.fq = cleanFq(r.fq); r.sets = cleanFoil(r.sets); r.room = cleanRoom(r.room); r.paths = cleanPaths(r.paths); r.pics = cleanPics(r.pics);
       r.cases = cleanCases(r.cases); r.cafe = cleanCafe(r.cafe); r.ghost = cleanGhost(r.ghost);
       if (!r.box || typeof r.box !== 'object') r.box = d.box;
@@ -491,6 +492,10 @@ function mergeBackup(d) {
     const wk = !a ? b : !b ? a : a.k === b.k ? { k: a.k, best: Math.max(a.best, b.best) } : a.k > b.k ? a : b;
     S.tower = { best: Math.max(S.tower.best, t.best), cp: Math.max(S.tower.cp, t.cp), runs: Math.max(S.tower.runs, t.runs), ...(wk ? { wk } : {}) };
   }
+  if (d.wboss) { // weekly boss: the newer week wins; the same week merges (beaten on either device, more tries, lower HP left)
+    const o = cleanWboss(d.wboss), a = S.wboss, wins = Math.max(a.wins, o.wins);
+    S.wboss = o.k > a.k ? { ...o, wins } : o.k < a.k ? { ...a, wins } : { k: a.k, win: a.win || o.win, tries: Math.max(a.tries, o.tries), low: Math.min(a.low, o.low), wins };
+  }
   if (d.fq) { const o = cleanFq(d.fq); if (o.d > S.fq.d) S.fq = o; else if (o.d === S.fq.d) { for (const [k, v] of Object.entries(o.c)) S.fq.c[k] = Math.max(S.fq.c[k] || 0, v); S.fq.got = [...new Set([...S.fq.got, ...o.got])]; } }
   Object.assign(S.sets, cleanFoil(d.sets), S.sets);
   S.room = { own: [...new Set([...S.room.own, ...cleanRoom(d.room).own])] };
@@ -593,6 +598,11 @@ function cleanTower(t) {
   const out = { best: n(t.best), cp: Math.floor(n(t.cp) / 10) * 10, runs: n(t.runs) };
   if (t.wk && typeof t.wk === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(t.wk.k || '')) out.wk = { k: t.wk.k, best: n(t.wk.best) }; // weekly special tower (1.121)
   return out;
+}
+function cleanWboss(b) {
+  const n = (x) => (isNum(x) && x > 0 ? Math.floor(x) : 0);
+  if (!b || typeof b !== 'object' || !/^\d{4}-\d{2}-\d{2}$/.test(b.k || '')) return { k: '', win: false, tries: 0, low: 100, wins: n(b && b.wins) };
+  return { k: b.k, win: b.win === true, tries: n(b.tries), low: Math.min(100, isNum(b.low) && b.low >= 0 ? Math.round(b.low) : 100), wins: n(b.wins) };
 }
 function cleanRoom(r) { return { own: [...new Set((r && Array.isArray(r.own) ? r.own : []).filter((w) => typeof w === 'string' && /^[a-z ]{2,20}$/.test(w)))] }; }
 function cleanPaths(p) {
@@ -1884,7 +1894,7 @@ function sectionize(box, brk) {
 /* ---------- router ---------- */
 let current = 'home', firstGo = true;
 let cleanup = null;
-const TITLES = { print: 'ใบงานพิมพ์', mine: 'เก็บคำจากบทความ', ref: 'คลังความรู้', room: 'ห้องของน้องคำ', paths: 'นิยายเลือกทาง', pic: 'เล่าภาพ', build: 'ต่อคำเป็นประโยค', cases: 'คดีนักสืบ', cafe: 'ร้านน้องคำ', puzzle: 'ปริศนาประจำวัน', album: 'อัลบั้มการ์ด', garden: 'สวนคำศัพท์', fun: 'โซนสนุก', tower: 'หอคอยไม่รู้จบ', coinshop: 'ร้านค้าเหรียญ', adv: 'ผจญภัยสัปดาห์', ear: 'ฟังทบทวน', wsearch: 'ค้นหาคำในตาราง', map: 'แผนที่ด่าน', duel: 'ท้าดวลเพื่อน', event: 'กิจกรรมเทศกาล', mascot: 'น้องคำ', year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
+const TITLES = { print: 'ใบงานพิมพ์', mine: 'เก็บคำจากบทความ', ref: 'คลังความรู้', room: 'ห้องของน้องคำ', paths: 'นิยายเลือกทาง', pic: 'เล่าภาพ', build: 'ต่อคำเป็นประโยค', cases: 'คดีนักสืบ', cafe: 'ร้านน้องคำ', puzzle: 'ปริศนาประจำวัน', album: 'อัลบั้มการ์ด', garden: 'สวนคำศัพท์', fun: 'โซนสนุก', tower: 'หอคอยไม่รู้จบ', wboss: 'บอสประจำสัปดาห์', coinshop: 'ร้านค้าเหรียญ', adv: 'ผจญภัยสัปดาห์', ear: 'ฟังทบทวน', wsearch: 'ค้นหาคำในตาราง', map: 'แผนที่ด่าน', duel: 'ท้าดวลเพื่อน', event: 'กิจกรรมเทศกาล', mascot: 'น้องคำ', year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
 let navSeq = 0; // bumped by every go(): a page that finishes loading late checks it before drawing (1.148)
 function go(tab, ...args) {
   navSeq++;
@@ -1903,7 +1913,7 @@ function go(tab, ...args) {
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab || (tab === 'decks' && !wide && b.dataset.tab === 'list') || (tab === 'ref' && b.dataset.tab === 'games')));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   if (firstGo) view.scrollTop = 0; // later pages: done in animPrep() while the layout is still clean
-  ({ home: renderHome, cards: renderCards, ear: renderEar, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, mascot: renderMascot, event: renderEvent, riddle: renderRiddle, duel: renderDuel, map: renderMap, wsearch: renderWSearch, decks: renderDecks, adv: renderAdventure, fun: renderFun, tower: renderTower, coinshop: renderCoinShop, puzzle: renderPuzzle, album: renderAlbum, garden: renderGarden, cases: renderCases, cafe: renderCafe, room: renderRoom, paths: renderPaths, pic: renderPic, build: renderBuild, ref: renderRef, print: renderPrint, mine: renderMine }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, ear: renderEar, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, mascot: renderMascot, event: renderEvent, riddle: renderRiddle, duel: renderDuel, map: renderMap, wsearch: renderWSearch, decks: renderDecks, adv: renderAdventure, fun: renderFun, tower: renderTower, wboss: renderWboss, coinshop: renderCoinShop, puzzle: renderPuzzle, album: renderAlbum, garden: renderGarden, cases: renderCases, cafe: renderCafe, room: renderRoom, paths: renderPaths, pic: renderPic, build: renderBuild, ref: renderRef, print: renderPrint, mine: renderMine }[tab])(...args);
   updateStreak();
   if (firstGo) { firstGo = false; return; } // the first screen at start-up just appears: no fade, no forced layout before the first paint (1.126)
   const a = TAB_ORDER.indexOf(prev), b = TAB_ORDER.indexOf(tab);
