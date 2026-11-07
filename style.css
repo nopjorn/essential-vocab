@@ -2780,7 +2780,8 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
 .st-done-acts .btn { flex: 1; }
 
 /* 🔎 settings search (1.154.0): stays at the top while scrolling; rows that do not match are hidden */
-.set-search { position: sticky; top: 0; z-index: 3; margin: 0 0 12px; padding: 4px 0 8px; background: var(--bg); }
+/* top: -8px = over the view's own top padding (sticky stops below it), so nothing scrolls into view above the box (1.160.0) */
+.set-search { position: sticky; top: -8px; z-index: 3; margin: -8px 0 12px; padding: 12px 0 8px; background: var(--bg); }
 .set-search input.sel { width: 100%; box-sizing: border-box; min-height: 46px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; font-size: var(--fs-md); }
 .set-search input.sel:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
 .set-search #setQNone { margin-top: 8px; }
