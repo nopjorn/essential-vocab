@@ -547,6 +547,11 @@ body { touch-action: manipulation; }
 .quick-btn.feed-btn { background: linear-gradient(135deg, var(--pink), var(--pink-2)); color: #fff; }
 .quick-btn.feed-btn small { color: rgba(255, 255, 255, .9); }
 .quick-btn:active { transform: scale(.97); }
+/* 1.181.4: evening streak nudge inside the today card */
+.streak-risk { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0 0 12px; padding: 10px 12px; border: 0; border-radius: 14px; background: rgba(20, 8, 40, .38); color: #fff; font: inherit; font-size: var(--fs-sm); text-align: left; cursor: pointer; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
+.streak-risk .sr-go { font-weight: 800; white-space: nowrap; }
+@media (prefers-reduced-motion: no-preference) { html:not(.no-ans) .streak-risk { animation: srPulse 2.4s ease-in-out infinite; } }
+@keyframes srPulse { 50% { box-shadow: 0 0 0 4px rgba(255, 170, 60, .35); } }
 /* 1.181.1: quest card folded to one line */
 .q-fold > summary { display: flex; align-items: center; gap: 10px; list-style: none; cursor: pointer; }
 .q-fold > summary::-webkit-details-marker { display: none; }

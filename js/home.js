@@ -47,6 +47,7 @@ function renderHome() {
   const todo = due + Math.min(newLeft, unseen);
   const doneToday = S.daily.fresh + S.daily.reviews;
   const goal = newGoal();
+  const risk = streakRisk();
   // 1.179.6: the big number is the time today's cards take (a new word ≈ 2 cards: learn + relearn), so it no longer repeats the 'due' tile
   const mins = Math.max(1, Math.round((due + 2 * Math.min(newLeft, unseen)) * secPerCard() / 60));
   const standalone = window.navigator.standalone || matchMedia('(display-mode: standalone)').matches;
@@ -85,6 +86,7 @@ function renderHome() {
         <div class="stat"><b>${Math.min(newLeft, unseen)}</b><span>คำใหม่</span></div>
         <div class="stat"><b>${doneToday}</b><span>ทำแล้ววันนี้</span></div>
       </div>
+      ${risk ? `<button class="streak-risk" id="qRisk"><span class="grow">🔥 อีกแค่ 1 ข้อ สตรีค <b>${risk}</b> วันไม่ขาด</span><span class="sr-go">ทำ 1 ข้อเลย ›</span></button>` : ''}
       <button class="btn${todo ? '' : ' done'}" id="startBtn">${todo ? '▶︎ เริ่มเรียนเลย' : '🎉 วันนี้ครบแล้ว! ทำอะไรต่อดี'}</button>
     </div>`;
     },
@@ -180,6 +182,7 @@ function renderHome() {
   const click = (sel, fn) => { const el = $(sel); if (el) el.onclick = fn; };
   click('#startBtn', () => go('cards'));
   click('#qFeed', () => go('feed'));
+  click('#qRisk', () => (todo ? go('cards') : go('feed')));
   click('#statsBtn', () => go('stats', 'home'));
   click('#qPlay', quickPlay);
   click('#examFix', () => { const x = examPlan(); if (x) { S.settings.newPerDay = x.need; save(); toast(`ตั้งคำใหม่เป็นวันละ ${x.need} คำแล้ว ✅`); renderHome(); } });
@@ -230,6 +233,11 @@ function renderHome() {
   edgeFade($('#dsTrack'));
   const qf = $('#qFold'); if (qf) qf.ontoggle = () => { try { localStorage.setItem('o3k.qopen', qf.open ? '1' : '0'); } catch (e) { /* ignore */ } masonry([view.querySelector('.home-grid')]); };
   if (party) ringParty();
+}
+// Evening nudge (1.181.4): from 18:00, a streak that has nothing yet today shows "one answer keeps it" on the today card.
+function streakRisk(now = new Date()) {
+  if (now.getHours() < 18 || S.streak.last === today()) return 0;
+  return streakNow();
 }
 // Goal ring closed: rays + confetti + น้องคำ once a day per device (localStorage o3k.ring = the day it was shown).
 function ringPartyDue() { try { return localStorage.getItem('o3k.ring') !== today(); } catch (e) { return false; } }

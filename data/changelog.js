@@ -1,6 +1,7 @@
 // Changelog shown in the app (settings → ประวัติการอัปเดต). Newest first. Keep in sync with the README table.
 // [version, what changed, release date YYYY-MM-DD (Thailand time)]; loaded lazily by loadChangelog().
 window.CHANGELOG = [
+  ["1.181.5", "หน้าแรก: ตั้งแต่ 18:00 ถ้าวันนี้ยังไม่ได้ทำอะไรเลยและมีสตรีคอยู่ การ์ดวันนี้จะขึ้นแถบ “🔥 อีกแค่ 1 ข้อ สตรีค N วันไม่ขาด” แตะแล้วไปทำได้ทันที", "2026-11-07"],
   ["1.181.4", "ชุดเสริม 🎓 วิชาการ ชุดที่ 3: เพิ่มอีก 88 คำ (รวม 268 คำ) เช่น dissertation, terminology, antibiotic, paradox, irrigation, footnote พร้อมคำแปลไทยและประโยคตัวอย่าง", "2026-11-07"],
   ["1.181.3", "หน้าแรก: การ์ดความคืบหน้าเปลี่ยนจากแถบบางๆ เป็นวงแหวนเล็กสองวง (ชุด 3000 คำ / ทุกคำในแอป) มีตัวเลข % ใหญ่ อ่านง่ายขึ้นแม้เพิ่งเริ่มเรียน", "2026-11-07"],
   ["1.181.2", "ชุดเสริม 🎓 วิชาการ ชุดที่ 2: เพิ่มอีก 90 คำ (รวม 180 คำ) เช่น calculus, dialect, nutrient, hormone, implicit, coherent พร้อมคำแปลไทยและประโยคตัวอย่าง", "2026-11-07"],
