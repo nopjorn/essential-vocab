@@ -101,31 +101,39 @@ function buildQueueRaw(extra) {
   return q;
 }
 
-// "What next?" buttons shown when the flashcards for today are done (empty queue or end of a round).
-function nextSteps(learned) {
+// "What next?" menu shown when the flashcards for today are done (empty queue or end of a round) and under the start screen:
+// three groups (learn more · review a group of words · other ways to practise) and one button marked แนะนำ for the situation.
+function nextSteps(learned, noRec) { // noRec: the start screen (its ▶︎ is the recommendation)
   const unseen = pool().filter((w) => !S.prog[w.w]).length;
   const mastered = masteredWords().length;
   const learning = W.filter((w) => status(w) === 'learning').length;
   const backlog = backlogPlan().on ? dueList().length : 0;
   const leech = W.filter(isLeech).length, star = W.filter(isStar).length;
-  const b = (id, ic, t, d) => `<button class="quick-btn" data-ns="${id}"><span>${ic}</span><b>${t}</b><small>${d}</small></button>`;
-  return `<div class="quick next-steps">
-    ${backlog ? b('backlog', '🧹', 'ทวนค้างอีก 50 ใบ', 'ยังเหลือ ' + backlog + ' ใบ ค่อยๆ เคลียร์ได้') : ''}
-    ${unseen ? b('more', '➕', 'คำใหม่อีก 10 คำ', 'เรียนล่วงหน้าเกินเป้าวันนี้') : ''}
-    ${learned >= 4 ? b('ahead', '🔮', 'ทบทวนล่วงหน้า', '20 ใบที่ใกล้ถึงกำหนดที่สุด') : ''}
-    ${b('feed', '📱', 'ไถศัพท์', 'ปัดดูทีละคำ ไม่มีวันจบ')}
-    ${b('ear', '🎧', 'ฟังทบทวน', 'ฟังคำ นึกความหมาย ไม่ต้องดูจอ')}
-    ${b('play', '⚡', 'เล่นด่วน', 'เกมสุ่ม 10 ข้อ ~1 นาที')}
-    ${learning ? b('learning', '🟡', 'ทบทวนคำที่กำลังเรียน', 'สุ่ม 20 ใบ จากคำที่กำลังเรียน ' + learning + ' คำ') : ''}
-    ${mastered ? b('mastered', '🟢', 'ทบทวนคำที่จำได้แล้ว', 'สุ่ม 20 ใบ จากคำที่จำได้แล้ว ' + mastered + ' คำ') : ''}
-    ${leech ? b('leech', '🐢', 'ฝึกคำดื้อ', leech + ' คำที่ลืมบ่อย') : ''}
-    ${star ? b('star', '⭐', 'ฝึกคำติดดาว', star + ' คำที่ติดดาวไว้') : ''}
-    ${(S.settings.nextGames || []).filter((g) => GAMES[g]).map((g) => b('g:' + g, GAMES[g].icon, GAMES[g].name, GAMES[g].desc)).join('')}</div>`;
+  const rec = noRec ? '' : backlog ? 'backlog' : leech >= 3 ? 'leech' : unseen && S.daily.fresh < newGoal() ? 'more' : learning >= 10 ? 'learning' : unseen ? 'more' : 'play';
+  const b = (id, ic, t, d) => `<button class="quick-btn${id === rec ? ' rec' : ''}" data-ns="${id}">${id === rec ? '<i class="ns-rec">แนะนำ</i>' : ''}<span>${ic}</span><b>${t}</b><small>${d}</small></button>`;
+  const grp = (h, items) => (items.join('') ? `<section class="ns-grp"><h3 class="ns-h">${h}</h3><div class="quick next-steps">${items.join('')}</div></section>` : '');
+  return `<div class="ns-wrap">${grp('📚 เรียนเพิ่ม', [
+    backlog ? b('backlog', '🧹', 'ทวนค้างอีก 50 ใบ', 'ยังเหลือ ' + backlog + ' ใบ ค่อยๆ เคลียร์ได้') : '',
+    unseen ? b('more', '➕', 'คำใหม่อีก 10 คำ', 'เรียนล่วงหน้าเกินเป้าวันนี้') : '',
+    learned >= 4 ? b('ahead', '🔮', 'ทบทวนล่วงหน้า', '20 ใบที่ใกล้ถึงกำหนดที่สุด') : '',
+  ])}${grp('🔁 ทบทวนเฉพาะกลุ่ม', [
+    learning ? b('learning', '🟡', 'คำที่กำลังเรียน', 'สุ่ม 20 ใบ จาก ' + learning + ' คำ') : '',
+    mastered ? b('mastered', '🟢', 'คำที่จำได้แล้ว', 'สุ่ม 20 ใบ จาก ' + mastered + ' คำ') : '',
+    leech ? b('leech', '🐢', 'ฝึกคำดื้อ', leech + ' คำที่ลืมบ่อย') : '',
+    star ? b('star', '⭐', 'ฝึกคำติดดาว', star + ' คำที่ติดดาวไว้') : '',
+  ])}${grp('🎮 ฝึกแบบอื่น', [
+    b('feed', '📱', 'ไถศัพท์', 'ปัดดูทีละคำ ไม่มีวันจบ'),
+    b('ear', '🎧', 'ฟังทบทวน', 'ฟังคำ นึกความหมาย ไม่ต้องดูจอ'),
+    b('play', '⚡', 'เล่นด่วน', 'เกมสุ่ม 10 ข้อ ~1 นาที'),
+    ...(S.settings.nextGames || []).filter((g) => GAMES[g]).map((g) => b('g:' + g, GAMES[g].icon, GAMES[g].name, GAMES[g].desc)),
+  ])}</div>`;
 }
 function bindNextSteps() {
+  const hub = !!$('#hubStart'); // on the start screen: ✕ in the session comes back to it
   view.querySelectorAll('[data-ns]').forEach((el) => {
     el.onclick = () => {
       const id = el.dataset.ns;
+      cardsFromHub = hub;
       if (id === 'more') go('cards', true);
       else if (id === 'ahead') go('cards', 'ahead');
       else if (id === 'backlog') go('cards', 'backlog');
@@ -168,9 +176,11 @@ function renderCardHub() {
       ${b('short', '⏱️', '3 นาที', SHORT_N + ' ใบ ค้างนานสุดก่อน')}
       ${t.due && t.nw ? b('rev', '🔁', 'เฉพาะทบทวน', t.due + ' ใบที่ถึงกำหนด') : ''}
       ${t.due && t.nw ? b('new', '✨', 'เฉพาะคำใหม่', t.nw + ' คำของวันนี้') : ''}
-    </div>`;
+    </div>
+    <h2 class="ns-more">อยากฝึกแบบอื่น</h2>${nextSteps(W.filter((w) => S.prog[w.w]).length, true)}`;
   $('#hubStart').onclick = () => { cardsFromHub = true; renderCards(); };
   view.querySelectorAll('[data-hub]').forEach((el) => { el.onclick = () => { cardsFromHub = true; renderCards(el.dataset.hub); }; });
+  bindNextSteps();
 }
 
 // extra: undefined (today's cards), 'hub' (the start screen), 'short' (3 minutes), 'rev' / 'new' (today's reviews / new words only), true (10 more new), 'ahead', 'mastered', 'learning' (random 20 learning words), 'leech' (stubborn words, 15), or { deck: id, ahead? } = study one of my word sets.

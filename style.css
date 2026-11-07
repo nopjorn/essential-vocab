@@ -980,8 +980,20 @@ input.sel { color: var(--text); font: inherit; }
 .ch-st span { font-size: var(--fs-xs); color: var(--muted); }
 .ch-note { margin: 0; }
 .ch-go { font-size: 18px; padding: 14px; }
-.ch-modes { margin-top: 12px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
-@media (min-width: 900px) { .ch-modes { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); } }
+.quick.ch-modes { margin-top: 12px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+@media (min-width: 900px) { .quick.ch-modes { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); } }
+/* "what next?" menu in groups, one button marked แนะนำ */
+.ns-wrap { margin-top: 6px; }
+.ns-grp { margin-top: 16px; }
+.ns-h { font-size: var(--fs-sm); font-weight: 800; color: var(--muted); margin: 0 4px 8px; }
+.ns-grp .quick.next-steps { margin: 0; }
+.ns-more { font-size: 17px; margin: 22px 4px 0; }
+@media (min-width: 900px) { /* wide: the three groups side by side */
+  .ns-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); column-gap: 14px; align-items: start; }
+  .ns-grp .quick.next-steps { grid-template-columns: 1fr; }
+}
+.quick-btn.rec { position: relative; outline: 2px solid var(--primary); outline-offset: -2px; }
+.ns-rec { position: absolute; top: 8px; right: 8px; font-style: normal; font-size: 11px; font-weight: 800; background: var(--primary); color: #fff; padding: 2px 8px; border-radius: 99px; }
 .wotd { cursor: pointer; }
 .wotd-word { font-size: 26px; font-weight: 800; margin-top: 6px; }
 .wotd mark { background: var(--accent-soft, rgba(var(--glow), .2)); color: inherit; border-radius: 3px; }

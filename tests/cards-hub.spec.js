@@ -41,3 +41,23 @@ test('1.169: with nothing left today the tab shows the done page', async ({ page
   await expect(page.locator('#view')).toContainText('วันนี้ทำครบแล้ว');
   expect(errors).toEqual([]);
 });
+
+test('what-next menu: three groups, one recommended button, the same menu under the start screen', async ({ page }) => {
+  const leech = { b: 0, i: 1, e: 2.5, d: Date.now() + 3 * DAY, s: 9, c: 2, x: 6 };
+  const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1'], newPerDay: 0 }, prog: { apple: leech, house: leech, water: leech, bread: { ...leech, x: 0 } } });
+  await page.evaluate(() => go('cards'));
+  await expect(page.locator('#view')).toContainText('วันนี้ทำครบแล้ว');
+  await expect(page.locator('.ns-grp')).toHaveCount(3);
+  await expect(page.locator('.quick-btn.rec')).toHaveCount(1);
+  await expect(page.locator('.quick-btn.rec')).toHaveAttribute('data-ns', 'leech');
+  // start screen: the menu is there (no recommendation of its own) and a session from it comes back with ✕
+  await page.evaluate(() => { S.settings.newPerDay = 5; go('cards', 'hub'); });
+  await expect(page.locator('#hubStart')).toBeVisible();
+  await expect(page.locator('.ns-grp')).toHaveCount(3);
+  await expect(page.locator('.quick-btn.rec')).toHaveCount(0);
+  await page.click('[data-ns="leech"]');
+  await expect(page.locator('#fc')).toBeVisible();
+  await page.click('#quit');
+  await expect(page.locator('#hubStart')).toBeVisible();
+  expect(errors).toEqual([]);
+});
