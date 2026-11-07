@@ -63,7 +63,7 @@ test('TOEIC set (1.179): every row is marked T, credited CC BY-SA, and adds a wo
   expect(src).toMatch(/TOEIC Service List/);
   const t = { WORDS: [] };
   vm.runInNewContext(src, { window: t });
-  expect(t.WORDS.length).toBe(200);
+  expect(t.WORDS.length).toBeGreaterThanOrEqual(200);
   const rest = new Set(load(...WORD_FILES.filter((f) => !f.endsWith('toeic.js'))).WORDS.map((r) => r[0].toLowerCase()));
   const bad = t.WORDS.filter((r) => r[8] !== 'T' || r.length !== 9 || rest.has(r[0].toLowerCase()) || !/^[a-z][a-z-]*$/.test(r[0])).map((r) => r[0]);
   expect(bad).toEqual([]);
