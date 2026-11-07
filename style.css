@@ -2893,3 +2893,13 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
 .ch-n { font-weight: 800; }
 .ch-opts .opt b { color: var(--primary-ink); }
 .ch-q { padding: 18px 14px; }
+
+/* combo / fast-answer badge over the game (1.168.0, answerFx in app.js) */
+.ans-fx { position: fixed; z-index: 40; left: 50%; top: 26%; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; transform: translateX(-50%); animation: ansFx 1.05s cubic-bezier(.2, 1.4, .4, 1) forwards; }
+.ans-fx span { padding: 8px 16px; border-radius: 999px; background: var(--surface); color: var(--text); box-shadow: 0 8px 28px rgba(var(--glow), .3); font-size: 20px; font-weight: 900; white-space: nowrap; }
+.ans-fx span.c { background: linear-gradient(135deg, #ff7a18, #ffb347); color: #3b1d00; }
+.ans-fx.big span.c { font-size: 28px; padding: 10px 20px; }
+@keyframes ansFx { 0% { opacity: 0; transform: translate(-50%, 14px) scale(.6); } 18% { opacity: 1; transform: translate(-50%, 0) scale(1.08); } 30% { transform: translate(-50%, 0) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -24px) scale(1); } }
+html.no-ans .ans-fx { animation: ansFade 1.05s linear forwards; }
+@keyframes ansFade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ans-fx { animation: ansFade 1.05s linear forwards; } }

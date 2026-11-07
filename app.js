@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.167.0';
+const APP_VERSION = '1.168.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1124,7 +1124,8 @@ const SFX_DEF = {
   retro: { w: 'square', bw: 'square', ok: [988, 1319], bad: [147, 110], win: [523, 659, 784, 1047, 1319], gap: 0.06, len: 0.08, vol: 0.05 },
   bubble: { w: 'sine', bw: 'sine', ok: [500, 750], bad: [300, 200], win: [400, 600, 800, 1000], gap: 0.1, len: 0.12, vol: 0.14, bend: 1.8 },
 };
-function sfx(kind) {
+// `up` (1.168.0) = steps up the scale: a combo in a game plays each right answer a whole tone higher (capped at 7 steps)
+function sfx(kind, up = 0) {
   haptic(kind);
   if (!S.settings.sfx) return;
   try {
@@ -1135,6 +1136,7 @@ function sfx(kind) {
       const o = actx.createOscillator(), g = actx.createGain();
       const t0 = actx.currentTime + k * P.gap;
       o.type = kind === 'bad' ? P.bw : P.w;
+      if (up > 0) f *= 2 ** (Math.min(up, 7) * 2 / 12);
       o.frequency.setValueAtTime(f, t0);
       if (P.bend) o.frequency.exponentialRampToValueAtTime(f * (kind === 'bad' ? 1 / P.bend : P.bend), t0 + P.len);
       g.gain.setValueAtTime(0.0001, t0);
@@ -1145,6 +1147,19 @@ function sfx(kind) {
     });
   } catch (e) { /* audio unavailable */ }
 }
+// A badge that pops over the game for a moment (1.168.0): combo milestones and fast answers. settings.comboFx = false turns it
+// (and the rising pitch) off; without answer animations / with reduced motion it only fades.
+const comboFxOn = () => S.settings.comboFx !== false;
+function answerFx(lines, big) {
+  if (!comboFxOn() || !lines.length) return;
+  document.querySelectorAll('.ans-fx').forEach((x) => x.remove());
+  const el = document.createElement('div');
+  el.className = `ans-fx${big ? ' big' : ''}`; el.setAttribute('aria-hidden', 'true');
+  el.innerHTML = lines.map((t) => `<span${t.startsWith('🔥') ? ' class="c"' : ''}>${t}</span>`).join('');
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1100);
+}
+answerFx.last = null; // the last badge's lines (tests)
 function confetti(kind) {
   if (confettiOff()) { sfx('win'); return; }
   const box = document.createElement('div');

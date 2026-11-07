@@ -134,6 +134,8 @@ function renderSettings() {
         <label class="switch"><input type="checkbox" id="animAnswer" aria-label="ปุ่มเด้ง/สั่นตอนตอบ" ${st.animAnswer !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🎉 พลุฉลอง<br><span class="small muted">ตอนเลเวลอัป ทำภารกิจครบ ได้เหรียญ (เสียงฉลองยังมี)</span></span>
         <label class="switch"><input type="checkbox" id="confetti" aria-label="พลุฉลอง" ${st.confetti !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>🔥 ป้ายคอมโบและตอบเร็ว<br><span class="small muted">ถูกติดกัน 3, 5, 10… ข้อมีป้ายเด้ง เสียงสูงขึ้นทีละขั้น ตอบถูกใน 2 วินาทีขึ้น ⚡ เร็วมาก</span></span>
+        <label class="switch"><input type="checkbox" id="comboFx" aria-label="ป้ายคอมโบและตอบเร็ว" ${st.comboFx !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🐣 น้องคำในเกม<br><span class="small muted">น้องคำนั่งมุมบนตอนเล่นเกม ดีใจเมื่อตอบถูก เศร้านิดๆ เมื่อตอบผิด</span></span>
         <label class="switch"><input type="checkbox" id="qMascot" aria-label="น้องคำในเกม" ${st.qMascot !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🎃 ฉากเทศกาล<br><span class="small muted">ท้องฟ้าตกแต่งตามเทศกาล และน้องคำใส่ชุดเทศกาล</span></span>
@@ -304,6 +306,7 @@ function renderSettings() {
   $('#festSky').onchange = (e) => { st.fest = e.target.checked; save(); };
   $('#seasonSky').onchange = (e) => { st.season = e.target.checked; save(); };
   $('#qMascot').onchange = (e) => { st.qMascot = e.target.checked; save(); };
+  $('#comboFx').onchange = (e) => { st.comboFx = e.target.checked; save(); };
   $('#headFont').onchange = (e) => { st.headFont = e.target.checked; save(); applyAnim(); };
   $('#glassBar').onchange = (e) => { st.glassBar = e.target.checked; save(); applyAnim(); };
   $('#pageBg').onchange = (e) => { st.pageBg = e.target.checked; save(); applyAnim(); };

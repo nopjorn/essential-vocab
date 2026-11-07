@@ -4,6 +4,10 @@
 // Declares the real playQuiz/playMatch, which replace the loader stubs in js/games.js. Cached offline via DATA in sw.js.
 
 // deckRun: {} = main progress, { map } = one set's progress table, { practice: true } = several sets (no progress written).
+// ⚡ fast answers (1.168.0): only for kinds answered with one tap on reading; these need listening, typing, speaking,
+// ordering or drawing first, so they never get the badge.
+const FAST_MS = 2000;
+const SLOW_MODES = ['listen', 'spell', 'dict', 'dictW', 'dictS', 'speak', 'speakS', 'order', 'sOrder', 'hand', 'compose', 'hangman', 'anagram', 'minpair', 'num'];
 function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   const ROUND = 10;
   // Endless run (emojiRun): no round limit, wrong answers only reset the streak; the player ends it themselves.
@@ -26,6 +30,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   const items = SURV ? [] : SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId) ? lexPick(gameId, src, ROUND) : shuffle(src).slice(0, ENDLESS || STAGE ? src.length : ROUND);
   let noSrs = false; // ✏️ hand game in trace mode: copying a faint word is practice, not recall (no SRS change)
   let i = 0, score = 0, combo = 0, bestCombo = 0, asked = 0, hearts = 3, reach = 0, finished = false, timeLeft = TIME_LIMIT;
+  let qT0 = 0, curMode = ''; // when the question showed and its kind (⚡ fast answers, 1.168.0)
   const wrong = [], runLog = [], xp0 = S.xp || 0; // runLog: right/wrong of each answer, xp0: XP at the start (result screen, 1.129)
   $('#title').textContent = GNAME;
 
@@ -107,6 +112,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     const m = STAGE ? stagePick(w) : SURV ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'cloze'] : ['en2th', 'th2en', 'listen'])
       : TIMED ? pick(['en2th', 'th2en'])
       : gameId === 'review' ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'spell', 'cloze'] : ['en2th', 'th2en', 'listen', 'spell']) : mode;
+    qT0 = Date.now(); curMode = m;
     if (m === 'spell') return qSpell(w);
     if (m === 'hangman') return qHangman(w);
     if (m === 'anagram') return qAnagram(w);
@@ -1277,6 +1283,19 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     setTimeout(() => speak(target), 200);
   }
 
+  // ⚡ fast answer (1.168.0): right within FAST_MS of the question, only where one tap answers (not listening, typing, speaking,
+  // ordering or drawing first); combo badges at 3, 5, 10, 15 …
+  function answerBadges(ok) {
+    if (!ok) return;
+    const fast = !SLOW_MODES.includes(curMode) && Date.now() - qT0 < FAST_MS;
+    if (fast) S.counts.fast = (S.counts.fast || 0) + 1;
+    const mile = combo === 3 || (combo >= 5 && combo % 5 === 0);
+    const lines = [];
+    if (mile) lines.push(`🔥 x${combo} ${combo >= 15 ? 'หยุดไม่อยู่!' : combo >= 10 ? 'ไฟลุก!' : combo >= 5 ? 'ร้อนแรง!' : 'ติดไฟ!'}`);
+    if (fast) lines.push('⚡ เร็วมาก!');
+    answerFx.last = lines;
+    answerFx(lines, mile && combo >= 10);
+  }
   function mark(w, ok) {
     // A missed pronunciation or word order doesn't mean the meaning was forgotten, so it doesn't reset the card.
     const spk = gameId === 'speak' || gameId === 'speakS';
@@ -1286,12 +1305,13 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (w.idx < 0 || (soft && !ok) || deckRun.practice || noSrs) markActive(!!ok); else gameResult(w, ok, deckRun.map);
     if (spk && ok) S.counts.speak = (S.counts.speak || 0) + 1;
     questEvent('answer', { game: gameId, ok });
-    sfx(ok ? 'ok' : 'bad');
+    sfx(ok ? 'ok' : 'bad', ok && comboFxOn() ? combo : 0); // combo before this answer: the 2nd right in a row is a step up
     if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); S.counts.maxCombo = Math.max(S.counts.maxCombo || 0, combo); score += 10 + Math.min(combo - 1, 5) * 2; addXP(comboXP(combo)); if (combo >= 5 && combo % 5 === 0) mascotCheer(combo); }
     else { combo = 0; wrong.push(w); if (SURV || BOSS) hearts--; }
     if (TIMED && ok) ghostRun.push(Math.round((Date.now() - runT0) / 100) / 10);
     if (SURV) ghostRun.push(asked - wrong.length);
     qmReact(ok);
+    answerBadges(ok);
     runLog.push(ok);
   }
   function next() { if ((SURV || BOSS) && hearts <= 0) return result(); i++; q(); }
