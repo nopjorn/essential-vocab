@@ -203,15 +203,7 @@ function renderStats(from) {
     <div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="sBack">‹ กลับ</button></div>
     ${starterCard()}
     ${levelCard()}
-    <div id="readyHost"></div>
-    <div class="h2">ความคืบหน้าแต่ละระดับ</div>
-    <div class="card-box">${lvRows}
-      <div class="small muted" style="margin-top:8px"><span class="key bl"></span>เรียนแล้ว &nbsp; <span class="key bm"></span>จำได้แล้ว (ทบทวนผ่านหลายรอบ)</div></div>
-    <div class="h2">📅 การ์ดที่ต้องทบทวน 7 วันข้างหน้า</div>
-    <div class="card-box">${forecastChart()}</div>
-    ${retCard()}
-    ${weakCard()}
-    ${skillCard()}
+    ${todayCard()}
     <div class="h2">นิสัยการเล่น <span class="small muted">${h.span} วันล่าสุด</span></div>
     <div class="tiles">
       <div class="tile-s"><b>${h.active}<small>/${h.span}</small></b><span>วันที่เล่น</span></div>
@@ -222,6 +214,15 @@ function renderStats(from) {
     <div class="card-box"><div class="small muted" style="margin-bottom:6px">กิจกรรมต่อวัน แยกตามประเภท (แตะแท่งเพื่อดูตัวเลข)</div><div class="chart-host" data-chart="act">${activityChart(W_)}</div></div>
     <div class="h2">⏱️ ใช้เวลากับอะไรบ้าง</div>
     <div class="card-box" id="actBox">${actBreakdown()}</div>
+    <div id="readyHost"></div>
+    <div class="h2">ความคืบหน้าแต่ละระดับ</div>
+    <div class="card-box">${lvRows}
+      <div class="small muted" style="margin-top:8px"><span class="key bl"></span>เรียนแล้ว &nbsp; <span class="key bm"></span>จำได้แล้ว (ทบทวนผ่านหลายรอบ)</div></div>
+    <div class="h2">📅 การ์ดที่ต้องทบทวน 7 วันข้างหน้า</div>
+    <div class="card-box">${forecastChart()}</div>
+    ${retCard()}
+    ${weakCard()}
+    ${skillCard()}
     <div class="h2">🗓️ ปฏิทินการเล่น 12 เดือน</div>
     <div class="card-box" data-lz="heat" style="min-height:200px"></div>
 
@@ -316,6 +317,19 @@ function startLazy(defs) {
   lazyTimer = setTimeout(rest, 400);
 }
 
+// Today at a glance (1.159.0): from S.act / S.hist, shown above the habits.
+function todayCard() {
+  const t = today(), a = actDay(t), x = (S.act[t] && S.act[t].x) || {}, all = S.hist[t] || 0;
+  if (!all && !x.on) return '';
+  const kinds = a ? ACT_CATS.filter(([id]) => a.by[id]).sort((p, q) => a.secBy[q[0]] - a.secBy[p[0]]) : [];
+  return `<div class="h2">☀️ วันนี้</div>
+    <div class="card-box today-act"><div class="act-tiles">
+      <div><b>${a ? '≈ ' + minTxt(a.sec) : '–'}</b><span>ฝึกจริง</span></div>
+      <div><b>${all.toLocaleString()}</b><span>ข้อ</span></div>
+      <div><b>${a && a.jd ? aPct(a.ok, a.jd) + '%' : '–'}</b><span>ตอบถูก</span></div>
+      <div><b>${x.on ? minTxt(x.on) : '–'}</b><span>เปิดแอป${x.ss ? ` · ${x.ss[0]} รอบ` : ''}</span></div>
+    </div>${kinds.length ? `<div class="legend">${kinds.map(([id, n]) => `<span><i class="a-${id}"></i>${n} ${a.by[id]}</span>`).join('')}</div>` : ''}</div>`;
+}
 // Stacked bars per kind of activity (1.158.0, S.act; ACT_CATS order bottom → top). Days logged before 1.158.0 keep what is known:
 // flashcards from chist (since 1.9.0) and the rest in grey. actMetric 'n' = answers, 'sec' = minutes (logged days only).
 let actMetric = 'n', actSpan = 7;
@@ -347,7 +361,7 @@ function activityChart(Wd) {
     const date = thDate(Date.parse(d.key + 'T12:00:00'));
     const parts = [...ACT_IDS, 'unk'].filter((id) => d.seg[id] > 0).map((id) => `${ACT_SHORT[id]} ${sec ? minTxt(d.a.secBy[id]) : d.seg[id]}`);
     const lab = !d.sum ? `${date}: ${sec && d.all ? 'ยังไม่ได้จับเวลา' : 'ไม่ได้เล่น'}`
-      : `${date}: ${sec ? `≈ ${minTxt(d.a.sec)}` : `${d.sum} ข้อ${d.a ? ` · ≈ ${minTxt(d.a.sec)}` : ''}`}&#10;${parts.join(' · ')}`;
+      : `${date}: ${sec ? `≈ ${minTxt(d.a.sec)}` : `${d.sum} ข้อ${d.a ? ` · ≈ ${minTxt(d.a.sec)}` : ''}`}${d.a && d.a.jd ? ` · ถูก ${Math.round(d.a.ok / d.a.jd * 100)}%` : ''}&#10;${parts.join(' · ')}`;
     return `${out}<rect class="hit" data-tip="${lab}" x="${x - gap / 2}" y="0" width="${bw + gap}" height="${H}"/>`;
   }).join('');
   const ticks = [0, 7, 14, 21, 27].map((i) => `<text class="ax" x="${i * (bw + gap) + bw / 2}" y="${H - 7}" text-anchor="middle">${i === 27 ? 'วันนี้' : `${27 - i} วันก่อน`}</text>`).join('');
@@ -357,31 +371,80 @@ function activityChart(Wd) {
     <line class="base" x1="0" x2="${Wd}" y1="${H - bot}" y2="${H - bot}"/>${bars}${ticks}</svg><div class="tip" hidden></div></div>
     <div class="legend">${leg || '<span>ยังไม่มีข้อมูล</span>'}</div>`;
 }
-// What the time went to (1.158.0): totals per kind over the last actSpan days, from S.act only (also the chart's table view).
+// What the time went to (1.158.0; 1.159.0 adds right answers, games, hours, weekdays, sittings, app time and other actions):
+// totals over the last actSpan days from S.act (weekdays from S.hist, so older days count too). Also the charts' table view.
+const aPct = (a, b) => (b ? Math.round(a / b * 100) : 0);
+const okTxt = (ok, jd) => (jd ? ` · ถูก ${aPct(ok, jd)}%` : '');
+function actName(id) {
+  if (typeof GAMES !== 'undefined' && GAMES[id]) return `${GAMES[id].icon} ${GAMES[id].name}`;
+  return { other: 'อื่นๆ', home: '🏠 หน้าแรก', list: '📚 คำศัพท์', cards: '🃏 แฟลชการ์ด', feed: '📜 ไถศัพท์', read: '📖 อ่านเรื่องสั้น', games: '🎮 เกม' }[id] || TITLES[id] || id;
+}
+// Small bar row in HTML (keeps the real text size at every width); a tap tells the numbers.
+function miniBars(vals, labs, tips, every) {
+  const top = Math.max(1, ...vals);
+  return `<div class="mb" role="img" aria-label="${esc(tips.filter((t, i) => vals[i]).join(', ') || 'ยังไม่มีข้อมูล')}">${vals.map((v, i) => `<button class="mb-b" data-tip="${esc(tips[i])}" aria-label="${esc(tips[i])}"><i style="height:${v ? Math.max(3, Math.round(v / top * 100)) : 0}%"></i></button>`).join('')}</div>
+    <div class="mb-ax">${labs.map((l, i) => `<span>${i % every === 0 ? l : ''}</span>`).join('')}</div>`;
+}
 function actBreakdown() {
-  const tot = Object.fromEntries(ACT_IDS.map((id) => [id, [0, 0]]));
-  let days = 0, n = 0, sec = 0;
+  const tot = Object.fromEntries(ACT_IDS.map((id) => [id, [0, 0, 0, 0]]));
+  const g = {}, h = Array(24).fill(0), ev = {}, wd = Array(7).fill(0);
+  let days = 0, n = 0, sec = 0, ok = 0, jd = 0, on = 0, sits = 0, longest = 0;
   for (let k = 0; k < actSpan; k++) {
-    const key = dayKey(k), a = actDay(key); if (!a) continue;
-    days++; n += a.n; sec += a.sec;
-    ACT_IDS.forEach((id) => { tot[id][0] += a.by[id]; tot[id][1] += a.secBy[id]; });
+    const key = dayKey(k), a = actDay(key);
+    wd[(new Date(key + 'T12:00:00').getDay() + 6) % 7] += S.hist[key] || 0;
+    const x = (S.act[key] && S.act[key].x) || {};
+    on += x.on || 0;
+    for (const [id, v] of Object.entries(x.e || {})) ev[id] = (ev[id] || 0) + v;
+    if (!a) continue;
+    days++; n += a.n; sec += a.sec; ok += a.ok; jd += a.jd;
+    ACT_IDS.forEach((id) => { const t = tot[id]; t[0] += a.by[id]; t[1] += a.secBy[id]; t[2] += a.jdBy[id]; t[3] += a.okBy[id]; });
+    for (const [id, v] of Object.entries(x.g || {})) { const t = g[id] || (g[id] = [0, 0, 0, 0]); v.forEach((y, i) => { t[i] += y; }); }
+    (x.h || []).forEach((v, i) => { h[i] += v; });
+    if (x.ss) { sits += x.ss[0]; longest = Math.max(longest, x.ss[1]); }
   }
   const chips = `<div class="chips trend-range" role="group" aria-label="ช่วงเวลา">${[7, 28, 90, 365].map((d) => `<button class="chip${actSpan === d ? ' on' : ''}" data-as="${d}" aria-pressed="${actSpan === d}">${d} วัน</button>`).join('')}</div>`;
-  if (!n) return `${chips}<div class="small muted">📊 แอปเริ่มเก็บรายละเอียดว่าเล่นอะไรไปเท่าไรตั้งแต่เวอร์ชันนี้ เล่นสักพักแล้วตัวเลขจะขึ้นตรงนี้</div>`;
+  if (!n) return `${chips}<div class="small muted">📊 แอปเริ่มเก็บรายละเอียดว่าเล่นอะไรไปเท่าไรตั้งแต่เวอร์ชัน 1.158.0 เล่นสักพักแล้วตัวเลขจะขึ้นตรงนี้</div>`;
   const rows = ACT_CATS.filter(([id]) => tot[id][0]).sort((a, b) => tot[b[0]][1] - tot[a[0]][1]);
   const top = Math.max(...rows.map(([id]) => tot[id][1]), 1);
   const since = Object.keys(S.act).sort()[0];
+  const row = (cls, name, v, topV, share) => `<div class="act-row"><span class="act-n">${cls ? `<i class="${cls}"></i>` : ''}${esc(name)}</span>
+      <span class="act-bar"><i class="${cls || 'a-any'}" style="width:${Math.max(2, Math.round(v[1] / topV * 100))}%"></i></span>
+      <span class="act-v">≈ ${minTxt(v[1])}<small>${v[0].toLocaleString()} ข้อ${share ? ` · ${aPct(v[1], sec)}%` : ''}${okTxt(v[3], v[2])}</small></span></div>`;
+  // games / pages by time
+  const gl = Object.entries(g).sort((a, b) => b[1][1] - a[1][1]), gTop = Math.max(1, ...gl.map((x) => x[1][1]));
+  const gRows = (l) => l.map(([id, v]) => row('', actName(id), v, gTop, true)).join('');
+  // hours and weekdays
+  const hTips = h.map((v, i) => `${String(i).padStart(2, '0')}:00–${String((i + 1) % 24).padStart(2, '0')}:00 · ${v} ข้อ`);
+  const bestH = h.indexOf(Math.max(...h));
+  const WD = ['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.'], WDF = ['วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์', 'วันอาทิตย์'];
+  const bestW = wd.indexOf(Math.max(...wd));
+  const evs = ACT_EVENTS.filter(([id]) => ev[id]);
   return `${chips}<div class="act-sum"><b>≈ ${minTxt(sec)}</b> · ${n.toLocaleString()} ข้อ · เล่น ${days} วัน (เฉลี่ยวันละ ≈ ${minTxt(sec / days)})</div>
-    <div class="act-rows">${rows.map(([id, t]) => `<div class="act-row"><span class="act-n"><i class="a-${id}"></i>${t}</span>
-      <span class="act-bar"><i class="a-${id}" style="width:${Math.max(2, Math.round(tot[id][1] / top * 100))}%"></i></span>
-      <span class="act-v">≈ ${minTxt(tot[id][1])}<small>${tot[id][0].toLocaleString()} ข้อ · ${Math.round(tot[id][1] / sec * 100)}%</small></span></div>`).join('')}</div>
-    <div class="small muted" style="margin-top:8px">เวลาเป็นค่าประมาณจากช่วงห่างระหว่างแต่ละข้อ (พักเกิน 2 นาทีนับข้อแรกหลังพักเป็น 8 วินาที)${since > dayKey(actSpan - 1) ? ` · เริ่มเก็บเมื่อ ${thDate(Date.parse(since + 'T12:00:00'))}` : ''}</div>`;
+    <div class="act-tiles">
+      <div><b>${jd ? aPct(ok, jd) + '%' : '–'}</b><span>ตอบถูก${jd ? ` (${ok.toLocaleString()}/${jd.toLocaleString()})` : ''}</span></div>
+      <div><b>${on ? minTxt(on) : '–'}</b><span>เปิดแอปรวม</span></div>
+      <div><b>${sits || '–'}</b><span>รอบที่นั่งเล่น${sits ? ` · เฉลี่ย ≈ ${minTxt(sec / sits)}` : ''}</span></div>
+      <div><b>${longest ? minTxt(longest) : '–'}</b><span>รอบที่ยาวที่สุด</span></div>
+    </div>
+    <div class="act-h">แยกตามประเภท</div>
+    <div class="act-rows">${rows.map(([id, t]) => row(`a-${id}`, t, tot[id], top, true)).join('')}</div>
+    ${gl.length ? `<div class="act-h">🎯 เล่นอะไรนานที่สุด</div><div class="act-rows">${gRows(gl.slice(0, 6))}</div>
+      ${gl.length > 6 ? `<details class="act-more"><summary>ดูอีก ${gl.length - 6} อย่าง</summary><div class="act-rows">${gRows(gl.slice(6))}</div></details>` : ''}` : ''}
+    ${h.some((v) => v) ? `<div class="act-h">🕐 ช่วงเวลาที่เล่น <span class="small muted">เยอะสุด ${String(bestH).padStart(2, '0')}:00–${String((bestH + 1) % 24).padStart(2, '0')}:00</span></div>
+      ${miniBars(h, h.map((v, i) => String(i)), hTips, 6)}` : ''}
+    <div class="act-h">📆 วันในสัปดาห์ <span class="small muted">เยอะสุด${WDF[bestW]}</span></div>
+    ${miniBars(wd, WD, wd.map((v, i) => `${WDF[i]} · ${v.toLocaleString()} ข้อ`), 1)}
+    ${evs.length ? `<div class="act-h">✨ ทำอะไรอีกบ้าง</div><div class="act-ev">${evs.map(([id, ic, t]) => `<div><span aria-hidden="true">${ic}</span><b>${ev[id].toLocaleString()}</b><small>${t}</small></div>`).join('')}</div>` : ''}
+    <div class="small muted" style="margin-top:10px">เวลาเป็นค่าประมาณจากช่วงห่างระหว่างแต่ละข้อ (พักเกิน 2 นาทีนับเป็นรอบใหม่ ข้อแรกหลังพักนับ 8 วินาที) · % ถูก คิดเฉพาะข้อที่ตรวจถูกผิดได้${since > dayKey(actSpan - 1) ? ` · เริ่มเก็บเมื่อ ${thDate(Date.parse(since + 'T12:00:00'))}` : ''}</div>`;
 }
 function bindAct(root = view) {
   const host = root.querySelector('[data-chart="act"]');
   if (host) host.querySelectorAll('[data-am]').forEach((b) => { b.onclick = () => { actMetric = b.dataset.am; delete host.dataset.w; paintChart(host); }; });
   const box = root.querySelector('#actBox');
-  if (box) box.querySelectorAll('[data-as]').forEach((b) => { b.onclick = () => { actSpan = +b.dataset.as; box.innerHTML = actBreakdown(); bindAct(root); }; });
+  if (box) {
+    box.querySelectorAll('[data-as]').forEach((b) => { b.onclick = () => { actSpan = +b.dataset.as; box.innerHTML = actBreakdown(); bindAct(root); }; });
+    box.onclick = (e) => { const b = e.target.closest('.mb-b'); if (b) toast(b.dataset.tip); };
+  }
 }
 
 // Lines: words learned and words mastered (all levels), from daily snapshots. The SVG is drawn at the width of its box

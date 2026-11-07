@@ -289,7 +289,7 @@ function renderRead(id) {
     const foot = card.querySelector('.st-qfoot'); foot.hidden = false;
     foot.querySelector('.st-qres').textContent = ok ? '✓ ถูกต้อง' : '✗ ยังไม่ถูก';
     const dot = view.querySelector(`#rDots [data-d="${k}"]`); if (dot) dot.className = ok ? 'ok' : 'bad';
-    sfx(ok ? 'ok' : 'bad'); markActive();
+    sfx(ok ? 'ok' : 'bad'); markActive(!!ok);
     if (ok) addXP(5);
     answers[k] = ok;
     if (answers.filter((x) => x != null).length === st.q.length) {

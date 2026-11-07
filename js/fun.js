@@ -61,7 +61,7 @@ function funAsk(w, kind, o) {
     if (answered) return; answered = true;
     view.querySelectorAll('.opt').forEach((b) => { if (opts[+b.dataset.k] === w) b.classList.add('correct'); b.disabled = true; });
     view.querySelectorAll('.pw-btn').forEach((b) => { b.disabled = true; });
-    if (how !== 'skip') { if (o.practice) markActive(); else gameResult(w, ok); }
+    if (how !== 'skip') { if (o.practice) markActive(!!ok); else gameResult(w, ok); }
     if (ok) funEvent('right');
     else markActive();
     sfx(ok ? 'ok' : 'bad');

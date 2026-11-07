@@ -16,22 +16,34 @@ test('answers are logged by kind with a rough time, kept on reload, cleaned and 
     flushSave();
     return S.act[today()];
   });
-  expect(Object.keys(act).sort()).toEqual(['card', 'feed', 'fun', 'game', 'other', 'skill']);
-  for (const v of Object.values(act)) { expect(v[0]).toBe(1); expect(v[1]).toBeGreaterThan(0); }
+  expect(Object.keys(act).sort()).toEqual(['card', 'feed', 'fun', 'game', 'other', 'skill', 'x']);
+  for (const [k, v] of Object.entries(act)) { if (k === 'x') continue; expect(v[0]).toBe(1); expect(v[1]).toBeGreaterThan(0); }
+  expect(act.card.slice(2)).toEqual([1, 1]);   // graded "จำได้" = judged + right
+  expect(act.feed.slice(2)).toEqual([1, 1]);
+  expect(act.other.slice(2)).toEqual([0, 0]);  // markActive() without ok = not judged
+  expect(Object.keys(act.x.g).sort()).toEqual(['cards', 'en2th', 'feed', 'mtest', 'phrasal', 'tower']);
+  expect(act.x.h.reduce((a, b) => a + b, 0)).toBe(6);
+  expect(act.x.ss[0]).toBe(1);
   expect((await readState(page)).act).toBeTruthy();
   const merged = await page.evaluate(() => {
     const t = today();
-    mergeBackup({ act: { [t]: { card: [5, 100], read: [2, 30], bogus: [1, 1] }, '2020-01-01': { game: [3, 40] }, bad: { card: [1, 1] }, '2020-01-02': 'x' } });
+    mergeBackup({ act: { [t]: { card: [5, 100], read: [2, 30], bogus: [1, 1], x: { g: { cafe: [4, 50, 4, 3], '<x>': [1, 1] }, e: { speak: 9, hack: 3 }, h: [1, 2], on: 600 } }, '2020-01-01': { game: [3, 40] }, bad: { card: [1, 1] }, '2020-01-02': 'x' } });
     return S.act;
   });
   const t = await page.evaluate(() => today());
-  expect(merged[t].card).toEqual([5, 100]);
-  expect(merged[t].read).toEqual([2, 30]);
+  expect(merged[t].card).toEqual([5, 100, 1, 1]);
+  expect(merged[t].read).toEqual([2, 30, 0, 0]);
+  expect(merged[t].x.g.cafe).toEqual([4, 50, 4, 3]);
+  expect(merged[t].x.g['<x>']).toBeUndefined();
+  expect(merged[t].x.e.speak).toBe(9);
+  expect(merged[t].x.e.hack).toBeUndefined();
+  expect(merged[t].x.h.length).toBe(24); // an odd hour list is dropped, ours stays
+  expect(merged[t].x.on).toBe(600);
   expect(merged[t].bogus).toBeUndefined();
-  expect(merged['2020-01-01'].game).toEqual([3, 40]);
+  expect(merged['2020-01-01'].game).toEqual([3, 40, 0, 0]);
   expect(merged.bad).toBeUndefined();
   const loaded = await page.evaluate(() => { flushSave(); const d = JSON.parse(localStorage.getItem('oxford3000.v1')); d.act = { '2026-01-01': { card: ['x', 1], feed: [2, 9] }, junk: 5 }; localStorage.setItem('oxford3000.v1', JSON.stringify(d)); return load().act; });
-  expect(loaded).toEqual({ '2026-01-01': { feed: [2, 9] } });
+  expect(loaded).toEqual({ '2026-01-01': { feed: [2, 9, 0, 0] } });
   expect(errors).toEqual([]);
 });
 
@@ -40,7 +52,8 @@ test('stats page: stacked bars by kind, minutes switch and the breakdown box', a
   const errors = await openApp(page, {
     placedAt: '2026-01-01', chistFrom: key(20),
     hist: { [key(0)]: 30, [key(1)]: 12, [key(25)]: 9 }, chist: { [key(1)]: 4 },
-    act: { [key(0)]: { card: [10, 300], feed: [8, 200], skill: [6, 240], fun: [6, 600] } },
+    act: { [key(0)]: { card: [10, 300, 10, 8], feed: [8, 200, 8, 6], skill: [6, 240], fun: [6, 600],
+      x: { g: { cards: [10, 300, 10, 8], feed: [8, 200, 8, 6], phrasal: [6, 240], tower: [6, 600] }, h: Array.from({ length: 24 }, (_, i) => (i === 20 ? 25 : i === 7 ? 5 : 0)), e: { speak: 12, sheet: 3, open: 2 }, ss: [3, 900], on: 2400 } } },
   });
   await page.evaluate(() => go('stats'));
   const host = page.locator('[data-chart="act"]');
@@ -56,8 +69,17 @@ test('stats page: stacked bars by kind, minutes switch and the breakdown box', a
   expect(await host.locator('rect.hit').last().getAttribute('data-tip')).toContain('≈ 22 นาที');
   const box = page.locator('#actBox');
   await expect(box).toContainText('30 ข้อ');
-  await expect(box.locator('.act-row')).toHaveCount(4);
+  await expect(box.locator('.act-rows').first().locator('.act-row')).toHaveCount(4);
   await expect(box.locator('.act-row').first()).toContainText('โซนสนุก'); // most time first
+  await expect(box.locator('.act-row', { hasText: 'แฟลชการ์ด' }).first()).toContainText('ถูก 80%');
+  await expect(box).toContainText('78%');            // 14 right of 18 judged
+  await expect(box).toContainText('40 นาที');         // app open
+  await expect(box).toContainText('เยอะสุด 20:00–21:00');
+  await expect(box).toContainText('หอคอย');           // per game / page
+  await expect(box.locator('.act-ev > div')).toHaveCount(3);
+  await box.locator('.mb-b').nth(20).click();
+  await expect(page.locator('#toast')).toContainText('20:00–21:00 · 25 ข้อ');
+  await expect(page.locator('.today-act')).toContainText('78%');
   await box.locator('[data-as="28"]').click();
   await expect(box.locator('[data-as="28"]')).toHaveAttribute('aria-pressed', 'true');
   expect(errors).toEqual([]);

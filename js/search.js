@@ -59,6 +59,7 @@ function gsSearch(q) {
 
 function openSearch() {
   if (document.querySelector('.gs')) return;
+  actEvent('search');
   const el = document.createElement('div');
   el.className = 'gs'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'ค้นหา');
   el.innerHTML = `<div class="gs-box">

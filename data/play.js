@@ -1283,7 +1283,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     const soft = spk || gameId === 'order' || gameId === 'sOrder' || gameId === 'dictS' || gameId === 'compose';
     asked++;
     if (w.idx < 0 && SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId)) lexGrade(lexKey(gameId, w), ok);
-    if (w.idx < 0 || (soft && !ok) || deckRun.practice || noSrs) markActive(); else gameResult(w, ok, deckRun.map);
+    if (w.idx < 0 || (soft && !ok) || deckRun.practice || noSrs) markActive(!!ok); else gameResult(w, ok, deckRun.map);
     if (spk && ok) S.counts.speak = (S.counts.speak || 0) + 1;
     questEvent('answer', { game: gameId, ok });
     sfx(ok ? 'ok' : 'bad');

@@ -168,6 +168,7 @@ function sheetRing(w, dm) {
 }
 document.addEventListener('click', (e) => { const r = e.target.closest && e.target.closest('.sh-ring[data-tip]'); if (r) toast(r.dataset.tip); });
 function openSheet(w, onChange, opt = {}) {
+  actEvent('sheet');
   const dm = opt.deck ? S.dprog[opt.deck] || {} : null;
   const st = dm ? DECK_DOT[deckStatus(dm[w.w])] : status(w);
   const stLabel = { new: 'ยังไม่เรียน', learning: '🟡 กำลังเรียน', mastered: dm ? '🟢 แม่นแล้ว' : '🟢 จำได้แล้ว' }[st] + ((dm ? leechIn(w, dm) : isLeech(w)) ? ' · 🐢 คำดื้อ' : '');

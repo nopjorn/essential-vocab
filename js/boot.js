@@ -4,6 +4,7 @@
 
 /* ---------- boot ---------- */
 if (!S.chistFrom) S.chistFrom = today();
+actEvent('open');
 go(['home', 'feed', 'cards'].includes(S.settings.start) ? S.settings.start : 'home');
 // Ask the browser not to evict our localStorage under storage pressure / inactivity.
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});

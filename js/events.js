@@ -101,7 +101,7 @@ function runEventQuiz(e) {
       const ok = opts[+b.dataset.k] === w;
       view.querySelectorAll('.opt').forEach((o) => { if (opts[+o.dataset.k] === w) o.classList.add('correct'); });
       if (ok) { right++; addXP(2); } else b.classList.add('wrong');
-      markActive(); sfx(ok ? 'ok' : 'bad');
+      markActive(!!ok); sfx(ok ? 'ok' : 'bad');
       setTimeout(() => { i++; q(); }, ok ? 600 : 1300);
     };
   };

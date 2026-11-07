@@ -639,13 +639,30 @@ body { touch-action: manipulation; }
 .a-other { fill: var(--a-other); background: var(--a-other); } .a-unk { fill: var(--c-unk); background: var(--c-unk); }
 .act-sum { margin-bottom: 10px; color: var(--text); }
 .act-rows { display: grid; gap: 8px; }
-.act-row { display: grid; grid-template-columns: minmax(0, 9.5em) minmax(40px, 1fr) auto; align-items: center; gap: 10px; font-size: var(--fs-sm); }
+.act-row { display: grid; grid-template-columns: minmax(0, 9.5em) minmax(40px, 1fr) minmax(10.5em, auto); align-items: center; gap: 10px; font-size: var(--fs-sm); }
 .act-n { color: var(--text); overflow-wrap: anywhere; }
 .act-n i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 .act-bar { height: 10px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
 .act-bar i { display: block; height: 100%; border-radius: 5px; }
 .act-v { text-align: right; color: var(--text); font-weight: 700; white-space: nowrap; }
 .act-v small { display: block; font-weight: 400; color: var(--muted); font-size: var(--fs-xs); }
+.a-any { background: var(--primary); }
+.act-h { margin: 16px 0 8px; font-weight: 700; color: var(--text); font-size: var(--fs-sm); }
+.act-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 4px; }
+.act-tiles > div, .act-ev > div { background: var(--surface-2); border-radius: 12px; padding: 8px 10px; }
+.act-tiles b { display: block; font-size: var(--fs-md); color: var(--text); }
+.act-tiles span { font-size: var(--fs-xs); color: var(--muted); }
+.act-more summary { margin-top: 8px; font-size: var(--fs-sm); color: var(--muted); cursor: pointer; }
+.act-more .act-rows { margin-top: 8px; }
+.mb { display: flex; align-items: flex-end; gap: 2px; height: 80px; }
+.mb-b { flex: 1 1 0; min-width: 0; height: 100%; display: flex; align-items: flex-end; padding: 0; border: 0; background: none; cursor: pointer; }
+.mb-b i { display: block; width: 100%; background: var(--a-card); border-radius: 3px 3px 0 0; }
+.mb-ax { display: flex; gap: 2px; margin-top: 4px; }
+.mb-ax span { flex: 1 1 0; min-width: 0; font-size: var(--fs-xs); color: var(--muted); text-align: left; white-space: nowrap; overflow: visible; }
+.act-ev { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.act-ev > div { text-align: center; }
+.act-ev b { display: block; font-size: var(--fs-md); color: var(--text); }
+.act-ev small { color: var(--muted); font-size: var(--fs-xs); }
 .ln-l, .ln-m { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .ln-l { stroke: var(--c-card); } .ln-m { stroke: var(--c-master); }
 .dot-l { fill: var(--c-card); stroke: var(--surface); stroke-width: 2; }

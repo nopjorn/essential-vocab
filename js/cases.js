@@ -63,7 +63,7 @@ function runCase(id) {
       const ok = +b.dataset.k === a;
       view.querySelectorAll('.opt').forEach((o) => { if (+o.dataset.k === a) o.classList.add('correct'); });
       if (!ok) { b.classList.add('wrong'); $('#reveal').innerHTML = `ที่ถูกคือ <b lang="en">${esc(opts[a])}</b>`; }
-      markActive(); sfx(ok ? 'ok' : 'bad'); if (ok) addXP(2); save();
+      markActive(!!ok); sfx(ok ? 'ok' : 'bad'); if (ok) addXP(2); save();
       setTimeout(() => quiz(k + 1), ok ? 700 : 1500);
     };
   };

@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.158.0';
+const APP_VERSION = '1.159.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -155,6 +155,8 @@ const ACT_CATS = [ // stack order bottom → top = the validated colour order (-
 ];
 const ACT_IDS = ACT_CATS.map((c) => c[0]);
 const ACT_DAYS = 400, ACT_GAP = 120, ACT_FIRST = 8;
+const ACT_EVENTS = [['open', '🚀', 'เปิดแอป'], ['round', '🎮', 'เริ่มเล่นเกม'], ['speak', '🔊', 'เล่นเสียงอ่าน'], ['sheet', '📖', 'เปิดดูคำ'],
+  ['search', '🔍', 'ค้นหา'], ['star', '⭐', 'ติด/เอาดาว'], ['note', '✍️', 'เขียนวิธีจำ']];
 function cleanDecks(a) {
   const byId = new Map();
   for (const x of Array.isArray(a) ? a : []) {
@@ -659,11 +661,11 @@ function repairCheck() {
   setTimeout(() => { confetti(); toast(`🔥 ซ่อมสตรีคสำเร็จ! กลับมาเป็น ${S.streak.count} วัน`); }, 900);
   updateStreak();
 }
-function markActive() {
+function markActive(ok) {
   rollDay();
   const t = today();
   S.hist[t] = (S.hist[t] || 0) + 1;
-  actLog(t);
+  actLog(t, ok);
   // secret medals (1.61): time-of-day / date based
   const now = new Date(), hr = now.getHours();
   if (hr === 5) S.counts.early = 1;
@@ -703,6 +705,7 @@ function streakNow() {
 
 // The one place memory hooks are written (stamps the edit so a delete also reaches other devices).
 function setNote(word, text) {
+  if (text && text !== S.note[word]) actEvent('note');
   if (text) S.note[word] = text; else delete S.note[word];
   S.noteAt[word] = Date.now();
 }
@@ -733,6 +736,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && wa
 /* ---------- stars ---------- */
 const isStar = (w) => !!S.star[w.w];
 function toggleStar(w) {
+  actEvent('star');
   if (S.star[w.w]) delete S.star[w.w]; else S.star[w.w] = 1;
   S.starAt[w.w] = Date.now();
   save();
@@ -1453,6 +1457,7 @@ function say(u, wait) {
 }
 function speak(text, opt) {
   if (!window.speechSynthesis) return;
+  actEvent('speak');
   const busy = speechSynthesis.speaking || speechSynthesis.pending;
   speechSynthesis.cancel();
   let slow = opt && opt.slow;
@@ -1521,7 +1526,10 @@ function revLog(p, g) {
 // ACT_GAP (thinking + reading time), else ACT_FIRST seconds (the first answer after a break).
 const ACT_ROUTE = { cards: 'card', feed: 'feed', read: 'read', ear: 'read', ref: 'skill' };
 for (const r of ['fun', 'tower', 'cafe', 'puzzle', 'cases', 'paths', 'pic', 'build', 'room', 'riddle', 'wsearch', 'duel', 'adv', 'event', 'map', 'album', 'garden', 'coinshop']) ACT_ROUTE[r] = 'fun';
-let actGame = '', actLast = 0; // actGame: the game started by startGame() (cleared by go()); actLast: ms of the previous answer
+let actGame = '', actLast = 0, actSess = 0; // actGame: the game started by startGame() (cleared by go()); actLast: ms of the previous answer; actSess: ms the current sitting began
+// 1.159.0: a day also keeps x = { g: {game or page id: [answers, seconds, judged, right]}, h: [answers per hour 0–23],
+// e: {ACT_EVENTS id: times}, ss: [sittings, longest sitting in seconds], on: seconds the app was open in front }.
+// Kinds and games: [answers, seconds, judged (right/wrong known), right].
 function actCat() {
   const r = typeof current === 'string' ? current : '';
   if (r === 'games') {
@@ -1532,21 +1540,70 @@ function actCat() {
   }
   return ACT_ROUTE[r] || 'other';
 }
-function actLog(t) {
+const actX = (t) => { const d = S.act[t] || (S.act[t] = {}); return d.x || (d.x = {}); };
+const actAdd = (v, sec, ok) => { v[0]++; v[1] += sec; if (ok === true || ok === false) { v[2]++; if (ok) v[3]++; } };
+// ok: true / false when the answer was judged, undefined when it was not (a page turn, a puzzle step …)
+function actLog(t, ok) {
   const now = Date.now(), gap = (now - actLast) / 1000;
+  const near = actLast > 0 && gap >= 0 && gap <= ACT_GAP; // within one sitting
+  if (!near) actSess = now;
   actLast = now;
-  const sec = gap > 0 && gap <= ACT_GAP ? Math.max(1, Math.round(gap)) : ACT_FIRST;
-  const day = S.act[t] || (S.act[t] = {}), c = actCat(), v = day[c] || (day[c] = [0, 0]);
-  v[0]++; v[1] += sec;
+  const sec = near ? Math.max(1, Math.round(gap)) : ACT_FIRST;
+  const day = S.act[t] || (S.act[t] = {}), c = actCat();
+  actAdd(day[c] || (day[c] = [0, 0, 0, 0]), sec, ok);
+  const x = actX(t), gid = String(current === 'games' && actGame ? actGame : current || 'other').slice(0, 24);
+  x.g = x.g || {}; actAdd(x.g[gid] || (x.g[gid] = [0, 0, 0, 0]), sec, ok);
+  x.h = x.h || Array(24).fill(0); x.h[new Date(now).getHours()]++;
+  x.ss = x.ss || [0, 0];
+  if (actSess === now) x.ss[0]++;
+  x.ss[1] = Math.max(x.ss[1], Math.round((now - actSess) / 1000) + ACT_FIRST);
 }
-// A day's numbers {cat: [answers, seconds]} → null when nothing was logged that day.
+// Things done that are not answers (no save(): they ride along with the next one, or the app hiding).
+function actEvent(id) {
+  try { const e = actX(today()); e.e = e.e || {}; e.e[id] = (e.e[id] || 0) + 1; saveDirty = true; } catch (err) { /* never break the action */ }
+}
+// Time the app is open in front: counted every 20 s while visible (a gap over 60 s = the phone slept, not counted).
+let actOnAt = Date.now();
+function actOnTick() {
+  const now = Date.now(), d = (now - actOnAt) / 1000;
+  actOnAt = now;
+  if (document.hidden || !(d > 0) || d > 60) return;
+  const x = actX(today()); x.on = (x.on || 0) + Math.round(d); saveDirty = true;
+}
+setInterval(actOnTick, 20000);
+let actHidAt = 0; // coming back after 5+ minutes away counts as opening the app again
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { actOnTick(); actHidAt = Date.now(); return; }
+  actOnAt = Date.now();
+  if (actHidAt && actOnAt - actHidAt > 300000) actEvent('open');
+});
+// A day's numbers → null when no answer was logged that day. ok/jd = right / judged answers.
 function actDay(key) {
   const d = S.act[key]; if (!d) return null;
-  const out = {}; let n = 0, sec = 0;
-  for (const id of ACT_IDS) { const v = d[id]; out[id] = v ? v[0] : 0; n += out[id]; sec += v ? v[1] : 0; }
-  return n ? { by: out, n, sec, secBy: Object.fromEntries(ACT_IDS.map((id) => [id, d[id] ? d[id][1] : 0])) } : null;
+  const by = {}, secBy = {}, okBy = {}, jdBy = {}; let n = 0, sec = 0, ok = 0, jd = 0;
+  for (const id of ACT_IDS) {
+    const v = d[id] || [0, 0, 0, 0];
+    by[id] = v[0]; secBy[id] = v[1]; jdBy[id] = v[2] || 0; okBy[id] = v[3] || 0;
+    n += v[0]; sec += v[1]; jd += v[2] || 0; ok += v[3] || 0;
+  }
+  return n ? { by, secBy, okBy, jdBy, n, sec, ok, jd, x: d.x || {} } : null;
 }
 // Function declarations on purpose: load() runs before these lines.
+function actRow(v) {
+  if (!Array.isArray(v) || !isNum(v[0]) || !isNum(v[1]) || v[0] <= 0) return null;
+  const n = Math.round(v[0]), jd = isNum(v[2]) ? Math.min(n, Math.max(0, Math.round(v[2]))) : 0;
+  return [n, Math.max(0, Math.round(v[1])), jd, isNum(v[3]) ? Math.min(jd, Math.max(0, Math.round(v[3]))) : 0];
+}
+function cleanActX(x) {
+  const out = {};
+  if (!x || typeof x !== 'object' || Array.isArray(x)) return out;
+  if (x.g && typeof x.g === 'object') for (const [id, v] of Object.entries(x.g)) { const r = actRow(v); if (r && /^[A-Za-z0-9_-]{1,24}$/.test(id)) (out.g || (out.g = {}))[id] = r; }
+  if (Array.isArray(x.h) && x.h.length === 24 && x.h.every((v) => isNum(v) && v >= 0)) out.h = x.h.map(Math.round);
+  if (x.e && typeof x.e === 'object') for (const [id, v] of Object.entries(x.e)) if (isNum(v) && v > 0 && ACT_EVENTS.some((a) => a[0] === id)) (out.e || (out.e = {}))[id] = Math.round(v);
+  if (Array.isArray(x.ss) && x.ss.length === 2 && x.ss.every((v) => isNum(v) && v >= 0)) out.ss = x.ss.map(Math.round);
+  if (isNum(x.on) && x.on > 0) out.on = Math.round(x.on);
+  return out;
+}
 function cleanAct(a) {
   const out = {};
   if (!a || typeof a !== 'object' || Array.isArray(a)) return out;
@@ -1554,16 +1611,25 @@ function cleanAct(a) {
   for (const k of keys) {
     const d = a[k]; if (!d || typeof d !== 'object') continue;
     const day = {};
-    for (const id of ACT_IDS) { const v = d[id]; if (Array.isArray(v) && isNum(v[0]) && isNum(v[1]) && v[0] > 0) day[id] = [Math.round(v[0]), Math.max(0, Math.round(v[1]))]; }
+    for (const id of ACT_IDS) { const r = actRow(d[id]); if (r) day[id] = r; }
+    const x = cleanActX(d.x); if (Object.keys(x).length) day.x = x;
     if (Object.keys(day).length) out[k] = day;
   }
   return out;
 }
-// Another device's log: per day and kind the larger count and the larger time (like hist / chist).
+// Another device's log: the larger number in every place (like hist / chist).
+const maxArr = (a, b) => (a ? a.map((v, i) => Math.max(v, b[i] || 0)) : b.slice());
 function mergeAct(theirs) {
   for (const [k, d] of Object.entries(theirs)) {
     const mine = S.act[k] || (S.act[k] = {});
-    for (const [id, v] of Object.entries(d)) mine[id] = mine[id] ? [Math.max(mine[id][0], v[0]), Math.max(mine[id][1], v[1])] : v;
+    for (const id of ACT_IDS) if (d[id]) mine[id] = maxArr(mine[id], d[id]);
+    if (!d.x) continue;
+    const mx = mine.x || (mine.x = {}), tx = d.x;
+    if (tx.g) { mx.g = mx.g || {}; for (const [id, v] of Object.entries(tx.g)) mx.g[id] = maxArr(mx.g[id], v); }
+    if (tx.h) mx.h = maxArr(mx.h, tx.h);
+    if (tx.e) { mx.e = mx.e || {}; for (const [id, v] of Object.entries(tx.e)) mx.e[id] = Math.max(mx.e[id] || 0, v); }
+    if (tx.ss) mx.ss = maxArr(mx.ss, tx.ss);
+    if (tx.on) mx.on = Math.max(mx.on || 0, tx.on);
   }
   const keys = Object.keys(S.act).sort();
   for (const k of keys.slice(0, Math.max(0, keys.length - ACT_DAYS))) delete S.act[k];
@@ -1677,7 +1743,7 @@ function retLog(ivl, ok) {
 function grade(w, g, map = S.prog) {
   const main = map === S.prog;
   timeCard();
-  markActive();
+  markActive(g > 0);
   const p = map[w.w];
   const leechHit = main && p && (p.x || 0) >= LEECH && g >= 2;
   if (!main) { /* a set: only effort counts (XP, streak, history, quests) */ }
@@ -1737,7 +1803,7 @@ function lexStats(game) {
 
 // Lighter update from games: a right answer seeds a new word (or moves a due one on as "hard"), a wrong one sends it back for review.
 function gameResult(w, ok, map = S.prog) {
-  markActive();
+  markActive(!!ok);
   const p = map[w.w];
   const leechHit = ok && map === S.prog && p && (p.x || 0) >= LEECH;
   if (!p && map === S.prog) wnewAdd();
