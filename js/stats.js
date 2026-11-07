@@ -74,7 +74,11 @@ function weakSpots() {
   const skills = {};
   for (const [k, p] of Object.entries(S.lex || {})) { const g = k.split(':')[0]; if (!GAMES[g] || !p) continue; const r = (skills[g] = skills[g] || [0, 0]); r[0] += (p.c || 0) + (p.x || 0); r[1] += p.c || 0; }
   const weakSkills = Object.entries(skills).filter(([, [n]]) => n >= 6).map(([g, [n, c]]) => [g, c / n, n]).filter(([, acc]) => acc < 0.8).sort((a, b) => a[1] - b[1]).slice(0, 2);
-  return { total, words: words.sort((a, b) => b[1] - a[1]), topics: tally((w) => w.tp).slice(0, 3), pos: tally((w) => String(w.p || '').split('/')[0]).slice(0, 2), levels: tally((w) => w.g).slice(0, 2), weakSkills };
+  // 1.160.0: words missed on 2+ different days in the 21-day log (a habit, not a slip)
+  const days = {};
+  for (const day of Object.values(S.miss || {})) for (const w of Object.keys(day)) days[w] = (days[w] || 0) + 1;
+  const rep = Object.entries(days).filter(([w, n]) => n >= 2 && WORD_BY[w]).sort((a, b) => b[1] - a[1]).map(([w, n]) => [WORD_BY[w], n]);
+  return { rep, total, words: words.sort((a, b) => b[1] - a[1]), topics: tally((w) => w.tp).slice(0, 3), pos: tally((w) => String(w.p || '').split('/')[0]).slice(0, 2), levels: tally((w) => w.g).slice(0, 2), weakSkills };
 }
 function weakCard() {
   const r = weakSpots();
@@ -86,8 +90,10 @@ function weakCard() {
     ${row('📂', 'หมวดที่พลาดบ่อย', r.topics, ([t, n]) => `${TOPIC_LABEL[t] || t} <span class="muted">${pct(n)}%</span>`)}
     ${row('🔤', 'ชนิดคำที่พลาดบ่อย', r.pos, ([p, n]) => `${POS_TH[p] || p} <span class="muted">${pct(n)}%</span>`)}
     ${row('📶', 'ระดับที่พลาดบ่อย', r.levels, ([l, n]) => `${LV_LABEL[l] || l} <span class="muted">${pct(n)}%</span>`)}
+    ${row('🔁', 'ผิดซ้ำหลายวัน', r.rep.slice(0, 6), ([w, n]) => `<span lang="en">${esc(w.w)}</span> <span class="muted">${n} วัน</span>`)}
     ${row('🧩', 'เกมฝึกทักษะที่ยังไม่แม่น', r.weakSkills, ([g, acc]) => `${GAMES[g].icon} ${esc(GAMES[g].name)} <span class="muted">ถูก ${Math.round(acc * 100)}%</span>`)}
     <div class="wk-btns">${r.words.length ? `<button class="btn primary" data-weak="miss">🎯 ฝึกคำที่ผิดช่วงนี้ (${Math.min(20, r.words.length)} คำ)</button>` : ''}
+      ${r.rep.length >= 2 ? `<button class="btn" data-weak="rep">🔁 ฝึกคำที่ผิดซ้ำ (${Math.min(20, r.rep.length)} คำ)</button>` : ''}
       ${r.topics.length ? `<button class="btn" data-weak="tp:${r.topics[0][0]}">📂 ฝึกหมวด${esc((TOPIC_LABEL[r.topics[0][0]] || '').replace(/^\S+ /, ''))}</button>` : ''}
       ${r.weakSkills.map(([g]) => `<button class="btn" data-weak="g:${g}">${GAMES[g].icon} เล่น${esc(GAMES[g].name)}</button>`).join('')}</div></div>`;
 }
@@ -95,10 +101,10 @@ function weakCard() {
 function weakGo(k) {
   const r = weakSpots();
   if (k.startsWith('g:')) return startGame(k.slice(2));
-  const list = k === 'miss' ? r.words.map(([w]) => w) : r.words.map(([w]) => w).filter((w) => w.tp === k.slice(3))
+  const list = k === 'rep' ? r.rep.map(([w]) => w) : k === 'miss' ? r.words.map(([w]) => w) : r.words.map(([w]) => w).filter((w) => w.tp === k.slice(3))
     .concat(W.filter((w) => w.tp === k.slice(3) && S.prog[w.w]).sort((a, b) => (S.prog[b.w].x || 0) - (S.prog[a.w].x || 0)));
   customWords = [...new Set(list)].slice(0, 20);
-  if (customWords.length < 4) customWords = [...new Set(customWords.concat(pool().filter((w) => k === 'miss' || w.tp === k.slice(3)).slice(0, 10)))];
+  if (customWords.length < 4) customWords = [...new Set(customWords.concat(pool().filter((w) => k === 'miss' || k === 'rep' || w.tp === k.slice(3)).slice(0, 10)))];
   gameSource = 'custom';
   startGame(pick(['en2th', 'th2en', 'listen']));
 }
@@ -203,7 +209,8 @@ function renderStats(from) {
     <div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="sBack">‹ กลับ</button></div>
     ${starterCard()}
     ${levelCard()}
-    ${todayCard()}
+    <div id="todayHost">${todayCard()}</div>
+    ${weekCmpCard()}
     <div class="h2">นิสัยการเล่น <span class="small muted">${h.span} วันล่าสุด</span></div>
     <div class="tiles">
       <div class="tile-s"><b>${h.active}<small>/${h.span}</small></b><span>วันที่เล่น</span></div>
@@ -214,6 +221,7 @@ function renderStats(from) {
     <div class="card-box"><div class="small muted" style="margin-bottom:6px">กิจกรรมต่อวัน แยกตามประเภท (แตะแท่งเพื่อดูตัวเลข)</div><div class="chart-host" data-chart="act">${activityChart(W_)}</div></div>
     <div class="h2">⏱️ ใช้เวลากับอะไรบ้าง</div>
     <div class="card-box" id="actBox">${actBreakdown()}</div>
+    ${recordsCard()}
     <div id="readyHost"></div>
     <div class="h2">ความคืบหน้าแต่ละระดับ</div>
     <div class="card-box">${lvRows}
@@ -221,6 +229,7 @@ function renderStats(from) {
     <div class="h2">📅 การ์ดที่ต้องทบทวน 7 วันข้างหน้า</div>
     <div class="card-box">${forecastChart()}</div>
     ${retCard()}
+    ${memCard()}
     ${weakCard()}
     ${skillCard()}
     <div class="h2">🗓️ ปฏิทินการเล่น 12 เดือน</div>
@@ -257,7 +266,9 @@ function renderStats(from) {
     <div data-lz="stk" style="min-height:260px"></div>
     <div class="h2">🏅 เหรียญรางวัล <span class="small muted">${ACH.filter((a) => S.ach[a.id]).length}/${ACH.length}</span></div>
     <div class="card-box ach-grid" id="ach" data-lz="ach" style="min-height:200px"></div>`;
-  loadStories().then(() => { const h = $('#readyHost'); if (h) h.innerHTML = readyBox(); });
+  loadStories().then(() => { const h = $('#readyHost'); if (h) h.innerHTML = readyBox() + readStatsBox(); });
+  bindToday();
+  { const mb = $('#memBox'); if (mb) mb.onclick = (e) => { const b = e.target.closest('[data-wsi]'); if (b && W[+b.dataset.wsi]) openSheet(W[+b.dataset.wsi]); }; }
   $('#shareProg').onclick = shareProgress;
   { const wk = $('#weak'); if (wk) wk.onclick = (e) => { const b = e.target.closest('[data-weak]'); if (b) weakGo(b.dataset.weak); }; }
   countUp(view.querySelectorAll('.tile-s b'));
@@ -317,19 +328,133 @@ function startLazy(defs) {
   lazyTimer = setTimeout(rest, 400);
 }
 
-// Today at a glance (1.159.0): from S.act / S.hist, shown above the habits.
+/* ---------- more stats (1.160.0) ---------- */
+// Totals over the days k0..k1 ago (inclusive): answers from hist, and what S.act logged (time, right answers, games).
+function actRange(k0, k1) {
+  const r = { hist: 0, days: 0, logged: 0, n: 0, sec: 0, ok: 0, jd: 0, g: {} };
+  for (let k = k0; k <= k1; k++) {
+    const key = dayKey(k), hv = S.hist[key] || 0, a = actDay(key);
+    r.hist += hv; if (hv) r.days++;
+    if (!a) continue;
+    r.logged++; r.n += a.n; r.sec += a.sec; r.ok += a.ok; r.jd += a.jd;
+    for (const [id, v] of Object.entries(a.x.g || {})) { const t = r.g[id] || (r.g[id] = [0, 0, 0, 0]); v.forEach((y, i) => { t[i] += y; }); }
+  }
+  return r;
+}
+// Words learned between k1 and k0 days ago from the daily snapshots (null when either day has none).
+const snapGain = (k0, k1) => { const a = S.snap[dayKey(k0)], b = S.snap[dayKey(k1)]; return a && b ? Math.max(0, a[2] - b[2]) : null; };
+function cmpTag(cur, prev, pp) {
+  if (cur == null || prev == null || (!pp && !prev && !cur)) return '';
+  const d = pp ? Math.round(cur - prev) : prev ? Math.round((cur - prev) / prev * 100) : null;
+  if (d == null) return cur ? '<span class="cmp up">ใหม่</span>' : '';
+  if (!d) return '<span class="cmp">เท่าเดิม</span>';
+  return `<span class="cmp ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'} ${Math.abs(d)}${pp ? ' จุด' : '%'}</span>`;
+}
+// 📊 This week (last 7 days) against the 7 days before.
+function weekCmpCard() {
+  const c = actRange(0, 6), p = actRange(7, 13);
+  if (!c.hist && !p.hist) return '';
+  const acc = (r) => (r.jd ? r.ok / r.jd * 100 : null);
+  const tiles = [
+    ['วันที่เล่น', `${c.days}<small>/7</small>`, c.days, p.days, `${p.days} วัน`],
+    ['ข้อที่ทำ', c.hist.toLocaleString(), c.hist, p.hist, `${p.hist.toLocaleString()} ข้อ`],
+    ['เวลาฝึก', c.logged ? minTxt(c.sec) : '–', c.logged ? c.sec : null, p.logged ? p.sec : null, p.logged ? minTxt(p.sec) : '–'],
+    ['ตอบถูก', acc(c) == null ? '–' : Math.round(acc(c)) + '%', acc(c), acc(p), acc(p) == null ? '–' : Math.round(acc(p)) + '%', true],
+    ['คำใหม่', snapGain(0, 7) == null ? '–' : snapGain(0, 7).toLocaleString(), snapGain(0, 7), snapGain(7, 14), snapGain(7, 14) == null ? '–' : snapGain(7, 14).toLocaleString() + ' คำ'],
+  ];
+  return `<div class="h2">📊 7 วันนี้ เทียบ 7 วันก่อน</div><div class="card-box"><div class="cmp-grid">${tiles.map(([l, v, cur, prev, pv, pp]) => `<div><span class="small muted">${l}</span><b>${v}</b><small class="muted">ก่อนหน้า ${pv}</small>${cmpTag(cur, prev, pp)}</div>`).join('')}</div></div>`;
+}
+// 🏆 Personal bests.
+function recordsCard() {
+  const hk = Object.keys(S.hist).filter((k) => S.hist[k] > 0).sort();
+  if (!hk.length) return '';
+  const busy = hk.reduce((b, k) => (S.hist[k] > S.hist[b] ? k : b), hk[0]);
+  let run = 0, best = 0, prev = '';
+  for (const k of hk) { run = prev && dayDiff(k, prev) === 1 ? run + 1 : 1; best = Math.max(best, run); prev = k; }
+  let longDay = ['', 0], longSit = 0;
+  for (const [k, d] of Object.entries(S.act)) { const a = actDay(k); if (a && a.sec > longDay[1]) longDay = [k, a.sec]; if (d.x && d.x.ss) longSit = Math.max(longSit, d.x.ss[1]); }
+  const xpw = Object.entries(S.xpWeek || {}).sort((a, b) => b[1] - a[1])[0];
+  const dt = (k) => thDate(Date.parse(k + 'T12:00:00'));
+  const rows = [
+    ['📅', 'วันที่ทำเยอะที่สุด', `${S.hist[busy].toLocaleString()} ข้อ`, dt(busy)],
+    ['🔥', 'เล่นติดกันนานที่สุด', `${best} วัน`, `ตอนนี้ ${streakNow()} วัน`],
+    longDay[1] ? ['⏱️', 'ฝึกนานที่สุดในวันเดียว', minTxt(longDay[1]), dt(longDay[0])] : null,
+    longSit ? ['🪑', 'นั่งเล่นรอบยาวที่สุด', minTxt(longSit), ''] : null,
+    S.counts.maxCombo ? ['⚡', 'คอมโบสูงสุด', `${S.counts.maxCombo} ข้อติด`, ''] : null,
+    xpw && xpw[1] ? ['⭐', 'XP มากที่สุดในสัปดาห์', `${xpw[1].toLocaleString()} XP`, `สัปดาห์ ${dt(xpw[0])}`] : null,
+    S.tower && S.tower.best ? ['🗼', 'หอคอยชั้นสูงสุด', `ชั้น ${S.tower.best}`, ''] : null,
+  ].filter(Boolean);
+  return `<div class="h2">🏆 สถิติสูงสุดของฉัน</div><div class="card-box rec-grid">${rows.map(([ic, l, v, sub]) => `<div><span class="rec-ic" aria-hidden="true">${ic}</span><span class="small muted">${l}</span><b>${v}</b>${sub ? `<small class="muted">${sub}</small>` : ''}</div>`).join('')}</div>`;
+}
+// 🧠 How long the learned words are expected to last (interval buckets), and words one review away from "จำได้แล้ว".
+const MEM_BUCKETS = [[0, 7, 'กำลังจำ', 'น้อยกว่า 7 วัน'], [7, 16, 'ระยะสั้น', '1–2 สัปดาห์'], [16, 90, 'จำได้แล้ว', '16 วัน–3 เดือน'], [90, Infinity, 'ระยะยาว', '3 เดือนขึ้นไป']];
+function memCard() {
+  const cnt = [0, 0, 0, 0], near = [];
+  for (const w of W) {
+    const p = S.prog[w.w]; if (!p) continue;
+    const i = ivlOf(p), b = MEM_BUCKETS.findIndex(([lo, hi]) => i >= lo && i < hi);
+    cnt[b < 0 ? 0 : b]++;
+    if (i >= 7 && i < 16) near.push([w, p.d]);
+  }
+  const tot = cnt.reduce((a, b) => a + b, 0);
+  if (!tot) return '';
+  near.sort((a, b) => a[1] - b[1]);
+  const dIn = (ms) => { const d = Math.ceil((ms - Date.now()) / DAY); return d <= 0 ? 'ถึงกำหนดแล้ว' : `อีก ${d} วัน`; };
+  return `<div class="h2">🧠 คำที่เรียนแล้วจำได้นานแค่ไหน</div><div class="card-box" id="memBox">
+    <div class="mem-bar" role="img" aria-label="${MEM_BUCKETS.map((m, i) => `${m[2]} ${cnt[i]} คำ`).join(', ')}">${cnt.map((n, i) => (n ? `<i class="mem-${i}" style="flex:${n}"></i>` : '')).join('')}</div>
+    <div class="legend">${MEM_BUCKETS.map((m, i) => `<span><i class="mem-${i}"></i>${m[2]} <b>${cnt[i].toLocaleString()}</b> <span class="muted">(${m[3]})</span></span>`).join('')}</div>
+    ${near.length ? `<div class="act-h">🎯 ใกล้จำได้แล้ว <span class="small muted">ทวนผ่านอีกครั้งตอนถึงกำหนดก็เข้าเกณฑ์ (${near.length} คำ)</span></div>
+      <div class="near-list">${near.slice(0, 12).map(([w, d]) => `<button class="chip" data-wsi="${W.indexOf(w)}"><span lang="en">${esc(w.w)}</span> <small class="muted">${dIn(d)}</small></button>`).join('')}</div>` : ''}
+    <div class="small muted" style="margin-top:8px">แบ่งตามระยะห่างก่อนการทวนครั้งถัดไป ยิ่งห่างยิ่งแปลว่าจำได้แน่น</div></div>`;
+}
+// 📚 Stories read per level, with the average best score.
+function readStatsBox() {
+  if (!STORIES || !STORIES.length) return '';
+  const lv = {}, recent = Object.values(S.read).filter((d) => typeof d === 'string' && dayDiff(today(), d) < 28).length;
+  for (const st of STORIES) {
+    const r = lv[st.level] || (lv[st.level] = { n: 0, read: 0, sc: [0, 0] });
+    r.n++;
+    if (S.read[st.id]) { r.read++; const sc = S.readScore[st.id]; if (Array.isArray(sc) && sc[1]) { r.sc[0] += sc[0]; r.sc[1] += sc[1]; } }
+  }
+  const all = Object.values(lv).reduce((a, r) => [a[0] + r.read, a[1] + r.n, a[2] + r.sc[0], a[3] + r.sc[1]], [0, 0, 0, 0]);
+  if (!all[0]) return '';
+  const order = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].filter((l) => lv[l]);
+  return `<div class="card-box"><b>📚 เรื่องสั้นที่อ่านแล้ว</b>
+    <div class="small" style="margin:4px 0 6px">อ่านแล้ว <b>${all[0]}</b>/${all[1]} เรื่อง${all[3] ? ` · ตอบคำถามถูกเฉลี่ย <b>${aPct(all[2], all[3])}%</b>` : ''} · 28 วันล่าสุด ${recent} เรื่อง</div>
+    ${order.map((l) => { const r = lv[l]; return `<div class="act-row"><span class="act-n">${LV_LABEL[l] || l}</span><span class="act-bar"><i class="a-any" style="width:${Math.round(r.read / r.n * 100)}%"></i></span><span class="act-v">${r.read}/${r.n}<small>${r.sc[1] ? `ถูก ${aPct(r.sc[0], r.sc[1])}%` : 'ยังไม่ได้อ่าน'}</small></span></div>`; }).join('')}</div>`;
+}
+// Daily time goal (1.160.0): settings.minutes (study budget, set in settings) or settings.timeGoal (set here; only a goal).
+const TIME_GOALS = [0, 10, 15, 20, 30, 45];
+const timeGoal = () => (S.settings.minutes | 0) || (S.settings.timeGoal | 0);
+function goalRing(sec) {
+  const g = timeGoal(); if (!g) return '';
+  const f = Math.min(1, sec / 60 / g), done = f >= 1;
+  return `<div class="tg-ring${done ? ' done' : ''}" style="--f:${f}" role="img" aria-label="เป้าเวลาวันนี้ ${g} นาที ทำไปแล้ว ${Math.round(sec / 60)} นาที"><b>${done ? '✓' : Math.round(f * 100) + '%'}</b><small>${Math.round(sec / 60)}/${g} นาที</small></div>`;
+}
+// Today at a glance (1.159.0; 1.160.0 adds the time-goal ring): from S.act / S.hist, shown above the habits.
 function todayCard() {
   const t = today(), a = actDay(t), x = (S.act[t] && S.act[t].x) || {}, all = S.hist[t] || 0;
-  if (!all && !x.on) return '';
   const kinds = a ? ACT_CATS.filter(([id]) => a.by[id]).sort((p, q) => a.secBy[q[0]] - a.secBy[p[0]]) : [];
+  const set = S.settings.minutes | 0;
+  const chips = set ? `<div class="small muted" style="margin-top:8px">เป้า ${set} นาที มาจาก ⚙️ ตั้งค่า → เวลาเรียนต่อวัน</div>`
+    : `<div class="chips trend-range tg-chips" role="group" aria-label="เป้าเวลาต่อวัน"><span class="small muted">เป้าเวลาต่อวัน</span>${TIME_GOALS.map((m) => `<button class="chip${(S.settings.timeGoal | 0) === m ? ' on' : ''}" data-tg="${m}" aria-pressed="${(S.settings.timeGoal | 0) === m}">${m ? m + ' นาที' : 'ปิด'}</button>`).join('')}</div>`;
   return `<div class="h2">☀️ วันนี้</div>
-    <div class="card-box today-act"><div class="act-tiles">
+    <div class="card-box today-act"><div class="today-top">${goalRing(a ? a.sec : 0)}<div class="act-tiles">
       <div><b>${a ? '≈ ' + minTxt(a.sec) : '–'}</b><span>ฝึกจริง</span></div>
       <div><b>${all.toLocaleString()}</b><span>ข้อ</span></div>
       <div><b>${a && a.jd ? aPct(a.ok, a.jd) + '%' : '–'}</b><span>ตอบถูก</span></div>
       <div><b>${x.on ? minTxt(x.on) : '–'}</b><span>เปิดแอป${x.ss ? ` · ${x.ss[0]} รอบ` : ''}</span></div>
-    </div>${kinds.length ? `<div class="legend">${kinds.map(([id, n]) => `<span><i class="a-${id}"></i>${n} ${a.by[id]}</span>`).join('')}</div>` : ''}</div>`;
+    </div></div>${kinds.length ? `<div class="legend">${kinds.map(([id, n]) => `<span><i class="a-${id}"></i>${n} ${a.by[id]}</span>`).join('')}</div>` : ''}${chips}</div>`;
 }
+function bindToday() {
+  const host = $('#todayHost'); if (!host) return;
+  host.onclick = (e) => {
+    const b = e.target.closest('[data-tg]'); if (!b) return;
+    S.settings.timeGoal = +b.dataset.tg; save();
+    host.innerHTML = todayCard();
+  };
+}
+
 // Stacked bars per kind of activity (1.158.0, S.act; ACT_CATS order bottom → top). Days logged before 1.158.0 keep what is known:
 // flashcards from chist (since 1.9.0) and the rest in grey. actMetric 'n' = answers, 'sec' = minutes (logged days only).
 let actMetric = 'n', actSpan = 7;
@@ -407,12 +532,16 @@ function actBreakdown() {
   const rows = ACT_CATS.filter(([id]) => tot[id][0]).sort((a, b) => tot[b[0]][1] - tot[a[0]][1]);
   const top = Math.max(...rows.map(([id]) => tot[id][1]), 1);
   const since = Object.keys(S.act).sort()[0];
-  const row = (cls, name, v, topV, share) => `<div class="act-row"><span class="act-n">${cls ? `<i class="${cls}"></i>` : ''}${esc(name)}</span>
+  const row = (cls, name, v, topV, share, speed) => `<div class="act-row"><span class="act-n">${cls ? `<i class="${cls}"></i>` : ''}${esc(name)}</span>
       <span class="act-bar"><i class="${cls || 'a-any'}" style="width:${Math.max(2, Math.round(v[1] / topV * 100))}%"></i></span>
-      <span class="act-v">≈ ${minTxt(v[1])}<small>${v[0].toLocaleString()} ข้อ${share ? ` · ${aPct(v[1], sec)}%` : ''}${okTxt(v[3], v[2])}</small></span></div>`;
+      <span class="act-v">≈ ${minTxt(v[1])}<small>${v[0].toLocaleString()} ข้อ${share ? ` · ${aPct(v[1], sec)}%` : ''}${okTxt(v[3], v[2])}${speed && v[0] ? ` · ${Math.round(v[1] / v[0])} วิ/ข้อ` : ''}</small></span></div>`;
   // games / pages by time
   const gl = Object.entries(g).sort((a, b) => b[1][1] - a[1][1]), gTop = Math.max(1, ...gl.map((x) => x[1][1]));
-  const gRows = (l) => l.map(([id, v]) => row('', actName(id), v, gTop, true)).join('');
+  const gRows = (l) => l.map(([id, v]) => row('', actName(id), v, gTop, true, true)).join('');
+  // 📈 games whose accuracy rose most against the span before (10+ judged answers in both)
+  const prevG = actRange(actSpan, actSpan * 2 - 1).g;
+  const up = Object.entries(g).filter(([id, v]) => v[2] >= 10 && prevG[id] && prevG[id][2] >= 10)
+    .map(([id, v]) => [id, v[3] / v[2] * 100 - prevG[id][3] / prevG[id][2] * 100, v]).filter((x) => x[1] >= 1).sort((a, b) => b[1] - a[1]).slice(0, 3);
   // hours and weekdays
   const hTips = h.map((v, i) => `${String(i).padStart(2, '0')}:00–${String((i + 1) % 24).padStart(2, '0')}:00 · ${v} ข้อ`);
   const bestH = h.indexOf(Math.max(...h));
@@ -430,6 +559,7 @@ function actBreakdown() {
     <div class="act-rows">${rows.map(([id, t]) => row(`a-${id}`, t, tot[id], top, true)).join('')}</div>
     ${gl.length ? `<div class="act-h">🎯 เล่นอะไรนานที่สุด</div><div class="act-rows">${gRows(gl.slice(0, 6))}</div>
       ${gl.length > 6 ? `<details class="act-more"><summary>ดูอีก ${gl.length - 6} อย่าง</summary><div class="act-rows">${gRows(gl.slice(6))}</div></details>` : ''}` : ''}
+    ${up.length ? `<div class="act-h">📈 เก่งขึ้นที่สุด <span class="small muted">% ถูกเทียบกับ ${actSpan} วันก่อนหน้า</span></div><div class="up-list">${up.map(([id, d, v]) => `<div><span>${esc(actName(id))}</span><b>${aPct(v[3], v[2])}%</b><span class="cmp up">▲ ${Math.round(d)} จุด</span></div>`).join('')}</div>` : ''}
     ${h.some((v) => v) ? `<div class="act-h">🕐 ช่วงเวลาที่เล่น <span class="small muted">เยอะสุด ${String(bestH).padStart(2, '0')}:00–${String((bestH + 1) % 24).padStart(2, '0')}:00</span></div>
       ${miniBars(h, h.map((v, i) => String(i)), hTips, 6)}` : ''}
     <div class="act-h">📆 วันในสัปดาห์ <span class="small muted">เยอะสุด${WDF[bestW]}</span></div>

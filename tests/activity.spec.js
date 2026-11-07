@@ -91,3 +91,51 @@ test('stats page with no logged kinds yet shows the empty note', async ({ page }
   await expect(page.locator('#actBox')).toContainText('เริ่มเก็บรายละเอียด');
   expect(errors).toEqual([]);
 });
+
+test('1.160.0 stats: week compare, records, memory buckets, near mastery, repeated misses, game speed and gains, reading, time goal', async ({ page }) => {
+  const key = (k) => { const d = new Date(); d.setDate(d.getDate() - k); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const act = {}, hist = {};
+  for (let k = 0; k < 14; k++) {
+    const good = k < 7; // this week 90 %, the week before 60 %
+    act[key(k)] = { card: [10, 300, 10, good ? 9 : 6], x: { g: { en2th: [10, 50, 10, good ? 9 : 6] }, ss: [1, 600 + k] } };
+    hist[key(k)] = 10;
+  }
+  hist[key(30)] = 99;
+  const DAY = 864e5;
+  const errors = await openApp(page, {
+    placedAt: '2026-01-01', hist, act, counts: { maxCombo: 21 }, xpWeek: { '2026-01-05': 500 },
+    prog: { apple: { b: 3, i: 10, e: 2.5, d: Date.now() + 2 * DAY, s: 3, c: 3, x: 0 }, house: { b: 5, i: 120, e: 2.5, d: Date.now() + 99 * DAY, s: 6, c: 6, x: 0 }, cat: { b: 1, i: 1, e: 2.5, d: Date.now(), s: 1, c: 1, x: 0 } },
+    miss: { [key(1)]: { apple: 2, dog: 1, red: 1, cat: 1 }, [key(3)]: { apple: 1, dog: 2, book: 1 } },
+    settings: { levels: ['A1'], timeGoal: 10 },
+  });
+  await page.evaluate(() => go('stats'));
+  const cmp = page.locator('.cmp-grid');
+  await expect(cmp).toContainText('70');            // answers this week
+  await expect(cmp.locator('.cmp.up')).toContainText('30 จุด'); // 90 % vs 60 %
+  const rec = page.locator('.rec-grid');
+  await expect(rec).toContainText('99 ข้อ');
+  await expect(rec).toContainText('21 ข้อติด');
+  await expect(rec).toContainText('500 XP');
+  const mem = page.locator('#memBox');
+  await expect(mem.locator('.legend')).toContainText('ระยะยาว 1');
+  await expect(mem.locator('[data-wsi]')).toHaveCount(1);
+  await mem.locator('[data-wsi]').click();
+  await expect(page.locator('.sheet-word')).toContainText('apple');
+  await page.keyboard.press('Escape');
+  const weak = page.locator('#weak');
+  await expect(weak).toContainText('ผิดซ้ำหลายวัน');
+  await expect(weak.locator('[data-weak="rep"]')).toContainText('2 คำ');
+  const box = page.locator('#actBox');
+  await expect(box).toContainText('5 วิ/ข้อ');
+  await expect(box.locator('.up-list')).toContainText('▲ 30 จุด');
+  // time goal ring: 10 min goal, today 5 min practised
+  await expect(page.locator('.tg-ring')).toContainText('50%');
+  await page.locator('[data-tg="0"]').click();
+  await expect(page.locator('.tg-ring')).toHaveCount(0);
+  expect(await page.evaluate(() => S.settings.timeGoal)).toBe(0);
+  // reading by level once the stories have loaded
+  await page.evaluate(async () => { await loadStories(); const st = STORIES.find((x) => x.level === 'A1'); S.read[st.id] = today(); S.readScore[st.id] = [4, 5]; go('stats'); });
+  await expect(page.locator('#readyHost')).toContainText('เรื่องสั้นที่อ่านแล้ว');
+  await expect(page.locator('#readyHost')).toContainText('80%');
+  expect(errors).toEqual([]);
+});

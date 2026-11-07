@@ -663,6 +663,32 @@ body { touch-action: manipulation; }
 .act-ev > div { text-align: center; }
 .act-ev b { display: block; font-size: var(--fs-md); color: var(--text); }
 .act-ev small { color: var(--muted); font-size: var(--fs-xs); }
+.cmp { display: inline-block; font-size: var(--fs-xs); font-weight: 700; color: var(--muted); }
+.cmp.up { color: var(--primary-ink); } .cmp.down { color: var(--bad-ink); }
+.cmp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.cmp-grid > div, .rec-grid > div { display: flex; flex-direction: column; gap: 2px; background: var(--surface-2); border-radius: 12px; padding: 8px 10px; min-width: 0; }
+.cmp-grid b, .rec-grid b { font-size: var(--fs-md); color: var(--text); }
+.cmp-grid b small { font-size: var(--fs-xs); color: var(--muted); }
+.cmp-grid small, .rec-grid small { font-size: var(--fs-xs); }
+.rec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.rec-ic { font-size: 18px; }
+.mem-bar { display: flex; gap: 2px; height: 14px; border-radius: 7px; overflow: hidden; }
+.mem-bar i { display: block; min-width: 3px; }
+.mem-0 { background: var(--hm1); } .mem-1 { background: var(--hm2); } .mem-2 { background: var(--hm3); } .mem-3 { background: var(--hm4); }
+.near-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.near-list .chip { padding: 5px 10px; font-size: var(--fs-sm); }
+.up-list { display: grid; gap: 6px; }
+.up-list > div { display: flex; gap: 8px; align-items: baseline; font-size: var(--fs-sm); color: var(--text); }
+.up-list > div > span:first-child { flex: 1; min-width: 0; }
+.today-top { display: flex; gap: 12px; align-items: center; }
+.today-top .act-tiles { flex: 1; min-width: 0; }
+.tg-ring { --f: 0; flex: none; width: 92px; height: 92px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(closest-side, var(--surface) 78%, transparent 79%), conic-gradient(var(--a-card) calc(var(--f) * 360deg), var(--surface-2) 0); }
+.tg-ring.done { background: radial-gradient(closest-side, var(--surface) 78%, transparent 79%), conic-gradient(var(--a-fun) 360deg, var(--surface-2) 0); }
+.tg-ring b { font-size: var(--fs-md); color: var(--text); }
+.tg-ring small { font-size: var(--fs-xs); color: var(--muted); }
+.tg-chips { margin: 10px 0 0; align-items: center; flex-wrap: wrap; }
+@media (max-width: 379.98px) { .today-top { flex-direction: column; align-items: stretch; } .tg-ring { align-self: center; } }
 .ln-l, .ln-m { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .ln-l { stroke: var(--c-card); } .ln-m { stroke: var(--c-master); }
 .dot-l { fill: var(--c-card); stroke: var(--surface); stroke-width: 2; }
