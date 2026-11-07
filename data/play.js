@@ -108,7 +108,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (i >= items.length) return result();
     const w = items[i];
     playQuiz.cur = w; // the word being asked (read by tests)
-    reach = Math.max(reach, LEVELS_CEFR.indexOf(w.g === 'TOE' ? w.l : w.g)); // TOEIC words count by their CEFR estimate
+    reach = Math.max(reach, LEVELS_CEFR.indexOf(LEVELS_EXTRA.includes(w.g) ? w.l : w.g)); // extra-set words count by their CEFR estimate
     const m = STAGE ? stagePick(w) : SURV ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'cloze'] : ['en2th', 'th2en', 'listen'])
       : TIMED ? pick(['en2th', 'th2en'])
       : gameId === 'review' ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'spell', 'cloze'] : ['en2th', 'th2en', 'listen', 'spell']) : mode;
