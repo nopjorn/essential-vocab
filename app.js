@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.161.0';
+const APP_VERSION = '1.162.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1400,7 +1400,7 @@ function applyIcon() {
   const l = document.querySelector('link[rel="apple-touch-icon"]'); if (l) l.href = iconSrc(id);
 }
 applyIcon();
-// Animation switches (settings → แอนิเมชันและเอฟเฟกต์ since 1.160.0), each on its own: animPage → page slides (html.no-vt),
+// Animation switches (settings → แอนิเมชันและเอฟเฟกต์ since 1.162.0), each on its own: animPage → page slides (html.no-vt),
 // animAnswer → bounce/shake on answers (html.no-ans), confetti. 1.39.1 had one `anim` switch for all three.
 if (S.settings.anim === false) { S.settings.animPage = S.settings.animAnswer = S.settings.confetti = false; }
 delete S.settings.anim;

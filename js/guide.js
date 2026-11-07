@@ -61,7 +61,7 @@ function renderChangelog(from) {
         <select class="sel" id="clPick"><option value="all">ทั้งหมด (${list.length} อัปเดต · ${days.length} วัน)</option>${days.map((g) => `<option value="${esc(g.d)}"${g.d === pick ? ' selected' : ''}>${g.d ? thaiDate(g.d) : 'ไม่ระบุวัน'} (${g.rows.length})</option>`).join('')}</select></div>`
         + shown.map((g) => `<div class="cl-day"><span>${g.d ? thaiDate(g.d) : 'ไม่ระบุวัน'}</span><span class="cl-n">${g.rows.length} อัปเดต</span></div>`
           + g.rows.map(([v, t]) => `<div class="card-box cl-row${v === list[0][0] ? ' cl-new' : ''}"><div class="cl-v">${esc(v)}${v === APP_VERSION ? ' <span class="cl-tag">เวอร์ชันนี้</span>' : ''}</div><div class="cl-t">${esc(t)}</div></div>`).join('')).join('')
-        // ⏱ speed check (moved here from the settings page in 1.160.0: it is a tool for checking a device, not a setting)
+        // ⏱ speed check (moved here from the settings page in 1.162.0: it is a tool for checking a device, not a setting)
         + `<button class="card-box guide-link" id="perfBtn" style="margin-top:20px"><span>⏱</span><div class="grow"><b>วัดความเร็วเครื่องนี้</b><div class="small muted" id="perfOut">${esc(perfLast || 'วัดเวลาเปิดหน้าแรก หน้าสถิติ และการบันทึกข้อมูลบนเครื่องของคุณ')}</div></div><span class="muted">›</span></button>`
         + `<p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
       $('#clPick').onchange = (e) => { pick = e.target.value; draw(); };

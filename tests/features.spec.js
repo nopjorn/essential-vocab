@@ -1181,7 +1181,7 @@ test('save() is batched (1.74): one write after a burst, flushed on hide, medals
   expect(errors).toEqual([]);
 });
 
-test('speed check (1.76): the button (end of the changelog page since 1.160.0) measures boot, home, stats and save and shows the numbers', async ({ page }) => {
+test('speed check (1.76): the button (end of the changelog page since 1.162.0) measures boot, home, stats and save and shows the numbers', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   await page.evaluate(() => go('settings'));
   await expect(page.locator('#perfBtn')).toHaveCount(0);

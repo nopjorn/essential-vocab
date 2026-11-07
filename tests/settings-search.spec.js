@@ -14,7 +14,7 @@ test('settings search filters rows, opens matching groups and restores the page 
   await page.evaluate(() => go('settings'));
   await expect(page.locator('#setQ')).toBeVisible();
   const before = await shown(page);
-  expect(before.groups.length).toBe(9); // 1.160.0: no ☁️ sync group while sync is not set up (config.js empty in tests)
+  expect(before.groups.length).toBe(9); // 1.162.0: no ☁️ sync group while sync is not set up (config.js empty in tests)
   expect(before.groups).not.toContain("sync");
 
   // a row label: only that row (and others with the word) are shown, its group opens, the others hide
@@ -66,7 +66,7 @@ test('settings search filters rows, opens matching groups and restores the page 
   expect(errors).toEqual([]);
 });
 
-test('advanced learning rows are folded under ⚙️ ขั้นสูง, found by search and folded again after (1.160.0)', async ({ page }) => {
+test('advanced learning rows are folded under ⚙️ ขั้นสูง, found by search and folded again after (1.162.0)', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   await page.evaluate(() => go('settings'));
   await expect(page.locator('#advBox')).not.toHaveAttribute('open', '');
@@ -81,7 +81,7 @@ test('advanced learning rows are folded under ⚙️ ขั้นสูง, foun
   expect(errors).toEqual([]);
 });
 
-test('↺ default settings: looks, sound and input go back to defaults, the learning plan and progress stay (1.160.0)', async ({ page }) => {
+test('↺ default settings: looks, sound and input go back to defaults, the learning plan and progress stay (1.162.0)', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01', prog: { apple: { b: 2, i: 3, e: 2.5, d: Date.now(), s: 1, c: 1, x: 0 } },
     settings: { levels: ['B1'], newPerDay: 30, exam: { date: '2030-01-01', name: 'TOEIC' }, theme: 'dark', fsz: 'xl', sfx: false, gdiff: '3', animPage: false, thumbs: 'on' } });
   await page.evaluate(() => { go('settings'); document.querySelector('details[data-g="danger"]').open = true; });
@@ -94,7 +94,7 @@ test('↺ default settings: looks, sound and input go back to defaults, the lear
   expect(errors).toEqual([]);
 });
 
-test('auto options say what they give on this device now (1.160.0)', async ({ page }) => {
+test('auto options say what they give on this device now (1.162.0)', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01', settings: { thumbs: 'on' } });
   await page.evaluate(() => go('settings'));
   // tests run with a fine pointer: the app keyboard and thumb buttons would be off on auto, even with thumbs set to 'on'

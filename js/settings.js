@@ -4,7 +4,7 @@
 
 /* ---------- settings ---------- */
 // ⏱ Speed check (1.76): numbers to read off a real iPhone / iPad (milliseconds, smaller = faster): first screen after launch,
-// home, stats page (drawn to the next frame, average of 3) and one batched save. Button at the end of the changelog page (1.160.0).
+// home, stats page (drawn to the next frame, average of 3) and one batched save. Button at the end of the changelog page (1.162.0).
 let perfLast = '';
 async function perfCheck() {
   const frame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
@@ -20,7 +20,7 @@ const REMIND_TIMES = ['0600', '0700', '0800', '0900', '1200', '1700', '1800', '1
 const setOpen = {}; // which settings groups are expanded (kept while the app is open)
 const setIsOpen = (id) => ((id in setOpen ? setOpen[id] : id === 'lv' || id === 'learn') ? 'open' : '');
 // Collapsed summary of the extra games picked for the flashcard done screen.
-// "อัตโนมัติ (ตอนนี้เปิด)" (1.160.0): what 'auto' gives on this device right now, worked out with the setting set to auto for a moment.
+// "อัตโนมัติ (ตอนนี้เปิด)" (1.162.0): what 'auto' gives on this device right now, worked out with the setting set to auto for a moment.
 function autoTxt(key, fn) {
   const was = S.settings[key]; S.settings[key] = 'auto';
   let on = false; try { on = !!fn(); } catch (e) { /* ignore */ }
@@ -402,7 +402,7 @@ function setSearch() {
       const whole = !setFinding || has(textOf(d.querySelector('summary')));
       let n = 0;
       for (const r of rows) {
-        if (r.matches('details.set-sub')) { // ⚙️ folded rows (1.160.0): searched one by one, the fold opens while it has a match
+        if (r.matches('details.set-sub')) { // ⚙️ folded rows (1.162.0): searched one by one, the fold opens while it has a match
           const inner = [...r.children].filter((x) => x.tagName !== 'SUMMARY'), all = whole || has(setNorm(r.dataset.k || '')); // its title words only (the summary line lists the rows inside)
           let m = 0;
           for (const x of inner) { const ok = all || has(textOf(x)); x.classList.toggle('sq-off', !ok); if (ok) m++; }
@@ -421,7 +421,7 @@ function setSearch() {
   };
 }
 
-// ↺ Default settings (1.160.0): everything back to defaults() except the learning plan and the user's own lists/fits.
+// ↺ Default settings (1.162.0): everything back to defaults() except the learning plan and the user's own lists/fits.
 const SETTINGS_KEEP = ['levels', 'topic', 'goal', 'newPerDay', 'minutes', 'weekGoal', 'exam', 'fsk', 'frame', 'nextGames', 'gamePin', 'gameHide', 'gameFold', 'gameView', 'riddleLv', 'wotd', 'ws'];
 function settingsDefault(cur) {
   const d = defaults().settings;
