@@ -1,6 +1,7 @@
 // Changelog shown in the app (settings → ประวัติการอัปเดต). Newest first. Keep in sync with the README table.
 // [version, what changed, release date YYYY-MM-DD (Thailand time)]; loaded lazily by loadChangelog().
 window.CHANGELOG = [
+  ["1.179.4", "ชุดเสริม 💼 TOEIC ชุดสุดท้าย: เพิ่มอีก 89 คำ (รวม 604 คำ) ครบทุกคำใน TOEIC Service List ที่ยังไม่มีในชุด 3000/5000 (ยกเว้นคำที่เป็นแค่ตัวสะกดแบบอเมริกันของคำที่มีอยู่แล้ว) เช่น outage, induction, videoconference, letterhead, consignment", "2026-11-07"],
   ["1.179.3", "ชุดเสริม 💼 TOEIC ชุดที่ 4: เพิ่มอีก 105 คำ (รวม 515 คำ) เช่น reimbursement, refundable, discrepancy, dispatch, fiscal, layoff, auditor พร้อมคำแปลไทยและประโยคตัวอย่าง", "2026-11-07"],
   ["1.179.2", "ชุดเสริม 💼 TOEIC ชุดที่ 3: เพิ่มอีก 105 คำ (รวม 410 คำ) เช่น spreadsheet, amenity, dealership, rebate, flextime, restroom, escalator พร้อมคำแปลไทยและประโยคตัวอย่าง", "2026-11-07"],
   ["1.179.1", "ชุดเสริม 💼 TOEIC ชุดที่ 2: เพิ่มอีก 105 คำ (รวม 305 คำ) เช่น payroll, appraisal, checkout, concierge, postage, beforehand, timetable พร้อมคำแปลไทยและประโยคตัวอย่าง", "2026-11-07"],
