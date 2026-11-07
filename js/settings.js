@@ -51,21 +51,21 @@ function renderSettings() {
         <select class="sel" id="mins">${[0, 10, 15, 20, 30].map((n) => `<option value="${n}" ${n === (st.minutes | 0) ? 'selected' : ''}>${n ? n + ' นาที' : 'ปิด'}</option>`).join('')}</select></div>
       <div class="set-row"><span>เป้าคำใหม่ต่อสัปดาห์<br><span class="small muted">โชว์แถบความคืบหน้าบนหน้าแรก (ปิด = ไม่แสดง)</span></span>
         <select class="sel" id="wgoal">${[0, 20, 35, 50, 70, 100].map((n) => `<option value="${n}" ${n === (st.weekGoal | 0) ? 'selected' : ''}>${n ? n + ' คำ' : 'ปิด'}</option>`).join('')}</select></div>
-      <div class="set-row" style="flex-wrap:wrap"><span>🗓️ วันสอบ / วันเดินทาง<br><span class="small muted">แอปคำนวณว่าต้องเรียนคำใหม่วันละกี่คำถึงจะครบทุกคำในระดับที่เลือกทันวันนั้น (โชว์บนหน้าแรก)</span></span>
+      <div class="set-row" style="flex-wrap:wrap"><span>🗓️ วันสอบ / วันเดินทาง<br><span class="small muted">แอปคำนวณคำใหม่ต่อวันให้ทันวันนั้น (โชว์บนหน้าแรก)</span></span>
         <div class="row exam-set"><input class="sel" type="text" id="examName" maxlength="40" placeholder="เช่น สอบ TOEIC" aria-label="ชื่อเป้าหมาย" value="${esc((st.exam && st.exam.name) || '')}">
         <input class="sel" type="date" id="examDate" min="${today()}" aria-label="วันที่" value="${esc((st.exam && st.exam.date) || '')}"><button class="btn ghost" id="examClear" aria-label="ล้างวันสอบ">✕</button></div></div>
       <div class="set-row"><span>ด้านหน้าการ์ด</span>
         <select class="sel" id="front"><option value="en" ${st.front === 'en' ? 'selected' : ''}>อังกฤษ → ไทย</option><option value="th" ${st.front === 'th' ? 'selected' : ''}>ไทย → อังกฤษ</option><option value="mix" ${st.front === 'mix' ? 'selected' : ''}>สลับกัน (คำที่แม่นแล้วถามกลับด้านบ้าง)</option></select></div>
       <div class="set-row"><span>เปิดแอปแล้วไปที่</span>
         <select class="sel" id="start"><option value="home" ${st.start === 'home' ? 'selected' : ''}>🏠 หน้าแรก</option><option value="feed" ${st.start === 'feed' ? 'selected' : ''}>📱 ไถศัพท์</option><option value="cards" ${st.start === 'cards' ? 'selected' : ''}>🃏 แฟลชการ์ด</option></select></div>
-      <div class="set-row"><span>ความยากเกมตัวเลือก<br><span class="small muted">อัตโนมัติ = ถ้าตอบถูกต่อเนื่อง ตัวเลือกลวงจะคล้ายขึ้น และจับเวลาข้อละ 12 วินาทีเมื่อแม่นมาก</span></span>
+      <div class="set-row"><span>ความยากเกมตัวเลือก<br><span class="small muted">อัตโนมัติ = ยิ่งตอบแม่น ตัวเลือกลวงยิ่งคล้าย และมีจับเวลา</span></span>
         <select class="sel" id="gdiff"><option value="auto" ${!st.gdiff || st.gdiff === 'auto' ? 'selected' : ''}>อัตโนมัติ</option>${['ปกติ', 'คล้ายขึ้น', 'คล้ายขึ้น + จับเวลา'].map((t, k) => `<option value="${k + 1}" ${String(st.gdiff) === String(k + 1) ? 'selected' : ''}>⭐${k + 1} ${t}</option>`).join('')}</select></div>
       <details class="set-row stack ng-box" id="ngBox"><summary><span>เกมเพิ่มเติมหลังทำแฟลชการ์ดครบ<br><span class="small muted" id="ngSum">${nextGamesSummary(st.nextGames)}</span></span></summary>
         <div class="small muted ng-help">แตะเลือกได้หลายเกม จะขึ้นเป็นปุ่มต่อจาก "เล่นด่วน" ในหน้าจบรอบ</div>
         <div class="chips" id="nextGames">${Object.keys(GAMES).map((g) => `<button class="chip ${(st.nextGames || []).includes(g) ? 'on' : ''}" data-v="${g}">${GAMES[g].icon} ${GAMES[g].name}</button>`).join('')}</div></details>
       <button class="set-row set-link" id="wotdSetBtn"><span>✨ ตั้งค่าคำประจำวัน<br><span class="small muted">เลือกระดับ สถานะคำ และหมวดที่อยากให้ขึ้นในกล่องหน้าแรก</span></span><span class="muted">›</span></button>
       <details class="set-row stack ng-box set-sub" id="advBox" data-k="⚙️ ขั้นสูง advanced"><summary><span>⚙️ ขั้นสูง<br><span class="small muted" id="advSum">ตัวจัดรอบทบทวน · % ที่อยากจำได้ · กลับมาแบบไม่ท้อ · ลำดับคำใหม่</span></span></summary>
-      <div class="set-row"><span>ตัวจัดรอบทบทวน<br><span class="small muted">FSRS = อัลกอริทึมโอเพนซอร์สที่ Anki ใช้ ทบทวนน้อยลงที่ความจำเท่าเดิม · เปลี่ยนแล้วไม่กระทบกำหนดเดิม มีผลกับการทบทวนครั้งถัดไป</span></span>
+      <div class="set-row"><span>ตัวจัดรอบทบทวน<br><span class="small muted">FSRS ทบทวนน้อยลงแต่จำได้เท่าเดิม · มีผลตั้งแต่รอบถัดไป</span></span>
         <select class="sel" id="sched"><option value="fsrs" ${st.scheduler !== 'sm2' ? 'selected' : ''}>FSRS (แนะนำ)</option><option value="sm2" ${st.scheduler === 'sm2' ? 'selected' : ''}>แบบเดิม (SM-2)</option></select></div>
       <div class="set-row"><span>อยากจำได้กี่ %<br><span class="small muted">สูง = ทบทวนถี่ขึ้น จำแม่นขึ้น (ใช้กับ FSRS)${fsK() !== 1 ? ` · 🧠 ใช้ตารางเฉพาะตัว ×${fsK()} (เปลี่ยนที่หน้าสถิติ)` : ''}</span></span>
         <select class="sel" id="ret" ${st.scheduler === 'sm2' ? 'disabled' : ''}>${[80, 85, 90, 95].map((n) => `<option value="${n}" ${n === Math.round((st.retention || 0.9) * 100) ? 'selected' : ''}>${n}%</option>`).join('')}</select></div>
@@ -97,22 +97,22 @@ function renderSettings() {
         <select class="sel" id="theme" aria-label="ธีม">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด'], ['black', '⚫ ดำสนิท']].map(([v, t]) => `<option value="${v}" ${(st.theme || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row" style="flex-wrap:wrap"><span>🎨 สีหลัก<br><span class="small muted" id="palName"></span></span>
         <div class="pal" id="palette" role="group" aria-label="สีหลัก">${PALETTES.map(([id, name, a, b]) => `<button data-p="${id}" ${paletteOpen(id) ? '' : 'disabled'} aria-label="${name}${paletteOpen(id) ? '' : ' (ยังไม่ปลดล็อก)'}" aria-pressed="${(st.palAuto ? skyPalette() : st.palette || 'violet') === id}" class="${(st.palAuto ? skyPalette() : st.palette || 'violet') === id ? 'on' : ''}"><i style="--sw1:${a};--sw2:${b}">${(st.palAuto ? skyPalette() : st.palette || 'violet') === id ? '✓' : ''}</i></button>`).join('')}</div></div>
-      <div class="set-row"><span>🕒 สีหลักเปลี่ยนตามช่วงเวลา<br><span class="small muted">เช้า ชมพู · สาย ฟ้า · บ่าย มิ้นต์ · เย็น ส้ม · มืด ม่วง · ดึก กาแล็กซี (ถ้ายังไม่ปลดล็อก Lv.20 ใช้ม่วง) · เลือกสีเองด้านบนเมื่อไหร่จะปิดโหมดนี้</span></span>
+      <div class="set-row"><span>🕒 สีหลักเปลี่ยนตามช่วงเวลา<br><span class="small muted">เลือกสีเองด้านบนเมื่อไหร่ โหมดนี้จะปิด</span></span>
         <label class="switch"><input type="checkbox" id="palAuto" aria-label="สีหลักเปลี่ยนตามช่วงเวลา" ${st.palAuto ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🌅 พื้นหลังการ์ดวันนี้<br><span class="small muted">การ์ดบนหน้าแรก: สีตามธีม หรือเปลี่ยนตามช่วงเวลา</span></span>
         <select class="sel" id="heroBg" aria-label="พื้นหลังการ์ดวันนี้">${[['theme', '🎨 ตามธีม'], ['time', '🕒 ตามเวลา']].map(([v, t]) => `<option value="${v}" ${(st.heroBg === 'time' ? 'time' : 'theme') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-      <div class="set-row"><span>🖼️ ภาพวาดพื้นหลัง<br><span class="small muted">ท้องฟ้า เมฆ ภูเขา พระอาทิตย์/พระจันทร์ที่วงแหวนวนรอบ (วาดเอง เปลี่ยนตามช่วงเวลา)</span></span>
+      <div class="set-row"><span>🖼️ ภาพวาดพื้นหลัง<br><span class="small muted">ท้องฟ้า เมฆ ภูเขา เปลี่ยนตามช่วงเวลา</span></span>
         <label class="switch"><input type="checkbox" id="heroArt" aria-label="ภาพวาดพื้นหลังการ์ดวันนี้" ${st.heroArt !== false ? 'checked' : ''}><span></span></label></div>
       <details class="sky-more"><summary class="small muted">ดูท้องฟ้าทั้ง 6 ช่วงเวลา (เช้า สาย บ่าย เย็น มืด ดึก)</summary>${skyGallery()}</details>
-      <div class="set-row"><span>🔤 ฟอนต์หัวข้อ “อนุพันธ์”<br><span class="small muted">ใช้ฟอนต์ไทยแบบโค้งมนกับหัวข้อและชื่อหน้า (ปิด = ใช้ฟอนต์ของเครื่องทั้งหมด)</span></span>
+      <div class="set-row"><span>🔤 ฟอนต์หัวข้อ “อนุพันธ์”<br><span class="small muted">ฟอนต์ไทยโค้งมนสำหรับหัวข้อ (ปิด = ฟอนต์ของเครื่อง)</span></span>
         <label class="switch"><input type="checkbox" id="headFont" aria-label="ฟอนต์หัวข้ออนุพันธ์" ${st.headFont !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🌸 พื้นหลังหน้าแบบนุ่ม<br><span class="small muted">ไล่สีจางๆ ตามสีหลัก โหมดมืดมีดาวระยิบเบาๆ (ปิด = พื้นสีเรียบ)</span></span>
         <label class="switch"><input type="checkbox" id="pageBg" aria-label="พื้นหลังหน้าแบบนุ่ม" ${st.pageBg !== false ? 'checked' : ''}><span></span></label></div>
-      <div class="set-row"><span>🪟 แถบเมนูกระจกลอย<br><span class="small muted">บนมือถือ แถบเมนูล่างเป็นแคปซูลใสลอยเหนือขอบจอ (ปิด = แถบเต็มขอบแบบเดิม)</span></span>
+      <div class="set-row"><span>🪟 แถบเมนูกระจกลอย<br><span class="small muted">บนมือถือ แถบเมนูล่างเป็นแคปซูลใสลอย</span></span>
         <label class="switch"><input type="checkbox" id="glassBar" aria-label="แถบเมนูกระจกลอย" ${st.glassBar !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🌈 สีตามหมวดบนการ์ด<br><span class="small muted">แฟลชการ์ดและหน้าคำมีสีอ่อนตามหมวด ช่วยจำด้วยสี</span></span>
         <label class="switch"><input type="checkbox" id="topicTint" aria-label="สีตามหมวดบนการ์ด" ${st.topicTint !== false ? 'checked' : ''}><span></span></label></div>
-      <div class="set-row"><span>🖼️ ภาพอีโมจิบนการ์ด<br><span class="small muted">คำที่เป็นรูปธรรม (🍎 🌧️ 🚲 …) โชว์ภาพที่ด้านหลังการ์ด การ์ดไถศัพท์ และหน้าคำ ช่วยจำด้วยภาพ</span></span>
+      <div class="set-row"><span>🖼️ ภาพอีโมจิบนการ์ด<br><span class="small muted">คำที่เป็นรูปธรรม (🍎 🚲 …) โชว์ภาพช่วยจำ</span></span>
         <label class="switch"><input type="checkbox" id="cardEmoji" aria-label="ภาพอีโมจิบนการ์ด" ${st.cardEmoji !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row" style="flex-wrap:wrap"><span>📱 ไอคอนแอป<br><span class="small muted" id="icoName"></span></span>
         <div class="pal ico" id="iconPick" role="group" aria-label="ไอคอนแอป">${ICONS.map(([id, name]) => `<button data-i="${id}" aria-label="ไอคอน${name}" aria-pressed="${(st.icon || 'purple') === id}" class="${(st.icon || 'purple') === id ? 'on' : ''}"><img src="${iconSrc(id)}" alt="" width="44" height="44"></button>`).join('')}</div></div>
@@ -129,9 +129,9 @@ function renderSettings() {
         <label class="switch"><input type="checkbox" id="confetti" aria-label="พลุฉลอง" ${st.confetti !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🐣 น้องคำในเกม<br><span class="small muted">น้องคำนั่งมุมบนตอนเล่นเกม ดีใจเมื่อตอบถูก เศร้านิดๆ เมื่อตอบผิด</span></span>
         <label class="switch"><input type="checkbox" id="qMascot" aria-label="น้องคำในเกม" ${st.qMascot !== false ? 'checked' : ''}><span></span></label></div>
-      <div class="set-row"><span>🎃 ฉากเทศกาล<br><span class="small muted">ช่วงกิจกรรมเทศกาล ท้องฟ้ามีค้างคาว โคมลอย หิมะ พลุ ฯลฯ และน้องคำใส่ชุดเทศกาลให้ลองก่อน</span></span>
+      <div class="set-row"><span>🎃 ฉากเทศกาล<br><span class="small muted">ท้องฟ้าตกแต่งตามเทศกาล และน้องคำใส่ชุดเทศกาล</span></span>
         <label class="switch"><input type="checkbox" id="festSky" aria-label="ฉากเทศกาล" ${st.fest !== false ? 'checked' : ''}><span></span></label></div>
-      <div class="set-row"><span>🌦️ ท้องฟ้าตามฤดู<br><span class="small muted">นอกช่วงเทศกาล: หน้าร้อนมีแสงแดดและหิ่งห้อย หน้าฝนมีฝนปรอยกับรุ้ง หน้าหนาวมีหมอก</span></span>
+      <div class="set-row"><span>🌦️ ท้องฟ้าตามฤดู<br><span class="small muted">แดด ฝน หรือหมอก ตามฤดูของไทย</span></span>
         <label class="switch"><input type="checkbox" id="seasonSky" aria-label="ท้องฟ้าตามฤดู" ${st.season !== false ? 'checked' : ''}><span></span></label></div>
     </div></details>
 
@@ -148,24 +148,24 @@ function renderSettings() {
         <select class="sel" id="acc"><option value="en-US" ${st.accent === 'en-US' ? 'selected' : ''}>🇺🇸 อเมริกัน</option><option value="en-GB" ${st.accent === 'en-GB' ? 'selected' : ''}>🇬🇧 อังกฤษ</option></select></div>
       <div class="set-row"><span>ความเร็วเสียง</span>
         <select class="sel" id="rate">${[[0.7, 'ช้า'], [0.9, 'ปกติ'], [1.05, 'เร็ว']].map(([v, t]) => `<option value="${v}" ${v === st.rate ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-      <div class="set-row"><span>แตะ 🔊 ซ้ำ = ฟังช้าลง<br><span class="small muted">แตะปุ่มฟังคำ/ประโยคเดิมอีกครั้งภายใน 8 วินาที จะพูดช้าลงให้ฟังชัดๆ</span></span>
+      <div class="set-row"><span>แตะ 🔊 ซ้ำ = ฟังช้าลง<br><span class="small muted">แตะซ้ำภายใน 8 วินาที จะพูดช้าลง</span></span>
         <label class="switch"><input type="checkbox" id="slowRep" aria-label="แตะ 🔊 ซ้ำ = ฟังช้าลง" ${st.slowRepeat !== false ? 'checked' : ''}><span></span></label></div>
       <button class="btn block" id="test" style="margin-top:8px">🔊 ทดสอบเสียง</button>
     </div></details>
 
     <details class="set-group" data-g="input" ${setIsOpen('input')}><summary data-k="input device keyboard pencil ipad คีย์บอร์ด แป้นพิมพ์ ปากกา หน้าต่าง window สั่น haptic สองมือ thumb">⌨️ อุปกรณ์และการป้อนข้อมูล</summary><div class="card-box">
-      <div class="set-row"><span>⌨️ คีย์บอร์ดของแอปในเกมพิมพ์คำ<br><span class="small muted">ไม่บังหน้าจอ และพิมพ์อังกฤษได้ทันที (อัตโนมัติ = ใช้บนจอสัมผัส)</span></span>
+      <div class="set-row"><span>⌨️ คีย์บอร์ดของแอปในเกมพิมพ์คำ<br><span class="small muted">ไม่บังจอ และพิมพ์อังกฤษได้ทันที</span></span>
         <select class="sel" id="appKbd" aria-label="คีย์บอร์ดของแอปในเกมพิมพ์คำ">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.appKbd || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-      <div class="set-row"><span>✏️ โหมด Apple Pencil<br><span class="small muted">ช่องคำตอบใหญ่ขึ้น เขียนด้วย Scribble ได้ตั้งแต่เส้นแรก และพับแป้นพิมพ์ของแอปไว้ (อัตโนมัติ = เปิดเองเมื่อเครื่องนี้เคยใช้ Apple Pencil กับแอป)</span></span>
+      <div class="set-row"><span>✏️ โหมด Apple Pencil<br><span class="small muted">ช่องคำตอบใหญ่ เขียนด้วย Scribble ได้ทันที</span></span>
         <select class="sel" id="penMode" aria-label="โหมด Apple Pencil">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.penMode || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-      <div class="set-row"><span>👐 ปุ่มสองข้าง (ถือสองมือ)<br><span class="small muted">iPad แนวนอน: แฟลชการ์ด ลืม/ยาก อยู่ซ้าย จำได้/ง่าย อยู่ขวา · เกมแบบเลือกตอบ ตัวเลือกเรียงอยู่ข้างโจทย์ฝั่งเดียว ใกล้นิ้วโป้ง (อัตโนมัติ = ใช้บนจอสัมผัส)</span></span>
+      <div class="set-row"><span>👐 ปุ่มสองข้าง (ถือสองมือ)<br><span class="small muted">iPad แนวนอน: ลืม/ยาก อยู่ซ้าย จำได้/ง่าย อยู่ขวา</span></span>
         <select class="sel" id="thumbs" aria-label="ปุ่มสองข้าง (ถือสองมือ)">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.thumbs || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-      <div class="set-row"><span>🎮 ตัวเลือกในเกม (iPad แนวนอน ถือสองมือ)<br><span class="small muted">ตัวเลือกคำตอบเรียงอยู่ฝั่งเดียวข้างโจทย์ เลือกฝั่งที่ถนัด</span></span>
-        <select class="sel" id="optSide" aria-label="ตัวเลือกในเกมอยู่ฝั่งไหน">${[['right', '👉 ขวา'], ['left', '👈 ซ้าย']].map(([v, t]) => `<option value="${v}" ${(st.optSide || 'right') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-      <div class="set-row"><span>🪟 เว้นที่ให้ปุ่มหน้าต่าง iPad<br><span class="small muted">เปิดแอปเป็นหน้าต่างเล็กแล้วปุ่มปิด/ย่อหน้าต่างมุมซ้ายบนทับปุ่ม ‹ หรือชื่อหน้า ให้เลือก “เปิด” (อัตโนมัติ = เว้นเมื่อแอปจากหน้าจอโฮมเปิดเป็นหน้าต่างบน iPad)</span></span>
+      <div class="set-row"><span>🎮 ฝั่งของตัวเลือกคำตอบ<br><span class="small muted">iPad แนวนอน ถือสองมือ: เลือกฝั่งที่ถนัด</span></span>
+        <select class="sel" id="optSide" aria-label="ฝั่งของตัวเลือกคำตอบ">${[['right', '👉 ขวา'], ['left', '👈 ซ้าย']].map(([v, t]) => `<option value="${v}" ${(st.optSide || 'right') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="set-row"><span>🪟 เว้นที่ให้ปุ่มหน้าต่าง iPad<br><span class="small muted">ถ้าปุ่มปิด/ย่อหน้าต่างทับปุ่ม ‹ ให้เลือก “เปิด”</span></span>
         <select class="sel" id="winGap" aria-label="เว้นที่ให้ปุ่มหน้าต่าง iPad">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.winGap || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <button class="set-row set-link" id="keysBtn"><span>⌨️ คีย์ลัด<br><span class="small muted">สำหรับ iPad ที่ต่อคีย์บอร์ด หรือคอมพิวเตอร์ (กด ? ที่หน้าไหนก็ได้)</span></span><span class="muted">›</span></button>
-      <div class="set-row"><span>📳 สั่นตอบรับ<br><span class="small muted">สั่นเบาๆ ตอนตอบถูก/ผิด (iPhone ต้อง iOS 18 ขึ้นไป · Android สั่นได้เลย)</span></span>
+      <div class="set-row"><span>📳 สั่นตอบรับ<br><span class="small muted">สั่นเบาๆ ตอนตอบถูก/ผิด (iPhone iOS 18 ขึ้นไป)</span></span>
         <label class="switch"><input type="checkbox" id="haptic" aria-label="สั่นตอบรับ" ${st.haptic !== false ? 'checked' : ''}><span></span></label></div>
     </div></details>
 
