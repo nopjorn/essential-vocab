@@ -336,14 +336,14 @@ test.describe('service worker', () => {
 test('settings: page slide, answer bounce and confetti switch off one by one; old single switch migrates', async ({ page }) => {
   const errors = await openApp(page, { settings: { levels: ['A1'] } });
   const html = () => page.evaluate(() => [...document.documentElement.classList].filter((c) => c.startsWith('no-')).sort());
-  await page.evaluate(() => { go('settings'); document.querySelector('details[data-g="look"]').open = true; });
+  await page.evaluate(() => { go('settings'); document.querySelector('details[data-g="fx"]').open = true; });
   for (const id of ['animPage', 'animAnswer', 'confetti']) await expect(page.locator('#' + id)).toBeChecked();
   await page.locator('#animPage + span').click();
   expect(await html()).toEqual(['no-vt']);
   expect(await page.evaluate(() => { go('games'); return getComputedStyle(view).animationName; })).toBe('none');
   await page.evaluate(() => confetti());
   await expect(page.locator('.confetti')).toHaveCount(1); // confetti still on
-  await page.evaluate(() => { go('settings'); document.querySelector('details[data-g="look"]').open = true; });
+  await page.evaluate(() => { go('settings'); document.querySelector('details[data-g="fx"]').open = true; });
   await page.locator('#confetti + span').click();
   await page.evaluate(() => { document.querySelector('.confetti')?.remove(); confetti(); });
   await expect(page.locator('.confetti')).toHaveCount(0);

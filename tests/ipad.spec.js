@@ -27,7 +27,7 @@ test('thumb grade buttons: off keeps the usual row, auto follows the pointer, se
   await expect(page.locator('#grade.thumbs')).toHaveCount(0);
   await page.evaluate(() => { S.settings.thumbs = 'auto'; go('cards'); });
   await expect(page.locator('#grade.thumbs')).toHaveCount(0); // tests run with a fine pointer
-  await page.evaluate(() => go('settings'));
+  await page.evaluate(() => { go('settings'); document.querySelector('details[data-g="input"]').open = true; });
   await page.locator('#thumbs').selectOption('on');
   expect(await page.evaluate(() => S.settings.thumbs)).toBe('on');
   // portrait / phone: the class is there but the layout stays the usual 4-button row under the card
@@ -126,7 +126,7 @@ test('keyboard: arrows grade flashcards, Esc closes sheet / leaves a session / g
   expect(await page.locator('.keys-sheet kbd').count()).toBeGreaterThan(8);
   await kp('Escape');
   await expect(page.locator('.keys-sheet')).toHaveCount(0);
-  await page.evaluate(() => { document.querySelector('details[data-g="look"]').open = true; });
+  await page.evaluate(() => { document.querySelector('details[data-g="input"]').open = true; });
   await page.click('#keysBtn');
   await expect(page.locator('.keys-sheet')).toHaveCount(1);
   await page.locator('.keys-sheet [data-close]').click();
@@ -185,7 +185,7 @@ test('Apple Pencil mode: big writable field, folded app keyboard, ⌨️ toggle,
   await expect(page.locator('.app-kb')).toBeHidden();
   // off in settings: the usual small field and the app keyboard
   await page.evaluate(() => go('settings'));
-  await page.evaluate(() => { document.querySelector('details[data-g="look"]').open = true; });
+  await page.evaluate(() => { document.querySelector('details[data-g="input"]').open = true; });
   await page.locator('#penMode').selectOption('off');
   expect(await page.evaluate(() => document.documentElement.classList.contains('pen-mode'))).toBe(false);
   await page.evaluate(() => startGame('spell'));
@@ -512,7 +512,7 @@ test('room for the iPad window buttons: off by default in a browser, on moves a 
   const errors = await openApp(page);
   expect(await page.evaluate(() => [winGapOn(), document.documentElement.classList.contains('win-gap')])).toEqual([false, false]); // not a home-screen app
   const x0 = await page.locator('#title').boundingBox();
-  await page.evaluate(() => { go('settings'); document.querySelector('details[data-g="look"]').open = true; });
+  await page.evaluate(() => { go('settings'); document.querySelector('details[data-g="input"]').open = true; });
   await page.locator('#winGap').selectOption('on');
   expect(await page.evaluate(() => [S.settings.winGap, document.documentElement.classList.contains('win-gap')])).toEqual(['on', true]);
   const x1 = await page.locator('#title').boundingBox();

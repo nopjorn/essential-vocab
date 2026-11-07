@@ -68,10 +68,6 @@ function renderSettings() {
         <select class="sel" id="start"><option value="home" ${st.start === 'home' ? 'selected' : ''}>🏠 หน้าแรก</option><option value="feed" ${st.start === 'feed' ? 'selected' : ''}>📱 ไถศัพท์</option><option value="cards" ${st.start === 'cards' ? 'selected' : ''}>🃏 แฟลชการ์ด</option></select></div>
       <div class="set-row"><span>ด้านหน้าการ์ด</span>
         <select class="sel" id="front"><option value="en" ${st.front === 'en' ? 'selected' : ''}>อังกฤษ → ไทย</option><option value="th" ${st.front === 'th' ? 'selected' : ''}>ไทย → อังกฤษ</option><option value="mix" ${st.front === 'mix' ? 'selected' : ''}>สลับกัน (คำที่แม่นแล้วถามกลับด้านบ้าง)</option></select></div>
-      <div class="set-row"><span>👐 ปุ่มสองข้าง (ถือสองมือ)<br><span class="small muted">iPad แนวนอน: แฟลชการ์ด ลืม/ยาก อยู่ซ้าย จำได้/ง่าย อยู่ขวา · เกมแบบเลือกตอบ ตัวเลือกเรียงอยู่ข้างโจทย์ฝั่งเดียว ใกล้นิ้วโป้ง (อัตโนมัติ = ใช้บนจอสัมผัส)</span></span>
-        <select class="sel" id="thumbs" aria-label="ปุ่มสองข้าง (ถือสองมือ)">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.thumbs || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-      <div class="set-row"><span>🎮 ตัวเลือกในเกม (iPad แนวนอน ถือสองมือ)<br><span class="small muted">ตัวเลือกคำตอบเรียงอยู่ฝั่งเดียวข้างโจทย์ เลือกฝั่งที่ถนัด</span></span>
-        <select class="sel" id="optSide" aria-label="ตัวเลือกในเกมอยู่ฝั่งไหน">${[['right', '👉 ขวา'], ['left', '👈 ซ้าย']].map(([v, t]) => `<option value="${v}" ${(st.optSide || 'right') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <details class="set-row stack ng-box" id="ngBox"><summary><span>เกมเพิ่มเติมหลังทำแฟลชการ์ดครบ<br><span class="small muted" id="ngSum">${nextGamesSummary(st.nextGames)}</span></span></summary>
         <div class="small muted ng-help">แตะเลือกได้หลายเกม จะขึ้นเป็นปุ่มต่อจาก "เล่นด่วน" ในหน้าจบรอบ</div>
         <div class="chips" id="nextGames">${Object.keys(GAMES).map((g) => `<button class="chip ${(st.nextGames || []).includes(g) ? 'on' : ''}" data-v="${g}">${GAMES[g].icon} ${GAMES[g].name}</button>`).join('')}</div></details>
@@ -95,13 +91,6 @@ function renderSettings() {
     <details class="set-group" data-g="look" ${setIsOpen('look')}><summary data-k="theme dark light มืด สว่าง สี color colour ฟอนต์ font ขนาดตัวอักษร ตัวหนังสือ ไอคอน icon">🎨 หน้าตา</summary><div class="card-box">
       <div class="set-row"><span>🔠 ขนาดตัวอักษร<br><span class="small muted">ขยายทุกหน้า (ยกเว้นแถบเมนู)</span></span>
         <select class="sel" id="fsz" aria-label="ขนาดตัวอักษร">${[['sm', 'เล็ก'], ['md', 'ปกติ'], ['lg', 'ใหญ่'], ['xl', 'ใหญ่มาก']].map(([v, t]) => `<option value="${v}" ${(st.fsz || 'md') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-      <div class="set-row"><span>⌨️ คีย์บอร์ดของแอปในเกมพิมพ์คำ<br><span class="small muted">ไม่บังหน้าจอ และพิมพ์อังกฤษได้ทันที (อัตโนมัติ = ใช้บนจอสัมผัส)</span></span>
-        <select class="sel" id="appKbd" aria-label="คีย์บอร์ดของแอปในเกมพิมพ์คำ">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.appKbd || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-      <div class="set-row"><span>✏️ โหมด Apple Pencil<br><span class="small muted">ช่องคำตอบใหญ่ขึ้น เขียนด้วย Scribble ได้ตั้งแต่เส้นแรก และพับแป้นพิมพ์ของแอปไว้ (อัตโนมัติ = เปิดเองเมื่อเครื่องนี้เคยใช้ Apple Pencil กับแอป)</span></span>
-        <select class="sel" id="penMode" aria-label="โหมด Apple Pencil">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.penMode || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-      <div class="set-row"><span>🪟 เว้นที่ให้ปุ่มหน้าต่าง iPad<br><span class="small muted">เปิดแอปเป็นหน้าต่างเล็กแล้วปุ่มปิด/ย่อหน้าต่างมุมซ้ายบนทับปุ่ม ‹ หรือชื่อหน้า ให้เลือก “เปิด” (อัตโนมัติ = เว้นเมื่อแอปจากหน้าจอโฮมเปิดเป็นหน้าต่างบน iPad)</span></span>
-        <select class="sel" id="winGap" aria-label="เว้นที่ให้ปุ่มหน้าต่าง iPad">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.winGap || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-      <button class="set-row set-link" id="keysBtn"><span>⌨️ คีย์ลัด<br><span class="small muted">สำหรับ iPad ที่ต่อคีย์บอร์ด หรือคอมพิวเตอร์ (กด ? ที่หน้าไหนก็ได้)</span></span><span class="muted">›</span></button>
       <div class="set-row"><span>ธีม</span>
         <select class="sel" id="theme" aria-label="ธีม">${[['auto', '🌓 ตามเครื่อง'], ['light', '☀️ สว่าง'], ['dark', '🌙 มืด'], ['black', '⚫ ดำสนิท']].map(([v, t]) => `<option value="${v}" ${(st.theme || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row" style="flex-wrap:wrap"><span>🎨 สีหลัก<br><span class="small muted" id="palName"></span></span>
@@ -112,37 +101,36 @@ function renderSettings() {
         <select class="sel" id="heroBg" aria-label="พื้นหลังการ์ดวันนี้">${[['theme', '🎨 ตามธีม'], ['time', '🕒 ตามเวลา']].map(([v, t]) => `<option value="${v}" ${(st.heroBg === 'time' ? 'time' : 'theme') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>🖼️ ภาพวาดพื้นหลัง<br><span class="small muted">ท้องฟ้า เมฆ ภูเขา พระอาทิตย์/พระจันทร์ที่วงแหวนวนรอบ (วาดเอง เปลี่ยนตามช่วงเวลา)</span></span>
         <label class="switch"><input type="checkbox" id="heroArt" aria-label="ภาพวาดพื้นหลังการ์ดวันนี้" ${st.heroArt !== false ? 'checked' : ''}><span></span></label></div>
-      <div class="set-row"><span>🎃 ฉากเทศกาล<br><span class="small muted">ช่วงกิจกรรมเทศกาล ท้องฟ้ามีค้างคาว โคมลอย หิมะ พลุ ฯลฯ และน้องคำใส่ชุดเทศกาลให้ลองก่อน</span></span>
-        <label class="switch"><input type="checkbox" id="festSky" aria-label="ฉากเทศกาล" ${st.fest !== false ? 'checked' : ''}><span></span></label></div>
-      <div class="set-row"><span>🐣 น้องคำในเกม<br><span class="small muted">น้องคำนั่งมุมบนตอนเล่นเกม ดีใจเมื่อตอบถูก เศร้านิดๆ เมื่อตอบผิด</span></span>
-        <label class="switch"><input type="checkbox" id="qMascot" aria-label="น้องคำในเกม" ${st.qMascot !== false ? 'checked' : ''}><span></span></label></div>
+      <details class="sky-more"><summary class="small muted">ดูท้องฟ้าทั้ง 6 ช่วงเวลา (เช้า สาย บ่าย เย็น มืด ดึก)</summary>${skyGallery()}</details>
       <div class="set-row"><span>🔤 ฟอนต์หัวข้อ “อนุพันธ์”<br><span class="small muted">ใช้ฟอนต์ไทยแบบโค้งมนกับหัวข้อและชื่อหน้า (ปิด = ใช้ฟอนต์ของเครื่องทั้งหมด)</span></span>
         <label class="switch"><input type="checkbox" id="headFont" aria-label="ฟอนต์หัวข้ออนุพันธ์" ${st.headFont !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🌸 พื้นหลังหน้าแบบนุ่ม<br><span class="small muted">ไล่สีจางๆ ตามสีหลัก โหมดมืดมีดาวระยิบเบาๆ (ปิด = พื้นสีเรียบ)</span></span>
         <label class="switch"><input type="checkbox" id="pageBg" aria-label="พื้นหลังหน้าแบบนุ่ม" ${st.pageBg !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🪟 แถบเมนูกระจกลอย<br><span class="small muted">บนมือถือ แถบเมนูล่างเป็นแคปซูลใสลอยเหนือขอบจอ (ปิด = แถบเต็มขอบแบบเดิม)</span></span>
         <label class="switch"><input type="checkbox" id="glassBar" aria-label="แถบเมนูกระจกลอย" ${st.glassBar !== false ? 'checked' : ''}><span></span></label></div>
-      <div class="set-row"><span>🌦️ ท้องฟ้าตามฤดู<br><span class="small muted">นอกช่วงเทศกาล: หน้าร้อนมีแสงแดดและหิ่งห้อย หน้าฝนมีฝนปรอยกับรุ้ง หน้าหนาวมีหมอก</span></span>
-        <label class="switch"><input type="checkbox" id="seasonSky" aria-label="ท้องฟ้าตามฤดู" ${st.season !== false ? 'checked' : ''}><span></span></label></div>
-      <details class="sky-more"><summary class="small muted">ดูท้องฟ้าทั้ง 6 ช่วงเวลา (เช้า สาย บ่าย เย็น มืด ดึก)</summary>${skyGallery()}</details>
+      <div class="set-row"><span>🌈 สีตามหมวดบนการ์ด<br><span class="small muted">แฟลชการ์ดและหน้าคำมีสีอ่อนตามหมวด ช่วยจำด้วยสี</span></span>
+        <label class="switch"><input type="checkbox" id="topicTint" aria-label="สีตามหมวดบนการ์ด" ${st.topicTint !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>🖼️ ภาพอีโมจิบนการ์ด<br><span class="small muted">คำที่เป็นรูปธรรม (🍎 🌧️ 🚲 …) โชว์ภาพที่ด้านหลังการ์ด การ์ดไถศัพท์ และหน้าคำ ช่วยจำด้วยภาพ</span></span>
+        <label class="switch"><input type="checkbox" id="cardEmoji" aria-label="ภาพอีโมจิบนการ์ด" ${st.cardEmoji !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row" style="flex-wrap:wrap"><span>📱 ไอคอนแอป<br><span class="small muted" id="icoName"></span></span>
         <div class="pal ico" id="iconPick" role="group" aria-label="ไอคอนแอป">${ICONS.map(([id, name]) => `<button data-i="${id}" aria-label="ไอคอน${name}" aria-pressed="${(st.icon || 'purple') === id}" class="${(st.icon || 'purple') === id ? 'on' : ''}"><img src="${iconSrc(id)}" alt="" width="44" height="44"></button>`).join('')}</div></div>
       <p class="small muted" style="margin-top:0">iPhone/iPad ตั้งไอคอนได้ตอน "เพิ่มลงหน้าจอโฮม" เท่านั้น เลือกแบบที่ชอบตรงนี้ แล้วทำตามขั้นตอนใน <a href="#" id="icoHow">วิธีเปลี่ยนไอคอน</a> (ต้องสำรองข้อมูลก่อน เพราะลบไอคอนเดิมแล้วข้อมูลในเครื่องหาย)</p>
+      <button class="set-row set-link" id="homeSetBtn"><span>🧩 จัดเรียงหน้าแรก<br><span class="small muted">เปิด/ปิด สลับลำดับ และปรับความกว้างของกล่อง</span></span><span class="muted">›</span></button>
+    </div></details>
+
+    <details class="set-group" data-g="fx" ${setIsOpen('fx')}><summary data-k="animation effect motion แอนิเมชัน เอฟเฟกต์ เคลื่อนไหว พลุ confetti ฉาก เทศกาล ฤดู น้องคำ mascot">✨ แอนิเมชันและเอฟเฟกต์</summary><div class="card-box">
       <div class="set-row"><span>✨ หน้าเลื่อนตอนเปลี่ยนแท็บ<br><span class="small muted">และตอนเปิด/ปิดหน้าย่อย</span></span>
         <label class="switch"><input type="checkbox" id="animPage" aria-label="หน้าเลื่อนตอนเปลี่ยนแท็บ" ${st.animPage !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>👆 ปุ่มเด้ง/สั่นตอนตอบ<br><span class="small muted">เด้งเมื่อตอบถูก สั่นเมื่อตอบผิด</span></span>
         <label class="switch"><input type="checkbox" id="animAnswer" aria-label="ปุ่มเด้ง/สั่นตอนตอบ" ${st.animAnswer !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🎉 พลุฉลอง<br><span class="small muted">ตอนเลเวลอัป ทำภารกิจครบ ได้เหรียญ (เสียงฉลองยังมี)</span></span>
         <label class="switch"><input type="checkbox" id="confetti" aria-label="พลุฉลอง" ${st.confetti !== false ? 'checked' : ''}><span></span></label></div>
-      <div class="set-row"><span>🌈 สีตามหมวดบนการ์ด<br><span class="small muted">แฟลชการ์ดและหน้าคำมีสีอ่อนตามหมวด ช่วยจำด้วยสี</span></span>
-        <label class="switch"><input type="checkbox" id="topicTint" aria-label="สีตามหมวดบนการ์ด" ${st.topicTint !== false ? 'checked' : ''}><span></span></label></div>
-      <div class="set-row"><span>🖼️ ภาพอีโมจิบนการ์ด<br><span class="small muted">คำที่เป็นรูปธรรม (🍎 🌧️ 🚲 …) โชว์ภาพที่ด้านหลังการ์ด การ์ดไถศัพท์ และหน้าคำ ช่วยจำด้วยภาพ</span></span>
-        <label class="switch"><input type="checkbox" id="cardEmoji" aria-label="ภาพอีโมจิบนการ์ด" ${st.cardEmoji !== false ? 'checked' : ''}><span></span></label></div>
-      <div class="set-row"><span>📳 สั่นตอบรับ<br><span class="small muted">สั่นเบาๆ ตอนตอบถูก/ผิด (iPhone ต้อง iOS 18 ขึ้นไป · Android สั่นได้เลย)</span></span>
-        <label class="switch"><input type="checkbox" id="haptic" aria-label="สั่นตอบรับ" ${st.haptic !== false ? 'checked' : ''}><span></span></label></div>
-      <div class="set-row"><span>🎯 แสดงการ์ดภารกิจต่อ แม้ทำครบแล้ว</span>
-        <label class="switch"><input type="checkbox" id="questShow" ${st.questShowDone ? 'checked' : ''}><span></span></label></div>
-      <button class="set-row set-link" id="homeSetBtn"><span>🧩 จัดเรียงหน้าแรก<br><span class="small muted">เปิด/ปิด สลับลำดับ และปรับความกว้างของกล่อง</span></span><span class="muted">›</span></button>
+      <div class="set-row"><span>🐣 น้องคำในเกม<br><span class="small muted">น้องคำนั่งมุมบนตอนเล่นเกม ดีใจเมื่อตอบถูก เศร้านิดๆ เมื่อตอบผิด</span></span>
+        <label class="switch"><input type="checkbox" id="qMascot" aria-label="น้องคำในเกม" ${st.qMascot !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>🎃 ฉากเทศกาล<br><span class="small muted">ช่วงกิจกรรมเทศกาล ท้องฟ้ามีค้างคาว โคมลอย หิมะ พลุ ฯลฯ และน้องคำใส่ชุดเทศกาลให้ลองก่อน</span></span>
+        <label class="switch"><input type="checkbox" id="festSky" aria-label="ฉากเทศกาล" ${st.fest !== false ? 'checked' : ''}><span></span></label></div>
+      <div class="set-row"><span>🌦️ ท้องฟ้าตามฤดู<br><span class="small muted">นอกช่วงเทศกาล: หน้าร้อนมีแสงแดดและหิ่งห้อย หน้าฝนมีฝนปรอยกับรุ้ง หน้าหนาวมีหมอก</span></span>
+        <label class="switch"><input type="checkbox" id="seasonSky" aria-label="ท้องฟ้าตามฤดู" ${st.season !== false ? 'checked' : ''}><span></span></label></div>
     </div></details>
 
     <details class="set-group" data-g="sound" ${setIsOpen('sound')}><summary data-k="sound voice speech audio เสียง ลำโพง สำเนียง accent">🔊 เสียง</summary><div class="card-box">
@@ -161,6 +149,22 @@ function renderSettings() {
       <div class="set-row"><span>แตะ 🔊 ซ้ำ = ฟังช้าลง<br><span class="small muted">แตะปุ่มฟังคำ/ประโยคเดิมอีกครั้งภายใน 8 วินาที จะพูดช้าลงให้ฟังชัดๆ</span></span>
         <label class="switch"><input type="checkbox" id="slowRep" aria-label="แตะ 🔊 ซ้ำ = ฟังช้าลง" ${st.slowRepeat !== false ? 'checked' : ''}><span></span></label></div>
       <button class="btn block" id="test" style="margin-top:8px">🔊 ทดสอบเสียง</button>
+    </div></details>
+
+    <details class="set-group" data-g="input" ${setIsOpen('input')}><summary data-k="input device keyboard pencil ipad คีย์บอร์ด แป้นพิมพ์ ปากกา หน้าต่าง window สั่น haptic สองมือ thumb">⌨️ อุปกรณ์และการป้อนข้อมูล</summary><div class="card-box">
+      <div class="set-row"><span>⌨️ คีย์บอร์ดของแอปในเกมพิมพ์คำ<br><span class="small muted">ไม่บังหน้าจอ และพิมพ์อังกฤษได้ทันที (อัตโนมัติ = ใช้บนจอสัมผัส)</span></span>
+        <select class="sel" id="appKbd" aria-label="คีย์บอร์ดของแอปในเกมพิมพ์คำ">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.appKbd || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="set-row"><span>✏️ โหมด Apple Pencil<br><span class="small muted">ช่องคำตอบใหญ่ขึ้น เขียนด้วย Scribble ได้ตั้งแต่เส้นแรก และพับแป้นพิมพ์ของแอปไว้ (อัตโนมัติ = เปิดเองเมื่อเครื่องนี้เคยใช้ Apple Pencil กับแอป)</span></span>
+        <select class="sel" id="penMode" aria-label="โหมด Apple Pencil">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.penMode || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="set-row"><span>👐 ปุ่มสองข้าง (ถือสองมือ)<br><span class="small muted">iPad แนวนอน: แฟลชการ์ด ลืม/ยาก อยู่ซ้าย จำได้/ง่าย อยู่ขวา · เกมแบบเลือกตอบ ตัวเลือกเรียงอยู่ข้างโจทย์ฝั่งเดียว ใกล้นิ้วโป้ง (อัตโนมัติ = ใช้บนจอสัมผัส)</span></span>
+        <select class="sel" id="thumbs" aria-label="ปุ่มสองข้าง (ถือสองมือ)">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.thumbs || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="set-row"><span>🎮 ตัวเลือกในเกม (iPad แนวนอน ถือสองมือ)<br><span class="small muted">ตัวเลือกคำตอบเรียงอยู่ฝั่งเดียวข้างโจทย์ เลือกฝั่งที่ถนัด</span></span>
+        <select class="sel" id="optSide" aria-label="ตัวเลือกในเกมอยู่ฝั่งไหน">${[['right', '👉 ขวา'], ['left', '👈 ซ้าย']].map(([v, t]) => `<option value="${v}" ${(st.optSide || 'right') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="set-row"><span>🪟 เว้นที่ให้ปุ่มหน้าต่าง iPad<br><span class="small muted">เปิดแอปเป็นหน้าต่างเล็กแล้วปุ่มปิด/ย่อหน้าต่างมุมซ้ายบนทับปุ่ม ‹ หรือชื่อหน้า ให้เลือก “เปิด” (อัตโนมัติ = เว้นเมื่อแอปจากหน้าจอโฮมเปิดเป็นหน้าต่างบน iPad)</span></span>
+        <select class="sel" id="winGap" aria-label="เว้นที่ให้ปุ่มหน้าต่าง iPad">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.winGap || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <button class="set-row set-link" id="keysBtn"><span>⌨️ คีย์ลัด<br><span class="small muted">สำหรับ iPad ที่ต่อคีย์บอร์ด หรือคอมพิวเตอร์ (กด ? ที่หน้าไหนก็ได้)</span></span><span class="muted">›</span></button>
+      <div class="set-row"><span>📳 สั่นตอบรับ<br><span class="small muted">สั่นเบาๆ ตอนตอบถูก/ผิด (iPhone ต้อง iOS 18 ขึ้นไป · Android สั่นได้เลย)</span></span>
+        <label class="switch"><input type="checkbox" id="haptic" aria-label="สั่นตอบรับ" ${st.haptic !== false ? 'checked' : ''}><span></span></label></div>
     </div></details>
 
     <details class="set-group" data-g="sync" ${setIsOpen('sync')}><summary data-k="sync cloud login ซิงก์ คลาวด์ เข้าสู่ระบบ">☁️ ซิงก์ข้อมูลอัตโนมัติ</summary><div class="card-box">${!syncOn()
@@ -246,7 +250,6 @@ function renderSettings() {
   $('#thumbs').onchange = (e) => { st.thumbs = e.target.value; save(); applyThumbs(); };
   $('#optSide').onchange = (e) => { st.optSide = e.target.value; save(); applyThumbs(); };
   $('#auto').onchange = (e) => { st.autoSpeak = e.target.checked; save(); };
-  $('#questShow').onchange = (e) => { st.questShowDone = e.target.checked; save(); };
   $('#badge').onchange = async (e) => {
     st.badge = e.target.checked; save();
     if (st.badge && 'Notification' in window && Notification.permission === 'default') {
@@ -435,10 +438,13 @@ function renderHomeSet() {
     <div class="card-box">
       <p class="small muted" style="margin-top:0">เปิด/ปิดกล่อง เลื่อนลำดับด้วย ↑ ↓ และเลือกความกว้าง "ครึ่ง" 2 กล่องติดกันจะอยู่แถวเดียวกัน (กล่องครึ่งที่ไม่มีคู่จะขยายเต็มแถวให้เอง)</p>
       <div id="hcfg"></div>
+      <div class="set-row" style="border-top:1px solid var(--border);margin-top:10px;padding-top:12px"><span>🎯 แสดงการ์ดภารกิจต่อ แม้ทำครบแล้ว</span>
+        <label class="switch"><input type="checkbox" id="questShow" aria-label="แสดงการ์ดภารกิจต่อ แม้ทำครบแล้ว" ${S.settings.questShowDone ? 'checked' : ''}><span></span></label></div>
       <button class="btn block" id="hcReset" style="margin-top:10px">↺ คืนค่าเริ่มต้น</button>
     </div>
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
   $('#hsBack').onclick = () => go('settings');
+  $('#questShow').onchange = (e) => { S.settings.questShowDone = e.target.checked; save(); };
   const paintHome = () => {
     const list = homeBlocks();
     $('#hcfg').innerHTML = list.map((b, i) => `<div class="hc-row${b.on ? '' : ' off'}" data-id="${b.id}">

@@ -14,7 +14,7 @@ test('settings search filters rows, opens matching groups and restores the page 
   await page.evaluate(() => go('settings'));
   await expect(page.locator('#setQ')).toBeVisible();
   const before = await shown(page);
-  expect(before.groups.length).toBe(8);
+  expect(before.groups.length).toBe(10);
 
   // a row label: only that row (and others with the word) are shown, its group opens, the others hide
   await page.fill('#setQ', 'อยากจำได้');
