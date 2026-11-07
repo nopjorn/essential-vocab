@@ -996,6 +996,9 @@ input.sel { color: var(--text); font: inherit; }
 .ns-h { font-size: var(--fs-sm); font-weight: 800; color: var(--muted); margin: 0 4px 8px; }
 .ns-grp .quick.next-steps { margin: 0; }
 .ns-more { font-size: 17px; margin: 22px 4px 0; }
+.goal-cheer { display: flex; align-items: center; gap: 14px; margin-top: 12px; border: 2px solid var(--good); }
+.goal-cheer .gc-ic { font-size: 34px; }
+.goal-cheer .small { color: var(--muted); margin-top: 2px; }
 /* flashcard round summary */
 .res-stats.rsum-st { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .rsum-st b { font-size: 22px; }

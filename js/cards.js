@@ -167,6 +167,17 @@ function cardHist(p) {
   return `<div class="fc-hist">${parts.join(' · ')}</div>`;
 }
 
+// Today's new-words goal reached: a banner on the done page / round summary, and น้องคำ cheers once a day (S.daily.gc).
+function goalCheer() {
+  const g = newGoal(), n = S.daily.fresh | 0;
+  if (!g || n < g || backlogPlan().on) return '';
+  if (!S.daily.gc) {
+    S.daily.gc = 1; save();
+    setTimeout(() => { if (typeof mascotPop === 'function' && !document.documentElement.classList.contains('no-ans')) mascotPop('ครบเป้าคำใหม่แล้ว! 🎉'); }, 700);
+  }
+  return `<div class="card-box goal-cheer pop"><span class="gc-ic" aria-hidden="true">🎯</span><div><b>ครบเป้าคำใหม่วันนี้แล้ว!</b><div class="small">เรียนคำใหม่ ${n} คำ (เป้า ${g}) · สตรีค 🔥 ${S.streak.count || 0} วัน</div></div></div>`;
+}
+
 /* ---------- start screen (1.169) ---------- */
 // The แฟลชการ์ด tab opens this page first (go('cards', 'hub')); other ways in (home ▶︎ เริ่มเรียนเลย, quests …) still start right away.
 // It shows what today holds (reviews, new words, stubborn ones, about how long) and how to study it.
@@ -282,7 +293,7 @@ function renderCards(extra) {
     view.innerHTML = `<div class="card-box center pop" style="margin-top:20px">
       <div class="result-emoji">${mascotSvg({ mood: 'happy', size: 110 })}</div><div class="h2">วันนี้ทำครบแล้ว!</div>
       <p class="muted">ไม่มีการ์ดค้างสำหรับระดับ ${lvNames(S.settings.levels)} · อยากทำอะไรต่อดี?</p></div>
-      ${tomorrowBox()}${hubPickBox()}${nextSteps(learned)}`;
+      ${goalCheer()}${tomorrowBox()}${hubPickBox()}${nextSteps(learned)}`;
     bindNextSteps(); bindHubPick();
     return;
   }
@@ -503,7 +514,7 @@ function renderCards(extra) {
       bindSummary(); bindDeckSteps(deck);
       return;
     }
-    view.innerHTML = sum + tomorrowBox() + nextSteps(W.filter((w) => S.prog[w.w]).length);
+    view.innerHTML = sum + goalCheer() + tomorrowBox() + nextSteps(W.filter((w) => S.prog[w.w]).length);
     bindSummary(); bindNextSteps();
   }
   // End of a round: cards, % remembered, XP and time, then the words pressed ลืม with 🔊 / ☆, practise them again or put them in a set.

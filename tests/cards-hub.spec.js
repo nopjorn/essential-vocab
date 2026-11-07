@@ -212,3 +212,20 @@ test('back of a card: which look it is, when it was last reviewed, how often it 
   await expect(page.locator('#fc .back .fc-hist')).toHaveText('✨ เจอครั้งแรก');
   expect(errors).toEqual([]);
 });
+
+test('new-words goal reached: banner on the done page, น้องคำ cheers once a day', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1'], newPerDay: 3 }, prog: { apple: { ...due(0), d: Date.now() + 3 * DAY } } });
+  await page.evaluate(() => { rollDay(); S.daily.fresh = 3; go('cards'); });
+  await expect(page.locator('.goal-cheer')).toContainText('ครบเป้าคำใหม่วันนี้แล้ว');
+  await expect(page.locator('.goal-cheer')).toContainText('3 คำ');
+  await expect(page.locator('.m-cheer')).toBeVisible();
+  expect(await page.evaluate(() => S.daily.gc)).toBe(1);
+  await page.evaluate(() => { document.querySelectorAll('.m-cheer').forEach((e) => e.remove()); go('home'); go('cards'); });
+  await expect(page.locator('.goal-cheer')).toBeVisible();
+  await page.waitForTimeout(1000);
+  await expect(page.locator('.m-cheer')).toHaveCount(0);
+  // below the goal: no banner
+  await page.evaluate(() => { S.daily.fresh = 1; S.settings.newPerDay = 0; go('cards'); });
+  await expect(page.locator('.goal-cheer')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
