@@ -512,6 +512,33 @@ test('TOEIC Part 2 items (1.186): known type, question, 3 distinct responses, Th
   expect(bad).toEqual([]);
 });
 
+for (const [part, min] of [[3, 2], [4, 1]]) {
+  test(`TOEIC Part ${part} recordings (1.187): speakers, Thai summary, 3 questions with 4 distinct options and Thai`, () => {
+    const rows = load(`data/toeicp${part}.js`)['TOEICP' + part];
+    expect(rows.length).toBeGreaterThanOrEqual(10);
+    const kinds = ['office', 'phone', 'shop', 'hotel', 'restaurant', 'travel', 'announce', 'voicemail', 'tour', 'radio', 'meeting', 'ad'], ids = new Set(), bad = [];
+    rows.forEach((d) => {
+      if (!/^[a-z0-9]+$/.test(d.id || '') || ids.has(d.id)) bad.push(`id ${d.id}`);
+      ids.add(d.id);
+      if (!kinds.includes(d.kind)) bad.push(`${d.id}: kind ${d.kind}`);
+      if (!/[ก-๙]/.test(d.th || '')) bad.push(`${d.id}: Thai summary`);
+      const who = new Set((d.lines || []).map(([s]) => s));
+      if ([...who].some((s) => !['M', 'W', 'M2', 'W2'].includes(s))) bad.push(`${d.id}: speaker codes`);
+      if (part === 4 ? who.size !== 1 : who.size < 2 || who.size > 3) bad.push(`${d.id}: ${who.size} speakers`);
+      if ((d.lines || []).length < 3 || d.lines.some(([, t]) => !/^[A-Z].*[.?!]$/.test(t))) bad.push(`${d.id}: lines`);
+      if (!Array.isArray(d.q) || d.q.length !== 3) bad.push(`${d.id}: 3 questions`);
+      (d.q || []).forEach(([q, opts, a, th], k) => {
+        if (!/\?$/.test(q)) bad.push(`${d.id} q${k}: question`);
+        if (!Array.isArray(opts) || opts.length !== 4 || new Set(opts.map((o) => o.toLowerCase())).size !== 4) bad.push(`${d.id} q${k}: 4 distinct options`);
+        if (!(a >= 0 && a < 4)) bad.push(`${d.id} q${k}: answer index`);
+        if (!/[ก-๙]/.test(th || '')) bad.push(`${d.id} q${k}: Thai explanation`);
+      });
+    });
+    expect(min).toBeGreaterThan(0);
+    expect(bad).toEqual([]);
+  });
+}
+
 test('TOEIC Part 6 texts (1.185): blanks [1]–[4] in order, 4 distinct options each, a sentence blank, Thai summary and explanations', () => {
   const { TOEICP6 } = load('data/toeicp6.js');
   expect(TOEICP6.length).toBeGreaterThanOrEqual(10);

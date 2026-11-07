@@ -148,6 +148,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'toeic7') return qP7(w);
     if (m === 'toeic6') return qP6(w);
     if (m === 'toeic2') return qP2(w);
+    if (m === 'toeic3' || m === 'toeic4') return qP34(w);
     const toTh = m !== 'th2en' && m !== 'cloze' && m !== 'ipa';
     const diff = gameDiff();
     const opts = shuffle([w, ...(m === 'ipa' ? ipaDistractors(w) : distractors(w, 3, toTh ? 't' : 'w', diff >= 2))]);
@@ -1243,6 +1244,50 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : `❌ ที่ถูกคือ ${L[opts.indexOf(r.right)]}`}
         <div class="thx" style="margin-top:6px">${esc(r.th)}</div>
         <div class="small p7-why" style="margin-top:8px">💡 ${esc(r.tip)}</div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      $('#nextQ').onclick = next;
+    };
+  }
+
+  // TOEIC Parts 3 + 4 (1.187.0): a conversation (Part 3, 2–3 speakers in different accents) or a talk (Part 4, one speaker) is spoken
+  // on the first question of a recording; the question and options are on screen like the test. 📝 shows the transcript.
+  function qP34(w) {
+    const r = w._p34, d = r.d, [ic, kind] = P34_KIND[d.kind] || ['🎧', 'บทพูด'], right = r.opts[r.a], opts = shuffle(r.opts.slice());
+    const P3 = r.part === 3, label = P3 ? '🗣️ TOEIC Part 3' : '📢 TOEIC Part 4', what = P3 ? 'บทสนทนา' : 'บทพูด';
+    const who = [...new Set(d.lines.map(([s]) => s))];
+    const tr = d.lines.map(([s, t]) => `<div class="p34-line"><b>${P34_WHO[s][0]} ${P34_WHO[s][1]}:</b> <span lang="en">${esc(t)}</span></div>`).join('');
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit p7-card p34-card pop"><div class="small muted">${label} · ${ic} ${kind} · คำถาม ${r.k + 1}/${d.q.length}</div>
+        <div class="p34-who">${who.map((s) => `<span class="p34-sp" data-sp="${s}">${P34_WHO[s][0]}</span>`).join('')}</div>
+        <div class="small muted" id="p34Now" aria-live="polite"></div>
+        <div class="p2-btns"><button class="btn" id="p34Play">🔁 ฟัง${what}</button><button class="btn" id="p34Slow">🐢 ช้า</button></div>
+        <button class="hint-btn" id="p34Hint">📝 ดู${what}</button><div class="p7-doc p34-tr" id="p34Tr" hidden>${tr}</div>
+        <div class="p7-q" lang="en">${esc(r.q)}</div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" lang="en" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => { tvStop(); go('games'); };
+    const card = view.querySelector('.p34-card'), sps = [...view.querySelectorAll('.p34-sp')];
+    const idle = () => { sps.forEach((x) => x.classList.remove('on')); $('#p34Now').textContent = `แตะ 🔁 เพื่อฟัง${what}อีกครั้ง`; };
+    const on = (k) => {
+      sps.forEach((x) => x.classList.toggle('on', x.dataset.sp === d.lines[k][0]));
+      $('#p34Now').textContent = `กำลังฟัง${what}… (${k + 1}/${d.lines.length})`;
+    };
+    const play = (slow) => tvPlay(p34Lines(d), { on, done: idle, slow, el: card, gap: 350 });
+    $('#p34Play').onclick = () => play(false);
+    $('#p34Slow').onclick = () => play(true);
+    $('#p34Hint').onclick = () => { $('#p34Tr').hidden = false; $('#p34Hint').remove(); };
+    if (r.k === 0) play(false); else idle();
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true; tvStop(); idle();
+      const ok = b.dataset.o === right;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ที่ถูกคือ'} <b lang="en">${esc(right)}</b>
+        <div class="small p7-why" style="margin-top:8px">💡 ${esc(r.th)}</div>
+        <details class="p34-det" style="margin-top:8px"><summary>📜 ${what}และคำแปล</summary><div class="p34-tr">${tr}</div><div class="thx">${esc(d.th)}</div></details>
         <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
       $('#nextQ').onclick = next;
     };

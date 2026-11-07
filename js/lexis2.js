@@ -126,7 +126,7 @@ function setOrder(picked, src, n = 10) {
   return out;
 }
 const p7Order = setOrder;
-const SET_GAMES = ['toeic6', 'toeic7'];
+const SET_GAMES = ['toeic3', 'toeic4', 'toeic6', 'toeic7'];
 /* ---------- TOEIC Part 6 (1.185.0) ---------- */
 // data/toeicp6.js: [{id, kind, title, text with [1]–[4], th, q: [[[4 options], answer index, Thai]]}]. Game `toeic6` (qP6): one item per blank,
 // earlier blanks are shown filled in, the questions of a text stay together (setOrder); own SRS in S.lex.
@@ -168,6 +168,25 @@ const loadP2 = () => loadData('data/toeicp2.js', 'TOEICP2').then((rows) => {
   return TOEICP2;
 });
 const p2Items = () => TOEICP2.map((r) => ({ idx: -1, w: r.right, t: r.q, p: '', g: '', _p2: r, _q: [r.q, r.right, '', r.th] }));
+/* ---------- TOEIC Parts 3 + 4 (1.187.0) ---------- */
+// data/toeicp3.js (conversations) / data/toeicp4.js (talks): [{id, kind, lines: [[speaker, text]], th, q: [[question, [4 options], answer, Thai]]}].
+// Games `toeic3` / `toeic4` (qP34): the audio plays on a text's first question, the questions and options are read on screen like the test,
+// questions of one recording stay together (setOrder); own SRS in S.lex.
+const P34 = { 3: null, 4: null };
+const P34_KIND = { office: ['🏢', 'ที่ทำงาน'], phone: ['📞', 'โทรศัพท์'], shop: ['🛍️', 'ร้านค้า'], hotel: ['🏨', 'โรงแรม'], restaurant: ['🍽️', 'ร้านอาหาร'],
+  travel: ['✈️', 'การเดินทาง'], announce: ['📢', 'ประกาศ'], voicemail: ['📱', 'ข้อความเสียง'], tour: ['🧭', 'นำเที่ยว'], radio: ['📻', 'วิทยุ'],
+  meeting: ['🎤', 'ประชุม / กล่าวในงาน'], ad: ['📣', 'โฆษณา'] };
+const P34_WHO = { M: ['👨', 'Man'], W: ['👩', 'Woman'], M2: ['🧔', 'Man 2'], W2: ['👱‍♀️', 'Woman 2'] };
+const loadP34 = (n) => loadData(`data/toeicp${n}.js`, 'TOEICP' + n).then((rows) => { if (!P34[n]) P34[n] = rows; return P34[n]; });
+const p34Items = (n) => P34[n].flatMap((d) => d.q.map(([q, opts, a, th], k) => {
+  const r = { d, k, q, opts, a, th, part: n };
+  return { idx: -1, w: opts[a], t: q, p: '', g: '', _p34: r, _set: r, _q: [q, opts[a], '', th] };
+}));
+// voices: speakers in order of appearance (0 = the learner's voice, 1 = the other accent, 2 = Australian); a talk's one speaker alternates by id.
+function p34Lines(d) {
+  const who = [...new Set(d.lines.map(([s]) => s))], solo = who.length === 1 ? d.id.length % 2 : 0;
+  return d.lines.map(([s, text]) => [(who.indexOf(s) + solo) % 3, text]);
+}
 const p5Plain = (r) => r.text.replace('___', r.right);
 const p5Items = () => TOEICP5.map((r) => ({ idx: -1, w: r.right, t: r.th, p: '', g: '', _p5: r, _q: [r.text, r.right, '', r.th] }));
 const rtItems = () => REALTEXT.map((r) => ({ idx: -1, w: r.key, t: r.th, p: '', g: '', _rt: r, _q: [r.text.replace(/\n/g, ' '), r.right, '', r.th] }));
