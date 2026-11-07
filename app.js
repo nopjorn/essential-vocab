@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.175.0';
+const APP_VERSION = '1.176.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1379,14 +1379,34 @@ function daysAway() {
 // changes and when the app goes to the background; the daily push also sets it (sw.js) while the app is closed.
 let badgeTimer = null;
 function updateBadge() {
-  if (!navigator.setAppBadge) return;
   clearTimeout(badgeTimer);
   badgeTimer = setTimeout(() => {
+    tabBadge();
+    if (!navigator.setAppBadge) return;
     try {
       const n = S.settings.badge === false ? 0 : dueList().length;
       (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {});
     } catch (e) { /* unsupported */ }
   }, 800);
+}
+
+// Cards left today on the แฟลชการ์ด tab (bottom bar and iPad rail): reviews still to do today (capped while clearing a
+// backlog) + new words left of today's goal. Hidden at 0; the button's name says it for VoiceOver.
+function cardsLeft() {
+  rollDay();
+  const plan = backlogPlan();
+  let nw = plan.on ? 0 : Math.max(0, newGoal() - S.daily.fresh);
+  if (nw) { let u = 0; for (const w of W) if (!S.prog[w.w] && S.settings.levels.includes(w.g) && inTopic(w) && ++u >= nw) break; nw = u; }
+  return plan.show + nw;
+}
+function tabBadge() {
+  const b = document.querySelector('#tabbar > button[data-tab="cards"]'); if (!b) return;
+  let el = b.querySelector('.tab-badge');
+  if (!el) { el = document.createElement('span'); el.className = 'tab-badge'; el.setAttribute('aria-hidden', 'true'); b.querySelector('.ti').appendChild(el); } // on the icon's corner in every layout
+  const n = cardsLeft();
+  el.textContent = n > 99 ? '99+' : String(n);
+  el.hidden = !n;
+  b.setAttribute('aria-label', n ? `แฟลชการ์ด (วันนี้เหลือ ${n} ใบ)` : 'แฟลชการ์ด');
 }
 
 /* ---------- speech (iOS needs a user gesture before the first utterance) ---------- */

@@ -184,3 +184,18 @@ test('an unfinished round can be resumed from the start screen (same day, this d
   await expect(page.locator('.ch-resume')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test('the flashcard tab shows how many cards are left today', async ({ page }) => {
+  const errors = await openApp(page, { ...state(), settings: { levels: ['A1'], newPerDay: 5, autoSpeak: false } });
+  const tab = page.locator('#tabbar > button[data-tab="cards"]');
+  await expect(tab.locator('.tab-badge')).toHaveText('10');
+  await expect(tab).toHaveAttribute('aria-label', 'แฟลชการ์ด (วันนี้เหลือ 10 ใบ)');
+  await page.evaluate(() => go('cards'));
+  await page.click('#fc'); await page.click('[data-g="2"]');
+  await expect(tab.locator('.tab-badge')).toHaveText('9');
+  // nothing left: hidden
+  await page.evaluate(() => { S.settings.newPerDay = 0; Object.values(S.prog).forEach((p) => { p.d = Date.now() + 864e5 * 3; }); save(); });
+  await expect(tab.locator('.tab-badge')).toBeHidden();
+  await expect(tab).toHaveAttribute('aria-label', 'แฟลชการ์ด');
+  expect(errors).toEqual([]);
+});
