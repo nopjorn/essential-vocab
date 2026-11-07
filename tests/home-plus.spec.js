@@ -101,3 +101,14 @@ test('edit home in place: move, hide, show again, done; long press opens it; lea
   await expect(page.locator('.he-bar')).toBeVisible({ timeout: 2000 });
   expect(errors).toEqual([]);
 });
+
+test('iPad landscape: ไถศัพท์ + เล่นด่วน share one cell as two tiles side by side', async ({ page }) => {
+  await page.setViewportSize({ width: 1376, height: 1032 });
+  const errors = await openApp(page);
+  const pair = page.locator('.home-grid.home-cols > .hb-pair');
+  await expect(pair).toHaveCount(1);
+  const a = await pair.locator('[data-hb="feed"]').boundingBox(), b = await pair.locator('[data-hb="play"]').boundingBox();
+  expect(Math.abs(a.y - b.y)).toBeLessThan(2);
+  expect(b.x).toBeGreaterThan(a.x + a.width - 1);
+  expect(errors).toEqual([]);
+});

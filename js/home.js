@@ -33,10 +33,17 @@ function welcomeBack(plan) {
 // (each block one column wide, packed into the shorter column) so neither side is left empty. Turning the iPad re-renders home.
 const DASH_MQ = matchMedia('(min-width: 1000px) and (min-height: 600px) and (orientation: landscape)');
 DASH_MQ.addEventListener && DASH_MQ.addEventListener('change', () => { if (view.dataset.route === 'home') renderHome(); });
+// 1.182.1: on the dashboard a pair of half-width blocks (ไถศัพท์ + เล่นด่วน by default) stays side by side as two square tiles in one column cell.
 function homeGridHtml(blocks) {
   const dash = DASH_MQ.matches;
-  const cell = (b) => `<div class="hb hw-${dash ? 'full' : b.w}" data-hb="${b.id}">${b.html}</div>`;
-  return `<div class="home-grid${dash ? ' home-cols' : ''}">${blocks.map(cell).join('')}</div>`;
+  const cell = (b, w) => `<div class="hb hw-${w}" data-hb="${b.id}">${b.html}</div>`;
+  if (!dash) return `<div class="home-grid">${blocks.map((b) => cell(b, b.w)).join('')}</div>`;
+  let out = '';
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i], n = blocks[i + 1];
+    if (b.w === 'half' && n && n.w === 'half') { out += `<div class="hb-pair">${cell(b, 'half')}${cell(n, 'half')}</div>`; i++; } else out += cell(b, 'full');
+  }
+  return `<div class="home-grid home-cols">${out}</div>`;
 }
 function renderHome() {
   rollDay();

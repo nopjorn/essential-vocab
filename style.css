@@ -547,6 +547,10 @@ body { touch-action: manipulation; }
 .quick-btn.feed-btn { background: linear-gradient(135deg, var(--pink), var(--pink-2)); color: #fff; }
 .quick-btn.feed-btn small { color: rgba(255, 255, 255, .9); }
 .quick-btn:active { transform: scale(.97); }
+/* 1.182.1: iPad dashboard - two half blocks share one cell as square tiles */
+.hb-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; min-width: 0; }
+.hb-pair > .hb > .quick-btn { justify-content: center; min-height: 120px; padding: 16px 18px; }
+.hb-pair > .hb > .quick-btn span { font-size: 34px; }
 /* 1.182.0: edit the home screen in place */
 .he-go { border: 0; background: none; color: var(--muted); font: inherit; padding: 8px 12px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .he-bar { position: sticky; top: -8px; z-index: 5; display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding: 12px 16px; border-radius: var(--radius); background: #5443d1; color: #fff; box-shadow: var(--shadow); }
