@@ -42,9 +42,9 @@ function renderSettings() {
       <div class="chips grid" id="lvls">${LEVELS_3000.map(lvChip).join('')}</div>
       <div class="small muted" style="margin:14px 0 8px"><b>ชุด 5000 คำ</b> · คำเพิ่มเติมระดับสูง</div>
       <div class="chips grid" id="lvls5">${LEVELS_5000.map(lvChip).join('')}</div>
-      <div class="small muted" style="margin:14px 0 8px"><b>ชุดเสริม</b> · ศัพท์ที่ออกสอบ TOEIC บ่อย (ภาษาที่ทำงาน การเดินทาง ธุรกิจ)</div>
+      <div class="small muted" style="margin:14px 0 8px"><b>ชุดเสริม</b> · TOEIC = ศัพท์ที่ทำงาน การเดินทาง ธุรกิจ · วิชาการ = ศัพท์อ่านตำรา บทความ งานวิจัย (IELTS/TOEFL)</div>
       <div class="chips grid" id="lvlsX">${LEVELS_EXTRA.map(lvChip).join('')}</div>
-      <p class="small muted">A1–A2 = พื้นฐาน, B1–B2 = ระดับกลาง, B2+ และ C1 = ระดับสูง, TOEIC = คำเพิ่มที่ไม่ซ้ำกับชุด 3000/5000 (เลือกได้หลายชุด)</p>
+      <p class="small muted">A1–A2 = พื้นฐาน, B1–B2 = ระดับกลาง, B2+ และ C1 = ระดับสูง, ชุดเสริมมีเฉพาะคำที่ไม่ซ้ำกับชุด 3000/5000 (เลือกได้หลายชุด)</p>
       <button class="set-row set-link" id="toPlace"><span>🎯 แบบทดสอบวัดระดับ<br><span class="small muted">ไม่แน่ใจว่าควรเริ่มระดับไหน? ทำแบบทดสอบแล้วแอปจะข้ามคำที่คุณรู้แล้วให้</span></span><span class="muted">›</span></button>
       <div class="set-row stack" style="border-top:1px solid var(--border);padding-top:12px"><span>คำใหม่จากหมวด</span>
         <select class="sel" id="topic"><option value="">📚 ทุกหมวด</option>${topicOptions(st.topic)}</select></div>
@@ -213,7 +213,7 @@ function renderSettings() {
       <p class="small muted" style="margin-top:16px">คืนค่าหน้าตา เสียง และการใช้งานทั้งหมดเป็นแบบเริ่มต้น ความคืบหน้าและแผนการเรียน (ระดับ หมวด คำใหม่ต่อวัน วันสอบ) ยังอยู่</p>
       <button class="btn block" id="resetSet">↺ คืนค่าการตั้งค่าเริ่มต้น</button>
     </div></details>
-    <p class="center small muted">${W.length} คำ · คำแปลไทยและประโยคตัวอย่างเขียนขึ้นเองสำหรับช่วยจำ<br>รายการคำและระดับ CEFR อ้างอิงจากรายการ Oxford 3000™ และ Oxford 5000™ ซึ่งเป็นเครื่องหมายการค้าของ Oxford University Press<br>แอปนี้ไม่มีส่วนเกี่ยวข้องหรือได้รับการรับรองจาก Oxford University Press<br>ชุด TOEIC คัดคำจาก <a href="https://www.newgeneralservicelist.com/toeic-service-list" target="_blank" rel="noopener">TOEIC Service List</a> โดย Browne &amp; Culligan สัญญาอนุญาต <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a> (ไฟล์รายการคำชุดนี้แชร์ต่อด้วยสัญญาอนุญาตเดียวกัน) · TOEIC เป็นเครื่องหมายการค้าของ ETS แอปนี้ไม่มีส่วนเกี่ยวข้องกับ ETS<br>เวอร์ชัน ${APP_VERSION}</p>`;
+    <p class="center small muted">${W.length} คำ · คำแปลไทยและประโยคตัวอย่างเขียนขึ้นเองสำหรับช่วยจำ<br>รายการคำและระดับ CEFR อ้างอิงจากรายการ Oxford 3000™ และ Oxford 5000™ ซึ่งเป็นเครื่องหมายการค้าของ Oxford University Press<br>แอปนี้ไม่มีส่วนเกี่ยวข้องหรือได้รับการรับรองจาก Oxford University Press<br>ชุด TOEIC คัดคำจาก <a href="https://www.newgeneralservicelist.com/toeic-service-list" target="_blank" rel="noopener">TOEIC Service List</a> โดย Browne &amp; Culligan สัญญาอนุญาต <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a> (ไฟล์รายการคำชุดนี้แชร์ต่อด้วยสัญญาอนุญาตเดียวกัน) · TOEIC เป็นเครื่องหมายการค้าของ ETS แอปนี้ไม่มีส่วนเกี่ยวข้องกับ ETS<br>ชุดวิชาการคัดคำจาก <a href="https://www.newgeneralservicelist.com/new-academic-word-list" target="_blank" rel="noopener">New Academic Word List</a> โดย Browne, Culligan &amp; Phillips สัญญาอนุญาต <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a> (แชร์ต่อด้วยสัญญาอนุญาตเดียวกัน)<br>เวอร์ชัน ${APP_VERSION}</p>`;
 
   view.querySelectorAll('details.set-group').forEach((d) => { d.ontoggle = () => { if (!setFinding) setOpen[d.dataset.g] = d.open; }; });
   setSearch();
