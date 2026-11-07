@@ -142,14 +142,6 @@ function renderHome() {
       <div class="small muted" style="margin-top:10px">⭐ Lv.${levelOf(S.xp)} · 🏅 ${ACH.filter((x) => S.ach[x.id]).length}/${ACH.length} เหรียญ · 🟣 เรียนแล้ว 🟢 จำได้แล้ว</div>
     </button>`,
   };
-  const blocks = homeBlocks().filter((b) => b.on).map((b) => ({ ...b, html: homeBlockHtml(B, b.id) })).filter((b) => b.html);
-  // A half-width block with no partner in its row would leave a hole, so it stretches to the full row.
-  let open = null;
-  for (const b of blocks) {
-    if (b.w === 'full') { if (open) open.w = 'full'; open = null; } else if (open) open = null; else open = b;
-  }
-  if (open) open.w = 'full';
-
   const notices = [needsBackup() ? `<div class="card-box backup-nag">
       <div><b>💾 ถึงเวลาสำรองข้อมูลแล้ว</b><div class="small muted">${lastBackup === null ? 'ยังไม่เคยสำรองเลย' : `สำรองล่าสุด ${lastBackup} วันก่อน`} · กันความคืบหน้าหายตอนลบแอปหรือเปลี่ยนเครื่อง</div></div>
       <div class="row" style="margin-top:10px"><button class="btn primary grow" id="bkNow">📤 สำรองเลย</button><button class="btn" id="bkLater">ไว้ทีหลัง</button></div>
@@ -160,10 +152,19 @@ function renderHome() {
       <div><b>🎯 รู้ศัพท์อยู่แล้วบ้างไหม?</b><div class="small muted">วัดระดับ 3–5 นาที แล้วข้ามคำที่รู้แล้ว</div></div>
       <button class="btn primary" data-pl="go">วัดระดับ</button><button class="x" data-pl="no" aria-label="ไม่ต้อง">✕</button></div>` : '',
     standalone || installHidden() ? '' : `<div class="card-box install-tip slim small" id="installTip">${installTipInner()}</div>`].filter(Boolean);
+  const blocks = homeBlocks().filter((b) => b.on).map((b) => ({ ...b, html: homeBlockHtml(B, b.id) })).filter((b) => b.html);
+  // 1.179.7: notices (backup, streak repair, backlog, placement, install) sit right under the today card, so its start button stays near the top
+  if (notices.length) { const hi = blocks.findIndex((b) => b.id === 'hero'); blocks.splice(hi + 1, 0, { id: 'notices', w: 'full', html: noticeDeck(notices) }); }
+  // A half-width block with no partner in its row would leave a hole, so it stretches to the full row.
+  let open = null;
+  for (const b of blocks) {
+    if (b.w === 'full') { if (open) open.w = 'full'; open = null; } else if (open) open = null; else open = b;
+  }
+  if (open) open.w = 'full';
+
   view.innerHTML = `
-    ${noticeDeck(notices)}
     ${homeGridHtml(blocks)}
-    ${blocks.length ? '' : '<div class="card-box center small muted">ซ่อนทุกกล่องอยู่ — เปิดกล่องที่ต้องการได้ที่ ⚙️ ตั้งค่า → จัดหน้าแรก</div>'}
+    ${blocks.some((b) => b.id !== 'notices') ? '' : '<div class="card-box center small muted">ซ่อนทุกกล่องอยู่ — เปิดกล่องที่ต้องการได้ที่ ⚙️ ตั้งค่า → จัดหน้าแรก</div>'}
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
   const click = (sel, fn) => { const el = $(sel); if (el) el.onclick = fn; };
   click('#startBtn', () => go('cards'));
