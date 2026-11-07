@@ -493,6 +493,22 @@ test('TOEIC Part 7 texts (1.184): known kind, Thai summary, 2–4 questions with
   expect(bad).toEqual([]);
 });
 
+test('TOEIC Part 1 scenes (1.189): emoji scene, 4 distinct statements, a valid answer, Thai and tip', () => {
+  const { TOEICP1 } = load('data/toeicp1.js');
+  expect(TOEICP1.length).toBeGreaterThanOrEqual(25);
+  const bad = [], seen = new Set();
+  TOEICP1.forEach(([scene, place, opts, a, th, tip], i) => {
+    const id = `#${i} ${scene}`;
+    if (!scene || /[a-zA-Z0-9ก-๙]/.test(scene) || seen.has(scene)) bad.push(`${id}: emoji-only, unique scene`);
+    seen.add(scene);
+    if (!/[ก-๙]/.test(place || '') || !/[ก-๙]/.test(th || '') || !/[ก-๙]/.test(tip || '')) bad.push(`${id}: Thai place, translation and tip`);
+    if (!Array.isArray(opts) || opts.length !== 4 || new Set(opts.map((o) => o.toLowerCase())).size !== 4) bad.push(`${id}: 4 distinct statements`);
+    if ((opts || []).some((o) => !/^[A-Z].*\.$/.test(o))) bad.push(`${id}: statements are sentences`);
+    if (!(a >= 0 && a < 4)) bad.push(`${id}: answer index`);
+  });
+  expect(bad).toEqual([]);
+});
+
 test('TOEIC Part 2 items (1.186): known type, question, 3 distinct responses, Thai and tip, every type used', () => {
   const { TOEICP2 } = load('data/toeicp2.js');
   expect(TOEICP2.length).toBeGreaterThanOrEqual(50);

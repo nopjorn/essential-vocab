@@ -148,6 +148,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'toeic7') return qP7(w);
     if (m === 'toeic6') return qP6(w);
     if (m === 'toeic2') return qP2(w);
+    if (m === 'toeic1') return qP1(w);
     if (m === 'toeic3' || m === 'toeic4') return qP34(w);
     const toTh = m !== 'th2en' && m !== 'cloze' && m !== 'ipa';
     const diff = gameDiff();
@@ -1201,6 +1202,45 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       mark(w, ok);
       $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ที่ถูกคือ'} <b lang="en">${esc(right)}</b>
         <div class="small p7-why" style="margin-top:8px">💡 ${esc(r.th)}</div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      $('#nextQ').onclick = next;
+    };
+  }
+
+  // TOEIC Part 1 (1.189.0): an emoji "photo"; four statements (A)–(D) are spoken, pick the one that matches the picture.
+  function qP1(w) {
+    const r = w._p1, opts = shuffle(r.opts.slice()), L = 'ABCD';
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit p2-card pop"><div class="small muted">📷 TOEIC Part 1 · ${esc(r.place)}</div>
+        <div class="p1-scene" role="img" aria-label="ภาพ: ${esc(r.place)}">${esc(r.scene)}</div><div class="small muted" id="p2Now" aria-live="polite">ฟังประโยค A–D แล้วเลือกประโยคที่ตรงกับภาพ</div>
+        <div class="p2-btns"><button class="btn" id="p2Play">🔁 ฟังอีกครั้ง</button><button class="btn" id="p2Slow">🐢 ช้า</button></div>
+        <button class="hint-btn" id="p2Hint">📝 ดูข้อความ</button></div>
+      <div class="options abc">${opts.map((o, k) => `<button class="opt p2-opt" data-o="${esc(o)}" aria-label="${L[k]}"><span class="p2-t" lang="en" hidden>${esc(o)}</span></button>`).join('')}</div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => { tvStop(); go('games'); };
+    const btns = [...view.querySelectorAll('.p2-opt')], card = view.querySelector('.p2-card');
+    const lines = opts.map((o, k) => [0, L[k] + '. ' + o]);
+    const on = (k) => { btns.forEach((b, j) => b.classList.toggle('p2-on', j === k)); $('#p2Now').textContent = `กำลังฟังประโยค ${L[k]}`; };
+    let answered = false;
+    const done = () => { btns.forEach((b) => b.classList.remove('p2-on')); if (!answered) $('#p2Now').textContent = 'เลือกประโยค A, B, C หรือ D'; };
+    const play = (slow) => tvPlay(lines, { on, done, slow, el: card });
+    $('#p2Play').onclick = () => play(false);
+    $('#p2Slow').onclick = () => play(true);
+    const showText = () => btns.forEach((b) => { b.querySelector('.p2-t').hidden = false; b.removeAttribute('aria-label'); });
+    $('#p2Hint').onclick = () => { showText(); $('#p2Hint').remove(); };
+    play(false);
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true; tvStop(); done();
+      const ok = b.dataset.o === r.right;
+      btns.forEach((o) => { if (o.dataset.o === r.right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      showText(); const h = $('#p2Hint'); if (h) h.remove();
+      $('#p2Now').textContent = '';
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : `❌ ที่ถูกคือ ${L[opts.indexOf(r.right)]}`}
+        <div class="thx" style="margin-top:6px">${esc(r.th)}</div>
+        <div class="small p7-why" style="margin-top:8px">💡 ${esc(r.tip)}</div>
         <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
       $('#nextQ').onclick = next;
     };

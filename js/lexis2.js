@@ -157,6 +157,15 @@ function tvPlay(lines, o = {}) {
   step(0);
 }
 function tvStop() { tvTok++; if (window.speechSynthesis) speechSynthesis.cancel(); }
+/* ---------- TOEIC Part 1 (1.189.0) ---------- */
+// data/toeicp1.js rows: [emoji scene, Thai place, [4 statements], answer index, Thai, tip]. Game `toeic1` (qP1): the "photo" is an emoji scene,
+// (A)–(D) are spoken, text hidden until 📝 or the answer; own SRS in S.lex.
+let TOEICP1 = null;
+const loadP1 = () => loadData('data/toeicp1.js', 'TOEICP1').then((rows) => {
+  if (!TOEICP1) TOEICP1 = rows.map(([scene, place, opts, a, th, tip]) => ({ scene, place, opts, a, right: opts[a], th, tip }));
+  return TOEICP1;
+});
+const p1Items = () => TOEICP1.map((r) => ({ idx: -1, w: r.right, t: r.scene, p: '', g: '', _p1: r, _q: [r.scene + ' ' + r.place, r.right, '', r.th] }));
 /* ---------- TOEIC Part 2 (1.186.0) ---------- */
 // data/toeicp2.js rows: [type, question, right, [2 wrong], Thai, tip]. Game `toeic2` (qP2): question + (A) (B) (C) are spoken, text hidden
 // until 📝 or the answer; own SRS in S.lex.

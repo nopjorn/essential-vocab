@@ -1919,6 +1919,8 @@ html.no-ans .dance, html.no-ans .confetti.burst i { animation: none; }
 .p7-doc b { display: block; margin-bottom: 6px; }
 .p7-chat .p7-text { font-family: inherit; }
 .p2-card { text-align: center; }
+.p1-scene { font-size: clamp(48px, 15vw, 76px); line-height: 1.15; letter-spacing: 4px; margin: 10px auto 6px; padding: 16px 18px; border-radius: 16px;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface)); box-shadow: inset 0 0 0 4px var(--surface), 0 0 0 1px var(--line, rgba(0,0,0,.08)); }
 .p2-ear { font-size: 54px; line-height: 1; margin: 10px 0 4px; }
 .p2-btns { display: flex; gap: 8px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
 .p2-q { margin-top: 10px; font-weight: 800; font-size: var(--fs-md); }
