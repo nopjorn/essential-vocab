@@ -219,7 +219,9 @@ function renderStats(from) {
       <div class="tile-s"><b>${h.active ? Math.round(h.games / h.active) : 0}</b><span>ข้อเกม/วัน</span></div>
       <div class="tile-s"><b>${Math.round(h.acc * 100)}<small>%</small></b><span>ตอบถูก</span></div>
     </div>
-    <div class="card-box"><div class="small muted" style="margin-bottom:6px">กิจกรรมต่อวัน (แตะแท่งเพื่อดูตัวเลข)</div><div class="chart-host" data-chart="act">${activityChart(W_)}</div></div>
+    <div class="card-box"><div class="small muted" style="margin-bottom:6px">กิจกรรมต่อวัน แยกตามประเภท (แตะแท่งเพื่อดูตัวเลข)</div><div class="chart-host" data-chart="act">${activityChart(W_)}</div></div>
+    <div class="h2">⏱️ ใช้เวลากับอะไรบ้าง</div>
+    <div class="card-box" id="actBox">${actBreakdown()}</div>
     <div class="h2">🗓️ ปฏิทินการเล่น 12 เดือน</div>
     <div class="card-box" data-lz="heat" style="min-height:200px"></div>
 
@@ -273,6 +275,7 @@ function renderStats(from) {
     toast(a.secret && !S.ach[a.id] ? '❓ เหรียญลับ: ไม่บอกเงื่อนไข ลองเรียนไปเรื่อยๆ แล้วจะเจอเอง' : `${a.icon} ${a.name}: ${a.desc}${S.ach[a.id] ? ' ✅' : ' 🔒'}`);
   };
   bindChartTips();
+  bindAct();
   watchCharts();
   sectionize(view, '[data-lz="stk"]');
   masonry([view], '.row, .m-sec:has([data-lz="heat"], #ach), [data-lz="stk"]');
@@ -313,35 +316,72 @@ function startLazy(defs) {
   lazyTimer = setTimeout(rest, 400);
 }
 
-// Stacked bars: flashcards (bottom) + game/feed answers (top); days before 1.9.0 have no split.
+// Stacked bars per kind of activity (1.158.0, S.act; ACT_CATS order bottom → top). Days logged before 1.158.0 keep what is known:
+// flashcards from chist (since 1.9.0) and the rest in grey. actMetric 'n' = answers, 'sec' = minutes (logged days only).
+let actMetric = 'n', actSpan = 7;
+const ACT_SHORT = { card: 'การ์ด', feed: 'ไถ', game: 'เกม', skill: 'ทักษะ', read: 'อ่าน/ฟัง', fun: 'สนุก', other: 'อื่นๆ', unk: 'ไม่แยก' };
+const minTxt = (sec) => (sec < 60 ? '<1 นาที' : sec < 3600 ? `${Math.round(sec / 60)} นาที` : `${Math.floor(sec / 3600)} ชม. ${Math.round((sec % 3600) / 60)} นาที`);
+function actSplit(key) {
+  const all = S.hist[key] || 0, a = actDay(key), seg = {};
+  if (actMetric === 'sec') { if (a) ACT_IDS.forEach((id) => { seg[id] = a.secBy[id] / 60; }); return { seg, a, all }; }
+  if (a) { ACT_IDS.forEach((id) => { seg[id] = a.by[id]; }); seg.unk = Math.max(0, all - a.n); }
+  else if (key in S.chist || all === 0 || key >= S.chistFrom) { seg.card = Math.min(all, S.chist[key] || 0); seg.unk = all - seg.card; }
+  else seg.unk = all;
+  return { seg, a, all };
+}
 function activityChart(Wd) {
   const big = Wd >= 520, H = big ? 180 : 130, top = 8, bot = big ? 26 : 22, n = 28, gap = big ? 4 : 3;
-  const bw = (Wd - gap * (n - 1)) / n;
-  const days = Array.from({ length: n }, (_, i) => {
-    const k = n - 1 - i, key = dayKey(k), all = S.hist[key] || 0;
-    const known = key in S.chist || all === 0 || key >= S.chistFrom;
-    const c = Math.min(all, S.chist[key] || 0);
-    return { key, all, c: known ? c : 0, g: known ? all - c : 0, u: known ? 0 : all };
-  });
-  const max = Math.max(10, ...days.map((d) => d.all));
+  const bw = (Wd - gap * (n - 1)) / n, sec = actMetric === 'sec';
+  const days = Array.from({ length: n }, (_, i) => { const key = dayKey(n - 1 - i), d = actSplit(key); d.key = key; d.sum = Object.values(d.seg).reduce((x, v) => x + v, 0); return d; });
+  const max = Math.max(sec ? 5 : 10, ...days.map((d) => d.sum));
   const y = (v) => (H - bot - top) * v / max;
-  const hasU = days.some((d) => d.u);
+  const used = new Set(); days.forEach((d) => Object.entries(d.seg).forEach(([k, v]) => { if (v > 0) used.add(k); }));
   const bars = days.map((d, i) => {
     const x = i * (bw + gap); let base = H - bot, out = '';
-    const seg = (v, cls) => {
-      if (!v) return; const hh = Math.max(2, y(v));
-      const last = base - hh;
-      out += `<rect class="${cls}" x="${x}" y="${last}" width="${bw}" height="${hh - (out ? 2 : 0)}" rx="2"/>`;
+    for (const id of [...ACT_IDS, 'unk']) {
+      const v = d.seg[id]; if (!(v > 0)) continue;
+      const hh = Math.max(2, y(v)), last = base - hh;
+      out += `<rect class="a-${id}" x="${x}" y="${last}" width="${bw}" height="${Math.max(1, hh - (out ? 2 : 0))}" rx="2"/>`;
       base = last;
-    };
-    seg(d.c, 's-card'); seg(d.u, 's-unk'); seg(d.g, 's-game');
-    const lab = d.all ? `${thDate(Date.parse(d.key + 'T12:00:00'))}: การ์ด ${d.c} · เกม ${d.g}${d.u ? ` · ไม่แยกประเภท ${d.u}` : ''}` : `${thDate(Date.parse(d.key + 'T12:00:00'))}: ไม่ได้เล่น`;
+    }
+    const date = thDate(Date.parse(d.key + 'T12:00:00'));
+    const parts = [...ACT_IDS, 'unk'].filter((id) => d.seg[id] > 0).map((id) => `${ACT_SHORT[id]} ${sec ? minTxt(d.a.secBy[id]) : d.seg[id]}`);
+    const lab = !d.sum ? `${date}: ${sec && d.all ? 'ยังไม่ได้จับเวลา' : 'ไม่ได้เล่น'}`
+      : `${date}: ${sec ? `≈ ${minTxt(d.a.sec)}` : `${d.sum} ข้อ${d.a ? ` · ≈ ${minTxt(d.a.sec)}` : ''}`}&#10;${parts.join(' · ')}`;
     return `${out}<rect class="hit" data-tip="${lab}" x="${x - gap / 2}" y="0" width="${bw + gap}" height="${H}"/>`;
   }).join('');
   const ticks = [0, 7, 14, 21, 27].map((i) => `<text class="ax" x="${i * (bw + gap) + bw / 2}" y="${H - 7}" text-anchor="middle">${i === 27 ? 'วันนี้' : `${27 - i} วันก่อน`}</text>`).join('');
-  return `<div class="chart${big ? ' big' : ''}"><svg viewBox="0 0 ${Wd} ${H}" width="100%" role="img" aria-label="กิจกรรมต่อวัน 28 วัน">
+  const sw = `<div class="chips trend-range" role="group" aria-label="แสดงเป็น">${[['n', 'จำนวนข้อ'], ['sec', 'เวลา (นาที)']].map(([id, t]) => `<button class="chip${actMetric === id ? ' on' : ''}" data-am="${id}" aria-pressed="${actMetric === id}">${t}</button>`).join('')}</div>`;
+  const leg = [...ACT_CATS, ['unk', 'ยังไม่แยกประเภท']].filter(([id]) => used.has(id)).map(([id, t]) => `<span><i class="a-${id}"></i>${t}</span>`).join('');
+  return `${sw}<div class="chart${big ? ' big' : ''}"><svg viewBox="0 0 ${Wd} ${H}" width="100%" role="img" aria-label="กิจกรรมต่อวัน 28 วัน แยกตามประเภท${sec ? ' (นาที)' : ''}">
     <line class="base" x1="0" x2="${Wd}" y1="${H - bot}" y2="${H - bot}"/>${bars}${ticks}</svg><div class="tip" hidden></div></div>
-    <div class="legend"><span><i class="s-card"></i>แฟลชการ์ด</span><span><i class="s-game"></i>เกม + ไถศัพท์</span>${hasU ? '<span><i class="s-unk"></i>ก่อนเริ่มแยกประเภท</span>' : ''}</div>`;
+    <div class="legend">${leg || '<span>ยังไม่มีข้อมูล</span>'}</div>`;
+}
+// What the time went to (1.158.0): totals per kind over the last actSpan days, from S.act only (also the chart's table view).
+function actBreakdown() {
+  const tot = Object.fromEntries(ACT_IDS.map((id) => [id, [0, 0]]));
+  let days = 0, n = 0, sec = 0;
+  for (let k = 0; k < actSpan; k++) {
+    const key = dayKey(k), a = actDay(key); if (!a) continue;
+    days++; n += a.n; sec += a.sec;
+    ACT_IDS.forEach((id) => { tot[id][0] += a.by[id]; tot[id][1] += a.secBy[id]; });
+  }
+  const chips = `<div class="chips trend-range" role="group" aria-label="ช่วงเวลา">${[7, 28, 90, 365].map((d) => `<button class="chip${actSpan === d ? ' on' : ''}" data-as="${d}" aria-pressed="${actSpan === d}">${d} วัน</button>`).join('')}</div>`;
+  if (!n) return `${chips}<div class="small muted">📊 แอปเริ่มเก็บรายละเอียดว่าเล่นอะไรไปเท่าไรตั้งแต่เวอร์ชันนี้ เล่นสักพักแล้วตัวเลขจะขึ้นตรงนี้</div>`;
+  const rows = ACT_CATS.filter(([id]) => tot[id][0]).sort((a, b) => tot[b[0]][1] - tot[a[0]][1]);
+  const top = Math.max(...rows.map(([id]) => tot[id][1]), 1);
+  const since = Object.keys(S.act).sort()[0];
+  return `${chips}<div class="act-sum"><b>≈ ${minTxt(sec)}</b> · ${n.toLocaleString()} ข้อ · เล่น ${days} วัน (เฉลี่ยวันละ ≈ ${minTxt(sec / days)})</div>
+    <div class="act-rows">${rows.map(([id, t]) => `<div class="act-row"><span class="act-n"><i class="a-${id}"></i>${t}</span>
+      <span class="act-bar"><i class="a-${id}" style="width:${Math.max(2, Math.round(tot[id][1] / top * 100))}%"></i></span>
+      <span class="act-v">≈ ${minTxt(tot[id][1])}<small>${tot[id][0].toLocaleString()} ข้อ · ${Math.round(tot[id][1] / sec * 100)}%</small></span></div>`).join('')}</div>
+    <div class="small muted" style="margin-top:8px">เวลาเป็นค่าประมาณจากช่วงห่างระหว่างแต่ละข้อ (พักเกิน 2 นาทีนับข้อแรกหลังพักเป็น 8 วินาที)${since > dayKey(actSpan - 1) ? ` · เริ่มเก็บเมื่อ ${thDate(Date.parse(since + 'T12:00:00'))}` : ''}</div>`;
+}
+function bindAct(root = view) {
+  const host = root.querySelector('[data-chart="act"]');
+  if (host) host.querySelectorAll('[data-am]').forEach((b) => { b.onclick = () => { actMetric = b.dataset.am; delete host.dataset.w; paintChart(host); }; });
+  const box = root.querySelector('#actBox');
+  if (box) box.querySelectorAll('[data-as]').forEach((b) => { b.onclick = () => { actSpan = +b.dataset.as; box.innerHTML = actBreakdown(); bindAct(root); }; });
 }
 
 // Lines: words learned and words mastered (all levels), from daily snapshots. The SVG is drawn at the width of its box
@@ -391,6 +431,7 @@ function trendChart(Wd) {
 const hostW = (el) => { const cs = getComputedStyle(el); return Math.max(240, Math.floor(el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight))); };
 function bindTrend(el) {
   bindChartTips(el);
+  if (el.dataset.chart === 'act') bindAct(el.parentNode);
   el.querySelectorAll('[data-range]').forEach((b) => {
     b.onclick = () => { trendRange = b.dataset.range; delete el.dataset.w; paintChart(el); };
   });
@@ -422,7 +463,8 @@ function bindChartTips(root = view) {
       tip.textContent = r.dataset.tip; tip.hidden = false;
       const box = ch.getBoundingClientRect(), rb = r.getBoundingClientRect();
       const cx = rb.left + rb.width / 2 - box.left;
-      tip.style.left = Math.min(Math.max(cx, 80), box.width - 80) + 'px';
+      const hw = Math.min(box.width / 2, tip.offsetWidth / 2 + 4);
+      tip.style.left = Math.min(Math.max(cx, hw), box.width - hw) + 'px';
       if (xh && r.dataset.x) { xh.setAttribute('x1', r.dataset.x); xh.setAttribute('x2', r.dataset.x); xh.setAttribute('visibility', 'visible'); }
     };
     svg.addEventListener('pointerdown', show);

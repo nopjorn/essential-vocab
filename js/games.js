@@ -577,7 +577,7 @@ function startGame(id) {
   current = 'games'; view.classList.remove('feed-mode'); view.dataset.route = 'games'; view.scrollTop = 0;
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === 'games'));
   const mine = S.gplay[DEV] || (S.gplay[DEV] = {});
-  mine[id] = (mine[id] || 0) + 1; S.glast[id] = today(); save();
+  mine[id] = (mine[id] || 0) + 1; S.glast[id] = today(); actGame = id; save();
   if (id === 'match') return playMatch(src, deckRun);
   playQuiz(id === 'review' ? pick(['en2th', 'th2en', 'listen']) : id === 'emojiRun' ? 'emoji' : id === 'survival' || id === 'timeAttack' ? 'en2th' : id, src, id, deckRun);
 }

@@ -628,11 +628,29 @@ body { touch-action: manipulation; }
 .s-game { fill: var(--c-game); background: var(--c-game); }
 .s-unk { fill: var(--c-unk); background: var(--c-unk); }
 .s-master { background: var(--c-master); }
+/* activity kinds (1.158.0, ACT_CATS order) — categorical palette validated (adjacent CVD / normal-vision) on #fff and #1d1b2e;
+   light slots under 3:1 get relief from the numbers in the "ใช้เวลากับอะไรบ้าง" table */
+:root { --a-card: #2a78d6; --a-feed: #eb6834; --a-game: #1baf7a; --a-skill: #eda100; --a-read: #e87ba4; --a-fun: #008300; --a-other: #6250d6; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --a-card: #3987e5; --a-feed: #d95926; --a-game: #199e70; --a-skill: #c98500; --a-read: #d55181; --a-other: #9085e9; } }
+:root[data-theme="dark"], :root[data-theme="black"] { --a-card: #3987e5; --a-feed: #d95926; --a-game: #199e70; --a-skill: #c98500; --a-read: #d55181; --a-other: #9085e9; }
+.a-card { fill: var(--a-card); background: var(--a-card); } .a-feed { fill: var(--a-feed); background: var(--a-feed); }
+.a-game { fill: var(--a-game); background: var(--a-game); } .a-skill { fill: var(--a-skill); background: var(--a-skill); }
+.a-read { fill: var(--a-read); background: var(--a-read); } .a-fun { fill: var(--a-fun); background: var(--a-fun); }
+.a-other { fill: var(--a-other); background: var(--a-other); } .a-unk { fill: var(--c-unk); background: var(--c-unk); }
+.act-sum { margin-bottom: 10px; color: var(--text); }
+.act-rows { display: grid; gap: 8px; }
+.act-row { display: grid; grid-template-columns: minmax(0, 9.5em) minmax(40px, 1fr) auto; align-items: center; gap: 10px; font-size: var(--fs-sm); }
+.act-n { color: var(--text); overflow-wrap: anywhere; }
+.act-n i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.act-bar { height: 10px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
+.act-bar i { display: block; height: 100%; border-radius: 5px; }
+.act-v { text-align: right; color: var(--text); font-weight: 700; white-space: nowrap; }
+.act-v small { display: block; font-weight: 400; color: var(--muted); font-size: var(--fs-xs); }
 .ln-l, .ln-m { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .ln-l { stroke: var(--c-card); } .ln-m { stroke: var(--c-master); }
 .dot-l { fill: var(--c-card); stroke: var(--surface); stroke-width: 2; }
 .dot-m { fill: var(--c-master); stroke: var(--surface); stroke-width: 2; }
-.chart .tip { position: absolute; top: 0; transform: translateX(-50%); z-index: 2; background: var(--text); color: var(--surface); font-size: var(--fs-xs); font-weight: 600; padding: 6px 10px; border-radius: 10px; white-space: nowrap; pointer-events: none; }
+.chart .tip { position: absolute; top: 0; transform: translateX(-50%); z-index: 2; background: var(--text); color: var(--surface); font-size: var(--fs-xs); font-weight: 600; padding: 6px 10px; border-radius: 10px; white-space: pre; text-align: center; pointer-events: none; }
 .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: var(--fs-xs); color: var(--muted); }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
 .eta-bar { position: relative; }

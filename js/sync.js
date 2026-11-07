@@ -48,7 +48,7 @@ async function verifyCode(email, token) {
 // older app version still merges what it can read and simply skips the rest. `prog` stays as a stub {word: {d}} of the cards
 // due within STUB_DAYS: the daily reminder (supabase/functions/daily-reminder) counts due cards from it and needs no change.
 // Stub entries have no `b`, so mergeBackup() of an older version skips them. Local backups (export) stay plain.
-const Z_KEYS = ['prog', 'lex', 'rev', 'snap', 'chist', 'dprog', 'missY'], STUB_DAYS = 14; // after 2 weeks away the reminder's count stops growing (still sent)
+const Z_KEYS = ['prog', 'lex', 'rev', 'snap', 'chist', 'dprog', 'missY', 'act'], STUB_DAYS = 14; // after 2 weeks away the reminder's count stops growing (still sent)
 const zOk = () => typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
 async function gzipB64(str) {
   const buf = new Uint8Array(await new Response(new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
