@@ -6,28 +6,36 @@
 let listFilter = { q: '', lv: 'all', st: 'all', tp: '', gl: '' };
 function renderList() {
   view.innerHTML = `
-    <div class="list-head">${libSwitch('list')}<input class="search" id="q" type="search" placeholder="🔍 ค้นหาคำอังกฤษหรือคำแปลไทย" value="${esc(listFilter.q)}" autocapitalize="none" autocorrect="off"></div>
+    <div class="list-head" id="listHead">${libSwitch('list')}<input class="search" id="q" type="search" placeholder="🔍 ค้นหาคำอังกฤษหรือคำแปลไทย" value="${esc(listFilter.q)}" autocapitalize="none" autocorrect="off"></div>
     <div class="chips scroll" id="lv" style="margin-bottom:8px">
-      ${['all', ...LEVELS].map((l) => `<button class="chip" data-v="${l}">${l === 'all' ? 'ทุกระดับ' : LV_LABEL[l]}</button>`).join('')}
+      ${['all', ...LEVELS].map((l) => `<button class="chip${l === 'all' ? '' : ' lv-' + l}" data-v="${l}">${l === 'all' ? 'ทุกระดับ' : `<i class="lc-dot"></i>${LV_LABEL[l]}`}</button>`).join('')}
     </div>
     <div class="chips scroll" id="st" style="margin-bottom:8px">
-      ${[['all', 'ทั้งหมด'], ['new', 'ยังไม่เรียน'], ['learning', '🟡 กำลังเรียน'], ['mastered', '🟢 จำได้แล้ว'], ['star', '⭐ ติดดาว'], ['leech', '🐢 คำดื้อ'], ['note', '💡 มีวิธีจำ']].map(([v, t]) => `<button class="chip" data-v="${v}">${t}</button>`).join('')}
+      ${[['all', 'ทั้งหมด'], ['new', 'ยังไม่เรียน'], ['learning', '🟡 กำลังเรียน'], ['mastered', '🟢 จำได้แล้ว'], ['star', '⭐ ติดดาว'], ['leech', '🐢 คำดื้อ'], ['note', '💡 มีวิธีจำ']].map(([v, t]) => `<button class="chip" data-v="${v}">${t} <small class="cn"></small></button>`).join('')}
     </div>
     <div class="sel-pair">
       <select class="sel block-sel" id="tpSel" aria-label="หมวด"><option value="">📂 ทุกหมวด</option>${topicOptions(listFilter.tp)}</select>
       <select class="sel block-sel" id="glSel" aria-label="เป้าหมาย"><option value="">🎯 ทุกเป้าหมาย</option>${TAGS.map((t) => `<option value="${t.id}" ${listFilter.gl === t.id ? 'selected' : ''}>${TAG_LABEL[t.id]}</option>`).join('')}</select>
     </div>
-    <div class="small muted" id="cnt" style="margin:6px 4px"></div>
+    <div class="lt-sum" id="ltSum"><div class="lt-bar" aria-hidden="true"><i class="m"></i><i class="l"></i></div><div class="small muted" id="cnt"></div></div>
     <div class="card-box" style="padding:4px 14px" id="rows"></div>
-    <div id="sentinel" style="height:1px"></div>`;
+    <div id="sentinel" style="height:1px"></div>
+    <nav class="az-rail" id="azRail" aria-label="กระโดดไปตัวอักษร"></nav><div class="az-pop" id="azPop" aria-hidden="true"></div>`;
+  let base = [];
+  const ST_TEST = { all: () => true, star: isStar, leech: isLeech, note: (w) => !!S.note[w.w], new: (w) => status(w) === 'new', learning: (w) => status(w) === 'learning', mastered: (w) => status(w) === 'mastered' };
   const paint = () => {
     view.querySelectorAll('#lv .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === listFilter.lv));
-    view.querySelectorAll('#st .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === listFilter.st));
+    view.querySelectorAll('#st .chip').forEach((c) => {
+      c.classList.toggle('on', c.dataset.v === listFilter.st);
+      const n = c.dataset.v === 'all' ? base.length : base.filter(ST_TEST[c.dataset.v]).length;
+      c.querySelector('.cn').textContent = n.toLocaleString('en-US');
+    });
   };
-  let items = [], shown = 0, letter = '', az = true;
-  const rows = $('#rows');
+  let items = [], shown = 0, letter = '', az = true, perLetter = {};
+  const rows = $('#rows'), rail = $('#azRail'), pop = $('#azPop');
+  const first = (w) => (w.w[0] || '').toUpperCase();
   // A–Z headings only while the list is in A–Z order (a search sorts prefix matches first)
-  const head = (w) => { if (!az) return ''; const c = (w.w[0] || '').toUpperCase(); if (c === letter) return ''; letter = c; return `<div class="lt-h" aria-hidden="true">${esc(c)}</div>`; };
+  const head = (w) => { if (!az) return ''; const c = first(w); if (c === letter) return ''; letter = c; return `<div class="lt-h" data-c="${esc(c)}" aria-hidden="true"><b>${esc(c)}</b><span>${perLetter[c]} คำ</span></div>`; };
   const more = () => {
     const chunk = items.slice(shown, shown + 80);
     rows.insertAdjacentHTML('beforeend', chunk.map((w) => `${head(w)}<div class="wrow" data-i="${w.idx}">
@@ -36,17 +44,55 @@ function renderList() {
       <span class="star-mark">${isLeech(w) ? '🐢' : ''}${isStar(w) ? '⭐' : ''}</span>${lvBadge(w.g)}</div>`).join(''));
     shown += chunk.length;
   };
+  // A–Z rail (1.163): tap or slide a finger down the letters; rows load up to that letter, then the view scrolls to it
+  const jump = (c) => {
+    const at = items.findIndex((w) => first(w) === c);
+    if (at < 0) return;
+    while (shown <= at) more();
+    const h = rows.querySelector(`.lt-h[data-c="${CSS.escape(c)}"]`), row = h && h.nextElementSibling;
+    if (!row) return;
+    const lh = $('#listHead');
+    view.scrollTop += row.getBoundingClientRect().top - (lh ? lh.getBoundingClientRect().bottom : view.getBoundingClientRect().top) - h.offsetHeight - 6;
+  };
+  let railOn = '';
+  const railAt = (e) => {
+    const bs = rail.children; if (!bs.length) return;
+    const r = rail.getBoundingClientRect();
+    const b = bs[Math.max(0, Math.min(bs.length - 1, Math.floor((e.clientY - r.top) / r.height * bs.length)))];
+    if (b.dataset.c === railOn) return;
+    railOn = b.dataset.c;
+    pop.textContent = railOn; pop.classList.add('on');
+    if (e.pointerType === 'touch' && navigator.vibrate) navigator.vibrate(5);
+    jump(railOn);
+  };
+  const railEnd = () => { railOn = ''; pop.classList.remove('on'); };
+  rail.onpointerdown = (e) => { e.preventDefault(); try { rail.setPointerCapture(e.pointerId); } catch (_) {} railAt(e); };
+  rail.onpointermove = (e) => { if (railOn) railAt(e); };
+  rail.onpointerup = rail.onpointercancel = railEnd;
+  rail.onclick = (e) => { const b = e.target.closest('[data-c]'); if (b && !railOn) jump(b.dataset.c); };
   const apply = () => {
     const q = listFilter.q.trim().toLowerCase();
-    items = W.filter((w) => (listFilter.lv === 'all' || w.g === listFilter.lv) && (!listFilter.tp || topicMatch(listFilter.tp, w.tp)) && (!listFilter.gl || hasTag(w, listFilter.gl))
-      && (listFilter.st === 'all' || (listFilter.st === 'star' ? isStar(w) : listFilter.st === 'leech' ? isLeech(w) : listFilter.st === 'note' ? !!S.note[w.w] : status(w) === listFilter.st))
+    base = W.filter((w) => (listFilter.lv === 'all' || w.g === listFilter.lv) && (!listFilter.tp || topicMatch(listFilter.tp, w.tp)) && (!listFilter.gl || hasTag(w, listFilter.gl))
       && (!q || w.w.toLowerCase().includes(q) || w.t.includes(q)));
+    items = base.filter(ST_TEST[listFilter.st] || ST_TEST.all);
     if (q) items.sort((a, b) => (b.w.toLowerCase().startsWith(q)) - (a.w.toLowerCase().startsWith(q)));
     else items.sort((a, b) => { const x = a.w.toLowerCase(), y = b.w.toLowerCase(); return x < y ? -1 : x > y ? 1 : 0; }); // A–Z ignoring case (W puts capitals first), so each letter heading shows once
-    az = !q; letter = '';
+    az = !q; letter = ''; perLetter = {};
+    for (const w of items) { const c = first(w); perLetter[c] = (perLetter[c] || 0) + 1; }
     rows.innerHTML = ''; shown = 0; more();
     if (!items.length) rows.innerHTML = emptyArt({ kind: 'search', title: 'ไม่พบคำศัพท์', sub: 'ลองพิมพ์ให้สั้นลง หรือเปลี่ยนตัวกรองด้านบน' });
-    $('#cnt').textContent = `${items.length} คำ · แตะคำเพื่อดูตัวอย่างประโยค`;
+    // summary: how much of what is shown is mastered / learning
+    let m = 0, l = 0;
+    for (const w of items) { const st = status(w); if (st === 'mastered') m++; else if (st === 'learning') l++; }
+    const pc = (n) => (items.length ? (n / items.length * 100).toFixed(2) : 0) + '%';
+    const sum = $('#ltSum');
+    sum.style.setProperty('--m', pc(m)); sum.style.setProperty('--l', pc(l));
+    sum.querySelector('.lt-bar').hidden = !items.length;
+    $('#cnt').innerHTML = `<b>${items.length.toLocaleString('en-US')} คำ</b>${items.length && (m || l) ? ` · <span class="nowrap">จำได้แล้ว ${m.toLocaleString('en-US')}</span> · <span class="nowrap">กำลังเรียน ${l.toLocaleString('en-US')}</span>` : ''} · <span class="nowrap">แตะคำเพื่อดูตัวอย่างประโยค</span>`;
+    const letters = az ? Object.keys(perLetter).filter((c) => /[A-Z]/.test(c)) : [];
+    rail.innerHTML = letters.length > 3 && items.length > 40 ? letters.map((c) => `<button type="button" data-c="${c}" aria-label="ไปที่ตัว ${c}">${c}</button>`).join('') : '';
+    view.classList.toggle('az-on', !!rail.children.length);
+    onScroll();
     paint();
   };
   $('#q').oninput = (e) => { listFilter.q = e.target.value; apply(); };
@@ -67,7 +113,16 @@ function renderList() {
   };
   const io = new IntersectionObserver((es) => { if (es[0].isIntersecting && shown < items.length) more(); }, { root: view, rootMargin: '400px' });
   io.observe($('#sentinel'));
-  cleanup = () => io.disconnect();
+  // letter headings stick just under the sticky search box
+  const lhRo = new ResizeObserver(() => { const lh = $('#listHead'); if (lh) view.style.setProperty('--lhh', lh.offsetHeight + 'px'); });
+  lhRo.observe($('#listHead'));
+  edgeFade($('#lv')); edgeFade($('#st'));
+  // the rail shows once the filters have scrolled away (it would sit over them at the top)
+  let railRaf = 0;
+  const railShow = () => { railRaf = 0; const lh = $('#listHead'); if (lh) rail.classList.toggle('show', rows.getBoundingClientRect().top < lh.getBoundingClientRect().bottom + 24); };
+  const onScroll = () => { if (!railRaf) railRaf = requestAnimationFrame(railShow); };
+  view.addEventListener('scroll', onScroll, { passive: true });
+  cleanup = () => { io.disconnect(); lhRo.disconnect(); view.removeEventListener('scroll', onScroll); cancelAnimationFrame(railRaf); view.classList.remove('az-on'); view.style.removeProperty('--lhh'); };
   apply();
 }
 
