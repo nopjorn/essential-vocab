@@ -493,6 +493,29 @@ test('TOEIC Part 7 texts (1.184): known kind, Thai summary, 2–4 questions with
   expect(bad).toEqual([]);
 });
 
+test('TOEIC Part 6 texts (1.185): blanks [1]–[4] in order, 4 distinct options each, a sentence blank, Thai summary and explanations', () => {
+  const { TOEICP6 } = load('data/toeicp6.js');
+  expect(TOEICP6.length).toBeGreaterThanOrEqual(10);
+  const kinds = ['email', 'notice', 'ad', 'memo', 'chat', 'invoice', 'schedule', 'article', 'review'], ids = new Set(), bad = [];
+  TOEICP6.forEach((d) => {
+    if (!d.id || ids.has(d.id)) bad.push(`id ${d.id}`);
+    ids.add(d.id);
+    if (!kinds.includes(d.kind)) bad.push(`${d.id}: kind ${d.kind}`);
+    if (!d.title || !d.text || d.text.length < 200 || !/[ก-๙]/.test(d.th || '')) bad.push(`${d.id}: title, text and Thai summary`);
+    const marks = (d.text.match(/\[\d\]/g) || []).join('');
+    if (marks !== '[1][2][3][4]' || !Array.isArray(d.q) || d.q.length !== 4) bad.push(`${d.id}: blanks [1]–[4] once each, 4 questions`);
+    let sentence = 0;
+    (d.q || []).forEach(([opts, a, th], k) => {
+      if (!Array.isArray(opts) || opts.length !== 4 || new Set(opts.map((o) => o.toLowerCase())).size !== 4) bad.push(`${d.id} q${k}: 4 distinct options`);
+      if (!(a >= 0 && a < 4)) bad.push(`${d.id} q${k}: answer index`);
+      if (!/[ก-๙]/.test(th || '')) bad.push(`${d.id} q${k}: Thai explanation`);
+      if ((opts || []).every((o) => /^[A-Z].*[.!?]$/.test(o) && o.split(' ').length >= 4)) sentence++;
+    });
+    if (!sentence) bad.push(`${d.id}: needs a sentence blank`);
+  });
+  expect(bad).toEqual([]);
+});
+
 test('the manual states the real number of games', () => {
   const games = read('js/games.js'), body = games.slice(games.indexOf('const GAMES = {'));
   const n = (body.slice(0, body.indexOf('\n};')).match(/^  [a-zA-Z0-9]+: \{/gm) || []).length;

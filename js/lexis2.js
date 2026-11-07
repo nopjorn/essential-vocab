@@ -114,17 +114,28 @@ let TOEICP7 = null;
 const P7_KIND = { email: ['📧', 'อีเมล'], notice: ['📌', 'ประกาศ'], ad: ['📣', 'โฆษณา'], memo: ['🗒️', 'บันทึกภายใน'], chat: ['💬', 'แชต'],
   invoice: ['🧾', 'ใบแจ้งหนี้'], schedule: ['🗓️', 'กำหนดการ'], article: ['📰', 'ข่าว'], review: ['⭐', 'รีวิว'] };
 const loadP7 = () => loadData('data/toeicp7.js', 'TOEICP7').then((rows) => { if (!TOEICP7) TOEICP7 = rows; return TOEICP7; });
-const p7Items = () => TOEICP7.flatMap((d) => d.q.map(([q, opts, a, th], k) => ({ idx: -1, w: opts[a], t: q, p: '', g: '', _p7: { d, k, q, opts, a, th }, _q: [q, opts[a], '', th] })));
+const p7Items = () => TOEICP7.flatMap((d) => d.q.map(([q, opts, a, th], k) => ({ idx: -1, w: opts[a], t: q, p: '', g: '', _p7: { d, k, q, opts, a, th }, _set: { d, k }, _q: [q, opts[a], '', th] })));
 // A round = whole texts: the texts of the picked questions (due ones first, as lexPick chose them), each with all its questions
-// in order, until there are at least `n` questions (a text is never cut in half).
-function p7Order(picked, src, n = 10) {
-  const ids = [...new Set(picked.map((w) => w._p7.d.id))], out = [];
+// in order, until there are at least `n` questions (a text is never cut in half). Items carry `_set = {d, k}` (Parts 3, 4, 6, 7).
+function setOrder(picked, src, n = 10) {
+  const ids = [...new Set(picked.map((w) => w._set.d.id))], out = [];
   for (const id of ids) {
     if (out.length >= n) break;
-    out.push(...src.filter((w) => w._p7.d.id === id).sort((x, y) => x._p7.k - y._p7.k));
+    out.push(...src.filter((w) => w._set.d.id === id).sort((x, y) => x._set.k - y._set.k));
   }
   return out;
 }
+const p7Order = setOrder;
+const SET_GAMES = ['toeic6', 'toeic7'];
+/* ---------- TOEIC Part 6 (1.185.0) ---------- */
+// data/toeicp6.js: [{id, kind, title, text with [1]–[4], th, q: [[[4 options], answer index, Thai]]}]. Game `toeic6` (qP6): one item per blank,
+// earlier blanks are shown filled in, the questions of a text stay together (setOrder); own SRS in S.lex.
+let TOEICP6 = null;
+const loadP6 = () => loadData('data/toeicp6.js', 'TOEICP6').then((rows) => { if (!TOEICP6) TOEICP6 = rows; return TOEICP6; });
+const p6Items = () => TOEICP6.flatMap((d) => d.q.map(([opts, a, th], k) => {
+  const r = { d, k, opts, a, th };
+  return { idx: -1, w: opts[a], t: d.id + ' ' + (k + 1), p: '', g: '', _p6: r, _set: r, _q: [d.title + ' [' + (k + 1) + ']', opts[a], '', th] };
+}));
 const p5Plain = (r) => r.text.replace('___', r.right);
 const p5Items = () => TOEICP5.map((r) => ({ idx: -1, w: r.right, t: r.th, p: '', g: '', _p5: r, _q: [r.text, r.right, '', r.th] }));
 const rtItems = () => REALTEXT.map((r) => ({ idx: -1, w: r.key, t: r.th, p: '', g: '', _rt: r, _q: [r.text.replace(/\n/g, ' '), r.right, '', r.th] }));

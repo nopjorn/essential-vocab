@@ -28,7 +28,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   };
   const TIME_LIMIT = 60;
   const picked = SURV ? [] : SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId) ? lexPick(gameId, src, ROUND) : shuffle(src).slice(0, ENDLESS || STAGE ? src.length : ROUND);
-  const items = gameId === 'toeic7' ? p7Order(picked, src) : picked; // Part 7: questions of one text stay together
+  const items = SET_GAMES.includes(gameId) ? setOrder(picked, src) : picked; // TOEIC Parts 3/4/6/7: questions of one text stay together
   let noSrs = false; // ✏️ hand game in trace mode: copying a faint word is practice, not recall (no SRS change)
   let i = 0, score = 0, combo = 0, bestCombo = 0, asked = 0, hearts = 3, reach = 0, finished = false, timeLeft = TIME_LIMIT;
   let qT0 = 0, curMode = ''; // when the question showed and its kind (⚡ fast answers, 1.168.0)
@@ -146,6 +146,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'real') return qReal(w);
     if (m === 'toeic5') return qP5(w);
     if (m === 'toeic7') return qP7(w);
+    if (m === 'toeic6') return qP6(w);
     const toTh = m !== 'th2en' && m !== 'cloze' && m !== 'ipa';
     const diff = gameDiff();
     const opts = shuffle([w, ...(m === 'ipa' ? ipaDistractors(w) : distractors(w, 3, toTh ? 't' : 'w', diff >= 2))]);
@@ -1196,6 +1197,44 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === right) o.classList.add('correct'); });
       if (!ok) b.classList.add('wrong');
       mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ที่ถูกคือ'} <b lang="en">${esc(right)}</b>
+        <div class="small p7-why" style="margin-top:8px">💡 ${esc(r.th)}</div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      $('#nextQ').onclick = next;
+    };
+  }
+
+  // TOEIC Part 6 (1.185.0): a workplace text with four blanks; earlier blanks are shown filled in, the current one is marked,
+  // one blank per text takes a whole sentence. Options are shuffled; the Thai summary is a hint.
+  function qP6(w) {
+    const r = w._p6, d = r.d, [ic, kind] = P7_KIND[d.kind] || ['📄', 'ข้อความ'], right = r.opts[r.a], opts = shuffle(r.opts.slice());
+    const long = opts.some((o) => o.split(' ').length > 3);
+    const body = (now) => esc(d.text).replace(/\[(\d)\]/g, (m, n) => {
+      const j = n - 1;
+      if (j < r.k) return `<span class="p6-done">${esc(d.q[j][0][d.q[j][1]])}</span>`;
+      if (j === r.k) return now;
+      return `<span class="p6-gap">(${n})</span>`;
+    }).replace(/\n/g, '<br>');
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit p7-card pop"><div class="small muted">📝 TOEIC Part 6 · ${ic} ${kind} · ช่อง ${r.k + 1}/${d.q.length}</div>
+        <div class="p7-doc p6-doc" lang="en"><b>${esc(d.title)}</b><div class="p7-text" id="p6Text">${body(`<span class="blank p6-now">(${r.k + 1}) _____</span>`)}</div></div>
+        <button class="hint-btn" id="p6Hint">💡 ดูสรุปภาษาไทย</button><div class="thx" id="p6Th" hidden>${esc(d.th)}</div></div>
+      <div class="options">${opts.map((o) => `<button class="opt${long ? ' sit-opt' : ''}" lang="en" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    $('#p6Hint').onclick = () => { $('#p6Th').hidden = false; $('#p6Hint').remove(); };
+    const now = view.querySelector('.p6-now');
+    const doc = view.querySelector('.p6-doc'); // keep the current blank in sight inside the scrolling text box (not the page)
+    if (now && doc) requestAnimationFrame(() => { if (now.isConnected) doc.scrollTop = Math.max(0, now.offsetTop - doc.clientHeight / 2); });
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === right;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#p6Text').innerHTML = body(`<mark>${esc(right)}</mark>`);
       $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ที่ถูกคือ'} <b lang="en">${esc(right)}</b>
         <div class="small p7-why" style="margin-top:8px">💡 ${esc(r.th)}</div>
         <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
