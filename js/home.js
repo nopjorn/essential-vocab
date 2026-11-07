@@ -48,6 +48,7 @@ function renderHome() {
   const doneToday = S.daily.fresh + S.daily.reviews;
   const goal = newGoal();
   const risk = streakRisk();
+  const nx = nextStep(due, Math.min(newLeft, unseen));
   // 1.179.6: the big number is the time today's cards take (a new word ≈ 2 cards: learn + relearn), so it no longer repeats the 'due' tile
   const mins = Math.max(1, Math.round((due + 2 * Math.min(newLeft, unseen)) * secPerCard() / 60));
   const standalone = window.navigator.standalone || matchMedia('(display-mode: standalone)').matches;
@@ -87,7 +88,7 @@ function renderHome() {
         <div class="stat"><b>${doneToday}</b><span>ทำแล้ววันนี้</span></div>
       </div>
       ${risk ? `<button class="streak-risk" id="qRisk"><span class="grow">🔥 อีกแค่ 1 ข้อ สตรีค <b>${risk}</b> วันไม่ขาด</span><span class="sr-go">ทำ 1 ข้อเลย ›</span></button>` : ''}
-      <button class="btn${todo ? '' : ' done'}" id="startBtn">${todo ? '▶︎ เริ่มเรียนเลย' : '🎉 วันนี้ครบแล้ว! ทำอะไรต่อดี'}</button>
+      <button class="btn${todo ? '' : ' done'}" id="startBtn" data-next="${nx.id}">${nx.text}</button>
     </div>`;
     },
     feed: () => `<button class="quick-btn feed-btn" id="qFeed"><span>📱</span><b>ไถศัพท์</b><small>ปัดขึ้นเรื่อยๆ เหมือนไถฟีด</small></button>`,
@@ -180,7 +181,7 @@ function renderHome() {
     ${blocks.some((b) => b.id !== 'notices') ? '' : '<div class="card-box center small muted">ซ่อนทุกกล่องอยู่ — เปิดกล่องที่ต้องการได้ที่ ⚙️ ตั้งค่า → จัดหน้าแรก</div>'}
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
   const click = (sel, fn) => { const el = $(sel); if (el) el.onclick = fn; };
-  click('#startBtn', () => go('cards'));
+  click('#startBtn', () => nextGo(nx.id));
   click('#qFeed', () => go('feed'));
   click('#qRisk', () => (todo ? go('cards') : go('feed')));
   click('#statsBtn', () => go('stats', 'home'));
@@ -233,6 +234,20 @@ function renderHome() {
   edgeFade($('#dsTrack'));
   const qf = $('#qFold'); if (qf) qf.ontoggle = () => { try { localStorage.setItem('o3k.qopen', qf.open ? '1' : '0'); } catch (e) { /* ignore */ } masonry([view.querySelector('.home-grid')]); };
   if (party) ringParty();
+}
+// The today card's main button (1.181.6) says what comes next: reviews (+ new words), new words only, and once today is done
+// the weekly boss (not beaten yet), stubborn words (3+), else the start screen with every option.
+function nextStep(due, fresh) {
+  if (due && fresh) return { id: 'cards', text: `▶︎ ทวน ${due} ใบ + คำใหม่ ${fresh} คำ` };
+  if (due) return { id: 'cards', text: `▶︎ ทวน ${due} ใบ` };
+  if (fresh) return { id: 'cards', text: `▶︎ เรียนคำใหม่ ${fresh} คำ` };
+  try { if (typeof wbThisWeek === 'function' && !wbThisWeek().win && wbWords().length) return { id: 'wboss', text: `🎉 ครบแล้ว! ⚔️ ไปสู้${wbBoss()[1]}ประจำสัปดาห์` }; } catch (e) { /* ignore */ }
+  const leech = W.filter(isLeech).length;
+  if (leech >= 3) return { id: 'leech', text: `🎉 ครบแล้ว! 🐢 ฝึกคำดื้อ ${Math.min(15, leech)} คำ` };
+  return { id: 'hub', text: '🎉 วันนี้ครบแล้ว! ทำอะไรต่อดี' };
+}
+function nextGo(id) {
+  if (id === 'wboss') go('wboss'); else if (id === 'leech') go('cards', 'leech'); else go('cards');
 }
 // Evening nudge (1.181.4): from 18:00, a streak that has nothing yet today shows "one answer keeps it" on the today card.
 function streakRisk(now = new Date()) {

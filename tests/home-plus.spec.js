@@ -53,3 +53,20 @@ test('evening streak nudge: only after 18:00 with a streak and nothing done toda
   await expect(page.locator('#view')).not.toHaveAttribute('data-route', 'home');
   expect(errors).toEqual([]);
 });
+
+test('main button says what comes next: reviews, new words, then the weekly boss or stubborn words', async ({ page }) => {
+  const errors = await openApp(page);
+  const r = await page.evaluate(() => [nextStep(4, 10).text, nextStep(4, 0).text, nextStep(0, 10).text]);
+  expect(r[0]).toContain('ทวน 4 ใบ + คำใหม่ 10'); expect(r[1]).toContain('ทวน 4 ใบ'); expect(r[2]).toContain('เรียนคำใหม่ 10');
+  // a fresh learner has nothing to fight or drill yet
+  expect(await page.evaluate(() => nextStep(0, 0).id)).toBe('hub');
+  // learned words with misses → the boss (until beaten this week), then stubborn words
+  await page.evaluate(() => { W.slice(0, 12).forEach((w) => { S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: Date.now() + 9e8, s: 6, c: 1, x: 5 }; }); });
+  expect(await page.evaluate(() => nextStep(0, 0).id)).toBe('wboss');
+  await page.evaluate(() => { S.wboss = { ...wbThisWeek(), win: true }; });
+  expect(await page.evaluate(() => nextStep(0, 0).id)).toBe('leech');
+  await page.evaluate(() => { S.wboss = { ...wbThisWeek(), win: false }; window.nextStep = () => ({ id: 'wboss', text: 'x' }); go('home'); });
+  await page.locator('#startBtn').click();
+  await expect(page.locator('#view')).toHaveAttribute('data-route', 'wboss');
+  expect(errors).toEqual([]);
+});
