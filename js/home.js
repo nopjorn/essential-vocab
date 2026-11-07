@@ -135,10 +135,13 @@ function renderHome() {
         const c = { l3: 0, m3: 0, l: 0, m: 0 }, s3 = in3000();
         for (const w of W) { if (!S.prog[w.w]) continue; const m = status(w) === 'mastered', t = s3.has(w.w); c.l++; if (m) c.m++; if (t) { c.l3++; if (m) c.m3++; } }
         return [['ชุด 3000 คำ', s3.size, c.l3, c.m3], ['ทุกคำในแอป', W.length, c.l, c.m]];
-      })().map(([name, n, l, m]) => {
-        return `<div class="small" style="margin-top:10px">${name} <span class="muted">· จำได้ ${m.toLocaleString()} · เรียนแล้ว ${l.toLocaleString()} / ${n.toLocaleString()}</span></div>
-          <div class="bar" style="margin-top:4px"><div class="l" style="width:${l / n * 100}%"></div><div class="m" style="width:${m / n * 100}%"></div></div>`;
-      }).join('')}
+      })().map(([name, n, l, m]) => { // 1.181.2: a small double ring per list (outer = learned, inner = remembered) instead of two thin bars
+        const pc = (x) => { const v = x / n * 100; return v > 0 && v < 10 ? v.toFixed(1) : Math.round(v); };
+        const arc = (r, x, cls) => `<circle class="pr-t" cx="22" cy="22" r="${r}"/><circle class="pr-a ${cls}" cx="22" cy="22" r="${r}" pathLength="100" style="stroke-dashoffset:${x ? Math.min(99, 100 - Math.max(1.5, x / n * 100)).toFixed(1) : 100}" transform="rotate(-90 22 22)"/>`;
+        return `<div class="pr-item"><svg class="pr-ring" viewBox="0 0 44 44" aria-hidden="true">${arc(19, l, 'l')}${arc(13, m, 'm')}</svg>
+          <div class="pr-tx"><div class="small"><b>${name}</b></div><div class="pr-pc">${pc(l)}<small>%</small></div>
+          <div class="small muted"><span class="nw">เรียน ${l.toLocaleString()}</span> · <span class="nw">จำได้ ${m.toLocaleString()}</span></div><div class="small muted">จาก ${n.toLocaleString()} คำ</div></div></div>`;
+      }).join('').replace(/^/, '<div class="pr-rings">') + '</div>'}
       <div class="small muted" style="margin-top:10px">⭐ Lv.${levelOf(S.xp)} · 🏅 ${ACH.filter((x) => S.ach[x.id]).length}/${ACH.length} เหรียญ · 🟣 เรียนแล้ว 🟢 จำได้แล้ว</div>
     </button>`,
   };

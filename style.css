@@ -829,6 +829,20 @@ code { background: var(--surface-2); border-radius: 6px; padding: 1px 5px; font-
 .pt-row:last-of-type { border-bottom: 0; }
 .pt-row input { width: 22px; height: 22px; accent-color: var(--primary); }
 .prog-card { display: block; width: 100%; border: 0; font: inherit; color: inherit; text-align: left; }
+/* 1.181.2: progress card rings */
+.pr-rings { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 12px; }
+.pr-item { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pr-ring { width: 58px; height: 58px; flex: none; }
+.pr-ring circle { fill: none; stroke-width: 5; stroke-linecap: round; }
+.pr-t { stroke: var(--border); }
+.pr-a { stroke-dasharray: 100; transition: stroke-dashoffset .6s cubic-bezier(.2, .8, .2, 1); }
+.pr-a.l { stroke: var(--bar-l, var(--primary-2)); }
+.pr-a.m { stroke: var(--good); }
+.pr-tx { min-width: 0; }
+.pr-tx .nw { white-space: nowrap; }
+.pr-ring { width: 52px; height: 52px; }
+.pr-pc { font-family: var(--num); font-size: 22px; font-weight: 800; line-height: 1.1; }
+.pr-pc small { font-size: .55em; margin-left: 1px; }
 .place-card { border: 2px solid var(--primary-2); }
 
 /* friends leaderboard */
