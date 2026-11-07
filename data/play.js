@@ -79,11 +79,11 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   }
   // Survival: the level climbs every 5 questions (A1 → C1); falls back to the nearest level the word source has.
   function survivalPick() {
-    const want = Math.min(LEVELS.length - 1, Math.floor(i / 5));
+    const want = Math.min(LEVELS_CEFR.length - 1, Math.floor(i / 5));
     const recent = new Set(items.slice(-15));
-    for (let d = 0; d < LEVELS.length; d++) {
+    for (let d = 0; d < LEVELS_CEFR.length; d++) {
       for (const l of d ? [want - d, want + d] : [want]) {
-        const c = src.filter((x) => x.g === LEVELS[l] && !recent.has(x));
+        const c = src.filter((x) => x.g === LEVELS_CEFR[l] && !recent.has(x));
         if (c.length) return pick(c);
       }
     }
@@ -108,7 +108,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (i >= items.length) return result();
     const w = items[i];
     playQuiz.cur = w; // the word being asked (read by tests)
-    reach = Math.max(reach, LEVELS.indexOf(w.g));
+    reach = Math.max(reach, LEVELS_CEFR.indexOf(w.g === 'TOE' ? w.l : w.g)); // TOEIC words count by their CEFR estimate
     const m = STAGE ? stagePick(w) : SURV ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'cloze'] : ['en2th', 'th2en', 'listen'])
       : TIMED ? pick(['en2th', 'th2en'])
       : gameId === 'review' ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'spell', 'cloze'] : ['en2th', 'th2en', 'listen', 'spell']) : mode;
@@ -1352,7 +1352,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
         ${STAGE ? `<div class="h2" aria-label="${done.stars} ดาว">${starRow(done.stars)}</div>
         <p>${BOSS ? (done.stars ? `🐲 ชนะบอสแล้ว!${done.badge ? ' ได้ 🏅 ตราบอสหมวดนี้ (+25 XP)' : ''}` : '💔 หัวใจหมด บอสชนะรอบนี้ ลองใหม่นะ') : done.stars ? (done.first ? 'ผ่านด่านแล้ว! ปลดล็อกด่านต่อไป 🔓' : 'ผ่านด่านแล้ว') : `ยังไม่ผ่าน ต้องถูกอย่างน้อย ${needFor(items.length)} ข้อ ลองใหม่นะ`} · ถูก ${correct}/${items.length}</p>`
         : SURV ? `<div class="h2">❤️ รอดมาได้ ${right_} ข้อ</div>
-        <p>ไปถึงคำระดับ ${LV_LABEL[LEVELS[reach]]} · คอมโบสูงสุด ${bestCombo}</p>${recLine}${ghostMsg}`
+        <p>ไปถึงคำระดับ ${LV_LABEL[LEVELS_CEFR[reach]]} · คอมโบสูงสุด ${bestCombo}</p>${recLine}${ghostMsg}`
         : TIMED ? `<div class="h2">⏱️ ตอบถูก ${right_} ข้อใน ${TIME_LIMIT} วินาที</div>
         <p>ตอบไป ${asked} ข้อ · คอมโบสูงสุด ${bestCombo}</p>${recLine}${ghostMsg}`
         : ENDLESS ? `<div class="h2">🔥 ถูกติดต่อกันสูงสุด ${bestCombo} ข้อ</div>

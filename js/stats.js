@@ -166,7 +166,7 @@ function renderStats(from) {
   const W_ = Math.max(280, (viewW || view.clientWidth) - 68); // first draw only: paintChart() redraws at the real width (1.155.1: no forced layout here)
   const sets = [
     { name: 'ชุด 3000 คำ', total: in3000().size, l: snap[0], m: snap[1] },
-    { name: 'ครบทั้ง 5000 คำ', total: W.length, l: snap[2], m: snap[3] },
+    { name: 'ครบทุกคำในแอป', total: W.length, l: snap[2], m: snap[3] },
   ];
   const etaCard = (st) => {
     const d = etaDays(st.total, st.l, rate, h);
@@ -201,8 +201,8 @@ function renderStats(from) {
   // Levels being studied (or with progress) show; the rest fold away so a new learner doesn't face a wall of empty bars (1.134).
   const lvOn = (l) => S.settings.levels.includes(l) || W.some((w) => w.g === l && S.prog[w.w]);
   const lvSet = (name, sub, ls, top) => { const on = ls.filter(lvOn); return on.length ? `<div class="small muted" style="margin-top:${top}px"><b>${name}</b> (${sub})</div>${on.map(lvRow).join('')}` : ''; };
-  const lvRest = [...LEVELS_3000, ...LEVELS_5000].filter((l) => !lvOn(l));
-  const lvRows = lvSet('ชุด 3000 คำ', 'คำหลัก', LEVELS_3000, 8) + lvSet('ชุด 5000 คำ', 'คำเพิ่มเติม', LEVELS_5000, 12)
+  const lvRest = [...LEVELS_3000, ...LEVELS_5000, ...LEVELS_EXTRA].filter((l) => !lvOn(l));
+  const lvRows = lvSet('ชุด 3000 คำ', 'คำหลัก', LEVELS_3000, 8) + lvSet('ชุด 5000 คำ', 'คำเพิ่มเติม', LEVELS_5000, 12) + lvSet('ชุดเสริม', 'TOEIC', LEVELS_EXTRA, 12)
     + (lvRest.length ? `<details class="lv-more"><summary>ระดับอื่นที่ยังไม่ได้เริ่ม (${lvRest.map((l) => LV_LABEL[l]).join(' · ')})</summary>${lvRest.map(lvRow).join('')}</details>` : '');
 
   view.innerHTML = `
@@ -264,7 +264,7 @@ function renderStats(from) {
 
     <div class="h2">ถ้าปรับจำนวนคำใหม่ต่อวัน</div>
     <div class="card-box">
-      <table class="g-table whatif"><tr><th>คำใหม่/วัน</th><th>ครบ 3000</th><th>ครบ 5000</th><th>ทบทวน/วัน</th></tr>${whatIf}</table>
+      <table class="g-table whatif"><tr><th>คำใหม่/วัน</th><th>ครบ 3000</th><th>ครบทุกคำ</th><th>ทบทวน/วัน</th></tr>${whatIf}</table>
       <div class="small muted" style="margin-top:8px">คิดจากความถี่ที่เล่นตอนนี้ (${h.active}/${h.span} วัน)${h.ratio < 1 && h.since ? ' ถ้าเล่นทุกวันจะเร็วขึ้นอีก' : ''} · การ์ดทบทวนต่อวันเป็นค่าประมาณเมื่อเรียนไปได้สักระยะ</div>
     </div>
     <p class="small muted center">เป็นการคาดการณ์คร่าวๆ จะแม่นขึ้นเรื่อยๆ เมื่อเล่นไปนานขึ้น</p>

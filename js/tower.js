@@ -7,7 +7,7 @@
 
 const TW_Q = 3, TW_BOSS_Q = 5, TW_HEARTS = 3, TW_WIZARD = 50;
 const twBoss = (f) => f % 10 === 0;
-const twLevel = (f) => LEVELS[Math.floor((f - 1) / 10)] || null;
+const twLevel = (f) => LEVELS_CEFR[Math.floor((f - 1) / 10)] || null;
 const twPool = (f) => (twLevel(f) ? W.filter((w) => w.g === twLevel(f)) : W.filter((w) => w.g === 'B2' || w.g === 'B2x' || w.g === 'C1'));
 const twKinds = (f) => (f <= 5 ? ['en2th', 'th2en'] : f < 30 ? ['en2th', 'th2en', 'listen'] : ['en2th', 'th2en', 'listen', 'cloze']);
 const TW_ZONES = [[1, '🌷', 'สวนดอกไม้'], [11, '🌲', 'ป่าสน'], [21, '⛰️', 'หน้าผา'], [31, '☁️', 'เหนือเมฆ'], [41, '🌙', 'ดวงจันทร์'], [51, '🌌', 'อวกาศ'], [61, '✨', 'ดินแดนตำนาน']];
@@ -67,7 +67,7 @@ function runTower(start, special = false) {
   const ask = () => {
     const need = twBoss(f) ? TW_BOSS_Q : TW_Q;
     if (qn >= need) return clear();
-    const all = twPool(f), inTp = tp ? W.filter((w) => w.tp === tp && LEVELS.indexOf(w.g) <= Math.min(LEVELS.length - 1, Math.floor((f - 1) / 10) + 1)) : [], pool = tp ? (inTp.length >= 8 ? inTp : W.filter((w) => w.tp === tp)) : all, fresh = pool.filter((w) => !used.has(w.w)), w = pick(fresh.length ? fresh : pool);
+    const all = twPool(f), inTp = tp ? W.filter((w) => w.tp === tp && LEVELS_CEFR.indexOf(w.g) <= Math.min(LEVELS_CEFR.length - 1, Math.floor((f - 1) / 10) + 1)) : [], pool = tp ? (inTp.length >= 8 ? inTp : W.filter((w) => w.tp === tp)) : all, fresh = pool.filter((w) => !used.has(w.w)), w = pick(fresh.length ? fresh : pool);
     used.add(w.w);
     const z = twZone(f);
     const top = `<div class="session-top"><button class="icon-btn" id="twQuit" aria-label="จบรอบ">✕</button><div class="progress${twBoss(f) ? ' boss-hp' : ''}"><div style="width:${qn / need * 100}%"></div></div><span class="small" id="twH">${twHearts(hearts, maxH)}</span></div>`;

@@ -14,7 +14,7 @@ function load(...files) {
 }
 // All app code: app.js plus the js/*.js scripts it is split into.
 const appCode = () => ['app.js', ...fs.readdirSync(path.join(root, 'js')).map((f) => `js/${f}`), 'data/play.js', 'data/guide.js'].map(read).join('\n'); // + the lazy-loaded engine and manual (1.101)
-const WORD_FILES = ['a1', 'a2', 'b1', 'b2', 'b2plus', 'c1'].map((l) => `data/words/${l}.js`);
+const WORD_FILES = ['a1', 'a2', 'b1', 'b2', 'b2plus', 'c1', 'toeic'].map((l) => `data/words/${l}.js`);
 
 test('version is the same in app.js, sw.js and the README changelog', () => {
   const v = read('app.js').match(/const APP_VERSION = '([\d.]+)'/)[1];
@@ -43,7 +43,7 @@ test('word rows are well formed', () => {
   for (const r of WORDS) {
     const [w, p, lv, ipa, th, ex, exTh, tp] = r;
     const more = r.slice(8), xe = more.find(Array.isArray);
-    if (more.length > 2 || more.some((x) => x !== 5 && x !== xe) || (more.length === 2 && more[0] !== 5)) bad.push(`${w}: ${r.length} fields`);
+    if (more.length > 2 || more.some((x) => x !== 5 && x !== 'T' && x !== xe) || (more.length === 2 && more[0] !== 5 && more[0] !== 'T') || (more.includes(5) && more.includes('T'))) bad.push(`${w}: ${r.length} fields`);
     if (xe) xe.forEach((x) => { if (!Array.isArray(x) || x.length !== 2 || !/^[A-Z0-9].*[.?!]$/.test(x[0]) || !x[1] || x[0] === ex) bad.push(`${w}: extra example ${JSON.stringify(x)}`); });
     if (!['A1', 'A2', 'B1', 'B2', 'C1'].includes(lv)) bad.push(`${w}: level ${lv}`);
     Object.entries({ w, p, ipa, th, ex, exTh, tp }).forEach(([n, x]) => { if (typeof x !== 'string' || !x) bad.push(`${w}: empty ${n}`); });
@@ -54,6 +54,18 @@ test('word rows are well formed', () => {
     if (exSeen.has(ex)) bad.push(`${w}: same example as ${exSeen.get(ex)} ("${ex}")`);
     exSeen.set(ex, w);
   }
+  expect(bad).toEqual([]);
+});
+
+test('TOEIC set (1.179): every row is marked T, credited CC BY-SA, and adds a word the 3000/5000 lists do not have', () => {
+  const src = read('data/words/toeic.js');
+  expect(src).toMatch(/CC BY-SA 4\.0/);
+  expect(src).toMatch(/TOEIC Service List/);
+  const t = { WORDS: [] };
+  vm.runInNewContext(src, { window: t });
+  expect(t.WORDS.length).toBe(200);
+  const rest = new Set(load(...WORD_FILES.filter((f) => !f.endsWith('toeic.js'))).WORDS.map((r) => r[0].toLowerCase()));
+  const bad = t.WORDS.filter((r) => r[8] !== 'T' || r.length !== 9 || rest.has(r[0].toLowerCase()) || !/^[a-z][a-z-]*$/.test(r[0])).map((r) => r[0]);
   expect(bad).toEqual([]);
 });
 

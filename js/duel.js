@@ -28,7 +28,7 @@ function duelRng(code) {
   };
 }
 const duelDefaultPool = () => {
-  const top = Math.max(...S.settings.levels.map((l) => LEVELS.indexOf(l)), 0);
+  const top = Math.max(...S.settings.levels.map((l) => LEVELS_CEFR.indexOf(l)), 0);
   return top <= 1 ? 1 : top <= 3 ? 2 : 4;
 };
 const duelNewCode = (pool) => pool + Array.from({ length: 4 }, () => DUEL_CHARS[Math.random() * DUEL_CHARS.length | 0]).join('');

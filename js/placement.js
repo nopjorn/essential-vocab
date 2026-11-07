@@ -8,7 +8,7 @@
 // get spread-out review dates, so any that weren't really known get caught at their first review.
 const PT_N = 8, PT_PASS = 6;
 function renderPlacement() {
-  const levels = LEVELS.filter((l) => GROUP[l].some((w) => !S.prog[w.w]));
+  const levels = LEVELS_CEFR.filter((l) => GROUP[l].some((w) => !S.prog[w.w]));
   const res = {};           // level -> correct count
   let li = 0, qi = 0, items = [];
   const start = () => {
@@ -78,7 +78,7 @@ function renderPlacement() {
         const skipped = pick.map((r) => r.lv);
         let moved = '';
         if (S.settings.levels.every((l) => skipped.includes(l))) {
-          const nextLv = LEVELS.find((l) => !skipped.includes(l) && GROUP[l].some((w) => !S.prog[w.w]));
+          const nextLv = LEVELS_CEFR.find((l) => !skipped.includes(l) && GROUP[l].some((w) => !S.prog[w.w]));
           if (nextLv) { S.settings.levels = [nextLv]; moved = ` · เปลี่ยนไปเรียนระดับ ${LV_LABEL[nextLv]}`; }
         }
         S.placedAt = today(); markActive(); save(); confetti();
