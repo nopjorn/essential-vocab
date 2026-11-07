@@ -325,7 +325,7 @@ function renderCards(extra) {
     $('#stage').innerHTML = `
       ${queue.length > 1 ? `<div class="fc-stack n${Math.min(queue.length - 1, 2)}" aria-hidden="true"><i></i><i></i></div>` : ''}
       <div class="fc lvc-${card.g}${tintStyle(card) ? ' tint' : ''}${S.settings.frame === 'gold' && itemOpen('frame:gold') ? ' gold' : ''}" id="fc"${tintStyle(card)}>
-        <div class="swipe-tag l">ลืม</div><div class="swipe-tag r">จำได้</div>
+        <div class="swipe-tag l">ลืม</div><div class="swipe-tag r">จำได้</div><div class="swipe-tag u">ง่าย</div><div class="swipe-tag d">ยาก</div>
         <div class="fc-inner">
           <div class="face front"><span class="fc-wm" aria-hidden="true">${TOPIC_IC[card.tp] || ''}</span>${enFront ? enFace : thFace}
             ${isNew ? '<button class="know-btn" data-know>✓ รู้คำนี้แล้ว ข้ามเลย</button>' : ''}
@@ -381,8 +381,11 @@ function renderCards(extra) {
 
   function bindCard() {
     const fc = $('#fc');
-    let sx = 0, sy = 0, dx = 0, dragging = false, moved = false;
-    const tl = $('.swipe-tag.l', fc), tr = $('.swipe-tag.r', fc);
+    let sx = 0, sy = 0, dx = 0, dy = 0, axis = '', dragging = false, moved = false;
+    const tl = $('.swipe-tag.l', fc), tr = $('.swipe-tag.r', fc), tu = $('.swipe-tag.u', fc), td = $('.swipe-tag.d', fc);
+    // Up = ง่าย, down = ยาก (settings.swipeUD, on by default) — only while neither the page nor the card face scrolls, so a scroll stays a scroll.
+    const fits = (el) => !el || el.scrollHeight <= el.clientHeight + 4;
+    const udOn = () => S.settings.swipeUD !== false && fits(view) && fits($(flipped ? '.face.back' : '.face.front', fc)); // squat screens scroll inside the face
     fc.addEventListener('click', (e) => {
       if (e.target.closest('[data-say]')) { e.stopPropagation(); speak(card.w); return; }
       if (e.target.closest('[data-sayex]')) { e.stopPropagation(); speak(e.target.closest('[data-sayex]').dataset.sayex || card.e); return; }
@@ -404,13 +407,24 @@ function renderCards(extra) {
       if (!moved) flip();
     });
     fc.addEventListener('touchstart', (e) => {
-      const t = e.touches[0]; sx = t.clientX; sy = t.clientY; dx = 0; dragging = true; moved = false;
+      const t = e.touches[0]; sx = t.clientX; sy = t.clientY; dx = dy = 0; axis = ''; dragging = true; moved = false;
       fc.style.transition = 'none';
     }, { passive: true });
     fc.addEventListener('touchmove', (e) => {
       if (!dragging) return;
-      const t = e.touches[0]; dx = t.clientX - sx;
-      if (Math.abs(dx) < Math.abs(t.clientY - sy)) return;
+      const t = e.touches[0]; dx = t.clientX - sx; dy = t.clientY - sy;
+      if (!axis && Math.max(Math.abs(dx), Math.abs(dy)) > 8) axis = Math.abs(dx) >= Math.abs(dy) ? 'x' : udOn() ? 'y' : '-';
+      if (axis === 'y') {
+        moved = true;
+        fc.style.transform = `translateY(${dy}px) rotateX(${Math.max(-20, Math.min(20, -dy / 8))}deg)`;
+        fc.classList.add('dragging');
+        fc.style.setProperty('--sa', Math.min(1, Math.abs(dy) / 90));
+        fc.style.setProperty('--sc', dy < 0 ? 'var(--a2)' : '#f0932b');
+        tu.style.opacity = Math.min(1, Math.max(0, -dy / 80));
+        td.style.opacity = Math.min(1, Math.max(0, dy / 80));
+        return;
+      }
+      if (axis !== 'x') return;
       if (Math.abs(dx) > 8) moved = true;
       fc.style.transform = `translateX(${dx}px) rotate(${dx / 20}deg) rotateY(${Math.max(-25, Math.min(25, dx / 8))}deg)`; // tilts with the finger
       fc.classList.add('dragging');
@@ -422,11 +436,14 @@ function renderCards(extra) {
     fc.addEventListener('touchend', () => {
       dragging = false;
       fc.style.transition = '';
-      if (Math.abs(dx) > 100) {
+      if (axis === 'x' && Math.abs(dx) > 100) {
         fc.style.transform = `translateX(${dx > 0 ? 600 : -600}px) rotate(${dx / 10}deg) rotateY(${dx > 0 ? 35 : -35}deg)`;
         setTimeout(() => answer(dx > 0 ? 2 : 0), 180);
+      } else if (axis === 'y' && Math.abs(dy) > 90) {
+        fc.style.transform = `translateY(${dy < 0 ? -700 : 700}px) rotateX(${dy < 0 ? 30 : -30}deg)`;
+        setTimeout(() => answer(dy < 0 ? 3 : 1), 180);
       } else {
-        fc.style.transform = ''; tl.style.opacity = 0; tr.style.opacity = 0; fc.classList.remove('dragging');
+        fc.style.transform = ''; [tl, tr, tu, td].forEach((x) => (x.style.opacity = 0)); fc.classList.remove('dragging');
         setTimeout(() => (moved = false), 50);
       }
     });

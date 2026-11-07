@@ -123,3 +123,34 @@ test('start screen: review one level and/or topic, soonest due first, choice rem
   expect(await page.evaluate(() => hubPick('', '').map((w) => w.w))).toEqual(['dog', 'bread', 'water', 'house', 'apple']); // most overdue first
   expect(errors).toEqual([]);
 });
+
+test('swipe up = easy, swipe down = hard, off in settings', async ({ page }) => {
+  const errors = await openApp(page, { ...state(), settings: { levels: ['A1'], newPerDay: 0, autoSpeak: false } });
+  const swipe = (dy) => page.evaluate((dy) => {
+    const el = document.getElementById('fc'), r = el.getBoundingClientRect(), x = r.left + r.width / 2, y0 = r.top + r.height / 2;
+    const t = (type, y) => el.dispatchEvent(new TouchEvent(type, { bubbles: true, touches: type === 'touchend' ? [] : [new Touch({ identifier: 1, target: el, clientX: x, clientY: y })] }));
+    t('touchstart', y0); t('touchmove', y0 + dy / 2); t('touchmove', y0 + dy); t('touchend', y0 + dy);
+  }, dy);
+  await page.evaluate(() => go('cards'));
+  await expect(page.locator('#fc')).toBeVisible();
+  expect(await page.evaluate(() => view.scrollHeight <= view.clientHeight + 4)).toBe(true);
+  const w1 = await page.locator('#fc .word').first().textContent();
+  await swipe(-150);
+  await expect(page.locator('#pcount')).toHaveText('1/5');
+  const g1 = await page.evaluate((w) => S.prog[w].i, w1);
+  expect(g1).toBeGreaterThan(3); // ง่าย: a longer interval
+  const w2 = await page.locator('#fc .word').first().textContent();
+  await swipe(150);
+  await expect(page.locator('#pcount')).toHaveText('2/5');
+  expect(await page.evaluate((w) => S.prog[w].i, w2)).toBeLessThan(g1); // ยาก
+  // a short drag does nothing; switched off, a long one does nothing either
+  await swipe(40);
+  await expect(page.locator('#pcount')).toHaveText('2/5');
+  await page.evaluate(() => { S.settings.swipeUD = false; });
+  await swipe(-150);
+  await page.waitForTimeout(300);
+  await expect(page.locator('#pcount')).toHaveText('2/5');
+  await page.evaluate(() => go('settings'));
+  await expect(page.locator('#swipeUD')).not.toBeChecked();
+  expect(errors).toEqual([]);
+});

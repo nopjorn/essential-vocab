@@ -167,6 +167,8 @@ function renderSettings() {
         <select class="sel" id="appKbd" aria-label="คีย์บอร์ดของแอปในเกมพิมพ์คำ">${[['auto', autoTxt('appKbd', kbdOn)], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.appKbd || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>✏️ โหมด Apple Pencil<br><span class="small muted">ช่องคำตอบใหญ่ เขียนด้วย Scribble ได้ทันที</span></span>
         <select class="sel" id="penMode" aria-label="โหมด Apple Pencil">${[['auto', autoTxt('penMode', penOn)], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.penMode || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="set-row"><span>👆 ปัดการ์ดขึ้น/ลง<br><span class="small muted">แฟลชการ์ด: ปัดขึ้น = ง่าย · ปัดลง = ยาก</span></span>
+        <label class="switch"><input type="checkbox" id="swipeUD" aria-label="ปัดการ์ดขึ้น/ลง" ${st.swipeUD !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>👐 ปุ่มสองข้าง (ถือสองมือ)<br><span class="small muted">iPad แนวนอน: ลืม/ยาก อยู่ซ้าย จำได้/ง่าย อยู่ขวา</span></span>
         <select class="sel" id="thumbs" aria-label="ปุ่มสองข้าง (ถือสองมือ)">${[['auto', autoTxt('thumbs', thumbsOn)], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.thumbs || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>🎮 ฝั่งของตัวเลือกคำตอบ<br><span class="small muted">iPad แนวนอน ถือสองมือ: เลือกฝั่งที่ถนัด</span></span>
@@ -256,6 +258,7 @@ function renderSettings() {
   $('#keysBtn').onclick = () => showKeys();
   $('#winGap').onchange = (e) => { st.winGap = e.target.value; save(); applyWinGap(); };
   $('#penMode').onchange = (e) => { st.penMode = e.target.value; save(); applyPen(); };
+  $('#swipeUD').onchange = (e) => { st.swipeUD = e.target.checked; save(); };
   $('#thumbs').onchange = (e) => { st.thumbs = e.target.value; save(); applyThumbs(); };
   $('#optSide').onchange = (e) => { st.optSide = e.target.value; save(); applyThumbs(); };
   $('#auto').onchange = (e) => { st.autoSpeak = e.target.checked; save(); };

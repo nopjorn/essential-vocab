@@ -308,6 +308,8 @@ html.no-ans .ring-burst { display: none; } html.no-ans .hero.ring-party .ring { 
 .swipe-tag { position: absolute; top: 40%; font-size: 28px; font-weight: 900; padding: 6px 14px; border-radius: 12px; border: 4px solid; opacity: 0; transition: opacity .1s; z-index: 2; }
 .swipe-tag.l { left: 18px; color: var(--bad); border-color: var(--bad); transform: rotate(-12deg); }
 .swipe-tag.r { right: 18px; color: var(--good); border-color: var(--good); transform: rotate(12deg); }
+.swipe-tag.u { top: 18px; left: 50%; color: var(--a2); border-color: var(--a2); transform: translateX(-50%) rotate(-4deg); }
+.swipe-tag.d { top: auto; bottom: 18px; left: 50%; color: #f0932b; border-color: #f0932b; transform: translateX(-50%) rotate(4deg); }
 
 .grade { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .grade .btn { flex-direction: column; gap: 0; padding: 8px 4px; min-height: 64px; font-size: var(--fs-md); color: #fff; }
