@@ -26,7 +26,7 @@ test('today card shows minutes, notices sit under it, play strip and folded ques
   await expect(page.locator('.q-next')).toBeVisible();
   await page.locator('#qFold summary').click();
   await expect(page.locator('.qrow').first()).toBeVisible();
-  expect(await page.evaluate(() => localStorage.getItem('o3k.qopen'))).toBe('1');
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('o3k.qopen'))).toBe('1'); // the toggle event fires after the click
   await page.evaluate(() => go('home'));
   await expect(page.locator('.qrow').first()).toBeVisible();
   // progress card: two rings with a percent each
