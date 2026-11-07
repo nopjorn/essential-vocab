@@ -128,7 +128,7 @@ test('home box: hidden without sets, newest 3 with due counts, study button, reo
   await expect(page.locator('#dkStudy')).toBeVisible();
   // a layout saved before 1.56 gets the box appended at the end; the arrange page lists and toggles it
   await page.evaluate(() => { S.homeCfg = [{ id: 'hero', on: true, w: 'full' }, { id: 'prog', on: true, w: 'full' }]; go('home'); });
-  const ids = await page.locator('.hb').evaluateAll((els) => els.map((e) => e.dataset.hb));
+  const ids = await page.locator('.hb').evaluateAll((els) => els.map((e) => e.dataset.hb).filter((id) => id !== 'notices'));
   expect(ids.slice(0, 2)).toEqual(['hero', 'prog']); expect(ids).toContain('decks');
   await page.evaluate(() => go('homeset'));
   await expect(page.locator('#view')).toContainText('ชุดของฉัน');

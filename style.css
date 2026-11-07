@@ -547,6 +547,25 @@ body { touch-action: manipulation; }
 .quick-btn.feed-btn { background: linear-gradient(135deg, var(--pink), var(--pink-2)); color: #fff; }
 .quick-btn.feed-btn small { color: rgba(255, 255, 255, .9); }
 .quick-btn:active { transform: scale(.97); }
+/* 1.179.8: home strip "วันนี้เล่นอะไรดี" - the short / event / adventure / riddle / fun blocks as sideways tiles */
+.day-strip { padding: 14px 0 12px; }
+.day-strip .ds-h { display: block; padding: 0 18px 8px; }
+.ds-track { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding: 2px 18px 4px; scroll-padding-inline: 18px; scroll-snap-type: x proximity; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); }
+.ds-track::-webkit-scrollbar { display: none; }
+.ds-track.at-end { -webkit-mask-image: none; mask-image: none; }
+.ds-tile { position: relative; flex: 0 0 150px; scroll-snap-align: start; display: flex; }
+.ds-tile > .card-box, .ds-tile > .quick-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; margin: 0; padding: 12px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); box-shadow: none; text-align: left; }
+.ds-tile .guide-link > span:first-child, .ds-tile .quick-btn > span { font-size: 26px; }
+.ds-tile .guide-link > span:last-child { display: none; }
+.ds-tile b { font-size: var(--fs-sm, 15px); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ds-tile .adv-dots i:not(.on) { background: var(--surface); }
+.ds-tile .small, .ds-tile small { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: var(--fs-xs); line-height: 1.35; }
+.ds-tile .adv-dots { gap: 3px; margin: 2px 0; }
+.ds-tile .adv-dots i { width: 14px; height: 14px; font-size: 8px; border-width: 1.5px; }
+.ds-tile .grow { min-width: 0; }
+.ds-ok { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 50%; background: #087f5b; color: #fff; font-style: normal; font-weight: 800; font-size: 13px; display: grid; place-items: center; }
+.ds-tile.done > * { opacity: .78; }
+@media (min-width: 700px) { .ds-tile { flex-basis: 170px; } }
 .lvl-card { display: flex; align-items: center; gap: 14px; }
 .lvl-num { flex: none; width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; color: #fff; background: linear-gradient(135deg, var(--primary), var(--pink)); }
 .tabbar button { font-size: var(--fs-xs); }

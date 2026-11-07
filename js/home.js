@@ -153,6 +153,14 @@ function renderHome() {
       <button class="btn primary" data-pl="go">วัดระดับ</button><button class="x" data-pl="no" aria-label="ไม่ต้อง">✕</button></div>` : '',
     standalone || installHidden() ? '' : `<div class="card-box install-tip slim small" id="installTip">${installTipInner()}</div>`].filter(Boolean);
   const blocks = homeBlocks().filter((b) => b.on).map((b) => ({ ...b, html: homeBlockHtml(B, b.id) })).filter((b) => b.html);
+  // 1.179.8: the small "something to play today" blocks share one sideways strip of tiles (2+ of them shown), at the first one's place
+  const strip = blocks.filter((b) => STRIP_IDS.includes(b.id));
+  if (strip.length >= 2) {
+    const at = blocks.indexOf(strip[0]), done = stripDone();
+    const tiles = strip.map((b) => `<div class="ds-tile ds-${b.id}${done[b.id] ? ' done' : ''}">${b.html}${done[b.id] ? '<i class="ds-ok" aria-label="วันนี้ทำแล้ว">✓</i>' : ''}</div>`).join('');
+    for (const b of strip) blocks.splice(blocks.indexOf(b), 1);
+    blocks.splice(at, 0, { id: 'strip', w: 'full', html: `<div class="card-box day-strip"><b class="ds-h">🎲 วันนี้เล่นอะไรดี</b><div class="ds-track" id="dsTrack">${tiles}</div></div>` });
+  }
   // 1.179.7: notices (backup, streak repair, backlog, placement, install) sit right under the today card, so its start button stays near the top
   if (notices.length) { const hi = blocks.findIndex((b) => b.id === 'hero'); blocks.splice(hi + 1, 0, { id: 'notices', w: 'full', html: noticeDeck(notices) }); }
   // A half-width block with no partner in its row would leave a hole, so it stretches to the full row.
@@ -216,6 +224,7 @@ function renderHome() {
     renderHome();
   };
   bindNoticeDeck();
+  edgeFade($('#dsTrack'));
   if (party) ringParty();
 }
 // Goal ring closed: rays + confetti + น้องคำ once a day per device (localStorage o3k.ring = the day it was shown).
@@ -261,6 +270,15 @@ addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault(); installEvt = e;
   const it = document.getElementById('installTip'); if (it) it.innerHTML = installTipInner();
 });
+// Home blocks drawn as tiles in the "วันนี้เล่นอะไรดี" strip (1.179.8), and which of them are done for today (a ✓ on the tile).
+const STRIP_IDS = ['short', 'event', 'adv', 'riddle', 'fun'];
+function stripDone() {
+  const out = {};
+  try { const e = eventOn(); out.event = !!(e && S.evt[eventKey(e)] && S.evt[eventKey(e)].pass); } catch (e) { /* ignore */ }
+  try { const mon = advMonday(); out.adv = advStops(mon)[advToday(mon)] === '1'; } catch (e) { /* ignore */ }
+  try { out.riddle = !!riddleToday().over; } catch (e) { /* ignore */ }
+  return out;
+}
 // Home layout: the blocks the user can show/hide, reorder and size (settings → จัดหน้าแรก). S.homeCfg stores the choice.
 const HOME_BLOCKS = [
   { id: 'hero', ic: '🏠', name: 'การ์ดวันนี้ + ปุ่มเริ่มเรียน', w: 'full', on: true },
