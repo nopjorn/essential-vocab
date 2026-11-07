@@ -158,17 +158,18 @@ function renderHome() {
       <div><b>🎯 รู้ศัพท์อยู่แล้วบ้างไหม?</b><div class="small muted">วัดระดับ 3–5 นาที แล้วข้ามคำที่รู้แล้ว</div></div>
       <button class="btn primary" data-pl="go">วัดระดับ</button><button class="x" data-pl="no" aria-label="ไม่ต้อง">✕</button></div>` : '',
     standalone || installHidden() ? '' : `<div class="card-box install-tip slim small" id="installTip">${installTipInner()}</div>`].filter(Boolean);
-  const blocks = homeBlocks().filter((b) => b.on).map((b) => ({ ...b, html: homeBlockHtml(B, b.id) })).filter((b) => b.html);
+  const blocks = homeBlocks().filter((b) => b.on).map((b) => ({ ...b, html: homeBlockHtml(B, b.id) }))
+    .map((b) => (homeEdit ? { ...b, w: 'full', html: heTools(b) + (b.html || `<div class="card-box he-empty small muted">${b.ic} ${b.name} — วันนี้ยังไม่มีอะไรให้แสดง</div>`) } : b)).filter((b) => b.html);
   // 1.179.8: the small "something to play today" blocks share one sideways strip of tiles (2+ of them shown), at the first one's place
   const strip = blocks.filter((b) => STRIP_IDS.includes(b.id));
-  if (strip.length >= 2) {
+  if (strip.length >= 2 && !homeEdit) {
     const at = blocks.indexOf(strip[0]), done = stripDone();
     const tiles = strip.map((b) => `<div class="ds-tile ds-${b.id}${done[b.id] ? ' done' : ''}">${b.html}${done[b.id] ? '<i class="ds-ok" aria-label="วันนี้ทำแล้ว">✓</i>' : ''}</div>`).join('');
     for (const b of strip) blocks.splice(blocks.indexOf(b), 1);
     blocks.splice(at, 0, { id: 'strip', w: 'full', html: `<div class="card-box day-strip"><b class="ds-h">🎲 วันนี้เล่นอะไรดี</b><div class="ds-track" id="dsTrack">${tiles}</div></div>` });
   }
   // 1.179.7: notices (backup, streak repair, backlog, placement, install) sit right under the today card, so its start button stays near the top
-  if (notices.length) { const hi = blocks.findIndex((b) => b.id === 'hero'); blocks.splice(hi + 1, 0, { id: 'notices', w: 'full', html: noticeDeck(notices) }); }
+  if (notices.length && !homeEdit) { const hi = blocks.findIndex((b) => b.id === 'hero'); blocks.splice(hi + 1, 0, { id: 'notices', w: 'full', html: noticeDeck(notices) }); }
   // A half-width block with no partner in its row would leave a hole, so it stretches to the full row.
   let open = null;
   for (const b of blocks) {
@@ -176,10 +177,15 @@ function renderHome() {
   }
   if (open) open.w = 'full';
 
+  const hidden = homeEdit ? homeBlocks().filter((b) => !b.on) : [];
   view.innerHTML = `
+    ${homeEdit ? `<div class="he-bar"><div class="grow"><b>✏️ จัดหน้าแรก</b><div class="small">↑ ↓ ย้าย · ✕ ซ่อน · บันทึกทันที</div></div><button class="btn primary" id="heDone">เสร็จ</button></div>` : ''}
     ${homeGridHtml(blocks)}
+    ${hidden.length ? `<div class="card-box he-hidden"><b>➕ กล่องที่ซ่อนอยู่</b><div class="he-chips">${hidden.map((b) => `<button class="chip" data-he="show" data-id="${b.id}">${b.ic} ${b.name}</button>`).join('')}</div></div>` : ''}
     ${blocks.some((b) => b.id !== 'notices') ? '' : '<div class="card-box center small muted">ซ่อนทุกกล่องอยู่ — เปิดกล่องที่ต้องการได้ที่ ⚙️ ตั้งค่า → จัดหน้าแรก</div>'}
+    ${homeEdit ? '' : '<p class="center"><button class="he-go small" id="heGo">✏️ จัดหน้าแรก</button></p>'}
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
+  if (homeEdit) cleanup = () => { homeEdit = false; }; // leaving home ends the edit mode
   const click = (sel, fn) => { const el = $(sel); if (el) el.onclick = fn; };
   click('#startBtn', () => nextGo(nx.id));
   click('#qFeed', () => go('feed'));
@@ -232,6 +238,9 @@ function renderHome() {
   };
   bindNoticeDeck();
   edgeFade($('#dsTrack'));
+  click('#heGo', () => homeEditSet(true));
+  click('#heDone', () => homeEditSet(false));
+  view.querySelectorAll('[data-he]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); homeEditDo(b.dataset.he, b.dataset.id); }; });
   const qf = $('#qFold'); if (qf) qf.ontoggle = () => { try { localStorage.setItem('o3k.qopen', qf.open ? '1' : '0'); } catch (e) { /* ignore */ } masonry([view.querySelector('.home-grid')]); };
   if (party) ringParty();
 }
@@ -297,6 +306,51 @@ addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault(); installEvt = e;
   const it = document.getElementById('installTip'); if (it) it.innerHTML = installTipInner();
 });
+/* ---------- edit the home screen in place (1.182.0) ---------- */
+// ✏️ จัดหน้าแรก under the blocks, or a long finger press on a block: every shown block gets ↑ ↓ ✕, hidden ones come back from
+// the chips at the bottom. Writes S.homeCfg (the same list as settings → จัดหน้าแรก). go() runs cleanup = leaving ends it.
+let homeEdit = false;
+function heTools(b) {
+  return `<div class="he-tools" role="group" aria-label="${esc(b.name)}"><span class="he-name">${b.ic} ${esc(b.name)}</span>
+    <button data-he="up" data-id="${b.id}" aria-label="ย้ายขึ้น">↑</button><button data-he="down" data-id="${b.id}" aria-label="ย้ายลง">↓</button><button data-he="hide" data-id="${b.id}" aria-label="ซ่อน">✕</button></div>`;
+}
+function homeEditSet(on) {
+  homeEdit = !!on;
+  if (!on && cleanup) cleanup = null;
+  renderHome();
+  if (on) { haptic('ok'); view.scrollTop = 0; }
+}
+function homeEditDo(act, id) {
+  const list = homeBlocks(), i = list.findIndex((b) => b.id === id);
+  if (i < 0) return;
+  if (act === 'hide') list[i].on = false;
+  else if (act === 'show') list[i].on = true;
+  else {
+    const step = act === 'up' ? -1 : 1;
+    let j = i + step; while (j >= 0 && j < list.length && !list[j].on) j += step;
+    if (j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  S.homeCfg = list.map(({ id: k, on, w }) => ({ id: k, on, w }));
+  save();
+  renderHome();
+  const el = view.querySelector(`[data-hb="${id}"]`); if (el && act !== 'hide') el.scrollIntoView({ block: 'nearest' });
+}
+// Long finger press on a home block (not on a word, which has its own menu) → edit mode; the click that ends the press is swallowed.
+(() => {
+  let t = 0, x0 = 0, y0 = 0, fired = false;
+  const stop = () => { clearTimeout(t); t = 0; };
+  view.addEventListener('pointerdown', (e) => {
+    fired = false;
+    if (e.pointerType !== 'touch' || current !== 'home' || homeEdit) return;
+    if (!e.target.closest('.hb') || e.target.closest(typeof WM_SEL === 'string' ? WM_SEL : '[data-wi]')) return;
+    x0 = e.clientX; y0 = e.clientY;
+    t = setTimeout(() => { t = 0; fired = true; homeEditSet(true); }, 650);
+  });
+  view.addEventListener('pointermove', (e) => { if (t && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) stop(); });
+  view.addEventListener('pointerup', stop); view.addEventListener('pointercancel', stop);
+  view.addEventListener('click', (e) => { if (fired) { fired = false; e.stopPropagation(); e.preventDefault(); } }, true);
+})();
 // Home blocks drawn as tiles in the "วันนี้เล่นอะไรดี" strip (1.179.8), and which of them are done for today (a ✓ on the tile).
 const STRIP_IDS = ['short', 'event', 'adv', 'riddle', 'fun'];
 function stripDone() {

@@ -70,3 +70,34 @@ test('main button says what comes next: reviews, new words, then the weekly boss
   await expect(page.locator('#view')).toHaveAttribute('data-route', 'wboss');
   expect(errors).toEqual([]);
 });
+
+test('edit home in place: move, hide, show again, done; long press opens it; leaving ends it', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.locator('#heGo').click();
+  await expect(page.locator('.he-bar')).toBeVisible();
+  const order = () => page.locator('.hb').evaluateAll((els) => els.map((e) => e.dataset.hb));
+  const before = await order();
+  expect(before).not.toContain('strip'); // each block on its own while editing
+  const second = before[1];
+  await page.locator(`[data-hb="${second}"] [data-he="up"]`).click();
+  expect((await order())[0]).toBe(second);
+  expect(await page.evaluate(() => S.homeCfg.filter((b) => b.on)[0].id)).toBe((await order())[0]);
+  await page.locator(`[data-hb="${second}"] [data-he="hide"]`).click();
+  await expect(page.locator(`[data-hb="${second}"]`)).toHaveCount(0);
+  await page.locator(`.he-hidden [data-id="${second}"]`).click();
+  await expect(page.locator(`[data-hb="${second}"]`)).toHaveCount(1);
+  await page.locator('#heDone').click();
+  await expect(page.locator('.he-bar')).toHaveCount(0);
+  await expect(page.locator('#heGo')).toBeVisible();
+  // leaving the page ends the edit mode
+  await page.locator('#heGo').click();
+  await page.evaluate(() => { go('stats'); go('home'); });
+  await expect(page.locator('.he-bar')).toHaveCount(0);
+  // a long finger press on a block opens it
+  await page.evaluate(() => {
+    const el = document.querySelector('[data-hb="prog"]'), r = el.getBoundingClientRect();
+    el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', clientX: r.left + 10, clientY: r.top + 10 }));
+  });
+  await expect(page.locator('.he-bar')).toBeVisible({ timeout: 2000 });
+  expect(errors).toEqual([]);
+});

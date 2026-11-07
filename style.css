@@ -547,6 +547,20 @@ body { touch-action: manipulation; }
 .quick-btn.feed-btn { background: linear-gradient(135deg, var(--pink), var(--pink-2)); color: #fff; }
 .quick-btn.feed-btn small { color: rgba(255, 255, 255, .9); }
 .quick-btn:active { transform: scale(.97); }
+/* 1.182.0: edit the home screen in place */
+.he-go { border: 0; background: none; color: var(--muted); font: inherit; padding: 8px 12px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.he-bar { position: sticky; top: -8px; z-index: 5; display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding: 12px 16px; border-radius: var(--radius); background: #5443d1; color: #fff; box-shadow: var(--shadow); }
+.he-bar .btn { background: #fff; color: #4535b8; }
+.home-edit .hb, .hb:has(> .he-tools) { position: relative; }
+.hb:has(> .he-tools) > :not(.he-tools) { pointer-events: none; opacity: .55; filter: saturate(.7); height: auto; }
+.hb > .he-tools { height: auto; }
+.hb:has(> .he-tools) { outline: 2px dashed var(--border); outline-offset: 2px; border-radius: var(--radius); margin-bottom: 14px; }
+.he-tools { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.he-name { flex: 1; min-width: 0; font-weight: 800; font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.he-tools button { width: 40px; height: 36px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-weight: 800; cursor: pointer; }
+.he-tools button[data-he="hide"] { color: var(--bad-ink, #b3261e); }
+.he-empty { margin: 0; }
+.he-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 /* 1.181.4: evening streak nudge inside the today card */
 .streak-risk { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0 0 12px; padding: 10px 12px; border: 0; border-radius: 14px; background: rgba(20, 8, 40, .38); color: #fff; font: inherit; font-size: var(--fs-sm); text-align: left; cursor: pointer; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
 .streak-risk .sr-go { font-weight: 800; white-space: nowrap; }
