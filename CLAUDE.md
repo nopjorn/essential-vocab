@@ -92,7 +92,7 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
 Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` = Oxford 5000-only
 (rows with trailing `5`).
 `TOE` (shown "TOEIC", 1.179) = `data/words/toeic.js`, 604 TSL words not in the 3000/5000 lists (rows end with `'T'`, `l` = own CEFR estimate, CC BY-SA 4.0 credit in the file, README and settings footer). `LEVELS` includes it (chips, stats, ach, album); `LEVELS_CEFR` (no TOE) is the easy→hard ladder for survival, tower and placement; `LEVELS_EXTRA` = settings chip row `#lvlsX`.
-`AWL` (shown "วิชาการ", 1.180) = `data/words/nawl.js`, 90 NAWL words not in any other list (rows end with `'A'`, same rules as TOE; colour `--awl`).
+`AWL` (shown "วิชาการ", 1.180) = `data/words/nawl.js`, 180 NAWL words not in any other list (rows end with `'A'`, same rules as TOE; colour `--awl`).
 
 ## State (localStorage key `oxford3000.v1` — never rename it, or users lose progress)
 - `prog[word] = { b: box, i: interval days, e: ease, d: due ms, s: seen, c: correct, x: wrong }`
