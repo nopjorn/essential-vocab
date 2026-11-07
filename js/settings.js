@@ -20,6 +20,13 @@ const REMIND_TIMES = ['0600', '0700', '0800', '0900', '1200', '1700', '1800', '1
 const setOpen = {}; // which settings groups are expanded (kept while the app is open)
 const setIsOpen = (id) => ((id in setOpen ? setOpen[id] : id === 'lv' || id === 'learn') ? 'open' : '');
 // Collapsed summary of the extra games picked for the flashcard done screen.
+// "อัตโนมัติ (ตอนนี้เปิด)" (1.160.0): what 'auto' gives on this device right now, worked out with the setting set to auto for a moment.
+function autoTxt(key, fn) {
+  const was = S.settings[key]; S.settings[key] = 'auto';
+  let on = false; try { on = !!fn(); } catch (e) { /* ignore */ }
+  S.settings[key] = was;
+  return `อัตโนมัติ (ตอนนี้${on ? 'เปิด' : 'ปิด'})`;
+}
 function nextGamesSummary(list) {
   const g = (list || []).filter((id) => GAMES[id]);
   return g.length ? g.map((id) => GAMES[id].icon + ' ' + GAMES[id].name).join(' · ') : 'ยังไม่ได้เลือก · แตะเพื่อเลือกเกม';
@@ -155,15 +162,15 @@ function renderSettings() {
 
     <details class="set-group" data-g="input" ${setIsOpen('input')}><summary data-k="input device keyboard pencil ipad คีย์บอร์ด แป้นพิมพ์ ปากกา หน้าต่าง window สั่น haptic สองมือ thumb">⌨️ อุปกรณ์และการป้อนข้อมูล</summary><div class="card-box">
       <div class="set-row"><span>⌨️ คีย์บอร์ดของแอปในเกมพิมพ์คำ<br><span class="small muted">ไม่บังจอ และพิมพ์อังกฤษได้ทันที</span></span>
-        <select class="sel" id="appKbd" aria-label="คีย์บอร์ดของแอปในเกมพิมพ์คำ">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.appKbd || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+        <select class="sel" id="appKbd" aria-label="คีย์บอร์ดของแอปในเกมพิมพ์คำ">${[['auto', autoTxt('appKbd', kbdOn)], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.appKbd || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>✏️ โหมด Apple Pencil<br><span class="small muted">ช่องคำตอบใหญ่ เขียนด้วย Scribble ได้ทันที</span></span>
-        <select class="sel" id="penMode" aria-label="โหมด Apple Pencil">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.penMode || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+        <select class="sel" id="penMode" aria-label="โหมด Apple Pencil">${[['auto', autoTxt('penMode', penOn)], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.penMode || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>👐 ปุ่มสองข้าง (ถือสองมือ)<br><span class="small muted">iPad แนวนอน: ลืม/ยาก อยู่ซ้าย จำได้/ง่าย อยู่ขวา</span></span>
-        <select class="sel" id="thumbs" aria-label="ปุ่มสองข้าง (ถือสองมือ)">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.thumbs || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+        <select class="sel" id="thumbs" aria-label="ปุ่มสองข้าง (ถือสองมือ)">${[['auto', autoTxt('thumbs', thumbsOn)], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.thumbs || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>🎮 ฝั่งของตัวเลือกคำตอบ<br><span class="small muted">iPad แนวนอน ถือสองมือ: เลือกฝั่งที่ถนัด</span></span>
         <select class="sel" id="optSide" aria-label="ฝั่งของตัวเลือกคำตอบ">${[['right', '👉 ขวา'], ['left', '👈 ซ้าย']].map(([v, t]) => `<option value="${v}" ${(st.optSide || 'right') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>🪟 เว้นที่ให้ปุ่มหน้าต่าง iPad<br><span class="small muted">ถ้าปุ่มปิด/ย่อหน้าต่างทับปุ่ม ‹ ให้เลือก “เปิด”</span></span>
-        <select class="sel" id="winGap" aria-label="เว้นที่ให้ปุ่มหน้าต่าง iPad">${[['auto', 'อัตโนมัติ'], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.winGap || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+        <select class="sel" id="winGap" aria-label="เว้นที่ให้ปุ่มหน้าต่าง iPad">${[['auto', autoTxt('winGap', winGapOn)], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.winGap || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <button class="set-row set-link" id="keysBtn"><span>⌨️ คีย์ลัด<br><span class="small muted">สำหรับ iPad ที่ต่อคีย์บอร์ด หรือคอมพิวเตอร์ (กด ? ที่หน้าไหนก็ได้)</span></span><span class="muted">›</span></button>
       <div class="set-row"><span>📳 สั่นตอบรับ<br><span class="small muted">สั่นเบาๆ ตอนตอบถูก/ผิด (iPhone iOS 18 ขึ้นไป)</span></span>
         <label class="switch"><input type="checkbox" id="haptic" aria-label="สั่นตอบรับ" ${st.haptic !== false ? 'checked' : ''}><span></span></label></div>

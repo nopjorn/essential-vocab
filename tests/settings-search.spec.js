@@ -93,3 +93,16 @@ test('↺ default settings: looks, sound and input go back to defaults, the lear
   expect(await page.evaluate(() => [!!S.prog.apple, document.documentElement.dataset.theme, document.documentElement.classList.contains('no-vt')])).toEqual([true, undefined, false]);
   expect(errors).toEqual([]);
 });
+
+test('auto options say what they give on this device now (1.160.0)', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01', settings: { thumbs: 'on' } });
+  await page.evaluate(() => go('settings'));
+  // tests run with a fine pointer: the app keyboard and thumb buttons would be off on auto, even with thumbs set to 'on'
+  await expect(page.locator('#appKbd option[value="auto"]')).toHaveText('อัตโนมัติ (ตอนนี้ปิด)');
+  await expect(page.locator('#thumbs option[value="auto"]')).toHaveText('อัตโนมัติ (ตอนนี้ปิด)');
+  await expect(page.locator('#thumbs')).toHaveValue('on');
+  await page.evaluate(() => localStorage.setItem('o3k.pen', '1')); // a pen was used here
+  await page.evaluate(() => go('settings'));
+  await expect(page.locator('#penMode option[value="auto"]')).toHaveText('อัตโนมัติ (ตอนนี้เปิด)');
+  expect(errors).toEqual([]);
+});
