@@ -61,3 +61,29 @@ test('what-next menu: three groups, one recommended button, the same menu under 
   await expect(page.locator('#hubStart')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('round summary: cards, % remembered, XP, time, forgotten words to practise again or put in a set', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1'], newPerDay: 0, autoSpeak: false }, prog: { apple: due(0), house: due(1), water: due(2) } });
+  await page.evaluate(() => go('cards'));
+  let forgot = null;
+  for (let k = 0; k < 12 && !(await page.locator('.rsum').count()); k++) {
+    await page.click('#fc');
+    if (!forgot) forgot = await page.locator('#fc .word').first().textContent();
+    await page.click(`[data-g="${(await page.locator('#fc .word').first().textContent()) === forgot && k === 0 ? 0 : 2}"]`);
+  }
+  await expect(page.locator('.rsum')).toContainText('3');
+  await expect(page.locator('.rsum')).toContainText('75%'); // 3 remembered, 1 ลืม
+  await expect(page.locator('.rsum')).toContainText('XP');
+  await expect(page.locator('.rsum-miss .wl')).toHaveCount(1);
+  await expect(page.locator('.rsum-miss')).toContainText(forgot);
+  await page.click('.rsum-miss .wl-say');
+  expect(await page.evaluate(() => window.__said.slice(-1)[0])).toBe(forgot);
+  await page.click('#sumDeck');
+  await page.click('.sheet [data-pd="new"]');
+  await expect(page.locator('.sheet-wrap')).toHaveCount(0);
+  expect(await page.evaluate(() => liveDecks().map((d) => d.words))).toEqual([[forgot]]);
+  await page.click('#sumAgain');
+  await expect(page.locator('#pcount')).toHaveText('0/1');
+  await expect(page.locator('#fc .word').first()).toHaveText(forgot);
+  expect(errors).toEqual([]);
+});

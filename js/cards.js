@@ -67,6 +67,7 @@ function buildQueueRaw(extra) {
   if (extra === 'backlog') return dueList().slice(0, BACKLOG_CAP);
   const plan = backlogPlan();
   const due = dueList().slice(0, plan.on ? plan.show : 200);
+  if (extra === 'again') return cardsAgain.slice(); // 🔁 the words forgotten in the round just finished
   if (extra === 'rev') return due; // 🔁 start screen (1.169): today's reviews only
   let fresh = p.filter((w) => !S.prog[w.w] && inTopic(w));
   if (S.settings.order === 'shuffle') fresh = shuffle(fresh);
@@ -154,7 +155,8 @@ function bindNextSteps() {
 /* ---------- start screen (1.169) ---------- */
 // The แฟลชการ์ด tab opens this page first (go('cards', 'hub')); other ways in (home ▶︎ เริ่มเรียนเลย, quests …) still start right away.
 // It shows what today holds (reviews, new words, stubborn ones, about how long) and how to study it.
-let cardsFromHub = false; // ✕ in a session started here goes back here, not home
+let cardsFromHub = false;
+let cardsAgain = []; // words forgotten in the last round (summary → 🔁 ฝึกคำที่ลืมอีกรอบ) // ✕ in a session started here goes back here, not home
 function hubToday() {
   const q = buildQueueRaw();
   const due = q.filter((w) => S.prog[w.w]), nw = q.length - due.length;
@@ -195,6 +197,7 @@ function renderCards(extra) {
   const queue = deck ? buildDeckQueue(deck, extra) : buildQueue(extra);
   const total = queue.length;
   let done = 0, stats = { again: 0, ok: 0 };
+  const t0 = Date.now(), xp0 = S.xp; let missed = []; // for the summary at the end of the round
   if (deck) { deck.used = Date.now(); save(); }
   if (deck && !total) { view.innerHTML = deckEmptyHtml(deck); bindDeckSteps(deck); return; }
   if (!total) {
@@ -238,7 +241,7 @@ function renderCards(extra) {
     if (!deck) S.daily = h.daily;
     relearn = new Set(h.relearn); save();
     queue.splice(0, queue.length, ...h.queue);
-    done = h.done; stats = h.stats;
+    done = h.done; stats = h.stats; missed = h.missed;
     show();
   };
 
@@ -314,7 +317,7 @@ function renderCards(extra) {
   }
 
   function snapshot() {
-    history.push({ w: card.w, prev: map[card.w] && { ...map[card.w] }, daily: { ...S.daily }, queue: queue.slice(), done, stats: { ...stats }, relearn: [...relearn] });
+    history.push({ w: card.w, prev: map[card.w] && { ...map[card.w] }, daily: { ...S.daily }, queue: queue.slice(), done, stats: { ...stats }, relearn: [...relearn], missed: missed.slice() });
     if (history.length > 30) history.shift();
   }
   const requeue = (min) => queue.splice(Math.min(queue.length, min + (Math.random() * 3 | 0)), 0, card);
@@ -332,7 +335,7 @@ function renderCards(extra) {
       stats.ok++; done++;
     } else {
       grade(card, g, map);
-      if (g === 0) { relearn.delete(card.w); stats.again++; requeue(3); }
+      if (g === 0) { relearn.delete(card.w); stats.again++; if (!missed.includes(card)) missed.push(card); requeue(3); }
       else if (g === 1 && (isNew || re)) { relearn.add(card.w); requeue(4); }
       else { stats.ok++; done++; }
     }
@@ -399,20 +402,42 @@ function renderCards(extra) {
   function finish() {
     updateStreak();
     confetti();
+    const sum = roundSummary();
     if (deck) {
-      view.innerHTML = `<div class="card-box center pop" style="margin-top:30px">
-        <div class="result-emoji">🏆</div><div class="h2">จบรอบแล้ว เก่งมาก!</div>
-        <p>ทบทวน ${total} ใบ · กด "ลืม" ${stats.again} ครั้ง</p>
-        <p class="muted small">คำที่ลืมจะกลับมาให้ทบทวนอีกเร็วๆ นี้</p></div>${deckStepsHtml(deck)}`;
-      bindDeckSteps(deck);
+      view.innerHTML = sum + deckStepsHtml(deck);
+      bindSummary(); bindDeckSteps(deck);
       return;
     }
-    view.innerHTML = `<div class="card-box center pop" style="margin-top:30px">
-      <div class="result-emoji">${mascotSvg({ mood: 'happy', size: 110 })}</div><div class="h2">จบรอบแล้ว เก่งมาก!</div>
-      <p>ทบทวน ${total} ใบ · กด "ลืม" ${stats.again} ครั้ง</p>
-      <p class="muted small">คำที่ลืมจะกลับมาให้ทบทวนอีกเร็วๆ นี้</p></div>
-      ${tomorrowBox()}${nextSteps(W.filter((w) => S.prog[w.w]).length)}`;
-    bindNextSteps();
+    view.innerHTML = sum + tomorrowBox() + nextSteps(W.filter((w) => S.prog[w.w]).length);
+    bindSummary(); bindNextSteps();
+  }
+  // End of a round: cards, % remembered, XP and time, then the words pressed ลืม with 🔊 / ☆, practise them again or put them in a set.
+  function roundSummary() {
+    const n = stats.ok + stats.again, acc = n ? Math.round(stats.ok / n * 100) : 0;
+    const sec = Math.round((Date.now() - t0) / 1000), time = sec >= 60 ? Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0') : sec + ' วิ';
+    const say = acc >= 90 ? 'ความจำเยี่ยมมาก!' : acc >= 70 ? 'เก่งมาก ไปได้สวย!' : 'ลืมบ้างไม่เป็นไร ทวนอีกนิดก็จำได้';
+    return `<div class="card-box center pop rsum" style="margin-top:20px">
+      <div class="result-emoji">${deck ? '🏆' : mascotSvg({ mood: 'happy', size: 96 })}</div><div class="h2">จบรอบแล้ว!</div><p class="muted rsum-say">${say}</p>
+      <div class="res-stats rsum-st">
+        <div><b>${total}</b><span>ใบ</span></div>
+        <div><b>${acc}%</b><span>จำได้</span></div>
+        <div><b>+${Math.max(0, S.xp - xp0)}</b><span>XP</span></div>
+        <div><b>${time}</b><span>เวลา</span></div></div>
+      ${missed.length ? '' : '<p class="small muted">ไม่ได้กด “ลืม” เลยสักใบ 👏</p>'}</div>
+      ${missed.length ? `<div class="card-box wrong-list rsum-miss"><div class="wl-h"><b>คำที่กด “ลืม” รอบนี้</b><span class="wl-n">${missed.length}</span></div>
+        <div class="small muted wl-hint">จะกลับมาให้ทบทวนเร็วๆ นี้ · 🔊 ฟังเสียง · ☆ ติดดาว</div>
+        ${missed.map((w) => `<div class="wl" data-i="${w.idx}"><span><b lang="en">${esc(w.w)}</b> <span class="pos">${esc(w.p)}</span></span><span class="muted grow" style="text-align:right">${esc(w.t)}</span><button class="wl-say" aria-label="ฟังเสียง ${esc(w.w)}">🔊</button><button class="star-btn" data-star aria-label="ติดดาว ${esc(w.w)}">${starIcon(w)}</button></div>`).join('')}
+        <div class="res-acts rsum-acts"><button class="btn primary block" id="sumAgain">🔁 ฝึก ${missed.length} คำนี้อีกรอบ</button>${deck ? '' : '<button class="btn block" id="sumDeck">📚 ใส่เข้าชุดของฉัน</button>'}</div></div>` : ''}`;
+  }
+  function bindSummary() {
+    const wl = view.querySelector('.rsum-miss'); if (!wl) return;
+    wl.onclick = (e) => {
+      const row = e.target.closest('.wl'), w = row && W[+row.dataset.i]; if (!w) return;
+      const sb = e.target.closest('[data-star]');
+      if (sb) { toggleStar(w); sb.textContent = starIcon(w); } else speak(w.w);
+    };
+    $('#sumAgain').onclick = () => { cardsAgain = missed.slice(); cardsFromHub = fromHub; renderCards(deck ? { deck: deck.id, again: true } : 'again'); };
+    const dk = $('#sumDeck'); if (dk) dk.onclick = () => pickDeck(missed.map((w) => w.w));
   }
 
   show();

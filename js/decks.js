@@ -80,6 +80,7 @@ const DECK_ROUND = 20; // new cards per round
 // Cards of one round: everything due, with up to 20 new words mixed in. { ahead } = the 20 learned words closest to due.
 function buildDeckQueue(d, extra) {
   const map = deckMap(d.id), ws = deckWords(d);
+  if (extra && extra.again) return cardsAgain.filter((w) => ws.includes(w)); // 🔁 forgotten in the last round (js/cards.js summary)
   if (extra && extra.ahead) return ws.filter((w) => map[w.w]).sort((a, b) => map[a.w].d - map[b.w].d).slice(0, DECK_ROUND);
   const due = dueList(ws, map).slice(0, 200);
   let fresh = ws.filter((w) => !map[w.w]);
