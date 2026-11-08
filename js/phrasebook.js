@@ -5,14 +5,28 @@
 // Classic script sharing globals with app.js (load order: index.html).
 
 /* ---------- phrase books ---------- */
-// file, window key, icon, page title, game question modes (en: English → Thai, th: Thai → English, note: English → the note), note label,
+// file, window key, icon, page title, game question modes (en: English → Thai, th: Thai → English, note: English → the note), noteEn = the note is
+// English shown next to the phrase (a full form) else a Thai tip line,
 // whether the English is read aloud by itself (abbreviations are spelt oddly by speech engines: the example is read instead), categories.
 const PB = {
   abbr: {
-    file: 'data/abbr.js', key: 'ABBR', icon: '🔤', title: 'ตัวย่อที่ใช้ในงาน', modes: ['en', 'th', 'note'], note: 'ย่อมาจาก', sayEn: false,
+    file: 'data/abbr.js', key: 'ABBR', icon: '🔤', title: 'ตัวย่อที่ใช้ในงาน', modes: ['en', 'th', 'note'], noteEn: true, sayEn: false,
     intro: 'ตัวย่อที่เจอในอีเมล แชต และการประชุม · แต่ละตัวมีคำเต็ม ความหมาย และประโยคตัวอย่าง · แตะเพื่อฟังประโยค · ＋ เก็บเข้าชุดของฉัน',
     ask: { en: 'ตัวย่อนี้แปลว่าอะไร', th: 'ตัวย่อไหนตรงกับความหมายนี้', note: 'ตัวย่อนี้ย่อมาจากอะไร' },
     cats: { mail: ['📧', 'อีเมล'], meet: ['🗓️', 'ประชุม'], hr: ['🧑‍💼', 'งานบุคคล / การลา'], biz: ['📈', 'ธุรกิจ'], tech: ['💻', 'ไอที'], chat: ['💬', 'แชต'] },
+    same: [['TBD', 'TBC'], ['EOD', 'COB'], ['e.g.', 'i.e.'], ['UI', 'UX'], ['B2B', 'B2C'], ['Re:', 'Fwd:'], ['cc', 'bcc']],
+  },
+  chat: {
+    file: 'data/chat.js', key: 'CHAT', icon: '💬', title: 'ภาษาพูด / แชต', modes: ['en', 'th'], sayEn: true,
+    intro: 'ประโยคสั้นที่เจ้าของภาษาพูดและแชตกันทุกวัน แต่ตำราไม่ค่อยสอน · มีบทสนทนาตัวอย่างและ 💡 บอกว่าใช้ตอนไหน · แตะเพื่อฟัง · ＋ เก็บเข้าชุดของฉัน',
+    ask: { en: 'ประโยคนี้หมายความว่าอะไร', th: 'จะพูดแบบนี้เป็นภาษาอังกฤษว่าอะไร' },
+    cats: { react: ['😮', 'ตอบรับ / แสดงความรู้สึก'], plan: ['📅', 'ชวน / นัด / ปฏิเสธ'], thanks: ['🙏', 'ขอบคุณ / ขอโทษ'], feel: ['😮‍💨', 'บอกสภาพตัวเอง'], talk: ['🗣️', 'คำเชื่อมเวลาคุย'], slang: ['😎', 'คำพูดติดปาก'] },
+    // phrases close enough in meaning that they never appear together as options
+    same: [['No worries.', 'It\'s all good.', 'Don\'t mention it.', 'I\'m good.', 'no big deal'], ['I\'m down.', 'Count me in.', 'I\'m in.'], ['I\'m beat.', 'It\'s been a long day.', 'I\'m swamped.'],
+      ['What\'s up?', 'How\'s it going?', 'What are you up to?', 'Long time no see!'], ['See you around.', 'Catch you later.', 'Take care!'], ['Thanks a ton.', 'Cheers!', 'You\'re a lifesaver.', 'I owe you one.'],
+      ['No way!', 'You\'re kidding!'], ['Same here.', 'Tell me about it.', 'I bet.'], ['I\'ll pass.', 'Can I take a rain check?', 'I\'m not feeling it.', 'I can\'t be bothered.'],
+      ['Fair enough.', 'That makes sense.'], ['kinda', 'a bit of a'], ['ASAP-ish', 'sevenish'], ['It\'s on me.', 'Let\'s split the bill.'], ['Not gonna lie', 'To be fair', 'I mean', 'Between you and me'],
+      ['I\'m so over it.', 'I can\'t be bothered.'], ['Anyway', 'By the way', 'Speaking of which']],
   },
 };
 const PB_DATA = {};
@@ -25,13 +39,22 @@ const pbItems = (id) => PB_DATA[id].map((r) => ({ idx: -1, w: r.en, t: r.th, p: 
 function pbQuestion(id, r, mode) {
   const b = PB[id], m = mode || pick(b.modes);
   const field = m === 'en' ? 'th' : m === 'th' ? 'en' : 'note';
-  const right = r[field], rows = PB_DATA[id].filter((x) => x !== r && x[field] && x[field] !== right);
+  const near0 = new Set((b.same || []).filter((g) => g.includes(r.en)).flat());
+  const right = r[field], rows = PB_DATA[id].filter((x) => x !== r && x[field] && x[field] !== right && !near0.has(x.en));
   const near = shuffle(rows.filter((x) => x.cat === r.cat)), far = shuffle(rows.filter((x) => x.cat !== r.cat));
   const others = [];
   for (const x of [...near.slice(0, 2), ...far, ...near.slice(2)]) { if (others.length < 3 && !others.includes(x[field])) others.push(x[field]); }
   return { m, field, right, opts: shuffle([right, ...others]), prompt: m === 'th' ? r.th : r.en };
 }
-const pbOwn = (r, id) => ({ w: r.en, t: PB[id].note && r.note ? `${r.th} (${r.note})` : r.th, e: r.ex, et: r.exTh });
+const pbOwn = (r, id) => ({ w: r.en, t: PB[id].noteEn && r.note ? `${r.th} (${r.note})` : r.th, e: r.ex, et: r.exTh });
+// the note: English beside the phrase (noteEn) or a 💡 Thai tip line
+const pbNoteIn = (r, id) => (PB[id].noteEn && r.note ? ` <span class="small muted" lang="en">${esc(r.note)}</span>` : '');
+const pbTip = (r, id) => (!PB[id].noteEn && r.note ? `<small class="muted">💡 ${esc(r.note)}</small>` : '');
+// the example with the phrase in bold (any case, without its end mark)
+function pbMark(r) {
+  const k = r.en.replace(/[.!?]$/, ''), i = r.ex.toLowerCase().indexOf(k.toLowerCase());
+  return i < 0 ? esc(r.ex) : esc(r.ex.slice(0, i)) + '<b>' + esc(r.ex.slice(i, i + k.length)) + '</b>' + esc(r.ex.slice(i + k.length));
+}
 const pbSay = (r, id) => (PB[id].sayEn ? r.en : r.ex);
 const pbCat = {}; // book id → selected category chip
 function renderBook(id) {
@@ -50,7 +73,7 @@ function renderBook(id) {
   const paint = () => {
     view.querySelectorAll('#pbCats .chip').forEach((c) => { const on = c.dataset.c === cur(); c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
     $('#pbList').innerHTML = cats.filter((c) => cur() === 'all' || c === cur()).map((c) => `<div class="card-box pair-card"><div class="pair-h"><b>${b.cats[c][0]} ${b.cats[c][1]}</b> <span class="small muted">${rows.filter((r) => r.cat === c).length}</span></div>
-      ${rows.filter((r) => r.cat === c).map((r) => `<div class="bc-item pb-item"><button class="pair-ex" data-say="${esc(pbSay(r, id))}"><span><b lang="en">${esc(r.en)}</b>${r.note ? ` <span class="small muted" lang="en">${esc(r.note)}</span>` : ''} = ${esc(r.th)}</span><span lang="en">${esc(r.ex)}</span><small class="muted">${esc(r.exTh)}</small></button><button class="bc-add" data-add="${rows.indexOf(r)}" aria-label="เก็บ ${esc(r.en)} เข้าชุดของฉัน">＋</button></div>`).join('')}</div>`).join('');
+      ${rows.filter((r) => r.cat === c).map((r) => `<div class="bc-item pb-item"><button class="pair-ex" data-say="${esc(pbSay(r, id))}"><span><b lang="en">${esc(r.en)}</b>${pbNoteIn(r, id)} = ${esc(r.th)}</span><span lang="en">${esc(r.ex)}</span><small class="muted">${esc(r.exTh)}</small>${pbTip(r, id)}</button><button class="bc-add" data-add="${rows.indexOf(r)}" aria-label="เก็บ ${esc(r.en)} เข้าชุดของฉัน">＋</button></div>`).join('')}</div>`).join('');
   };
   paint();
   $('#pbCats').onclick = (e) => { const c = e.target.closest('[data-c]'); if (c) { pbCat[id] = c.dataset.c; paint(); } };

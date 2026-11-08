@@ -2,7 +2,7 @@
 const { test, expect } = require('@playwright/test');
 const { openApp, readState } = require('./helpers');
 
-const BOOKS = [['abbr', 'toAb']];
+const BOOKS = [['chat', 'toCh'], ['abbr', 'toAb']];
 
 for (const [id, btn] of BOOKS) {
   test(`${id}: the page lists every row by category, speaks, keeps a row in a set and starts the game`, async ({ page }) => {
@@ -34,6 +34,8 @@ for (const [id, btn] of BOOKS) {
     const errors = await openApp(page);
     const ok = await page.evaluate(async (id) => {
       await loadBook(id);
+      const en = new Set(PB_DATA[id].map((r) => r.en));
+      if (!(PB[id].same || []).flat().every((x) => en.has(x))) return 'a `same` entry is not in the book';
       return PB[id].modes.every((m) => PB_DATA[id].every((r) => { const q = pbQuestion(id, r, m); return q.opts.length === 4 && new Set(q.opts).size === 4 && q.opts.includes(q.right); }));
     }, id);
     expect(ok).toBe(true);
