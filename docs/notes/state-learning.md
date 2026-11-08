@@ -30,7 +30,7 @@ Full notes on stored fields, sync/merge and scheduling. CLAUDE.md keeps only the
 - XP: `addXP()`; level L starts at 25·L·(L−1) XP. Flashcard 2 (ลืม 1), right answer `comboXP(combo)`.
 - Feed (`renderFeed`, route `feed`, no tab since 1.31.1: reached from home `#qFeed`, the flashcard done screen and `settings.start`): due → new (learn card, quiz 3 cards later, counts toward
   `daily.fresh`) → practice. Uses `gameResult()`. Start screen: `settings.start`.
-- Stats page (`renderStats`, route `stats`): 28-day habits, learn rate from `snap` (≥7 days) else
+- Stats page (`renderStats`, route `stats`; a main tab, so no back button since 1.211.1): 28-day habits, learn rate from `snap` (≥7 days) else
   newPerDay × active-day ratio; ETA = remaining/rate + 11 days/accuracy/active-ratio. Chart colours are
   `--c-card/--c-game/--c-master` (validated with the dataviz palette checker in light and dark).
 - Placement (`renderPlacement`, route `placement`): 8 MC questions per level, stops below 6/8; skipped words

@@ -2069,7 +2069,7 @@ test('1.134: stats starter card + folded levels, goal ring party once a day, edg
   await expect(page.locator('.hero.ring-closed')).toHaveCount(1);
   await expect(page.locator('.ring-burst')).toHaveCount(0);
   // swipe from the left edge on a page with a back button goes back
-  await page.evaluate(() => go('stats', 'home'));
+  await page.evaluate(() => go('toeic', 'home'));
   await expect(page.locator('body.has-back')).toHaveCount(1);
   await page.evaluate(() => {
     const t = (x, y) => new Touch({ identifier: 1, target: document.body, clientX: x, clientY: y });
@@ -2081,13 +2081,13 @@ test('1.134: stats starter card + folded levels, goal ring party once a day, edg
   expect(await page.evaluate(() => window.__edgeTip)).toBe(true);
   await expect(page.locator('#view')).toHaveAttribute('data-route', 'home');
   // a short swipe stays put
-  await page.evaluate(() => go('stats', 'home'));
+  await page.evaluate(() => go('toeic', 'home'));
   await page.evaluate(() => {
     const t = (x, y) => new Touch({ identifier: 1, target: document.body, clientX: x, clientY: y });
     const fire = (type, x) => document.dispatchEvent(new TouchEvent(type, { touches: type === 'touchend' ? [] : [t(x, 400)], changedTouches: [t(x, 400)], bubbles: true }));
     fire('touchstart', 8); fire('touchmove', 40); fire('touchend', 40);
   });
-  await expect(page.locator('#view')).toHaveAttribute('data-route', 'stats');
+  await expect(page.locator('#view')).toHaveAttribute('data-route', 'toeic');
   expect(errors).toEqual([]);
 });
 

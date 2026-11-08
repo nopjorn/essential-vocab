@@ -333,11 +333,16 @@ test('UI polish: top-bar back + level chip, collapsible settings, game source pi
   await expect(page.locator('#installTip')).toHaveCount(0);
   await page.evaluate(() => go('home'));
   await expect(page.locator('#installTip')).toHaveCount(0);
-  // level chip opens the stats page; the top-bar back button returns
+  // level chip opens the stats page: a main tab, so no back button (1.211.1)
   await page.locator('#streak').click();
   await expect(page.locator('#title')).toHaveText('สถิติ');
+  await expect(page.locator('#topBack')).toBeHidden();
+  await expect(page.locator('#sBack')).toHaveCount(0);
+  // a sub-page (TOEIC hub) shows the top-bar back button, which returns
+  await page.evaluate(() => go('toeic', 'stats'));
   await expect(page.locator('#topBack')).toBeVisible();
   await page.locator('#topBack').click();
+  await expect(page.locator('#title')).toHaveText('สถิติ');
   await expect(page.locator('#topBack')).toBeHidden();
   // settings groups collapse/expand
   await page.evaluate(() => go('settings'));
