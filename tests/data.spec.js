@@ -465,7 +465,7 @@ test('ready-made word sets (presets) are valid', () => {
 
 test('work email / chat phrases (1.199): known category, one [key], 3 distinct wrong keys, Thai and tip, no duplicates', () => {
   const { WORKPHR } = load('data/workphr.js');
-  const cats = ['open', 'ask', 'follow', 'attach', 'meet', 'opinion', 'sorry', 'thanks', 'close', 'chat'];
+  const cats = ['open', 'ask', 'follow', 'attach', 'meet', 'opinion', 'sorry', 'thanks', 'close', 'chat', 'call'];
   expect(WORKPHR.length).toBeGreaterThanOrEqual(60);
   const bad = [], seen = new Set(), n = {};
   WORKPHR.forEach(([cat, en, th, wrong, tip], i) => {

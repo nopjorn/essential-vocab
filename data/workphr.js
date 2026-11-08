@@ -80,4 +80,15 @@ window.WORKPHR = [
 ['chat', 'Let me [double-check] and get back to you.', 'ขอเช็กให้แน่ใจก่อนแล้วจะตอบกลับนะ', ['double-checking', 'twice check', 'check double'], 'double-check = ตรวจซ้ำให้แน่ใจ'],
 ['chat', 'Sorry, I [missed] your message earlier.', 'ขอโทษ เมื่อกี้ไม่ทันเห็นข้อความ', ['lost', 'missing', 'passed'], 'miss a message = ไม่ทันเห็นข้อความ'],
 ['chat', 'I\'m [running] a few minutes late.', 'จะไปช้าไม่กี่นาทีนะ', ['being run', 'going on', 'walking'], 'I\'m running late = กำลังจะไปสาย'],
+// phone calls and online meetings (1.207.0)
+['call', 'You\'re [on mute].', 'คุณปิดไมค์อยู่นะ', ['in mute', 'at mute', 'on muted'], 'on mute = ปิดไมค์อยู่ ประโยคที่ได้ยินบ่อยที่สุดในประชุมออนไลน์'],
+['call', 'Can you [see] my screen?', 'เห็นหน้าจอของฉันไหม', ['look', 'watch', 'seeing'], 'see = มองเห็น (เห็นได้ไหม) · look at / watch ใช้กับการตั้งใจดู'],
+['call', 'Let me [share] my screen.', 'ขอแชร์หน้าจอนะ', ['sharing', 'show up', 'give'], 'share my screen = แชร์หน้าจอ'],
+['call', 'Sorry, you\'re [breaking up].', 'ขอโทษ เสียงคุณขาดๆ หายๆ', ['breaking down', 'broken up', 'breaking out'], 'break up (สัญญาณ) = เสียงขาดๆ หายๆ · break down = (เครื่อง) เสีย'],
+['call', 'Could you [repeat] that, please?', 'ช่วยพูดอีกครั้งได้ไหม', ['repeat again', 'say again it', 'return'], 'repeat มีความหมายว่าอีกครั้งอยู่แล้ว ไม่ต้องใส่ again'],
+['call', 'May I [speak] to Ms. Lee, please?', 'ขอสายคุณลีหน่อยค่ะ', ['say', 'talk with to', 'tell'], 'May I speak to …? = ขอสาย … (ทางโทรศัพท์)'],
+['call', 'Please [hold], I\'ll put you through.', 'กรุณาถือสายรอ เดี๋ยวโอนสายให้', ['wait on', 'keep', 'stay up'], 'hold = ถือสายรอ · put someone through = โอนสายให้'],
+['call', 'Can I [take] a message?', 'จะฝากข้อความไว้ไหมคะ', ['make', 'get', 'do'], 'take a message = รับฝากข้อความ (คนรับสายพูด) · leave a message = ฝากข้อความ (คนโทรพูด)'],
+['call', 'Let\'s [wait] a few more minutes for the others to join.', 'รออีกสักครู่ให้คนอื่นเข้ามาก่อน', ['waited', 'waiting', 'expect'], 'Let\'s + กริยารูปปกติ · wait for + คน'],
+['call', 'I\'ll [drop] the link in the chat.', 'เดี๋ยวแปะลิงก์ไว้ในแชตนะ', ['fall', 'put down', 'throw up'], 'drop a link in the chat = แปะลิงก์ในแชต (ภาษาพูด)'],
 ];

@@ -90,7 +90,7 @@ function renderUkUs() {
 /* ---------- work email & chat phrases (1.199.0) ---------- */
 // data/workphr.js rows: [cat, phrase with the [key part], Thai, [3 wrong key parts], Thai tip]. Game `wphr` (qWphr in data/play.js), page renderWorkPhr().
 const WP_CAT = { open: ['👋', 'เปิดอีเมล'], ask: ['🙏', 'ขอร้อง / สอบถาม'], follow: ['⏰', 'ติดตามงาน'], attach: ['📎', 'แนบไฟล์ / ส่งข้อมูล'], meet: ['🗓️', 'นัดประชุม'],
-  opinion: ['💭', 'แสดงความเห็น'], sorry: ['🙇', 'แจ้งปัญหา / ขอโทษ'], thanks: ['💐', 'ขอบคุณ'], close: ['✍️', 'ปิดอีเมล'], chat: ['💬', 'แชตงาน'] };
+  opinion: ['💭', 'แสดงความเห็น'], sorry: ['🙇', 'แจ้งปัญหา / ขอโทษ'], thanks: ['💐', 'ขอบคุณ'], close: ['✍️', 'ปิดอีเมล'], chat: ['💬', 'แชตงาน'], call: ['☎️', 'โทรศัพท์ / ประชุมออนไลน์'] };
 let WORKPHR = null;
 const loadWorkPhr = () => loadData('data/workphr.js', 'WORKPHR').then((rows) => {
   if (!WORKPHR && rows.length) WORKPHR = rows.map(([cat, en, th, wrong, tip]) => ({ cat, en, th, wrong, tip, key: en.match(/\[([^\]]+)\]/)[1], plain: en.replace(/[[\]]/g, '') }));
