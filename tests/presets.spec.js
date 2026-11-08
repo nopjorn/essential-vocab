@@ -5,7 +5,7 @@ const { openApp, readState } = require('./helpers');
 test('add a ready-made set from the ชุดของฉัน page', async ({ page }) => {
   const errors = await openApp(page);
   await page.evaluate(() => go('decks'));
-  await expect(page.locator('.pre-tile')).toHaveCount(10);
+  await expect(page.locator('.pre-tile')).toHaveCount(17);
   await page.locator('[data-pre="dev"]').click();
   const sheet = page.locator('.sheet-wrap.open');
   await expect(sheet).toContainText('ไอที');

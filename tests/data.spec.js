@@ -443,7 +443,7 @@ test('ready-made word sets (presets) are valid', () => {
   const { WORDS } = load(...WORD_FILES);
   const words = new Set(WORDS.map((r) => r[0]));
   const low = new Set(WORDS.map((r) => r[0].toLowerCase()));
-  expect(PRESETS.length).toBeGreaterThanOrEqual(10);
+  expect(PRESETS.length).toBeGreaterThanOrEqual(17);
   const bad = [], ids = new Set();
   PRESETS.forEach((p) => {
     if (!/^[a-z0-9]{1,24}$/.test(p.id) || ids.has(p.id)) bad.push(`${p.id}: id`);
