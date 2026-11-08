@@ -143,7 +143,9 @@ test('games menu: the 💼 TOEIC chip shows only the TOEIC games, in part order 
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   await page.evaluate(() => go('games'));
   const view = page.locator('#view'), chip = view.locator('#gSkill [data-skill="toeic"]');
-  const ids = await page.evaluate(() => TOEIC_GAMES.filter((g) => GAMES[g]));
+  const ids = await page.evaluate(() => TOEIC_CHIP.filter((g) => GAMES[g]));
+  expect(ids.slice(0, 8)).toEqual(await page.evaluate(() => TOEIC_GAMES)); // the parts first, then practice games (bizcol, 1.200.0)
+  expect(ids).toContain('bizcol');
   await expect(chip).toContainText(String(ids.length));
   await chip.click();
   await expect(view.locator('#gSkill [data-skill="toeic"]')).toHaveAttribute('aria-pressed', 'true');

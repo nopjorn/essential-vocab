@@ -484,6 +484,25 @@ test('work email / chat phrases (1.199): known category, one [key], 3 distinct w
   expect(bad).toEqual([]);
 });
 
+test('business collocations (1.200): known group, one [partner], one blank, the answer + 3 distinct wrong partners, Thai, no duplicates', () => {
+  const { BIZCOL } = load('data/bizcol.js');
+  expect(BIZCOL.length).toBeGreaterThanOrEqual(70);
+  const bad = [], seen = new Set(), n = {};
+  BIZCOL.forEach(([g, col, sent, ans, wrong, th, sth], i) => {
+    const id = `#${i} ${col}`;
+    n[g] = (n[g] || 0) + 1;
+    if (!['v', 'a', 'n', 'p'].includes(g)) bad.push(`${id}: group ${g}`);
+    if ((col.match(/\[[^\]]+\]/g) || []).length !== 1) bad.push(`${id}: needs one [partner]`);
+    if ((sent.match(/___/g) || []).length !== 1) bad.push(`${id}: needs one ___`);
+    if (!Array.isArray(wrong) || wrong.length !== 3 || new Set([ans, ...wrong].map((x) => x.toLowerCase())).size !== 4) bad.push(`${id}: answer + 3 different wrong partners`);
+    if (!/[\u0E00-\u0E7F]/.test(th) || !/[\u0E00-\u0E7F]/.test(sth)) bad.push(`${id}: Thai`);
+    if (seen.has(sent)) bad.push(`${id}: duplicate sentence`);
+    seen.add(sent);
+  });
+  Object.entries(n).forEach(([g, k]) => { if (k < 5) bad.push(`group ${g} has ${k}`); });
+  expect(bad).toEqual([]);
+});
+
 test('real-life texts are valid practice data', () => {
   const { REALTEXT } = load('data/realtext.js');
   const { WORDS } = load(...WORD_FILES);

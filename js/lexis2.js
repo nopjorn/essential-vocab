@@ -123,6 +123,39 @@ function renderWorkPhr() {
   $('#wpList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
 }
 
+/* ---------- business collocations (1.200.0) ---------- */
+// data/bizcol.js rows: [group, collocation with the [partner], sentence with ___, answer as used, [3 wrong partners], Thai, Thai sentence].
+// Game `bizcol` (qBizcol in data/play.js, also on the 💼 TOEIC chip), page renderBizCol().
+const BC_GROUP = { v: ['🔧', 'กริยา + คำนาม'], a: ['🎨', 'คุณศัพท์ + คำนาม'], n: ['🧱', 'คำนาม + คำนาม'], p: ['📍', 'บุพบท + คำนาม'] };
+let BIZCOL = null;
+const loadBizCol = () => loadData('data/bizcol.js', 'BIZCOL').then((rows) => {
+  if (!BIZCOL && rows.length) BIZCOL = rows.map(([g, col, sent, ans, wrong, th, sth]) => ({ g, col, sent, ans, wrong, th, sth, plain: col.replace(/[[\]]/g, ''), full: sent.replace('___', ans) }));
+  return BIZCOL || [];
+});
+const bcHTML = (r) => esc(r.col).replace(/\[([^\]]+)\]/, '<mark>$1</mark>');
+const bcItems = () => BIZCOL.map((r) => ({ idx: -1, w: r.plain, t: r.th, p: '', g: '', _bc: r, _q: [r.sent, r.ans, '', r.sth] }));
+let bcGrp = 'all';
+function renderBizCol() {
+  if (!BIZCOL) { withLoading(loadBizCol()).then(renderBizCol); return; }
+  $('#title').textContent = 'Collocation ธุรกิจ';
+  view.scrollTop = 0;
+  const gs = Object.keys(BC_GROUP).filter((g) => BIZCOL.some((r) => r.g === g));
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="bcBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="bcPlay">🤝 เล่นเกม</button></div>
+    <p class="small muted" style="margin:0 4px 10px">${BIZCOL.length} คู่คำที่ใช้คู่กันในงานธุรกิจ เช่น meet a deadline (ไม่ใช่ make a deadline) · ข้อสอบ TOEIC Part 5/6 ชอบถาม · แตะเพื่อฟังประโยค</p>
+    <div class="chips scroll" id="bcGrps"><button class="chip" data-g="all">ทั้งหมด</button>${gs.map((g) => `<button class="chip" data-g="${g}">${BC_GROUP[g][0]} ${BC_GROUP[g][1]}</button>`).join('')}</div>
+    <div class="pair-list" id="bcList"></div>`;
+  const paint = () => {
+    view.querySelectorAll('#bcGrps .chip').forEach((c) => { const on = c.dataset.g === bcGrp; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
+    $('#bcList').innerHTML = gs.filter((g) => bcGrp === 'all' || g === bcGrp).map((g) => `<div class="card-box pair-card"><div class="pair-h"><b>${BC_GROUP[g][0]} ${BC_GROUP[g][1]}</b> <span class="small muted">${BIZCOL.filter((r) => r.g === g).length} คู่</span></div>
+      ${BIZCOL.filter((r) => r.g === g).map((r) => `<button class="pair-ex" data-say="${esc(r.full)}"><span><b lang="en">${bcHTML(r)}</b> = ${esc(r.th)}</span><span lang="en">${esc(r.full)}</span><small class="muted">${esc(r.sth)} · ✗ ${r.wrong.map(esc).join(', ')}</small></button>`).join('')}</div>`).join('');
+  };
+  paint();
+  $('#bcGrps').onclick = (e) => { const c = e.target.closest('[data-g]'); if (c) { bcGrp = c.dataset.g; paint(); } };
+  $('#bcBack').onclick = () => go('ref');
+  $('#bcPlay').onclick = () => startGame('bizcol');
+  $('#bcList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
+}
+
 /* ---------- real-life texts (1.113) ---------- */
 // data/realtext.js rows: [kind, Thai situation, text with ___, answer, [3 wrong words], Thai translation, list word?]. Game `real` (qReal in data/play.js).
 let REALTEXT = null;

@@ -163,6 +163,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'gpat') return qGpat(w);
     if (m === 'real') return qReal(w);
     if (m === 'wphr') return qWphr(w);
+    if (m === 'bizcol') return qBizcol(w);
     if (m === 'toeic5') return qP5(w);
     if (m === 'toeic7') return qP7(w);
     if (m === 'toeic6') return qP6(w);
@@ -1134,6 +1135,35 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       view.querySelector('[data-sayex]').onclick = () => speak(gpPlain(r));
       $('#nextQ').onclick = next;
       speak(gpPlain(r));
+    };
+  }
+
+  // Business collocations (1.200.0): a workplace sentence with the partner word missing, like TOEIC Part 5; wrong partners never collocate.
+  function qBizcol(w) {
+    const r = w._bc, [ic, grp] = BC_GROUP[r.g] || BC_GROUP.v, opts = shuffle([r.ans, ...r.wrong]);
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit pop"><div class="small muted">🤝 คำคู่ธุรกิจ · ${ic} ${grp}</div>
+        <div class="h2 p5-s" lang="en" style="margin-top:8px">${esc(r.sent).replace('___', '<span class="blank">_____</span>')}</div>
+        <button class="hint-btn" id="bcHint">💡 ดูคำแปล</button><div class="thx" id="bcTh" hidden>${esc(r.sth)}</div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" lang="en" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    $('#bcHint').onclick = () => { $('#bcTh').hidden = false; $('#bcHint').remove(); };
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === r.ans;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === r.ans) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ที่ถูกคือ'} <b lang="en">${esc(r.ans)}</b>
+        <div class="example"><div class="en" lang="en">${esc(r.sent).replace('___', `<mark>${esc(r.ans)}</mark>`)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(r.sth)}</div>
+          <div class="thx bc-col">🤝 <b lang="en">${bcHTML(r)}</b> = ${esc(r.th)}</div></div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('[data-sayex]').onclick = () => speak(r.full);
+      $('#nextQ').onclick = next;
+      speak(r.full);
     };
   }
 
