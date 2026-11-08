@@ -507,6 +507,12 @@ body { touch-action: manipulation; }
 .wpday { cursor: pointer; }
 .wp-day { font-size: var(--fs-lg, 18px); font-weight: 600; margin-top: 8px; }
 .wp-day mark { background: none; color: var(--pink-ink); font-weight: 800; }
+.em-sit { margin: 6px 0 8px; font-size: var(--fs-sm, 14px); }
+.em-paper { align-self: stretch; width: 100%; box-sizing: border-box; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; text-align: left; display: grid; gap: 6px; }
+.em-p { font-size: var(--fs-sm, 14px); line-height: 1.45; }
+.em-now { color: var(--primary-ink); font-weight: 700; border: 1.5px dashed var(--primary-ink); border-radius: 8px; padding: 4px 8px; }
+.em-gap { color: var(--muted); border-bottom: 1px dashed var(--border); }
+.em-full { margin-top: 6px; line-height: 1.6; }
 .rg-to { font-weight: 700; margin-top: 8px; }
 .rg-l { display: grid; grid-template-columns: 104px 1fr; gap: 8px; padding: 4px 0; align-items: baseline; }
 .rg-l b { font-size: var(--fs-sm, 14px); }

@@ -53,6 +53,7 @@ const GAMES = {
   compose: { icon: '🖊️', name: 'แต่งประโยคเอง', desc: 'แต่งประโยคเอง เทียบตัวอย่าง เก็บไว้ในโน้ต' },
   dictS: { icon: '📜', name: 'พิมพ์ประโยคที่ได้ยิน', desc: 'ฟังประโยคแล้วพิมพ์ให้ครบ ตรวจทีละคำ' },
   ipa: { icon: '🔡', name: 'อ่าน IPA', desc: 'ดูวิธีออกเสียง /ˈæpl/ แล้วเลือกคำที่ถูก' },
+  email: { icon: '✉️', name: 'ประกอบอีเมล', desc: 'เลือกทีละส่วนให้เป็นอีเมลที่สุภาพ' },
   regi: { icon: '🎩', name: 'ทางการหรือกันเอง', desc: 'เลือกประโยคให้เหมาะกับคนที่คุยด้วย' },
   bizcol: { icon: '🤝', name: 'คำคู่ธุรกิจ', desc: 'meet a deadline ไม่ใช่ make' },
   wphr: { icon: '📧', name: 'สำนวนอีเมลงาน', desc: 'ประโยคอีเมลและแชตที่ทำงาน' },
@@ -87,7 +88,7 @@ const PAIR_GAMES = ['confuse', 'minpair'];
 // Skill games with their own items (idx -1): practice only, no flashcard scheduling.
 // Generated skill games: the questions are made up on the spot, so they are not scheduled (no S.lex keys).
 const GEN_GAMES = ['num'];
-const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix', 'root', 'idiom', 'sit', 'irreg', 'dprep', 'thaierr', 'gpat', 'real', 'wphr', 'bizcol', 'regi', 'toeic1', 'toeic2', 'toeic3', 'toeic4', 'toeic5', 'toeic6', 'toeic7', 'toeicMock', ...GEN_GAMES];
+const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix', 'root', 'idiom', 'sit', 'irreg', 'dprep', 'thaierr', 'gpat', 'real', 'wphr', 'bizcol', 'regi', 'email', 'toeic1', 'toeic2', 'toeic3', 'toeic4', 'toeic5', 'toeic6', 'toeic7', 'toeicMock', ...GEN_GAMES];
 // The games menu groups every game by the skill it trains (1.106): chips filter, and "all" lists them under these headings.
 // Every game id is in exactly one group (a test checks).
 const GAME_SKILLS = [
@@ -96,7 +97,7 @@ const GAME_SKILLS = [
   ['mean', '📖', 'ความหมาย', ['en2th', 'th2en', 'match', 'emoji', 'guess', 'syn', 'confuse', 'review', 'toeic7']],
   ['write', '✍️', 'สะกดและเขียน', ['spell', 'hand', 'hangman', 'anagram', 'cloze', 'sCloze', 'order', 'sOrder', 'compose']],
   ['gram', '📐', 'ไวยากรณ์และรูปคำ', ['wform', 'affix', 'root', 'gpat', 'thaierr', 'dprep', 'irreg', 'toeic5', 'toeic6']],
-  ['phrase', '🧩', 'วลีและสำนวน', ['colloc', 'phrasal', 'idiom', 'sit', 'real', 'wphr', 'bizcol', 'regi']],
+  ['phrase', '🧩', 'วลีและสำนวน', ['colloc', 'phrasal', 'idiom', 'sit', 'real', 'wphr', 'bizcol', 'regi', 'email']],
   ['chal', '🎉', 'ท้าทาย', ['survival', 'timeAttack', 'emojiRun', 'toeicMock']],
 ];
 let gameSkill = 'all'; // chip selected in the games menu: 'all', 'toeic' or a GAME_SKILLS id
@@ -442,6 +443,7 @@ function gamePool(id) {
   if (id === 'wphr') return wpItems();
   if (id === 'bizcol') return bcItems();
   if (id === 'regi') return rgItems();
+  if (id === 'email') return emItems();
   if (id === 'toeic5') return p5Items();
   if (id === 'toeic7') return p7Items();
   if (id === 'toeic6') return p6Items();
@@ -571,6 +573,7 @@ function startGame(id) {
   if (id === 'root' && !ROOT) { withLoading(loadRoots()).then(() => startGame(id)); return; }
   if (id === 'affix' && !AFFIX) { withLoading(loadAffix()).then(() => startGame(id)); return; }
   if (id === 'idiom' && !IDIOMS) { withLoading(loadIdioms()).then(() => startGame(id)); return; }
+  if (id === 'email' && !EMAILS) { withLoading(loadEmails()).then(() => startGame(id)); return; }
   if (id === 'regi' && !REGISTER) { withLoading(loadRegister()).then(() => startGame(id)); return; }
   if (id === 'bizcol' && !BIZCOL) { withLoading(loadBizCol()).then(() => startGame(id)); return; }
   if (id === 'wphr' && !WORKPHR) { withLoading(loadWorkPhr()).then(() => startGame(id)); return; }

@@ -165,6 +165,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'wphr') return qWphr(w);
     if (m === 'bizcol') return qBizcol(w);
     if (m === 'regi') return qRegi(w);
+    if (m === 'email') return qEmail(w);
     if (m === 'toeic5') return qP5(w);
     if (m === 'toeic7') return qP7(w);
     if (m === 'toeic6') return qP6(w);
@@ -1136,6 +1137,36 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       view.querySelector('[data-sayex]').onclick = () => speak(gpPlain(r));
       $('#nextQ').onclick = next;
       speak(gpPlain(r));
+    };
+  }
+
+  // Build an email (1.206.0): the email so far, the next part to choose (3 options: right, wrong register / too blunt, off topic).
+  function qEmail(w) {
+    const e = w._em, d = e.d, [ic, to] = RG_TO[d.to], opts = shuffle([e.right, ...e.wrong]);
+    const paper = (now) => d.p.map((x, k) => k < e.k || (now && k === e.k) ? `<div class="em-p em-done" lang="en">${esc(x[1])}</div>`
+      : k === e.k ? `<div class="em-p em-now">✏️ ${EM_SLOT[x[0]]} …</div>` : `<div class="em-p em-gap">${EM_SLOT[x[0]]}</div>`).join('');
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop em-box"><div class="small muted">✉️ ประกอบอีเมล · ส่วนที่ ${e.k + 1}/${d.p.length} · ${ic} ${to}</div>
+        <div class="em-sit"><b>ถึง:</b> ${esc(d.who)} · <b>เรื่อง:</b> ${esc(d.sit)}</div>
+        <div class="em-paper" id="emPaper">${paper(false)}</div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" lang="en" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    let answered = false;
+    view.querySelector('.options').onclick = (ev) => {
+      const b = ev.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === e.right, last = e.k === d.p.length - 1;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === e.right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#emPaper').innerHTML = paper(true);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ส่วนนี้ควรเป็น'} <b lang="en">${esc(e.right)}</b><div class="thx">${esc(e.th)}</div>
+        ${last ? `<div class="example"><div class="small muted">📨 อีเมลที่ประกอบเสร็จ <button class="say-ex" data-sayex aria-label="ฟังทั้งฉบับ">🔊</button></div><div class="em-full" lang="en">${d.p.map((x) => esc(x[1])).join('<br>')}</div></div>` : ''}
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      const say = view.querySelector('[data-sayex]'); if (say) say.onclick = () => speak(emText(d));
+      $('#nextQ').onclick = next;
+      speak(e.right);
     };
   }
 

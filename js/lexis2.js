@@ -188,6 +188,15 @@ function renderRegister() {
   $('#rgList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
 }
 
+/* ---------- build an email (1.206.0) ---------- */
+// data/emails.js: [{id, to 'f'|'c', who, sit, p: [[slot, right, [2 wrong], Thai]]}]. Game `email` (qEmail): one item per part, the parts of an
+// email stay together (SET_GAMES → setOrder), earlier parts show filled in, the last one shows the whole email.
+const EM_SLOT = { greet: 'คำขึ้นต้น', open: 'ประโยคเปิด', body: 'เนื้อหา', ask: 'สิ่งที่ขอ / แจ้ง', close: 'ปิดท้าย' };
+let EMAILS = null;
+const loadEmails = () => loadData('data/emails.js', 'EMAILS').then((rows) => { if (!EMAILS && rows.length) EMAILS = rows; return EMAILS || []; });
+const emItems = () => EMAILS.flatMap((d) => d.p.map(([slot, right, wrong, th], k) => ({ idx: -1, w: right, t: th, p: '', g: '', _em: { d, k, slot, right, wrong, th }, _set: { d, k }, _q: [`${d.sit} · ${EM_SLOT[slot]}`, right, '', th] })));
+const emText = (d) => d.p.map((x) => x[1]).join('\n');
+
 /* ---------- real-life texts (1.113) ---------- */
 // data/realtext.js rows: [kind, Thai situation, text with ___, answer, [3 wrong words], Thai translation, list word?]. Game `real` (qReal in data/play.js).
 let REALTEXT = null;
@@ -227,7 +236,7 @@ function setOrder(picked, src, n = 10) {
   return out;
 }
 const p7Order = setOrder;
-const SET_GAMES = ['toeic3', 'toeic4', 'toeic6', 'toeic7'];
+const SET_GAMES = ['toeic3', 'toeic4', 'toeic6', 'toeic7', 'email'];
 /* ---------- TOEIC Part 6 (1.185.0) ---------- */
 // data/toeicp6.js: [{id, kind, title, text with [1]–[4], th, q: [[[4 options], answer index, Thai]]}]. Game `toeic6` (qP6): one item per blank,
 // earlier blanks are shown filled in, the questions of a text stay together (setOrder); own SRS in S.lex.

@@ -516,6 +516,22 @@ test('formal / casual lines (1.205): three different lines, Thai meaning and tip
   expect(bad).toEqual([]);
 });
 
+test('build-an-email data (1.206): 5 parts in slot order, 3 distinct options each, Thai, unique ids', () => {
+  const { EMAILS } = load('data/emails.js');
+  expect(EMAILS.length).toBeGreaterThanOrEqual(10);
+  const bad = [], ids = new Set(), order = ['greet', 'open', 'body', 'ask', 'close'];
+  EMAILS.forEach((d) => {
+    if (!d.id || ids.has(d.id)) bad.push(`${d.id}: id`); ids.add(d.id);
+    if (!['f', 'c'].includes(d.to) || !/[\u0E00-\u0E7F]/.test(d.who + d.sit)) bad.push(`${d.id}: to / Thai reader and situation`);
+    if (d.p.map((x) => x[0]).join() !== order.join()) bad.push(`${d.id}: slots`);
+    d.p.forEach(([slot, right, wrong, th]) => {
+      if (!Array.isArray(wrong) || wrong.length !== 2 || new Set([right, ...wrong]).size !== 3) bad.push(`${d.id}/${slot}: right + 2 different wrong`);
+      if (!/[\u0E00-\u0E7F]/.test(th)) bad.push(`${d.id}/${slot}: Thai`);
+    });
+  });
+  expect(bad).toEqual([]);
+});
+
 test('real-life texts are valid practice data', () => {
   const { REALTEXT } = load('data/realtext.js');
   const { WORDS } = load(...WORD_FILES);
