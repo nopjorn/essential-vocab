@@ -537,6 +537,12 @@ body { touch-action: manipulation; }
 .g-table th, .g-table td { border: 1px solid var(--border); padding: 6px; text-align: center; }
 .g-table th { background: var(--surface-2); }
 .toeic-t td:first-child { text-align: left; }
+.te-box { text-align: center; min-height: 220px; }
+.te-line { font-size: var(--fs-md); font-weight: 700; min-height: 3em; margin: 10px 0; }
+.toeic-plan { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.tp-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.tp-item { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); font: inherit; font-size: var(--fs-sm); font-weight: 700; color: inherit; cursor: pointer; }
+.tp-item.done { opacity: .7; text-decoration: line-through; }
 .mock-sec { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
 .mock-sec > div { background: var(--surface-2); border-radius: 14px; padding: 10px; display: grid; gap: 2px; }
 .mock-sec b { font-size: var(--fs-lg, 1.3rem); }

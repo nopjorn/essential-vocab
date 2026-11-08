@@ -28,6 +28,7 @@ function renderEar() {
   const seg = (id, vals, cur, fmt) => `<div class="seg" id="${id}" role="group">${vals.map((v) => `<button class="${cur === v ? 'on' : ''}" data-v="${v}" aria-pressed="${cur === v}">${fmt(v)}</button>`).join('')}</div>`;
   view.innerHTML = `<div class="card-box center"><div class="result-emoji" aria-hidden="true">🎧</div><div class="h2" style="margin:2px 0">ฟังทบทวนแบบไม่ต้องดูจอ</div>
       <p class="small muted">แอปพูดคำ รอให้คุณนึกความหมาย แล้วเฉลยเป็นภาษาไทยพร้อมประโยคตัวอย่าง ไปคำถัดไปเอง เหมาะกับตอนเดินทาง จอจะไม่ดับระหว่างฟัง และแตะ 🌙 เพื่อดับจอประหยัดแบตได้ (นับเป็นการฝึก ไม่เปลี่ยนรอบทบทวนของการ์ด)</p></div>
+    <button class="card-box guide-link" id="earToeic"><span>💼</span><div class="grow"><b>ฟังบทสนทนา TOEIC ต่อเนื่อง</b><div class="small muted">บทสนทนา Part 3 และบทพูด Part 4 สุ่ม 6 บท เล่นต่อกันเอง มีสรุปไทยหลังจบแต่ละบท</div></div><span class="muted">›</span></button>
     <button class="card-box guide-link" id="earBed"><span>🌙</span><div class="grow"><b>ทบทวนก่อนนอน 2 นาที</b><div class="small muted">ฟัง 10 คำที่ผิดช่วงนี้ (ไม่มีก็ใช้คำที่ถึงกำหนด) ไม่อ่านประโยค แล้วดับจอให้เอง</div></div><span class="muted">›</span></button>
     <div class="h2">เลือกคำจาก</div>
     <div class="chips" id="earSrc">${Object.entries(EAR_SRC).map(([k, [ic, name]]) => `<button class="chip${earOpt.src === k ? ' on' : ''}${avail[k] ? '' : ' off'}" data-v="${k}" ${avail[k] ? '' : 'disabled'}>${ic} ${name} <small>${avail[k]}</small></button>`).join('')}</div>
@@ -43,7 +44,54 @@ function renderEar() {
   $('#earEx').onchange = (e) => { earOpt.ex = e.target.checked; };
   $('#earTh').onchange = (e) => { earOpt.th = e.target.checked; };
   $('#earBed').onclick = () => earBedtime();
+  $('#earToeic').onclick = () => playToeicEar();
   $('#earGo').onclick = () => playEar(EAR_SRC[earOpt.src][2]().slice(0, earOpt.n));
+}
+// 💼 TOEIC listening (1.197.0): Part 3 conversations and Part 4 talks back to back, each speaker in their own voice (tvPlay),
+// the Thai summary after each recording, then the next one. Practice only (markActive per recording); 📝 shows the words as they play.
+async function playToeicEar(n = 6) {
+  if (!P34[3] || !P34[4]) await withLoading(Promise.all([loadP34(3), loadP34(4)]));
+  if (current !== 'ear') go('ear');
+  const list = shuffle([...P34[3].map((d) => [3, d]), ...P34[4].map((d) => [4, d])]).slice(0, n);
+  let i = 0, paused = false, showText = false, timer = null;
+  view.innerHTML = `<div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="teBack">‹ กลับ</button></div>
+    <div class="card-box te-box">
+      <div class="row" style="justify-content:space-between"><span class="small muted" id="teKind"></span><b class="small" id="tePos"></b></div>
+      <div class="p34-who" id="teWho"></div>
+      <p class="te-line" lang="en" id="teLine" aria-live="polite"></p>
+      <p class="thx" id="teTh" aria-live="polite"></p>
+    </div>
+    <div class="st-tools sh-ctl ear-ctl">
+      <button class="tool" id="tePlay"><span>⏸</span>หยุด</button>
+      <button class="tool" id="teNext" aria-label="บทถัดไป"><span>⏭</span>ถัดไป</button>
+      <button class="tool" id="teText" aria-pressed="false"><span>📝</span>ข้อความ</button>
+    </div>`;
+  const card = view.querySelector('.te-box');
+  const stop = () => { clearTimeout(timer); tvStop(); };
+  cleanup = stop;
+  const play = () => {
+    if (i >= list.length) { stop(); toast('🎧 ฟังครบแล้ว เก่งมาก'); return renderEar(); }
+    const [part, d] = list[i], [ic, kind] = P34_KIND[d.kind] || ['🎧', ''];
+    $('#teKind').textContent = `${part === 3 ? '🗣️ Part 3' : '📢 Part 4'} · ${ic} ${kind}`;
+    $('#tePos').textContent = `${i + 1}/${list.length}`;
+    $('#teWho').innerHTML = [...new Set(d.lines.map(([s]) => s))].map((s) => `<span class="p34-sp" data-sp="${s}">${P34_WHO[s][0]}</span>`).join('');
+    $('#teTh').textContent = '';
+    tvPlay(p34Lines(d), {
+      el: card, gap: 350,
+      on: (k) => { view.querySelectorAll('#teWho .p34-sp').forEach((x) => x.classList.toggle('on', x.dataset.sp === d.lines[k][0])); $('#teLine').textContent = showText ? d.lines[k][1] : '🎧 …'; },
+      done: () => { view.querySelectorAll('#teWho .p34-sp').forEach((x) => x.classList.remove('on')); $('#teLine').textContent = ''; $('#teTh').textContent = '🇹🇭 ' + d.th; markActive(); timer = setTimeout(() => { if (!paused && document.body.contains(card)) { i++; play(); } }, 3500); },
+    });
+  };
+  $('#teBack').onclick = () => { stop(); renderEar(); };
+  $('#teNext').onclick = () => { stop(); i++; paused = false; $('#tePlay').innerHTML = '<span>⏸</span>หยุด'; play(); };
+  $('#tePlay').onclick = () => {
+    paused = !paused;
+    $('#tePlay').innerHTML = paused ? '<span>▶️</span>เล่นต่อ' : '<span>⏸</span>หยุด';
+    if (paused) stop(); else play(); // resume = the current recording from its start
+  };
+  $('#teText').onclick = (e) => { showText = !showText; e.currentTarget.setAttribute('aria-pressed', showText); };
+  playToeicEar.state = () => ({ i, n: list.length, paused, ids: list.map(([, d]) => d.id) });
+  play();
 }
 // 🌙 Bedtime (1.122): 10 recent misses (or due / learning words), no example sentences, the screen dims by itself.
 function earBedtime() {

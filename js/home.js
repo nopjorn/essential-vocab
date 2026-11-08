@@ -114,7 +114,7 @@ function renderHome() {
         : `ต้องเรียนคำใหม่วันละ <b>${x.need}</b> คำ แต่ตอนนี้ตั้งไว้ ${newGoal()} คำ`;
       const fix = x.left && x.days > 0 && !x.ok && !(S.settings.minutes | 0) && x.need <= 100 ? `<button class="btn primary" id="examFix">ตั้งคำใหม่เป็นวันละ ${x.need} คำ</button>` : '';
       return `<div class="card-box exam-card"><div class="row" style="justify-content:space-between"><b>🗓️ ${title}</b><span class="exam-days"><b>${x.days}</b> วัน</span></div>
-        <div class="small" style="margin-top:6px">${msg}</div><div class="small muted" style="margin-top:2px">เหลือ ${x.left.toLocaleString()} คำที่ยังไม่ได้เริ่ม (${lvNames(S.settings.levels)}) · ${thDate(Date.parse(x.date + 'T12:00:00'))}</div>${fix ? `<div style="margin-top:10px">${fix}</div>` : ''}</div>`;
+        <div class="small" style="margin-top:6px">${msg}</div><div class="small muted" style="margin-top:2px">เหลือ ${x.left.toLocaleString()} คำที่ยังไม่ได้เริ่ม (${lvNames(S.settings.levels)}) · ${thDate(Date.parse(x.date + 'T12:00:00'))}</div>${fix ? `<div style="margin-top:10px">${fix}</div>` : ''}${isToeicGoal(x.name) ? toeicPlanHtml(x.days) : ''}</div>`;
     },
     wgoal: () => {
       const g = S.settings.weekGoal | 0; if (!g) return '';
@@ -201,6 +201,7 @@ function renderHome() {
   click('#qPlay', quickPlay);
   click('#examFix', () => { const x = examPlan(); if (x) { S.settings.newPerDay = x.need; save(); toast(`ตั้งคำใหม่เป็นวันละ ${x.need} คำแล้ว ✅`); renderHome(); } });
   click('#boxOpen', () => { openBox(); renderHome(); });
+  view.querySelectorAll('[data-tplan]').forEach((b) => (b.onclick = () => startGame(b.dataset.tplan)));
   click('#qYear', () => go('year', yearToShow()));
   click('#qShort', () => go('cards', 'short'));
   click('#qRiddle', () => go('riddle', 'home'));

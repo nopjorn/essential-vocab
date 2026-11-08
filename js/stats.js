@@ -137,6 +137,33 @@ function mockLine() {
   return `<div class="mock-line" style="margin-top:8px"><div class="small">🏁 ข้อสอบจำลองล่าสุด <b>${tot(last)}</b>/990 (ฟัง ${last.L} · อ่าน ${last.R}) · ดีที่สุด ${best} · ทำไป ${m.length} ครั้ง</div>
     <div class="mock-bars" role="img" aria-label="คะแนน ${five.length} ครั้งล่าสุด ${five.map(tot).join(', ')}">${five.map((x) => `<i style="height:${Math.max(6, tot(x) / 990 * 40)}px" title="${tot(x)}"></i>`).join('')}</div></div>`;
 }
+// TOEIC study plan for an exam goal whose name says TOEIC (1.197.0, home exam card): today's parts by phase — > 60 days: 2 parts,
+// 15–60: 3 parts, ≤ 14: 3 parts + a mock every other day (also from 21 days), ≤ 1 day: one light part. Parts with due questions
+// come first, then the least accurate, then the longest left alone. A task is ticked when that game was played today (S.glast).
+const isToeicGoal = (name) => /toeic/i.test(name || '');
+function toeicPlan(days) {
+  const t = today();
+  const parts = TOEIC_GAMES.filter((g) => GAMES[g] && g !== 'toeicMock').map(toeicStat)
+    .sort((a, b) => (b.due > 0) - (a.due > 0) || (a.acc == null ? -1 : a.acc) - (b.acc == null ? -1 : b.acc) || (b.ago == null ? 999 : b.ago) - (a.ago == null ? 999 : a.ago));
+  const phase = days <= 1 ? ['🌙', 'ทวนเบาๆ ก่อนสอบ', 'คืนนี้พักผ่อนให้พอ ไม่ต้องอัดเพิ่มแล้ว'] : days <= 14 ? ['🔥', 'โค้งสุดท้าย', 'ทำข้อสอบจำลองวันเว้นวัน แล้วเก็บพาร์ตที่ยังพลาด']
+    : days <= 60 ? ['💪', 'ฝึกเข้ม', 'วันละ 3 พาร์ต เน้นพาร์ตที่ถึงกำหนดทวนและยังไม่แม่น'] : ['🌱', 'ปูพื้นฐาน', 'วันละ 2 พาร์ต ควบคู่กับเรียนศัพท์ชุด TOEIC'];
+  // the day's list is fixed at its first look (device memory o3k.tplan), so playing a part does not swap it out of the list
+  let mem = null;
+  try { mem = JSON.parse(localStorage.getItem('o3k.tplan') || 'null'); } catch (e) { mem = null; }
+  let tasks = mem && mem.d === t && mem.days === days && Array.isArray(mem.g) ? mem.g.filter((g) => GAMES[g]) : null;
+  if (!tasks || !tasks.length) {
+    tasks = parts.slice(0, days <= 1 ? 1 : days <= 60 ? 3 : 2).map((r) => r.g);
+    const lastMock = (S.mock || []).length ? S.mock[S.mock.length - 1].t : 0;
+    if (days > 1 && days <= 21 && Date.now() - lastMock > 1.5 * DAY) tasks.unshift('toeicMock');
+    try { localStorage.setItem('o3k.tplan', JSON.stringify({ d: t, days, g: tasks })); } catch (e) { /* private mode: recomputed next time */ }
+  }
+  return { phase, tasks: tasks.map((g) => ({ g, done: (S.glast || {})[g] === t })) };
+}
+function toeicPlanHtml(days) {
+  const p = toeicPlan(days);
+  return `<div class="toeic-plan"><div class="small"><b>${p.phase[0]} แผน TOEIC วันนี้ · ${p.phase[1]}</b></div><div class="small muted">${p.phase[2]}</div>
+    <div class="tp-list">${p.tasks.map((x) => `<button class="tp-item${x.done ? ' done' : ''}" data-tplan="${x.g}"><span aria-hidden="true">${x.done ? '✅' : GAMES[x.g].icon}</span>${esc(GAMES[x.g].name)}</button>`).join('')}</div></div>`;
+}
 function toeicCard() {
   const rows = TOEIC_GAMES.filter((g) => GAMES[g] && g !== 'toeicMock').map(toeicStat);
   if (!rows.some((r) => r.seen) && !(S.mock || []).length) return '';
@@ -152,7 +179,7 @@ function toeicCard() {
     <div class="small" style="margin-top:8px">${tip}</div>
     ${stale.length && stale.length < rows.length ? `<div class="small muted" style="margin-top:4px">💤 ไม่ได้ฝึก 7 วันขึ้นไป: ${stale.map((r) => esc(GAMES[r.g].name.replace('TOEIC ', ''))).join(' · ')}</div>` : ''}
     ${mockLine()}
-    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap"><button class="btn" data-tgo="toeicMock">🏁 ทำข้อสอบจำลอง</button>${weak ? `<button class="btn primary" data-tgo="${weak.g}">ฝึกพาร์ตที่อ่อนที่สุด</button>` : ''}${stale.length ? `<button class="btn" data-tgo="${stale[0].g}">เล่น ${esc(GAMES[stale[0].g].name.replace('TOEIC ', ''))} ที่ห่างไปนาน</button>` : ''}</div></div>`;
+    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap"><button class="btn" data-tgo="toeicMock">🏁 ทำข้อสอบจำลอง</button><button class="btn" id="toeicEar">🎧 ฟังบทสนทนาต่อเนื่อง</button>${weak ? `<button class="btn primary" data-tgo="${weak.g}">ฝึกพาร์ตที่อ่อนที่สุด</button>` : ''}${stale.length ? `<button class="btn" data-tgo="${stale[0].g}">เล่น ${esc(GAMES[stale[0].g].name.replace('TOEIC ', ''))} ที่ห่างไปนาน</button>` : ''}</div></div>`;
 }
 
 // Real retention against the target (1.107): of the reviews of cards that were due, how many came back, by the gap they had.
@@ -614,7 +641,7 @@ function bindMore() {
   [gb, f30].forEach((el) => { if (el) el.onclick = (e) => { const b = e.target.closest('.mb-b'); if (b) toast(b.dataset.tip); }; });
   if (ex) ex.onclick = exportStats;
   const tb = $('#toeicBox');
-  if (tb) tb.onclick = (e) => { const b = e.target.closest('[data-tgo]'); if (b) startGame(b.dataset.tgo); };
+  if (tb) tb.onclick = (e) => { if (e.target.closest('#toeicEar')) return playToeicEar(); const b = e.target.closest('[data-tgo]'); if (b) startGame(b.dataset.tgo); };
 }
 
 // Today at a glance (1.159.0; 1.160.0 adds the time-goal ring): from S.act / S.hist, shown above the habits.
