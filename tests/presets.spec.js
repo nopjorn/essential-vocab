@@ -19,8 +19,8 @@ test('add a ready-made set from the ชุดของฉัน page', async ({ 
   const st = await readState(page);
   expect(st.decks).toHaveLength(1);
   expect(st.decks[0].pre).toBe('dev');
-  expect(st.decks[0].words).toContain('algorithm');
-  expect(st.decks[0].own.map((o) => o.w)).toContain('repository');
+  expect(st.decks[0].words).toContain('algorithm'); expect(st.decks[0].words).toContain('repository');
+  expect(st.decks[0].own.map((o) => o.w)).toContain('pull request');
   // back on the list: the tile shows it was added, the sheet opens the copy instead of adding another
   await page.evaluate(() => go('decks'));
   await expect(page.locator('[data-pre="dev"]')).toContainText('เพิ่มแล้ว');
