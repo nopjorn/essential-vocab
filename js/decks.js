@@ -465,7 +465,7 @@ function renderDeckEdit(id) {
         <button class="btn primary block" id="ownAdd">＋ เพิ่มคำนี้</button>
         <div class="dk-sec" style="margin-top:14px"><b>📥 นำเข้าหลายคำ (CSV / วางข้อความ)</b>
           <div class="small muted">แถวละ 1 คำ: <span lang="en">word, ความหมาย, ประโยค, คำแปลประโยค</span> (คั่นด้วยคอมมา แท็บ หรือ <span lang="en">word = ความหมาย</span>) คำที่มีในคลังอยู่แล้วจะใช้ข้อมูลของคลังแทน</div>
-          <textarea id="ownText" class="search" rows="5" style="margin-top:6px" aria-label="รายการคำของฉัน" placeholder="stakeholder, ผู้มีส่วนได้ส่วนเสีย&#10;onboarding = การปฐมนิเทศพนักงานใหม่"></textarea>
+          <textarea id="ownText" class="search" rows="5" style="margin-top:6px" aria-label="รายการคำของฉัน" placeholder="stakeholder, ผู้มีส่วนได้ส่วนเสีย&#10;offboarding = ขั้นตอนเมื่อพนักงานลาออก"></textarea>
           <div class="row" style="gap:10px;margin-top:6px"><label class="btn ghost" style="margin:0">📂 เลือกไฟล์ .csv / .txt<input type="file" id="ownFile" accept=".csv,.txt,text/csv,text/plain" hidden></label><button class="btn primary grow" id="ownImport">นำเข้า</button></div></div>
         <div class="small muted" id="ownInfo" style="margin-top:8px"></div>`;
       const info = () => { $('#ownInfo').textContent = `ชุดนี้มี ${total()} / ${DECK_MAX.words} คำ (คำของฉัน ${(cur().own || []).length} / ${DECK_MAX.own})`; };

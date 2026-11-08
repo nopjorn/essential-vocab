@@ -8,18 +8,18 @@ test('parseOwn: comma, tab, "=" and quoted CSV rows, header, numbering, list wor
   const r = await page.evaluate(() => parseOwn([
     'word,meaning,example,translation',
     'upskill, พัฒนาทักษะใหม่, "We upskill every team, one by one.", เราพัฒนาทักษะให้ทุกทีม ทีละทีม',
-    'onboarding = การปฐมนิเทศพนักงานใหม่',
-    '3. kanban\tกระดานงาน\tThe kanban board is on the wall.',
+    'offboarding = ขั้นตอนเมื่อพนักงานลาออก',
+    '3. swimlane\tช่องแยกงานบนบอร์ด\tThe swimlane board is on the wall.',
     'apple, แอปเปิ้ล',            // already in the list → list word
     'Upskill, ซ้ำ',               // duplicate (case-insensitive)
     'nomeaning',                   // own word without a Thai meaning → bad
     '123, เลข',                    // not an English word → bad
     '',
   ].join('\n')));
-  expect(r.own.map((o) => o.w)).toEqual(['upskill', 'onboarding', 'kanban']);
+  expect(r.own.map((o) => o.w)).toEqual(['upskill', 'offboarding', 'swimlane']);
   expect(r.own[0]).toEqual({ w: 'upskill', t: 'พัฒนาทักษะใหม่', e: 'We upskill every team, one by one.', et: 'เราพัฒนาทักษะให้ทุกทีม ทีละทีม' });
-  expect(r.own[1]).toEqual({ w: 'onboarding', t: 'การปฐมนิเทศพนักงานใหม่', e: '', et: '' });
-  expect(r.own[2].e).toBe('The kanban board is on the wall.');
+  expect(r.own[1]).toEqual({ w: 'offboarding', t: 'ขั้นตอนเมื่อพนักงานลาออก', e: '', et: '' });
+  expect(r.own[2].e).toBe('The swimlane board is on the wall.');
   expect(r.list).toEqual(['apple']);
   expect(r.bad).toBe(3);
   expect(errors).toEqual([]);
@@ -36,12 +36,12 @@ test('own words: add by form and by import, study with flashcards, progress stay
   await page.locator('#ownAdd').click();
   await expect(page.locator('#dkWords')).toContainText('upskill');
   await expect(page.locator('#ownInfo')).toContainText('คำของฉัน 1');
-  await page.locator('#ownText').fill('onboarding, การปฐมนิเทศ\nairport, ท่าอากาศยาน\nhotel');
+  await page.locator('#ownText').fill('offboarding, ขั้นตอนพนักงานลาออก\nairport, ท่าอากาศยาน\nhotel');
   await page.locator('#ownImport').click();
   await expect(page.locator('#dkCount')).toHaveText('คำในชุด (4)'); // 2 own + airport (list) ; "hotel" has no meaning but is a list word → also list
   const d = await page.evaluate(() => { const x = S.decks[0]; return { words: x.words, own: x.own.map((o) => o.w), id: x.id }; });
   expect(d.words).toEqual(['airport', 'hotel']);
-  expect(d.own).toEqual(['upskill', 'onboarding']);
+  expect(d.own).toEqual(['upskill', 'offboarding']);
   // deck page and flashcards
   await page.evaluate((id) => go('decks', id), d.id);
   await expect(page.locator('#dkList')).toContainText('upskill');
@@ -61,7 +61,7 @@ test('own words: add by form and by import, study with flashcards, progress stay
   expect(seen.join(' ')).toContain('upskill');
   expect(seen.join(' ')).toContain('We upskill new staff every month.');
   const st = await readState(page);
-  expect(Object.keys(st.dprog[d.id]).sort()).toEqual(['airport', 'hotel', 'onboarding', 'upskill']);
+  expect(Object.keys(st.dprog[d.id]).sort()).toEqual(['airport', 'hotel', 'offboarding', 'upskill']);
   expect(JSON.stringify(st.prog)).toBe(main0);                                       // the main progress is untouched
   // games from this set use only the list words
   const pool = await page.evaluate((id) => { gameSource = 'deck'; gameDecks = [id]; return gameList2(); function gameList2() { return [...new Map(gameDecks.map(deckById).flatMap((x) => deckWords(x)).filter((w) => !w.own).map((w) => [w.idx, w])).values()].map((w) => w.w); } }, d.id);
@@ -80,13 +80,13 @@ test('own words: copy keeps them, removing works, limits and junk are cleaned, t
     return { ctx, page, errors };
   };
   const junk = { id: 'd1', name: 'Work', icon: '💼', words: ['airport'], at: 5, used: 5,
-    own: [{ w: 'upskill', t: 'ผู้เกี่ยวข้อง', e: 'x', et: 'y' }, { w: 'Airport', t: 'ซ้ำกับคลัง' }, { w: '', t: 'ว่าง' }, { w: 'ok word', t: '' }, 5, null, { w: '<b>x</b>', t: 'แท็ก' }, { w: 'kanban', t: 'กระดาน' }] };
+    own: [{ w: 'upskill', t: 'ผู้เกี่ยวข้อง', e: 'x', et: 'y' }, { w: 'Airport', t: 'ซ้ำกับคลัง' }, { w: '', t: 'ว่าง' }, { w: 'ok word', t: '' }, 5, null, { w: '<b>x</b>', t: 'แท็ก' }, { w: 'swimlane', t: 'กระดาน' }] };
   const A = await mk({ decks: [junk] });
-  expect(await A.page.evaluate(() => S.decks[0].own.map((o) => o.w))).toEqual(['upskill', 'kanban']); // junk, duplicates of list words and bad names are dropped
+  expect(await A.page.evaluate(() => S.decks[0].own.map((o) => o.w))).toEqual(['upskill', 'swimlane']); // junk, duplicates of list words and bad names are dropped
   const copy = await A.page.evaluate(() => { const n = addDeck('Work copy', '💼', S.decks[0].words, S.decks[0].own); return n.own.map((o) => o.w); });
-  expect(copy).toEqual(['upskill', 'kanban']);
+  expect(copy).toEqual(['upskill', 'swimlane']);
   await A.page.evaluate(() => renderDeckEdit('d1'));
-  await A.page.locator('#dkWords [data-rm="kanban"]').click();
+  await A.page.locator('#dkWords [data-rm="swimlane"]').click();
   expect(await A.page.evaluate(() => S.decks.find((d) => d.id === 'd1').own.map((o) => o.w))).toEqual(['upskill']);
   expect(await syncOnce(A.page)).toBe(true);
   const B = await mk({});
