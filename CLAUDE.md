@@ -101,7 +101,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 (rows with trailing `5`).
 `TOE` (shown "TOEIC", 1.179) = `data/words/toeic.js`, 604 TSL words not in the 3000/5000 lists (rows end with `'T'`, `l` = own CEFR estimate, CC BY-SA 4.0 credit in the file, README and settings footer). `LEVELS` includes it (chips, stats, ach, album); `LEVELS_CEFR` (no TOE) is the easy→hard ladder for survival, tower and placement; `LEVELS_EXTRA` = settings chip row `#lvlsX`.
 `AWL` (shown "วิชาการ", 1.180) = `data/words/nawl.js`, 355 NAWL words not in any other list (rows end with `'A'`, same rules as TOE; colour `--awl`).
-`BIZ` (shown "ธุรกิจ", 1.195) = `data/words/bsl.js`, 180 Business Service List words not in any other list (rows end with `'B'`, alphabetical; same rules; colour `--biz`; RARITY 📊; the remaining picks are in batches).
+`BIZ` (shown "ธุรกิจ", 1.195) = `data/words/bsl.js`, 270 Business Service List words not in any other list (rows end with `'B'`, alphabetical; same rules; colour `--biz`; RARITY 📊; the remaining picks are in batches).
 
 ## State (localStorage key `oxford3000.v1` — never rename it, or users lose progress)
 - `prog[word] = { b: box, i: interval days, e: ease, d: due ms, s: seen, c: correct, x: wrong }`

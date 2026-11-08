@@ -1,6 +1,7 @@
 // Changelog shown in the app (settings → ประวัติการอัปเดต). Newest first. Keep in sync with the README table.
 // [version, what changed, release date YYYY-MM-DD (Thailand time)]; loaded lazily by loadChangelog().
 window.CHANGELOG = [
+  ["1.195.2", "ชุดธุรกิจเพิ่มอีก 90 คำ (M–R เช่น milestone, outsource, procurement, prototype, refinance) รวม 270 คำ", "2026-11-07"],
   ["1.195.1", "ชุดธุรกิจเพิ่มอีก 89 คำ (D–M เช่น equity, liquidity, leverage, logistics, lucrative) รวม 180 คำ", "2026-11-07"],
   ["1.195.0", "ชุดเสริมใหม่ 📊 ธุรกิจ: ศัพท์การเงิน การลงทุน สัญญา และข่าวเศรษฐกิจจาก Business Service List ที่ไม่อยู่ในชุดอื่นของแอป ชุดแรก 91 คำ (A–D เช่น collateral, depreciation, arbitration, deliverable) เปิดได้ที่ ⚙️ ตั้งค่า → ระดับคำศัพท์ → ชิป ธุรกิจ · ทยอยเพิ่มชุดต่อไป", "2026-11-07"],
   ["1.194.0", "ใหม่ 🏁 ข้อสอบ TOEIC จำลอง: 30 ข้อครบ 7 พาร์ตเรียงแบบข้อสอบจริง จับเวลา 18 นาที จบแล้วเห็นคะแนนโดยประมาณฟัง/อ่าน (เต็ม 990 เป็นตัวเลขคร่าวๆ ไม่ใช่คะแนน ETS) ถูกกี่ข้อแต่ละพาร์ต เทียบกับครั้งก่อน และปุ่มไปฝึกพาร์ตที่พลาดมากที่สุด · ประวัติคะแนนอยู่ในการ์ด 💼 TOEIC หน้าสถิติ (ชิป 💼 TOEIC หน้าเกม หรือกลุ่ม 🎉 ท้าทาย)", "2026-11-07"],
