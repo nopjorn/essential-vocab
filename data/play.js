@@ -165,6 +165,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'wphr') return qWphr(w);
     if (m === 'bizcol') return qBizcol(w);
     if (m === 'regi') return qRegi(w);
+    if (PB[m]) return qBook(w);
     if (m === 'email') return qEmail(w);
     if (m === 'wpdict') return qWpDict(w);
     if (m === 'toeic5') return qP5(w);
@@ -1272,6 +1273,38 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       $('#bcKeep').onclick = () => bcKeep([r]);
       $('#nextQ').onclick = next;
       speak(r.full);
+    };
+  }
+
+  // Phrase books (1.212.0, js/phrasebook.js): English → Thai, Thai → English or (abbreviations) English → the full form; 4 options.
+  function qBook(w) {
+    const id = w._book, b = PB[id], r = w._pb, q = pbQuestion(id, r, pbQuestion.force);
+    pbQuestion.last = q; // read by tests
+    const isEn = q.field !== 'th';
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit pop"><div class="small muted">${b.icon} ${esc(b.ask[q.m])}</div>
+        <div class="h2 pb-q" ${q.m === 'th' ? '' : 'lang="en"'} style="margin-top:8px">${esc(q.prompt)}</div>
+        ${q.m === 'th' ? '' : `<div class="small muted" lang="en" style="margin-top:6px">${esc(r.ex).replace(r.en, '<b>' + esc(r.en) + '</b>')}</div>`}</div>
+      <div class="options">${q.opts.map((o) => `<button class="opt" ${isEn ? 'lang="en"' : ''} data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const btn = e.target.closest('.opt'); if (!btn || answered) return;
+      answered = true;
+      const ok = btn.dataset.o === q.right;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === q.right) o.classList.add('correct'); });
+      if (!ok) btn.classList.add('wrong');
+      mark(w, ok);
+      const say = pbSay(r, id);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ยังไม่ถูก'}
+        <div class="example pb-ex"><div><b lang="en">${esc(r.en)}</b>${r.note ? ` · <span lang="en">${esc(r.note)}</span>` : ''} = ${esc(r.th)}</div>
+          <div class="en" lang="en" style="margin-top:6px">${esc(r.ex)} <button class="say-ex" id="pbSayQ" aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(r.exTh)}</div></div>
+        <div class="row" style="gap:10px;margin-top:12px"><button class="btn" id="pbKeep">＋ เก็บเข้าชุด</button><button class="btn primary grow" id="nextQ">ถัดไป →</button></div>`;
+      $('#nextQ').onclick = next;
+      $('#pbKeep').onclick = () => pickDeck([], [pbOwn(r, id)]);
+      $('#pbSayQ').onclick = () => speak(say);
+      speak(say);
     };
   }
 

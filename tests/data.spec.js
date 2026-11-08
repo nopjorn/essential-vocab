@@ -694,6 +694,27 @@ test('TOEIC Part 6 texts (1.185): blanks [1]–[4] in order, 4 distinct options 
   expect(bad).toEqual([]);
 });
 
+test('phrase books (1.212+): rows [cat, English, Thai, example, Thai example, note], unique English, every category known', () => {
+  const src = read('js/phrasebook.js');
+  const books = [...src.matchAll(/^  (\w+): \{\n    file: '([^']+)', key: '(\w+)'/gm)].map((m) => m.slice(1));
+  expect(books.length).toBeGreaterThanOrEqual(1);
+  const bad = [];
+  for (const [id, file, key] of books) {
+    const rows = load(file)[key], cats = src.slice(src.indexOf(`  ${id}: {`)).match(/cats: \{([^}]*)\}/)[1];
+    if (!(rows.length >= 30)) bad.push(`${id}: only ${rows.length} rows`);
+    const seen = new Set();
+    rows.forEach((r, i) => {
+      if (r.length !== 6 || r.slice(0, 5).some((x) => typeof x !== 'string' || !x.trim())) bad.push(`${id} ${i}: shape`);
+      if (!cats.includes(`${r[0]}:`)) bad.push(`${id} ${i}: category ${r[0]}`);
+      if (seen.has(r[1].toLowerCase())) bad.push(`${id}: ${r[1]} twice`);
+      seen.add(r[1].toLowerCase());
+      if (!/[.?!)]$/.test(r[3])) bad.push(`${id} ${r[1]}: example should end a sentence`);
+    });
+    expect(read('sw.js')).toContain(`'${file}'`);
+  }
+  expect(bad).toEqual([]);
+});
+
 test('the manual states the real number of games', () => {
   const games = read('js/games.js'), body = games.slice(games.indexOf('const GAMES = {'));
   const n = (body.slice(0, body.indexOf('\n};')).match(/^  [a-zA-Z0-9]+: \{/gm) || []).length;
