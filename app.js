@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.193.0';
+const APP_VERSION = '1.194.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -141,6 +141,13 @@ const DEV = (() => {
 // 1.52.0 kept one flat { game: n } map: it becomes this device's bucket.
 const gplayFix = (g) => (g && Object.values(g).some((v) => typeof v === 'number') ? { [DEV]: g } : g || {});
 // Last day a round of each game started (1.157.0, for the games menu's pick of the day); a function declaration: load() runs early.
+// TOEIC mock tests (1.194.0): keep well-formed entries, newest 30, oldest first (a function declaration: load() runs before most code).
+function cleanMock(m) {
+  if (!Array.isArray(m)) return [];
+  const ok = (x) => x && isFinite(x.t) && isFinite(x.L) && isFinite(x.R) && x.p && typeof x.p === 'object';
+  const out = m.filter(ok).map((x) => ({ t: +x.t, L: +x.L, R: +x.R, p: Object.fromEntries(Object.entries(x.p).filter(([k, v]) => /^toeic\d$/.test(k) && Array.isArray(v) && v.length === 2 && v.every((n) => Number.isInteger(n) && n >= 0)).map(([k, v]) => [k, v.slice()])) }));
+  return out.sort((a, b) => a.t - b.t).slice(-30);
+}
 function cleanGlast(g) {
   const out = {};
   if (g && typeof g === 'object' && !Array.isArray(g)) for (const [k, v] of Object.entries(g)) if (typeof v === 'string' && /^\d{4}-\d\d-\d\d$/.test(v) && k.length <= 20) out[k] = v;
@@ -271,6 +278,7 @@ const defaults = () => ({
   readScore: {},       // story id -> [best right answers, questions]
   ltest: {},           // level -> best level-test result { r, n, at } (1.63)
   mtest: {},           // 'YYYY-MM' -> { r: right, n: questions, at: ms } best monthly-test score
+  mock: [],            // TOEIC mock tests (1.194.0): [{t: ms, L, R: rough section scores, p: {toeic1: [right, asked], …}}], oldest first, ≤ 30
   riddle: { d: '', g: [], over: false, win: false }, // daily word riddle: today's guesses
   lvmap: {},           // topic id -> string of stars (0–3) per level-map stage
   gacc: { a: 0.7, n: 0 }, // rolling accuracy (a) of multiple-choice game answers (n answers) → automatic game difficulty
@@ -302,7 +310,7 @@ function load() {
     if (raw) {
       const d = defaults(), s = JSON.parse(raw);
       const r = { ...d, ...s, settings: { ...d.settings, ...(s.settings || {}) } };
-      r.gplay = gplayFix(r.gplay); r.glast = cleanGlast(r.glast);
+      r.gplay = gplayFix(r.gplay); r.glast = cleanGlast(r.glast); r.mock = cleanMock(r.mock);
       // A missing/odd riddle record (older backup, sync from another device) must never break the home screen.
       if (!r.mascot || typeof r.mascot !== 'object' || !r.mascot.equip || typeof r.mascot.equip !== 'object') r.mascot = d.mascot;
       if (!Array.isArray(r.ret) || r.ret.length !== 4 || r.ret.some((x) => !Array.isArray(x) || !isNum(x[0]) || !isNum(x[1]))) r.ret = d.ret;
@@ -546,6 +554,7 @@ function mergeBackup(d) {
   for (const [k, v] of Object.entries(d.duel || {})) if (Array.isArray(v) && (!Array.isArray(S.duel[k]) || v[0] > S.duel[k][0] || (v[0] === S.duel[k][0] && v[2] < S.duel[k][2]))) S.duel[k] = v;
   S.duel = Object.fromEntries(Object.entries(S.duel).sort((a, b) => b[1][3] - a[1][3]).slice(0, 30));
   for (const [k, v] of Object.entries(d.mtest || {})) if (testBetter(S.mtest[k], v)) S.mtest[k] = v;
+  { const seen = new Set(S.mock.map((x) => x.t)); S.mock = cleanMock(S.mock.concat(cleanMock(d.mock).filter((x) => !seen.has(x.t)))); }
   maxIn(S.chist, d.chist);
   mergeAct(cleanAct(d.act));
   for (const [k, v] of Object.entries(d.snap || {})) if (Array.isArray(v)) S.snap[k] = (S.snap[k] || [0, 0, 0, 0]).map((x, i) => Math.max(x, isNum(v[i]) ? v[i] : 0));

@@ -196,6 +196,27 @@ function p34Lines(d) {
   const who = [...new Set(d.lines.map(([s]) => s))], solo = who.length === 1 ? d.id.length % 2 : 0;
   return d.lines.map(([s, text]) => [(who.indexOf(s) + solo) % 3, text]);
 }
+/* ---------- TOEIC mock test (1.194.0) ---------- */
+// game `toeicMock`: 30 questions in test order — Part 1 ×3, Part 2 ×5, one Part 3 conversation, one Part 4 talk, Part 5 ×6, one Part 6
+// text, two Part 7 texts — due/new questions first (lexPick per part). Answers go to each part's own S.lex keys; 36 s a question
+// like the real test (200 in 2 h). The result gives a rough listening / reading score (5–495 each, NOT an ETS score), saved in S.mock.
+const MOCK_SEC = 36;
+const mockLoad = () => Promise.all([loadP1(), loadP2(), loadP34(3), loadP34(4), loadP5(), loadP6(), loadP7()]);
+const mockReady = () => !!(TOEICP1 && TOEICP2 && P34[3] && P34[4] && TOEICP5 && TOEICP6 && TOEICP7);
+function mockItems() {
+  const tag = (g, list) => list.map((w) => Object.assign({}, w, { _part: g }));
+  const one = (g, src, n) => tag(g, lexPick(g, src, n));
+  const set = (g, src, n) => tag(g, setOrder(lexPick(g, src, 12), src, n));
+  return [...one('toeic1', p1Items(), 3), ...one('toeic2', p2Items(), 5), ...set('toeic3', p34Items(3), 1), ...set('toeic4', p34Items(4), 1),
+    ...one('toeic5', p5Items(), 6), ...set('toeic6', p6Items(), 1), ...set('toeic7', p7Items(), 4)];
+}
+// section score from the share right: 5 + 490 × share, to the nearest 5 (the scale of the real test, nothing more)
+const mockScale = (ok, n) => (n ? Math.round((5 + 490 * ok / n) / 5) * 5 : 5);
+function mockScore(p) {
+  const sum = (ids) => ids.reduce((a, g) => [a[0] + ((p[g] || [0, 0])[0]), a[1] + ((p[g] || [0, 0])[1])], [0, 0]);
+  const l = sum(['toeic1', 'toeic2', 'toeic3', 'toeic4']), r = sum(['toeic5', 'toeic6', 'toeic7']);
+  return { L: mockScale(l[0], l[1]), R: mockScale(r[0], r[1]), l, r };
+}
 const p5Plain = (r) => r.text.replace('___', r.right);
 const p5Items = () => TOEICP5.map((r) => ({ idx: -1, w: r.right, t: r.th, p: '', g: '', _p5: r, _q: [r.text, r.right, '', r.th] }));
 const rtItems = () => REALTEXT.map((r) => ({ idx: -1, w: r.key, t: r.th, p: '', g: '', _rt: r, _q: [r.text.replace(/\n/g, ' '), r.right, '', r.th] }));

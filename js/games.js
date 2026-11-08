@@ -54,6 +54,7 @@ const GAMES = {
   dictS: { icon: '📜', name: 'พิมพ์ประโยคที่ได้ยิน', desc: 'ฟังประโยคแล้วพิมพ์ให้ครบ ตรวจทีละคำ' },
   ipa: { icon: '🔡', name: 'อ่าน IPA', desc: 'ดูวิธีออกเสียง /ˈæpl/ แล้วเลือกคำที่ถูก' },
   real: { icon: '🪧', name: 'ข้อความจริง', desc: 'ป้าย ประกาศ เมนู ใบเสร็จ ฉลาก เลือกคำที่หายไป' },
+  toeicMock: { icon: '🏁', name: 'ข้อสอบ TOEIC จำลอง', desc: '30 ข้อครบ 7 พาร์ต จับเวลา ดูคะแนนคร่าวๆ' },
   toeic1: { icon: '📷', name: 'TOEIC Part 1', desc: 'ดูภาพ ฟังประโยค เลือกข้อที่ตรงภาพ' },
   toeic2: { icon: '🎧', name: 'TOEIC Part 2', desc: 'ฟังคำถาม เลือกคำตอบที่เหมาะ A B C' },
   toeic3: { icon: '🗣️', name: 'TOEIC Part 3', desc: 'ฟังบทสนทนาที่ทำงาน แล้วตอบคำถาม' },
@@ -83,7 +84,7 @@ const PAIR_GAMES = ['confuse', 'minpair'];
 // Skill games with their own items (idx -1): practice only, no flashcard scheduling.
 // Generated skill games: the questions are made up on the spot, so they are not scheduled (no S.lex keys).
 const GEN_GAMES = ['num'];
-const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix', 'root', 'idiom', 'sit', 'irreg', 'dprep', 'thaierr', 'gpat', 'real', 'toeic1', 'toeic2', 'toeic3', 'toeic4', 'toeic5', 'toeic6', 'toeic7', ...GEN_GAMES];
+const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix', 'root', 'idiom', 'sit', 'irreg', 'dprep', 'thaierr', 'gpat', 'real', 'toeic1', 'toeic2', 'toeic3', 'toeic4', 'toeic5', 'toeic6', 'toeic7', 'toeicMock', ...GEN_GAMES];
 // The games menu groups every game by the skill it trains (1.106): chips filter, and "all" lists them under these headings.
 // Every game id is in exactly one group (a test checks).
 const GAME_SKILLS = [
@@ -93,10 +94,10 @@ const GAME_SKILLS = [
   ['write', '✍️', 'สะกดและเขียน', ['spell', 'hand', 'hangman', 'anagram', 'cloze', 'sCloze', 'order', 'sOrder', 'compose']],
   ['gram', '📐', 'ไวยากรณ์และรูปคำ', ['wform', 'affix', 'root', 'gpat', 'thaierr', 'dprep', 'irreg', 'toeic5', 'toeic6']],
   ['phrase', '🧩', 'วลีและสำนวน', ['colloc', 'phrasal', 'idiom', 'sit', 'real']],
-  ['chal', '🎉', 'ท้าทาย', ['survival', 'timeAttack', 'emojiRun']],
+  ['chal', '🎉', 'ท้าทาย', ['survival', 'timeAttack', 'emojiRun', 'toeicMock']],
 ];
 let gameSkill = 'all'; // chip selected in the games menu: 'all', 'toeic' or a GAME_SKILLS id
-const TOEIC_GAMES = ['toeic1', 'toeic2', 'toeic3', 'toeic4', 'toeic5', 'toeic6', 'toeic7']; // the 💼 TOEIC chip, in part order (missing ids are skipped)
+const TOEIC_GAMES = ['toeicMock', 'toeic1', 'toeic2', 'toeic3', 'toeic4', 'toeic5', 'toeic6', 'toeic7']; // the 💼 TOEIC chip, in part order (missing ids are skipped)
 // Game id → its skill group id: the tile and its group heading share the skill's colour (1.156.0, CSS `.sk-<id>` → `--sk`).
 const SKILL_OF = Object.fromEntries(GAME_SKILLS.flatMap(([sk, , , ids]) => ids.map((id) => [id, sk])));
 // Tile badges (1.157.3): the best score is labelled "สถิติ"; once 3+ different games have been played, the ones never tried say "ใหม่".
@@ -439,6 +440,7 @@ function gamePool(id) {
   if (id === 'toeic6') return p6Items();
   if (id === 'toeic2') return p2Items();
   if (id === 'toeic1') return p1Items();
+  if (id === 'toeicMock') return mockItems();
   if (id === 'toeic3') return p34Items(3);
   if (id === 'toeic4') return p34Items(4);
   if (id === 'num') return numItems();
@@ -565,6 +567,7 @@ function startGame(id) {
   if (id === 'real' && !REALTEXT) { withLoading(loadRealText()).then(() => startGame(id)); return; }
   if (id === 'toeic7' && !TOEICP7) { withLoading(loadP7()).then(() => startGame(id)); return; }
   if ((id === 'toeic3' || id === 'toeic4') && !P34[id.slice(-1)]) { withLoading(loadP34(+id.slice(-1))).then(() => startGame(id)); return; }
+  if (id === 'toeicMock' && !mockReady()) { withLoading(mockLoad()).then(() => startGame(id)); return; }
   if (id === 'toeic1' && !TOEICP1) { withLoading(loadP1()).then(() => startGame(id)); return; }
   if (id === 'toeic2' && !TOEICP2) { withLoading(loadP2()).then(() => startGame(id)); return; }
   if (id === 'toeic6' && !TOEICP6) { withLoading(loadP6()).then(() => startGame(id)); return; }

@@ -16,6 +16,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   const ENDLESS = EMOJI_RUN || SURV || TIMED;
   // Level-map stage (js/map.js): the stage's words, each asked once in a mix of games; ends on the stars screen.
   const STAGE = gameId === 'stage';
+  const MOCK = gameId === 'toeicMock'; // TOEIC mock test (1.194.0): fixed list in test order, countdown, own result screen
   const BOSS = STAGE && !!stage.boss; // boss stage (js/map.js): hearts like survival, plus a boss bar
   const GNAME = STAGE ? stage.title : GAMES[gameId].name;
   const leave = () => (STAGE ? go('map', stage.topic) : go('games'));
@@ -27,8 +28,8 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     return (lastMode = pick(ok.filter((x) => x !== lastMode)));
   };
   const TIME_LIMIT = 60;
-  const picked = SURV ? [] : SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId) ? lexPick(gameId, src, ROUND) : shuffle(src).slice(0, ENDLESS || STAGE ? src.length : ROUND);
-  const items = SET_GAMES.includes(gameId) ? setOrder(picked, src) : picked; // TOEIC Parts 3/4/6/7: questions of one text stay together
+  const picked = MOCK ? src : SURV ? [] : SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId) ? lexPick(gameId, src, ROUND) : shuffle(src).slice(0, ENDLESS || STAGE ? src.length : ROUND);
+  const items = MOCK ? picked : SET_GAMES.includes(gameId) ? setOrder(picked, src) : picked; // TOEIC Parts 3/4/6/7: questions of one text stay together
   let noSrs = false; // ✏️ hand game in trace mode: copying a faint word is practice, not recall (no SRS change)
   let i = 0, score = 0, combo = 0, bestCombo = 0, asked = 0, hearts = 3, reach = 0, finished = false, timeLeft = TIME_LIMIT;
   let qT0 = 0, curMode = ''; // when the question showed and its kind (⚡ fast answers, 1.168.0)
@@ -64,6 +65,10 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
         <span class="small">${'❤️'.repeat(hearts)}${'🖤'.repeat(3 - hearts)} · 🐲 ${hp}</span></div></div>`;
     }
     if (i < items.length) $('#title').textContent = `${GNAME} · ${i + 1}/${items.length}`;
+    if (MOCK) return `<div class="session-top">
+      <button class="icon-btn" id="quit" aria-label="ออกจากข้อสอบ">✕</button>
+      <div class="progress"><div style="width:${i / items.length * 100}%"></div></div>
+      <span class="small mock-t" id="mockT" aria-label="เวลาที่เหลือ">⏱ ${mockClock()}</span></div>`;
     return `<div class="session-top">
       <button class="icon-btn" id="quit" aria-label="ออก">✕</button>${qmHtml()}
       <div class="progress"><div style="width:${i / items.length * 100}%"></div></div>
@@ -90,6 +95,18 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     }
     return pick(src);
   }
+  // TOEIC mock: one countdown for the whole test; at 0 the test ends (questions not reached count as wrong).
+  const MOCK_TIME = MOCK ? items.length * MOCK_SEC : 0, mockT0 = Date.now();
+  const mockLeft = () => Math.max(0, MOCK_TIME - (Date.now() - mockT0) / 1000);
+  const mockClock = () => { const t = Math.ceil(mockLeft()); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+  const mockLog = []; // [part, ok] per answer
+  if (MOCK) {
+    const tick = setInterval(() => {
+      const el = $('#mockT'); if (el) { el.textContent = '⏱ ' + mockClock(); el.classList.toggle('low', mockLeft() < 120); }
+      if (mockLeft() <= 0) { toast('⏰ หมดเวลา'); result(); }
+    }, 500);
+    cleanup = () => { clearInterval(tick); tvStop(); };
+  }
   if (TIMED) {
     const t0 = Date.now();
     const tick = setInterval(() => {
@@ -112,6 +129,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     reach = Math.max(reach, LEVELS_CEFR.indexOf(LEVELS_EXTRA.includes(w.g) ? w.l : w.g)); // extra-set words count by their CEFR estimate
     const m = STAGE ? stagePick(w) : SURV ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'cloze'] : ['en2th', 'th2en', 'listen'])
       : TIMED ? pick(['en2th', 'th2en'])
+      : MOCK ? w._part
       : gameId === 'review' ? pick(hasCloze(w) ? ['en2th', 'th2en', 'listen', 'spell', 'cloze'] : ['en2th', 'th2en', 'listen', 'spell']) : mode;
     qT0 = Date.now(); curMode = m;
     if (m === 'spell') return qSpell(w);
@@ -1532,7 +1550,8 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     const spk = gameId === 'speak' || gameId === 'speakS';
     const soft = spk || gameId === 'order' || gameId === 'sOrder' || gameId === 'dictS' || gameId === 'compose';
     asked++;
-    if (w.idx < 0 && SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId)) lexGrade(lexKey(gameId, w), ok);
+    if (MOCK) { lexGrade(lexKey(w._part, w), ok); mockLog.push([w._part, ok]); }
+    else if (w.idx < 0 && SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId)) lexGrade(lexKey(gameId, w), ok);
     if (w.idx < 0 || (soft && !ok) || deckRun.practice || noSrs) markActive(!!ok); else gameResult(w, ok, deckRun.map);
     if (spk && ok) S.counts.speak = (S.counts.speak || 0) + 1;
     questEvent('answer', { game: gameId, ok });
@@ -1547,10 +1566,49 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   }
   function next() { if ((SURV || BOSS) && hearts <= 0) return result(); i++; q(); }
 
+  // Mock result: right / asked per part (every question of the test counts, answered or not), rough section scores, the change
+  // since the last mock, the weakest part with a button to practise it, and the questions missed. Saved in S.mock (≤ 30).
+  function mockResult() {
+    const p = {};
+    for (const w of items) p[w._part] = p[w._part] || [0, 0];
+    for (const w of items) p[w._part][1]++;
+    for (const [g, ok] of mockLog) if (ok) p[g][0]++;
+    const sc = mockScore(p), prev = S.mock[S.mock.length - 1];
+    S.mock.push({ t: Date.now(), L: sc.L, R: sc.R, p }); S.mock = cleanMock(S.mock);
+    for (const g of Object.keys(p)) S.glast[g] = today(); // the parts count as played today (stats card)
+    save();
+    questEvent('round', { game: gameId, correct: sc.l[0] + sc.r[0], bestCombo, perfect: false });
+    const tot = sc.L + sc.R, diff = prev ? tot - (prev.L + prev.R) : null;
+    const parts = TOEIC_GAMES.filter((g) => p[g]);
+    const weak = parts.slice().sort((a, b) => p[a][0] / p[a][1] - p[b][0] / p[b][1])[0];
+    const used = Math.round((Date.now() - mockT0) / 1000), missed = [...new Set(wrong)];
+    if (sc.l[0] + sc.r[0] >= items.length * 0.8) confetti();
+    view.innerHTML = `<div class="card-box center pop res-top sk-chal mock-res">
+        <div class="result-emoji">🏁</div>
+        <div class="h2">คะแนนโดยประมาณ <b class="res-cnt">${tot}</b><small>/990</small></div>
+        <div class="mock-sec"><div><b>🎧 ${sc.L}</b><span>การฟัง (Part 1–4) · ถูก ${sc.l[0]}/${sc.l[1]}</span></div><div><b>📖 ${sc.R}</b><span>การอ่าน (Part 5–7) · ถูก ${sc.r[0]}/${sc.r[1]}</span></div></div>
+        ${diff != null ? `<p class="small">${diff > 0 ? `📈 สูงขึ้น ${diff} จากครั้งก่อน` : diff < 0 ? `📉 ต่ำลง ${-diff} จากครั้งก่อน` : 'เท่ากับครั้งก่อน'}</p>` : ''}
+        <p class="small muted">ใช้เวลา ${Math.floor(used / 60)} นาที ${used % 60} วินาที · ⚠️ เป็นตัวเลขคร่าวๆ จากข้อสอบ 30 ข้อในแอป ไม่ใช่คะแนนสอบจริงของ ETS</p>
+        <table class="g-table toeic-t"><tr><th>พาร์ต</th><th>ถูก</th></tr>${parts.map((g) => `<tr${g === weak && p[g][0] < p[g][1] ? ' class="weak"' : ''}><td>${GAMES[g].icon} ${esc(GAMES[g].name.replace('TOEIC ', ''))}</td><td>${p[g][0]}/${p[g][1]}</td></tr>`).join('')}</table>
+        ${resultExtras(runLog, xp0)}
+      </div>
+      ${missed.length ? `<div class="card-box wrong-list"><div class="wl-h"><b>ข้อที่ตอบผิด</b><span class="wl-n">${missed.length}</span></div><div class="small muted wl-hint">ข้อพวกนี้จะกลับมาให้ทวนในเกมของพาร์ตนั้น</div>
+        ${missed.map((w) => `<div class="wl" data-i="-1"><span><b>${GAMES[w._part].icon} ${esc(w.w)}</b></span><span class="muted grow" style="text-align:right">${esc(w._q[3])}</span></div>`).join('')}</div>` : ''}
+      <div class="res-acts">${weak && p[weak][0] < p[weak][1] ? `<button class="btn primary block" id="mockWeak">ฝึก ${esc(GAMES[weak].name)} (พาร์ตที่พลาดมากที่สุด)</button>` : ''}
+      <button class="btn block" id="again">ทำข้อสอบจำลองอีกชุด</button>
+      <button class="btn block" id="back">เลือกเกมอื่น</button></div>`;
+    $('#again').onclick = () => startGame(gameId);
+    $('#back').onclick = leave;
+    if ($('#mockWeak')) $('#mockWeak').onclick = () => startGame(weak);
+    updateStreak();
+    countUp(view.querySelectorAll('.res-cnt, .res-xp b'));
+  }
+
   function result() {
     if (finished) return;
     finished = true;
     if (cleanup) { cleanup(); cleanup = null; }
+    if (MOCK) return mockResult();
     const done = STAGE ? stageDone(stage.topic, stage.k, items.length - wrong.length, items.length, BOSS && hearts <= 0) : null;
     const prev = S.best[gameId];
     const right_ = asked - wrong.length;

@@ -129,9 +129,17 @@ function toeicStat(g) {
   const ago = last ? Math.round((new Date(today()) - new Date(last)) / DAY) : null;
   return { g, seen, ans, ok, due, ago, acc: ans ? ok / ans : null };
 }
+// last mock tests (S.mock): latest score, best, and the last five totals as small bars
+function mockLine() {
+  const m = S.mock || [];
+  if (!m.length) return '<div class="small muted" style="margin-top:6px">🏁 ยังไม่เคยทำข้อสอบจำลอง: 30 ข้อครบ 7 พาร์ต ราว 18 นาที แล้วดูคะแนนคร่าวๆ</div>';
+  const last = m[m.length - 1], tot = (x) => x.L + x.R, best = Math.max(...m.map(tot)), five = m.slice(-5);
+  return `<div class="mock-line" style="margin-top:8px"><div class="small">🏁 ข้อสอบจำลองล่าสุด <b>${tot(last)}</b>/990 (ฟัง ${last.L} · อ่าน ${last.R}) · ดีที่สุด ${best} · ทำไป ${m.length} ครั้ง</div>
+    <div class="mock-bars" role="img" aria-label="คะแนน ${five.length} ครั้งล่าสุด ${five.map(tot).join(', ')}">${five.map((x) => `<i style="height:${Math.max(6, tot(x) / 990 * 40)}px" title="${tot(x)}"></i>`).join('')}</div></div>`;
+}
 function toeicCard() {
-  const rows = TOEIC_GAMES.filter((g) => GAMES[g]).map(toeicStat);
-  if (!rows.some((r) => r.seen)) return '';
+  const rows = TOEIC_GAMES.filter((g) => GAMES[g] && g !== 'toeicMock').map(toeicStat);
+  if (!rows.some((r) => r.seen) && !(S.mock || []).length) return '';
   const rated = rows.filter((r) => r.ans >= 8).sort((a, b) => a.acc - b.acc);
   const weak = rated.length >= 2 && rated[0].acc < 0.85 ? rated[0] : null;
   const stale = rows.filter((r) => r.ago == null || r.ago >= 7);
@@ -143,7 +151,8 @@ function toeicCard() {
     <table class="g-table toeic-t"><tr><th>พาร์ต</th><th>ความแม่น</th><th>เคยเจอ</th><th>ถึงกำหนด</th><th>เล่นล่าสุด</th></tr>${rows.map((r) => `<tr${weak && r.g === weak.g ? ' class="weak"' : ''}><td><button class="linkish" data-tgo="${r.g}">${GAMES[r.g].icon} ${esc(GAMES[r.g].name.replace('TOEIC ', ''))}</button></td><td>${pct(r)}</td><td>${r.seen}</td><td>${r.due ? `<b>${r.due}</b>` : '–'}</td><td>${when(r)}</td></tr>`).join('')}</table>
     <div class="small" style="margin-top:8px">${tip}</div>
     ${stale.length && stale.length < rows.length ? `<div class="small muted" style="margin-top:4px">💤 ไม่ได้ฝึก 7 วันขึ้นไป: ${stale.map((r) => esc(GAMES[r.g].name.replace('TOEIC ', ''))).join(' · ')}</div>` : ''}
-    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">${weak ? `<button class="btn primary" data-tgo="${weak.g}">ฝึกพาร์ตที่อ่อนที่สุด</button>` : ''}${stale.length ? `<button class="btn" data-tgo="${stale[0].g}">เล่น${esc(GAMES[stale[0].g].name.replace('TOEIC ', ''))} ที่ห่างไปนาน</button>` : ''}</div></div>`;
+    ${mockLine()}
+    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap"><button class="btn" data-tgo="toeicMock">🏁 ทำข้อสอบจำลอง</button>${weak ? `<button class="btn primary" data-tgo="${weak.g}">ฝึกพาร์ตที่อ่อนที่สุด</button>` : ''}${stale.length ? `<button class="btn" data-tgo="${stale[0].g}">เล่น ${esc(GAMES[stale[0].g].name.replace('TOEIC ', ''))} ที่ห่างไปนาน</button>` : ''}</div></div>`;
 }
 
 // Real retention against the target (1.107): of the reviews of cards that were due, how many came back, by the gap they had.

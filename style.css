@@ -537,6 +537,15 @@ body { touch-action: manipulation; }
 .g-table th, .g-table td { border: 1px solid var(--border); padding: 6px; text-align: center; }
 .g-table th { background: var(--surface-2); }
 .toeic-t td:first-child { text-align: left; }
+.mock-sec { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.mock-sec > div { background: var(--surface-2); border-radius: 14px; padding: 10px; display: grid; gap: 2px; }
+.mock-sec b { font-size: var(--fs-lg, 1.3rem); }
+.mock-sec span { font-size: var(--fs-sm); color: var(--muted); }
+.mock-res .toeic-t { max-width: 360px; margin: 10px auto; }
+.mock-t { font-variant-numeric: tabular-nums; font-weight: 700; }
+.mock-t.low { color: var(--bad-ink); }
+.mock-bars { display: flex; align-items: flex-end; gap: 4px; height: 42px; margin-top: 6px; }
+.mock-bars i { width: 14px; border-radius: 4px 4px 0 0; background: var(--primary); }
 .toeic-t tr.weak td { background: color-mix(in srgb, var(--bad, #e5484d) 10%, transparent); }
 .linkish { background: none; border: 0; padding: 0; font: inherit; color: var(--primary-ink); font-weight: 700; cursor: pointer; text-align: left; }
 .g-plan { background: var(--surface-2); border-radius: 14px; padding: 12px 14px; margin-top: 10px; line-height: 1.7; }
