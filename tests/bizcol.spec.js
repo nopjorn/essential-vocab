@@ -44,3 +44,19 @@ test('bizcol game from the TOEIC chip: hint, right answer shows the collocation,
   expect(keys.some(([, p]) => p.x === 1)).toBe(true);
   expect(errors).toEqual([]);
 });
+
+test('word sheet (1.201.0): business collocations and work phrases that use the word, any form', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.evaluate(() => openSheet(WORD_BY.deadline));
+  await expect(page.locator('#bcBox')).toContainText('meet a deadline');
+  await page.locator('#bcBox .col-row').first().click();
+  await expect.poll(() => page.evaluate(() => window.__said.at(-1))).toContain('deadline');
+  await page.evaluate(() => document.querySelectorAll('.sheet-wrap').forEach((x) => x.remove()));
+  await page.evaluate(() => openSheet(WORD_BY.raise)); // "raised" in the sentence, [raise] concerns in the collocation
+  await expect(page.locator('#bcBox')).toContainText('raise concerns');
+  await page.evaluate(() => document.querySelectorAll('.sheet-wrap').forEach((x) => x.remove()));
+  await page.evaluate(() => openSheet(WORD_BY.attach)); // key "find attached" → attach
+  await expect(page.locator('#wpBox')).toContainText('find attached');
+  expect(await page.evaluate(() => [bizcolOf('the').length, workPhrOf('you').length])).toEqual([0, 0]);
+  expect(errors).toEqual([]);
+});

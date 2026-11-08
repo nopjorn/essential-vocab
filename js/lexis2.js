@@ -291,7 +291,37 @@ const p5Items = () => TOEICP5.map((r) => ({ idx: -1, w: r.right, t: r.th, p: '',
 const rtItems = () => REALTEXT.map((r) => ({ idx: -1, w: r.key, t: r.th, p: '', g: '', _rt: r, _q: [r.text.replace(/\n/g, ' '), r.right, '', r.th] }));
 
 /* ---------- word sheet boxes ---------- */
+// Word sheet (1.201.0): business collocations and work phrases that use this list word (any form: lookupWord maps raised → raise).
+const LX_SKIP = new Set('a an the of to in on at for by with and or i you we it is am are be my your our this that me us any so up'.split(' '));
+function lxIndex(rows, text) {
+  const m = new Map();
+  rows.forEach((r) => new Set((text(r).toLowerCase().match(/[a-z]+(?:-[a-z]+)?/g) || []).filter((t) => !LX_SKIP.has(t))).forEach((t) => {
+    const hit = WORD_BY[t] || lookupWord(t); if (!hit) return;
+    const k = hit.w.toLowerCase(); if (!m.has(k)) m.set(k, []); if (!m.get(k).includes(r)) m.get(k).push(r);
+  }));
+  return m;
+}
+let BC_OF = null, WP_OF = null;
+const bizcolOf = (word) => { if (!BIZCOL) return []; if (!BC_OF) BC_OF = lxIndex(BIZCOL, (r) => r.plain); return BC_OF.get(word.toLowerCase()) || []; };
+const workPhrOf = (word) => { if (!WORKPHR) return []; if (!WP_OF) WP_OF = lxIndex(WORKPHR, (r) => r.key); return WP_OF.get(word.toLowerCase()) || []; };
+const bcRow = (r) => `<button class="col-row bc-row" data-say="${esc(r.full)}"><b lang="en">${bcHTML(r)}</b><span>${esc(r.th)}</span></button>`;
+const wpRow = (r) => `<button class="col-row" data-say="${esc(r.plain)}"><b lang="en" style="font-weight:500">${wpHTML(r)}</b><span>${esc(r.th)}</span></button>`;
+
 function lexis2Boxes(el, w) {
+  loadBizCol().then(() => {
+    const box = el.querySelector('#bcBox'), list = bizcolOf(w.w);
+    if (box && list.length) {
+      box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🤝 คำคู่ธุรกิจ</b> (แตะเพื่อฟังประโยค)</div>${list.slice(0, 6).map(bcRow).join('')}`;
+      box.onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
+    }
+  });
+  loadWorkPhr().then(() => {
+    const box = el.querySelector('#wpBox'), list = workPhrOf(w.w);
+    if (box && list.length) {
+      box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>📧 ใช้ในอีเมล / แชตงาน</b> (แตะเพื่อฟัง)</div>${list.slice(0, 4).map(wpRow).join('')}`;
+      box.onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
+    }
+  });
   loadUkUs().then(() => {
     const box = el.querySelector('#ukBox'), list = ukusOf(w.w);
     if (box && list.length) {
