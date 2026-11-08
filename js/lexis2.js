@@ -162,6 +162,32 @@ function renderBizCol() {
   $('#bcAll').onclick = () => bcKeep(BIZCOL.filter((r) => bcGrp === 'all' || r.g === bcGrp));
 }
 
+/* ---------- formal ↔ casual (1.205.0) ---------- */
+// data/register.js rows: [formal, casual, too blunt, Thai, Thai tip]. Game `regi` (qRegi): two items per row (to a client = formal, to a teammate = casual),
+// the three lines as options; the blunt one is never right. Page renderRegister().
+const RG_TO = { f: ['👔', 'อีเมลถึงลูกค้า / หัวหน้า', 'ทางการ'], c: ['💬', 'แชตกับเพื่อนร่วมทีม', 'เป็นกันเอง'] };
+let REGISTER = null;
+const loadRegister = () => loadData('data/register.js', 'REGISTER').then((rows) => {
+  if (!REGISTER && rows.length) REGISTER = rows.map(([f, c, b, th, tip]) => ({ f, c, b, th, tip }));
+  return REGISTER || [];
+});
+const rgItems = () => REGISTER.flatMap((r) => ['f', 'c'].map((to) => ({ idx: -1, w: r[to], t: r.th, p: '', g: '', _rg: r, _to: to, _q: [`${RG_TO[to][1]}: ${r.th}`, r[to], '', r.tip] })));
+const rgLines = (r) => `<div class="rg-l"><b>👔 ทางการ</b> <span lang="en">${esc(r.f)}</span></div><div class="rg-l"><b>💬 เป็นกันเอง</b> <span lang="en">${esc(r.c)}</span></div><div class="rg-l rg-b"><b>⚠️ ห้วนเกินไป</b> <span lang="en"><s>${esc(r.b)}</s></span></div>`;
+function renderRegister() {
+  if (!REGISTER) { withLoading(loadRegister()).then(renderRegister); return; }
+  $('#title').textContent = 'ทางการ ↔ เป็นกันเอง';
+  view.scrollTop = 0;
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="rgBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="rgPlay">🎩 เล่นเกม</button></div>
+    <p class="small muted" style="margin:0 4px 10px">${REGISTER.length} เรื่องที่พูดได้หลายระดับ: 👔 กับลูกค้าหรือหัวหน้า · 💬 กับเพื่อนร่วมทีม · ⚠️ แบบที่แปลตรงจากไทยแล้วฟังห้วนเกินไป · แตะเพื่อฟัง</p>
+    <div class="pair-list" id="rgList">${REGISTER.map((r) => `<div class="card-box pair-card"><div class="pair-h"><b>${esc(r.th)}</b></div>
+      <button class="pair-ex" data-say="${esc(r.f)}"><span><b>👔</b> <span lang="en">${esc(r.f)}</span></span></button>
+      <button class="pair-ex" data-say="${esc(r.c)}"><span><b>💬</b> <span lang="en">${esc(r.c)}</span></span></button>
+      <div class="pair-ex rg-b"><span><b>⚠️</b> <span lang="en"><s>${esc(r.b)}</s></span></span><small class="muted">💡 ${esc(r.tip)}</small></div></div>`).join('')}</div>`;
+  $('#rgBack').onclick = () => go('ref');
+  $('#rgPlay').onclick = () => startGame('regi');
+  $('#rgList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
+}
+
 /* ---------- real-life texts (1.113) ---------- */
 // data/realtext.js rows: [kind, Thai situation, text with ___, answer, [3 wrong words], Thai translation, list word?]. Game `real` (qReal in data/play.js).
 let REALTEXT = null;

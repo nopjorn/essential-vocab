@@ -503,6 +503,19 @@ test('business collocations (1.200): known group, one [partner], one blank, the 
   expect(bad).toEqual([]);
 });
 
+test('formal / casual lines (1.205): three different lines, Thai meaning and tip, no duplicates', () => {
+  const { REGISTER } = load('data/register.js');
+  expect(REGISTER.length).toBeGreaterThanOrEqual(30);
+  const bad = [], seen = new Set();
+  REGISTER.forEach(([f, c, b, th, tip], i) => {
+    const id = `#${i} ${th}`;
+    if (![f, c, b].every((x) => typeof x === 'string' && /[A-Za-z]/.test(x)) || new Set([f, c, b]).size !== 3) bad.push(`${id}: needs 3 different English lines`);
+    if (!/[\u0E00-\u0E7F]/.test(th) || !/[\u0E00-\u0E7F]/.test(tip || '')) bad.push(`${id}: Thai`);
+    [f, c, b, th].forEach((x) => { if (seen.has(x)) bad.push(`${id}: duplicate ${x}`); seen.add(x); });
+  });
+  expect(bad).toEqual([]);
+});
+
 test('real-life texts are valid practice data', () => {
   const { REALTEXT } = load('data/realtext.js');
   const { WORDS } = load(...WORD_FILES);

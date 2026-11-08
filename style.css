@@ -507,6 +507,10 @@ body { touch-action: manipulation; }
 .wpday { cursor: pointer; }
 .wp-day { font-size: var(--fs-lg, 18px); font-weight: 600; margin-top: 8px; }
 .wp-day mark { background: none; color: var(--pink-ink); font-weight: 800; }
+.rg-to { font-weight: 700; margin-top: 8px; }
+.rg-l { display: grid; grid-template-columns: 104px 1fr; gap: 8px; padding: 4px 0; align-items: baseline; }
+.rg-l b { font-size: var(--fs-sm, 14px); }
+.rg-b s { color: var(--muted); }
 .bc-item { position: relative; }
 .bc-item .pair-ex { padding-right: 46px; }
 .bc-item .col-row { padding-right: 48px; }

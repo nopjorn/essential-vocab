@@ -164,6 +164,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'real') return qReal(w);
     if (m === 'wphr') return qWphr(w);
     if (m === 'bizcol') return qBizcol(w);
+    if (m === 'regi') return qRegi(w);
     if (m === 'toeic5') return qP5(w);
     if (m === 'toeic7') return qP7(w);
     if (m === 'toeic6') return qP6(w);
@@ -1135,6 +1136,32 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       view.querySelector('[data-sayex]').onclick = () => speak(gpPlain(r));
       $('#nextQ').onclick = next;
       speak(gpPlain(r));
+    };
+  }
+
+  // Formal ↔ casual (1.205.0): who you are writing to + what you want to say → pick the line that fits (formal / casual / too blunt).
+  function qRegi(w) {
+    const r = w._rg, [ic, to, reg] = RG_TO[w._to], right = r[w._to], opts = shuffle([r.f, r.c, r.b]);
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit pop"><div class="small muted">🎩 ทางการหรือกันเอง</div>
+        <div class="rg-to">${ic} ${to} <span class="small muted">(${reg})</span></div>
+        <div class="h2" style="margin-top:6px">${esc(r.th)}</div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" lang="en" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === right;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : `❌ ${b.dataset.o === r.b ? 'ประโยคนี้ห้วนเกินไป' : `ประโยคนี้เหมาะกับ${w._to === 'f' ? 'แชตกับเพื่อน' : 'อีเมลทางการ'}มากกว่า`}`}
+        <div class="example rg-ex">${rgLines(r)}<div class="thx">💡 ${esc(r.tip)}</div></div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      $('#nextQ').onclick = next;
+      speak(right);
     };
   }
 
