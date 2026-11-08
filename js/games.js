@@ -272,7 +272,8 @@ function gameList() {
     const head = all ? `<button class="small muted games-sec fold sk-${id}" data-fold="${id}" aria-expanded="${!shut}"><b>${ic} ${name}</b><small>${ids.length}</small><i aria-hidden="true">▾</i></button>` : '';
     return head + (shut ? '' : `<div class="${gridCls()}">${ids.map(gameTile).join('')}</div>`);
   }).join('');
-  return `<div class="chips skill-chips" id="gSkill" role="group" aria-label="กรองเกมตามทักษะ">${chips}</div>${body}`;
+  const hub = gameSkill === 'toeic' ? '<button class="card-box guide-link th-link" id="toToeic"><span>💼</span><div class="grow"><b>เปิดศูนย์ TOEIC</b><div class="small muted">แผนวันนี้ ข้อสอบจำลอง ความแม่นแต่ละพาร์ต และศัพท์ TOEIC ในหน้าเดียว</div></div><span class="muted">›</span></button>' : '';
+  return `<div class="chips skill-chips" id="gSkill" role="group" aria-label="กรองเกมตามทักษะ">${chips}</div>${hub}${body}`;
 }
 function renderGames() {
   if (gameSource === 'custom') gameSource = 'level';
@@ -325,6 +326,7 @@ function renderGames() {
     $('#toMap').onclick = () => go('map');
     $('#toWs').onclick = () => go('wsearch');
     $('#toRef').onclick = () => go('ref');
+    if ($('#toToeic')) $('#toToeic').onclick = () => go('toeic', 'games');
     $('#gView').onclick = (e) => {
       const b = e.target.closest('[data-gv]'); if (!b || b.dataset.gv === gameView()) return;
       S.settings.gameView = b.dataset.gv; save(); const top = view.scrollTop; renderGames(); view.scrollTop = top;

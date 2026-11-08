@@ -114,7 +114,7 @@ function renderHome() {
         : `ต้องเรียนคำใหม่วันละ <b>${x.need}</b> คำ แต่ตอนนี้ตั้งไว้ ${newGoal()} คำ`;
       const fix = x.left && x.days > 0 && !x.ok && !(S.settings.minutes | 0) && x.need <= 100 ? `<button class="btn primary" id="examFix">ตั้งคำใหม่เป็นวันละ ${x.need} คำ</button>` : '';
       return `<div class="card-box exam-card"><div class="row" style="justify-content:space-between"><b>🗓️ ${title}</b><span class="exam-days"><b>${x.days}</b> วัน</span></div>
-        <div class="small" style="margin-top:6px">${msg}</div><div class="small muted" style="margin-top:2px">เหลือ ${x.left.toLocaleString()} คำที่ยังไม่ได้เริ่ม (${lvNames(S.settings.levels)}) · ${thDate(Date.parse(x.date + 'T12:00:00'))}</div>${fix ? `<div style="margin-top:10px">${fix}</div>` : ''}${isToeicGoal(x.name) ? toeicPlanHtml(x.days) : ''}</div>`;
+        <div class="small" style="margin-top:6px">${msg}</div><div class="small muted" style="margin-top:2px">เหลือ ${x.left.toLocaleString()} คำที่ยังไม่ได้เริ่ม (${lvNames(S.settings.levels)}) · ${thDate(Date.parse(x.date + 'T12:00:00'))}</div>${fix ? `<div style="margin-top:10px">${fix}</div>` : ''}${isToeicGoal(x.name) ? toeicPlanHtml(x.days) + '<button class="linkish th-open" data-go-toeic>💼 เปิดศูนย์ TOEIC ›</button>' : ''}</div>`;
     },
     wgoal: () => {
       const g = S.settings.weekGoal | 0; if (!g) return '';
@@ -204,6 +204,7 @@ function renderHome() {
   click('#examFix', () => { const x = examPlan(); if (x) { S.settings.newPerDay = x.need; save(); toast(`ตั้งคำใหม่เป็นวันละ ${x.need} คำแล้ว ✅`); renderHome(); } });
   click('#boxOpen', () => { openBox(); renderHome(); });
   view.querySelectorAll('[data-tplan]').forEach((b) => (b.onclick = () => startGame(b.dataset.tplan)));
+  view.querySelectorAll('[data-go-toeic]').forEach((b) => (b.onclick = () => go('toeic', 'home')));
   click('#qYear', () => go('year', yearToShow()));
   click('#qShort', () => go('cards', 'short'));
   click('#qRiddle', () => go('riddle', 'home'));
@@ -478,12 +479,13 @@ function goalFitCard() {
     el.innerHTML = `<div class="row" style="justify-content:space-between"><b>🎯 แนะนำตามเป้าหมาย</b><span class="small muted">${esc(label)}</span></div>
       ${sets.length ? `<div class="small muted" style="margin:8px 0 6px">📦 ชุดคำสำเร็จรูป (แตะดูคำแล้วเพิ่มเป็นชุดของฉัน)</div><div class="chips">${sets.map((p) => `<button class="chip" data-gfp="${p.id}">${p.icon} ${esc(p.name)}</button>`).join('')}</div>` : ''}
       <div class="small muted" style="margin:10px 0 6px">🎮 เกมที่ช่วยเป้าหมายนี้</div>
-      <div class="chips">${games.map((g) => { const done = S.glast[g] === today(); return `<button class="chip${done ? ' on' : ''}" data-gfg="${g}">${GAMES[g].icon} ${esc(GAMES[g].name)}${done ? ' ✓' : ''}</button>`; }).join('')}</div>`;
+      <div class="chips">${games.map((g) => { const done = S.glast[g] === today(); return `<button class="chip${done ? ' on' : ''}" data-gfg="${g}">${GAMES[g].icon} ${esc(GAMES[g].name)}${done ? ' ✓' : ''}</button>`; }).join('')}</div>${keys.includes('toeic') ? '<button class="linkish th-open" data-gft>💼 เปิดศูนย์ TOEIC ›</button>' : ''}`;
   };
   if (PRESETS) paint(); else { paint(); loadPresets().then(paint); }
   el.onclick = (e) => {
     const p = e.target.closest('[data-gfp]'); if (p) { presetSheet(PRESETS.find((x) => x.id === p.dataset.gfp)); return; }
     const g = e.target.closest('[data-gfg]'); if (g) startGame(g.dataset.gfg);
+    if (e.target.closest('[data-gft]')) go('toeic', 'home');
   };
 }
 // Work phrase of the day (1.203.0): one data/workphr.js phrase per day (same for the whole day, by day number), › shows the next one

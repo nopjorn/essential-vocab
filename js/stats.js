@@ -179,7 +179,7 @@ function toeicCard() {
     <div class="small" style="margin-top:8px">${tip}</div>
     ${stale.length && stale.length < rows.length ? `<div class="small muted" style="margin-top:4px">💤 ไม่ได้ฝึก 7 วันขึ้นไป: ${stale.map((r) => esc(GAMES[r.g].name.replace('TOEIC ', ''))).join(' · ')}</div>` : ''}
     ${mockLine()}
-    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap"><button class="btn" data-tgo="toeicMock">🏁 ทำข้อสอบจำลอง</button><button class="btn" id="toeicEar">🎧 ฟังบทสนทนาต่อเนื่อง</button>${weak ? `<button class="btn primary" data-tgo="${weak.g}">ฝึกพาร์ตที่อ่อนที่สุด</button>` : ''}${stale.length ? `<button class="btn" data-tgo="${stale[0].g}">เล่น ${esc(GAMES[stale[0].g].name.replace('TOEIC ', ''))} ที่ห่างไปนาน</button>` : ''}</div></div>`;
+    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap"><button class="btn" id="toeicHub">💼 ศูนย์ TOEIC</button><button class="btn" data-tgo="toeicMock">🏁 ทำข้อสอบจำลอง</button><button class="btn" id="toeicEar">🎧 ฟังบทสนทนาต่อเนื่อง</button>${weak ? `<button class="btn primary" data-tgo="${weak.g}">ฝึกพาร์ตที่อ่อนที่สุด</button>` : ''}${stale.length ? `<button class="btn" data-tgo="${stale[0].g}">เล่น ${esc(GAMES[stale[0].g].name.replace('TOEIC ', ''))} ที่ห่างไปนาน</button>` : ''}</div></div>`;
 }
 
 // Real retention against the target (1.107): of the reviews of cards that were due, how many came back, by the gap they had.
@@ -641,7 +641,7 @@ function bindMore() {
   [gb, f30].forEach((el) => { if (el) el.onclick = (e) => { const b = e.target.closest('.mb-b'); if (b) toast(b.dataset.tip); }; });
   if (ex) ex.onclick = exportStats;
   const tb = $('#toeicBox');
-  if (tb) tb.onclick = (e) => { if (e.target.closest('#toeicEar')) return playToeicEar(); const b = e.target.closest('[data-tgo]'); if (b) startGame(b.dataset.tgo); };
+  if (tb) tb.onclick = (e) => { if (e.target.closest('#toeicEar')) return playToeicEar(); if (e.target.closest('#toeicHub')) return go('toeic', 'stats'); const b = e.target.closest('[data-tgo]'); if (b) startGame(b.dataset.tgo); };
 }
 
 // Today at a glance (1.159.0; 1.160.0 adds the time-goal ring): from S.act / S.hist, shown above the habits.

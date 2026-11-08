@@ -25,6 +25,7 @@ const GS_EXTRA = [ // pages that have no tab/sidebar entry: [icon, name, keyword
   ['🔎', 'ค้นหาคำในตาราง', 'word search ตารางคำ', 'wsearch'],
   ['⚔️', 'ท้าดวลเพื่อน', 'duel', 'duel'],
   ['🎊', 'สรุปปีของฉัน', 'year in review', 'year'],
+  ['💼', 'ศูนย์ TOEIC', 'toeic โทอิค สอบ part ข้อสอบจำลอง mock ทำงาน business', 'toeic'],
   ['🖨️', 'ใบงานพิมพ์', 'worksheet print pdf ใบงาน พิมพ์ แบบฝึกหัด กระดาษ', 'print'],
   ['📰', 'เก็บคำจากบทความ', 'article news text ข่าว บทความ วางข้อความ อ่าน', 'mine'],
 ];

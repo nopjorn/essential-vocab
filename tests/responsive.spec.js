@@ -7,7 +7,7 @@ const SIZES = [[440, 956], [956, 440], [834, 1210], [1210, 834], [1032, 1376], [
   [744, 1133], [1133, 744], [372, 1133], [320, 1133], [566, 744], [320, 744],
   // free-size windows (iPadOS windowing, 1.145): squat, narrow-tall and in-between sizes around every layout breakpoint
   [600, 480], [700, 500], [900, 600], [1000, 640], [520, 900], [760, 640], [1100, 700], [1099, 699]];
-const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read', 'decks', 'ref', 'print', 'mine'];
+const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read', 'decks', 'ref', 'print', 'mine', 'toeic'];
 
 for (const [w, h] of SIZES) {
   test(`no horizontal overflow at ${w}×${h}`, async ({ page }) => {

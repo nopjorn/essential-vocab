@@ -3095,3 +3095,32 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
 html.no-ans .ans-fx { animation: ansFade 1.05s linear forwards; }
 @keyframes ansFade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .ans-fx { animation: ansFade 1.05s linear forwards; } }
+
+/* ---------- 💼 TOEIC hub (1.211.0, js/toeic.js) ---------- */
+.th-wrap { display: flex; flex-direction: column; gap: 12px; }
+.th-wrap > .card-box, .th-wrap > .h2 { margin: 0; }
+.th-h { margin-top: 6px !important; }
+.th-hero { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.th-count { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 74px; padding: 8px 10px; border-radius: 16px; background: var(--primary); color: #fff; line-height: 1.1; }
+.th-count b { font-size: 30px; }
+.th-count span { font-size: var(--fs-xs); font-weight: 700; }
+.th-plan .toeic-plan { margin-top: 0; padding-top: 0; border-top: 0; }
+.th-parts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.th-part { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; padding: 12px; border: 2px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.th-part .th-ic { font-size: 26px; line-height: 1; }
+.th-part small { font-size: var(--fs-xs); color: var(--muted); overflow-wrap: anywhere; }
+.th-part .th-acc { margin-top: auto; padding-top: 4px; color: var(--text); font-weight: 700; }
+.th-part.good { border-color: color-mix(in srgb, var(--good) 60%, var(--border)); }
+.th-part.weak { border-color: color-mix(in srgb, var(--bad) 60%, var(--border)); }
+.th-games { margin: 0; }
+.th-refs { margin-top: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.th-words { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.th-words > .card-box { margin: 0; }
+.th-bar { margin: 8px 0 6px; }
+.th-on { align-self: center; }
+.th-open { display: block; margin-top: 10px; }
+.th-link { margin: 10px 0; }
+@media (min-width: 700px) {
+  .th-parts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .th-words { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

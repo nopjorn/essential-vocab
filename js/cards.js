@@ -84,6 +84,12 @@ function buildQueueRaw(extra) {
     const id = extra.slice(3), ws = W.filter((w) => w.tp === id && S.prog[w.w]).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d);
     return ws.filter((w) => S.prog[w.w].d <= Date.now()).slice(0, 30);
   }
+  if (typeof extra === 'string' && extra.startsWith('lv:')) { // 💼 TOEIC hub (1.211.0): one word group — its due words, then up to 10 new ones
+    const g = extra.slice(3), ws = W.filter((w) => w.g === g), now = Date.now();
+    const due = ws.filter((w) => S.prog[w.w] && S.prog[w.w].d <= now).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d).slice(0, 20);
+    const q = due.concat(ws.filter((w) => !S.prog[w.w]).slice(0, 10));
+    return q.length ? q : ws.filter((w) => S.prog[w.w]).sort((a, b) => S.prog[a.w].d - S.prog[b.w].d).slice(0, 20);
+  }
   if (extra === 'leech') return shuffle(W.filter(isLeech)).slice(0, 15); // 🐢 leech session: back of each card shows the memory hook
   if (extra === 'mastered') return shuffle(masteredWords()).slice(0, 20);
   if (extra === 'learning') return shuffle(W.filter((w) => status(w) === 'learning')).slice(0, 20);
