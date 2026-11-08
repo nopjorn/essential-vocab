@@ -536,6 +536,9 @@ body { touch-action: manipulation; }
 .g-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: var(--fs-sm); }
 .g-table th, .g-table td { border: 1px solid var(--border); padding: 6px; text-align: center; }
 .g-table th { background: var(--surface-2); }
+.toeic-t td:first-child { text-align: left; }
+.toeic-t tr.weak td { background: color-mix(in srgb, var(--bad, #e5484d) 10%, transparent); }
+.linkish { background: none; border: 0; padding: 0; font: inherit; color: var(--primary-ink); font-weight: 700; cursor: pointer; text-align: left; }
 .g-plan { background: var(--surface-2); border-radius: 14px; padding: 12px 14px; margin-top: 10px; line-height: 1.7; }
 
 /* home quick actions + level */

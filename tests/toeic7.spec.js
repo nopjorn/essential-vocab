@@ -43,3 +43,25 @@ test('TOEIC Part 7: text + question, questions of a text stay together, right an
   expect(keys.filter(([, p]) => p.x === 1).length).toBe(1);
   expect(errors).toEqual([]);
 });
+
+test('stats page: 💼 TOEIC card by part — accuracy, due, weakest part, start buttons (1.193.0)', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => {
+    const now = Date.now(), d = (g, k, s, c, due) => (S.lex[`${g}:${k}`] = { b: 1, i: 1, e: 2.5, d: due, s, c, x: s - c, t: now });
+    for (let k = 0; k < 6; k++) d('toeic2', k, 2, 1, now - 1000); // 50 % over 12 answers, all due
+    for (let k = 0; k < 6; k++) d('toeic5', k, 2, 2, now + 864e5 * 5); // 100 %
+    S.glast = { toeic2: today(), toeic5: today() };
+    go('stats');
+  });
+  const box = page.locator('#toeicBox');
+  await expect(box).toBeVisible();
+  await expect(box.locator('tr')).toHaveCount(8); // head + 7 parts
+  await expect(box.locator('tr.weak')).toContainText('Part 2');
+  await expect(box.locator('tr.weak')).toContainText('50%');
+  await expect(box.locator('tr', { hasText: 'Part 5' })).toContainText('100%');
+  await expect(box).toContainText('Part 2 (แม่น 50%)');
+  await expect(box).toContainText('ไม่ได้ฝึก 7 วันขึ้นไป');
+  await box.locator('.btn.primary[data-tgo="toeic2"]').click();
+  await expect(page.locator('.p2-card')).toBeVisible();
+  expect(errors).toEqual([]);
+});

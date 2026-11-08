@@ -116,6 +116,36 @@ function skillCard() {
     <div class="small muted" style="margin-top:8px">ข้อที่ตอบผิดจะกลับมาให้ทวนในรอบถัดไปของเกมนั้นเอง ข้อที่ตอบถูกจะห่างออกไปเรื่อยๆ</div></div>`;
 }
 
+// 💼 TOEIC by part (1.193.0): accuracy (S.lex c / s of the part's questions), questions met, ones due, days since last played (S.glast),
+// the weakest part (lowest accuracy among parts with ≥ 8 answers) and parts left alone for 7+ days. Buttons start a part.
+function toeicStat(g) {
+  let seen = 0, ans = 0, ok = 0, due = 0;
+  const now = Date.now();
+  for (const [k, p] of Object.entries(S.lex)) {
+    if (!k.startsWith(g + ':')) continue;
+    seen++; ans += p.s || 0; ok += p.c || 0; if (p.d <= now) due++;
+  }
+  const last = (S.glast || {})[g];
+  const ago = last ? Math.round((new Date(today()) - new Date(last)) / DAY) : null;
+  return { g, seen, ans, ok, due, ago, acc: ans ? ok / ans : null };
+}
+function toeicCard() {
+  const rows = TOEIC_GAMES.filter((g) => GAMES[g]).map(toeicStat);
+  if (!rows.some((r) => r.seen)) return '';
+  const rated = rows.filter((r) => r.ans >= 8).sort((a, b) => a.acc - b.acc);
+  const weak = rated.length >= 2 && rated[0].acc < 0.85 ? rated[0] : null;
+  const stale = rows.filter((r) => r.ago == null || r.ago >= 7);
+  const pct = (r) => (r.acc == null ? '–' : Math.round(r.acc * 100) + '%');
+  const when = (r) => (r.ago == null ? 'ยังไม่เคย' : r.ago === 0 ? 'วันนี้' : r.ago + ' วันก่อน');
+  const tip = weak ? `🎯 พาร์ตที่ยังพลาดบ่อยที่สุด: <b>${GAMES[weak.g].icon} ${esc(GAMES[weak.g].name)}</b> (แม่น ${pct(weak)})`
+    : rated.length >= 2 ? '✅ ทุกพาร์ตที่เล่นพอแล้วแม่นเกิน 85% เก่งมาก' : 'เล่นแต่ละพาร์ตสักรอบสองรอบ แล้วแอปจะบอกว่าพาร์ตไหนต้องฝึกเพิ่ม';
+  return `<div class="h2">💼 TOEIC แยกตามพาร์ต</div><div class="card-box" id="toeicBox">
+    <table class="g-table toeic-t"><tr><th>พาร์ต</th><th>ความแม่น</th><th>เคยเจอ</th><th>ถึงกำหนด</th><th>เล่นล่าสุด</th></tr>${rows.map((r) => `<tr${weak && r.g === weak.g ? ' class="weak"' : ''}><td><button class="linkish" data-tgo="${r.g}">${GAMES[r.g].icon} ${esc(GAMES[r.g].name.replace('TOEIC ', ''))}</button></td><td>${pct(r)}</td><td>${r.seen}</td><td>${r.due ? `<b>${r.due}</b>` : '–'}</td><td>${when(r)}</td></tr>`).join('')}</table>
+    <div class="small" style="margin-top:8px">${tip}</div>
+    ${stale.length && stale.length < rows.length ? `<div class="small muted" style="margin-top:4px">💤 ไม่ได้ฝึก 7 วันขึ้นไป: ${stale.map((r) => esc(GAMES[r.g].name.replace('TOEIC ', ''))).join(' · ')}</div>` : ''}
+    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">${weak ? `<button class="btn primary" data-tgo="${weak.g}">ฝึกพาร์ตที่อ่อนที่สุด</button>` : ''}${stale.length ? `<button class="btn" data-tgo="${stale[0].g}">เล่น${esc(GAMES[stale[0].g].name.replace('TOEIC ', ''))} ที่ห่างไปนาน</button>` : ''}</div></div>`;
+}
+
 // Real retention against the target (1.107): of the reviews of cards that were due, how many came back, by the gap they had.
 function retCard() {
   const tot = S.ret.reduce((a, r) => [a[0] + r[0], a[1] + r[1]], [0, 0]), target = Math.round(retention() * 100);
@@ -237,6 +267,7 @@ function renderStats(from) {
     ${weakCard()}
     ${hardCard()}
     ${skillCard()}
+    ${toeicCard()}
     <div class="h2">🗓️ ปฏิทินการเล่น 12 เดือน</div>
     <div class="card-box" data-lz="heat" style="min-height:200px"></div>
 
@@ -303,7 +334,7 @@ function renderStats(from) {
 // Jump bar (1.165.0): the stats page runs to ~11 screens, so a sticky row of chips jumps to each part and lights the one in
 // view. Targets are found by their heading's text (the cards come from many functions), a missing one just hides its chip.
 const STAT_NAV = [['today', '☀️', 'วันนี้', '#todayHost'], ['habit', '📊', 'นิสัย', 'นิสัยการเล่น'], ['lv', '📈', 'ระดับ', 'ความคืบหน้าแต่ละระดับ'],
-  ['due', '📅', 'ทบทวน', '📅 การ์ดที่ต้องทบทวน'], ['weak', '🎯', 'จุดอ่อน', '🎯 ความแม่นแยกตามระดับ'], ['cal', '🗓️', 'ปฏิทิน', '🗓️ ปฏิทินการเล่น'],
+  ['due', '📅', 'ทบทวน', '📅 การ์ดที่ต้องทบทวน'], ['weak', '🎯', 'จุดอ่อน', '🎯 ความแม่นแยกตามระดับ'], ['toeic', '💼', 'TOEIC', '💼 TOEIC'], ['cal', '🗓️', 'ปฏิทิน', '🗓️ ปฏิทินการเล่น'],
   ['sum', '🧾', 'สรุป', 'สรุปรายสัปดาห์'], ['test', '📝', 'ทดสอบ', '📝 แบบทดสอบประจำเดือน'], ['future', '🔮', 'คาดการณ์', 'แนวโน้มคำศัพท์'], ['award', '🏅', 'รางวัล', '🏅 เหรียญรางวัล']];
 const statNav = () => `<nav class="st-nav" aria-label="ไปยังหัวข้อในหน้าสถิติ">${STAT_NAV.map(([k, ic, t]) => `<button class="chip" data-sec="${k}"><span aria-hidden="true">${ic}</span> ${t}</button>`).join('')}</nav>`;
 function statTargets() {
@@ -573,6 +604,8 @@ function bindMore() {
   const gb = $('#growBox'), f30 = view.querySelector('.f30'), ex = $('#statCsv');
   [gb, f30].forEach((el) => { if (el) el.onclick = (e) => { const b = e.target.closest('.mb-b'); if (b) toast(b.dataset.tip); }; });
   if (ex) ex.onclick = exportStats;
+  const tb = $('#toeicBox');
+  if (tb) tb.onclick = (e) => { const b = e.target.closest('[data-tgo]'); if (b) startGame(b.dataset.tgo); };
 }
 
 // Today at a glance (1.159.0; 1.160.0 adds the time-goal ring): from S.act / S.hist, shown above the habits.

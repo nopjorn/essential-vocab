@@ -8,9 +8,9 @@ test('stats jump bar: every part has a chip, a tap scrolls its heading under the
   const now = Date.now();
   for (let d = 0; d < 40; d++) { const k = new Date(now - d * DAY).toISOString().slice(0, 10); hist[k] = 20; snap[k] = [300, 100, 300, 100]; }
   const errors = await openApp(page, { placedAt: '2026-01-01', hist, snap });
-  await page.evaluate(() => { const now = Date.now(); W.slice(0, 300).forEach((w, i) => { S.prog[w.w] = { b: i % 6, i: 1 + (i % 30), e: 2.5, d: now + ((i % 20) - 5) * 864e5, s: 4, c: 3, x: i % 3, t: now }; }); localStorage.setItem('o3k.mst', '9'); go('stats'); });
+  await page.evaluate(() => { const now = Date.now(); W.slice(0, 300).forEach((w, i) => { S.prog[w.w] = { b: i % 6, i: 1 + (i % 30), e: 2.5, d: now + ((i % 20) - 5) * 864e5, s: 4, c: 3, x: i % 3, t: now }; }); S.lex['toeic5:a1'] = { b: 1, i: 1, e: 2.5, d: now, s: 2, c: 1, x: 1, t: now }; localStorage.setItem('o3k.mst', '9'); go('stats'); });
   const view = page.locator('#view');
-  await expect(view.locator('.st-nav [data-sec]')).toHaveCount(10);
+  await expect(view.locator('.st-nav [data-sec]')).toHaveCount(11); // + 💼 TOEIC (1.193.0)
   expect(await view.locator('.st-nav [data-sec][hidden]').count()).toBe(0);
   // summary: remembered (today's snapshot), due today, finish estimate
   const sum = await view.locator('.st-sum > div').allTextContents();
