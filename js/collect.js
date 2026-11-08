@@ -7,7 +7,7 @@
 // Classic script sharing globals with app.js.
 
 /* ---------- album ---------- */
-const RARITY = { A1: ['⚪', 'ธรรมดา'], A2: ['🟢', 'ไม่ธรรมดา'], B1: ['🔵', 'หายาก'], B2: ['🟣', 'หายากมาก'], B2x: ['🟠', 'มหากาพย์'], C1: ['🌟', 'ตำนาน'], TOE: ['💼', 'ชุด TOEIC'], AWL: ['🎓', 'ชุดวิชาการ'] };
+const RARITY = { A1: ['⚪', 'ธรรมดา'], A2: ['🟢', 'ไม่ธรรมดา'], B1: ['🔵', 'หายาก'], B2: ['🟣', 'หายากมาก'], B2x: ['🟠', 'มหากาพย์'], C1: ['🌟', 'ตำนาน'], TOE: ['💼', 'ชุด TOEIC'], AWL: ['🎓', 'ชุดวิชาการ'], BIZ: ['📊', 'ชุดธุรกิจ'] };
 const ALBUM_PAGE = 60;
 let albumLv = '', albumN = ALBUM_PAGE, albumFoil = false;
 const isFoil = (w) => !!(S.foil && S.foil[w.w]);

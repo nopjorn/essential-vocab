@@ -14,7 +14,7 @@ function load(...files) {
 }
 // All app code: app.js plus the js/*.js scripts it is split into.
 const appCode = () => ['app.js', ...fs.readdirSync(path.join(root, 'js')).map((f) => `js/${f}`), 'data/play.js', 'data/guide.js'].map(read).join('\n'); // + the lazy-loaded engine and manual (1.101)
-const WORD_FILES = ['a1', 'a2', 'b1', 'b2', 'b2plus', 'c1', 'toeic', 'nawl'].map((l) => `data/words/${l}.js`);
+const WORD_FILES = ['a1', 'a2', 'b1', 'b2', 'b2plus', 'c1', 'toeic', 'nawl', 'bsl'].map((l) => `data/words/${l}.js`);
 
 test('version is the same in app.js, sw.js and the README changelog', () => {
   const v = read('app.js').match(/const APP_VERSION = '([\d.]+)'/)[1];
@@ -43,7 +43,7 @@ test('word rows are well formed', () => {
   for (const r of WORDS) {
     const [w, p, lv, ipa, th, ex, exTh, tp] = r;
     const more = r.slice(8), xe = more.find(Array.isArray);
-    if (more.length > 2 || more.some((x) => x !== 5 && x !== 'T' && x !== 'A' && x !== xe) || (more.length === 2 && ![5, 'T', 'A'].includes(more[0])) || more.filter((x) => !Array.isArray(x)).length > 1) bad.push(`${w}: ${r.length} fields`);
+    if (more.length > 2 || more.some((x) => x !== 5 && x !== 'T' && x !== 'A' && x !== 'B' && x !== xe) || (more.length === 2 && ![5, 'T', 'A', 'B'].includes(more[0])) || more.filter((x) => !Array.isArray(x)).length > 1) bad.push(`${w}: ${r.length} fields`);
     if (xe) xe.forEach((x) => { if (!Array.isArray(x) || x.length !== 2 || !/^[A-Z0-9].*[.?!]$/.test(x[0]) || !x[1] || x[0] === ex) bad.push(`${w}: extra example ${JSON.stringify(x)}`); });
     if (!['A1', 'A2', 'B1', 'B2', 'C1'].includes(lv)) bad.push(`${w}: level ${lv}`);
     Object.entries({ w, p, ipa, th, ex, exTh, tp }).forEach(([n, x]) => { if (typeof x !== 'string' || !x) bad.push(`${w}: empty ${n}`); });
@@ -78,6 +78,18 @@ test('academic set (1.180): every row is marked A, credited CC BY-SA, and adds a
   expect(t.WORDS.length).toBeGreaterThanOrEqual(80);
   const rest = new Set(load(...WORD_FILES.filter((f) => !f.endsWith('nawl.js'))).WORDS.map((r) => r[0].toLowerCase()));
   const bad = t.WORDS.filter((r) => r[8] !== 'A' || r.length !== 9 || rest.has(r[0].toLowerCase()) || !/^[a-z][a-z-]*$/.test(r[0])).map((r) => r[0]);
+  expect(bad).toEqual([]);
+});
+
+test('business set (1.195): every row is marked B, credited CC BY-SA, and adds a word no other list has', () => {
+  const src = read('data/words/bsl.js');
+  expect(src).toMatch(/CC BY-SA 4\.0/);
+  expect(src).toMatch(/Business Service List/);
+  const t = { WORDS: [] };
+  vm.runInNewContext(src, { window: t });
+  expect(t.WORDS.length).toBeGreaterThanOrEqual(80);
+  const rest = new Set(load(...WORD_FILES.filter((f) => !f.endsWith('bsl.js'))).WORDS.map((r) => r[0].toLowerCase()));
+  const bad = t.WORDS.filter((r) => r[8] !== 'B' || r.length !== 9 || rest.has(r[0].toLowerCase()) || !/^[a-z][a-z-]*$/.test(r[0])).map((r) => r[0]);
   expect(bad).toEqual([]);
 });
 
