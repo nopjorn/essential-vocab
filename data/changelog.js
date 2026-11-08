@@ -1,6 +1,7 @@
 // Changelog shown in the app (settings → ประวัติการอัปเดต). Newest first. Keep in sync with the README table.
 // [version, what changed, release date YYYY-MM-DD (Thailand time)]; loaded lazily by loadChangelog().
 window.CHANGELOG = [
+  ["1.196.0", "TOEIC Part 6 และ Part 7: แตะคำในข้อความ (คำที่มีขีดเส้นใต้จุด) เพื่อดูความหมาย ฟังเสียง ติดดาว หรือเพิ่มเข้าชุดของฉันได้ทันทีระหว่างทำข้อสอบ กดค้างหรือชี้ด้วยปากกา/เมาส์ก็ดูความหมายได้", "2026-11-07"],
   ["1.195.3", "ชุดธุรกิจชุดสุดท้ายอีก 84 คำ (R–W เช่น stakeholder, subsidiary, tariff, valuation, volatile) ครบ 354 คำ", "2026-11-07"],
   ["1.195.2", "ชุดธุรกิจเพิ่มอีก 90 คำ (M–R เช่น milestone, outsource, procurement, prototype, refinance) รวม 270 คำ", "2026-11-07"],
   ["1.195.1", "ชุดธุรกิจเพิ่มอีก 89 คำ (D–M เช่น equity, liquidity, leverage, logistics, lucrative) รวม 180 คำ", "2026-11-07"],

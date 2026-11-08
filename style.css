@@ -1950,7 +1950,8 @@ html.no-ans .dance, html.no-ans .confetti.burst i { animation: none; }
 .p34-det { text-align: left; }
 .p34-det summary { cursor: pointer; font-weight: 700; }
 .p34-det .p34-tr { margin: 8px 0; font-size: var(--fs-sm); line-height: 1.5; }
-.p6-doc { position: relative; } /* offsetTop of the current blank is measured from the text box */
+.p6-doc { position: relative; }
+.p7-doc .rw { background: none; } /* tappable words in Parts 6/7 (1.196.0): dotted underline only, no study colours */ /* offsetTop of the current blank is measured from the text box */
 .p6-now { display: inline-block; min-width: 4.5em; padding: 0 4px; border-bottom: 3px solid var(--primary); color: var(--primary-ink); font-weight: 800; }
 .p6-gap { color: var(--muted); font-weight: 700; }
 .p6-done { font-weight: 700; text-decoration: underline; text-decoration-color: var(--good); text-underline-offset: 3px; }

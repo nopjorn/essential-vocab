@@ -1165,6 +1165,12 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     };
   }
 
+  // Parts 6/7 (1.196.0): list words in the text are tappable (storyHTML) → the word sheet (meaning, sound, ☆, add to a set);
+  // the long-press word menu and pencil/mouse hover meaning work on them too (document handlers on .rw[data-i]).
+  function docTaps(doc) {
+    if (doc) doc.onclick = (e) => { const rw = e.target.closest('.rw[data-i]'); if (rw && W[+rw.dataset.i]) openSheet(W[+rw.dataset.i]); };
+  }
+
   // TOEIC Part 5 (1.183.0): a workplace sentence with one blank and four options (word form / meaning / grammar); the tip says why.
   function qP5(w) {
     const r = w._p5, [ic, kind] = P5_TYPE[r.type] || P5_TYPE.gram, opts = shuffle([r.right, ...r.wrong]);
@@ -1203,13 +1209,14 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     const nQ = d.q.length;
     view.innerHTML = `${header()}
       <div class="card-box q-prompt fit p7-card pop"><div class="small muted">📧 TOEIC Part 7 · ${ic} ${kind} · คำถาม ${r.k + 1}/${nQ}</div>
-        <div class="p7-doc p7-${d.kind}" lang="en"><b>${esc(d.title)}</b><div class="p7-text">${esc(d.text).replace(/\n/g, '<br>')}</div></div>
+        <div class="p7-doc p7-${d.kind}" lang="en"><b>${esc(d.title)}</b><div class="p7-text">${storyHTML(d.text).replace(/\n/g, '<br>')}</div></div>
         <button class="hint-btn" id="p7Hint">💡 ดูสรุปภาษาไทย</button><div class="thx" id="p7Th" hidden>${esc(d.th)}</div>
         <div class="p7-q" lang="en">${esc(r.q)}</div></div>
       <div class="options">${opts.map((o) => `<button class="opt" lang="en" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
     $('#p7Hint').onclick = () => { $('#p7Th').hidden = false; $('#p7Hint').remove(); };
+    docTaps(view.querySelector('.p7-doc'));
     let answered = false;
     view.querySelector('.options').onclick = (e) => {
       const b = e.target.closest('.opt'); if (!b || answered) return;
@@ -1356,7 +1363,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   function qP6(w) {
     const r = w._p6, d = r.d, [ic, kind] = P7_KIND[d.kind] || ['📄', 'ข้อความ'], right = r.opts[r.a], opts = shuffle(r.opts.slice());
     const long = opts.some((o) => o.split(' ').length > 3);
-    const body = (now) => esc(d.text).replace(/\[(\d)\]/g, (m, n) => {
+    const body = (now) => d.text.split(/(\[\d\])/).map((part) => (/^\[\d\]$/.test(part) ? part : storyHTML(part))).join('').replace(/\[(\d)\]/g, (m, n) => {
       const j = n - 1;
       if (j < r.k) return `<span class="p6-done">${esc(d.q[j][0][d.q[j][1]])}</span>`;
       if (j === r.k) return now;
@@ -1370,6 +1377,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
     $('#p6Hint').onclick = () => { $('#p6Th').hidden = false; $('#p6Hint').remove(); };
+    docTaps(view.querySelector('.p6-doc'));
     const now = view.querySelector('.p6-now');
     const doc = view.querySelector('.p6-doc'); // keep the current blank in sight inside the scrolling text box (not the page)
     if (now && doc) requestAnimationFrame(() => { if (now.isConnected) doc.scrollTop = Math.max(0, now.offsetTop - doc.clientHeight / 2); });

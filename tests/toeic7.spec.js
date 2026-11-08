@@ -65,3 +65,20 @@ test('stats page: 💼 TOEIC card by part — accuracy, due, weakest part, start
   await expect(page.locator('.p2-card')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('Parts 6 and 7: list words in the text open the word sheet (1.196.0)', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  for (const g of ['toeic7', 'toeic6']) {
+    await page.evaluate((g) => startGame(g), g);
+    const doc = page.locator(g === 'toeic7' ? '.p7-doc' : '.p6-doc');
+    await expect(doc).toBeVisible();
+    const rw = doc.locator('.rw[data-i]').first();
+    const word = await rw.evaluate((el) => W[+el.dataset.i].w);
+    await rw.click();
+    await expect(page.locator('.sheet-word')).toContainText(word);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.sheet-word')).toHaveCount(0);
+    await expect(page.locator('.opt')).toHaveCount(4); // still on the question
+  }
+  expect(errors).toEqual([]);
+});
