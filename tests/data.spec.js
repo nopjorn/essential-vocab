@@ -438,6 +438,31 @@ test('grammar tied to words is valid practice data', () => {
   expect(bad).toEqual([]);
 });
 
+test('ready-made word sets (presets) are valid', () => {
+  const { PRESETS } = load('data/presets.js');
+  const { WORDS } = load(...WORD_FILES);
+  const words = new Set(WORDS.map((r) => r[0]));
+  const low = new Set(WORDS.map((r) => r[0].toLowerCase()));
+  expect(PRESETS.length).toBeGreaterThanOrEqual(10);
+  const bad = [], ids = new Set();
+  PRESETS.forEach((p) => {
+    if (!/^[a-z0-9]{1,24}$/.test(p.id) || ids.has(p.id)) bad.push(`${p.id}: id`);
+    ids.add(p.id);
+    if (!p.icon || !p.name || p.name.length > 40 || !/[\u0E00-\u0E7F]/.test(p.sub || '')) bad.push(`${p.id}: icon / name ≤ 40 / Thai sub`);
+    const ws = p.w.split('|');
+    if (new Set(ws).size !== ws.length) bad.push(`${p.id}: duplicate word`);
+    ws.forEach((w) => { if (!words.has(w)) bad.push(`${p.id}: ${w} is not a list word`); });
+    (p.own || []).forEach(([w, t, e, et]) => {
+      if (!/^[A-Za-z][A-Za-z' .-]*$/.test(w) || w.length > 40) bad.push(`${p.id}: own ${w} spelling`);
+      if (low.has(w.toLowerCase())) bad.push(`${p.id}: own ${w} is a list word (put it in w)`);
+      if (!/[\u0E00-\u0E7F]/.test(t) || t.length > 80) bad.push(`${p.id}: own ${w} Thai`);
+      if (!e || e.length > 160 || !e.toLowerCase().includes(w.toLowerCase().split(' ')[0]) || !/[\u0E00-\u0E7F]/.test(et || '') || et.length > 160) bad.push(`${p.id}: own ${w} example`);
+    });
+    if (ws.length + (p.own || []).length < 25) bad.push(`${p.id}: fewer than 25 words`);
+  });
+  expect(bad).toEqual([]);
+});
+
 test('real-life texts are valid practice data', () => {
   const { REALTEXT } = load('data/realtext.js');
   const { WORDS } = load(...WORD_FILES);

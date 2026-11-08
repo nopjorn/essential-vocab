@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.197.0';
+const APP_VERSION = '1.198.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -189,6 +189,7 @@ function cleanDecks(a) {
       if (own.length) d.own = own;
     }
     if (del) d.del = true;
+    if (typeof x.pre === 'string' && /^[a-z0-9]{1,24}$/.test(x.pre)) d.pre = x.pre; // ready-made set it was copied from (1.198.0)
     if (isNum(x.rst) && x.rst > 0) d.rst = x.rst; // when the set's progress was last restarted
     const o = byId.get(d.id);
     if (!o || d.at > o.at) byId.set(d.id, d);

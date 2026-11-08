@@ -166,8 +166,10 @@ function renderDecks(openId) {
     <button class="btn block" id="dkMine" style="margin-top:8px">📰 เก็บคำใหม่จากบทความ</button>
     ${ds.length ? '' : `<div class="small muted" style="margin:16px 4px 6px">หรือเริ่มจากชุดสำเร็จรูป (แก้ไขเพิ่ม–ลดคำได้ภายหลัง)</div>
       <div class="chips">${goals.map(([id, ic, th]) => `<button class="chip" data-from="${id}">${ic} ${esc(th)} · ${tagWords(id).length}</button>`).join('')}</div>`}
+    <div id="dkPre"></div>
     <p class="small muted" style="margin:16px 4px">เลือกคำได้จากคลังคำในแอปเท่านั้น · ชุดซิงก์ข้ามเครื่องผ่านบัญชีเดียวกัน (ต้องอัปเดตแอปทุกเครื่อง) · แตะชุดเพื่อเรียน เล่นเกม และดูสถิติของชุด</p>`;
   view.querySelectorAll('.deck-card').forEach((b) => { b.onclick = () => renderDeck(b.dataset.id); });
+  presetBox();
   $('#dkNew').onclick = () => renderDeckEdit();
   $('#dkMine').onclick = () => go('mine', 'decks');
   view.querySelectorAll('[data-from]').forEach((b) => {
@@ -178,6 +180,57 @@ function renderDecks(openId) {
     };
   });
 }
+/* ---------- ready-made sets (1.198.0) ---------- */
+// data/presets.js (lazy): { id, icon, name, sub, w: 'list|words', own: [[w, t, e, et]] }. Adding one copies it into S.decks with `pre` = its id.
+let PRESETS = null;
+const loadPresets = () => loadData('data/presets.js', 'PRESETS').then((rows) => {
+  if (!PRESETS && rows.length) PRESETS = rows.map((p) => ({ ...p, words: p.w.split('|'), own: (p.own || []).map(([w, t, e, et]) => ({ w, t, e: e || '', et: et || '' })) }));
+  return PRESETS || [];
+});
+const presetDeck = (id) => liveDecks().find((d) => d.pre === id);
+const presetN = (p) => p.words.length + p.own.length;
+// The "ชุดสำเร็จรูป" tiles on the ชุดของฉัน page (filled after the data loads).
+function presetBox() {
+  const paint = () => {
+    const el = $('#dkPre'); if (!el || !PRESETS) return;
+    el.innerHTML = `<h2 class="h2" style="margin:18px 4px 4px">📦 ชุดสำเร็จรูป</h2>
+      <p class="small muted" style="margin:0 4px 8px">${PRESETS.length} หัวข้อ แตะเพื่อดูคำ แล้วเพิ่มเป็นชุดของฉัน (แก้ไขเพิ่ม–ลดคำได้ภายหลัง)</p>
+      <div class="pre-grid">${PRESETS.map((p) => { const d = presetDeck(p.id); return `<button class="pre-tile${d ? ' have' : ''}" data-pre="${p.id}"><span class="pre-ic">${p.icon}</span><b>${esc(p.name)}</b><small>${presetN(p)} คำ${d ? ' · ✓ เพิ่มแล้ว' : ''}</small></button>`; }).join('')}</div>`;
+    el.querySelector('.pre-grid').onclick = (e) => { const b = e.target.closest('[data-pre]'); if (b) presetSheet(PRESETS.find((p) => p.id === b.dataset.pre)); };
+  };
+  if (PRESETS) paint(); else loadPresets().then(paint);
+}
+// Preview of one ready-made set: its words, then add it (or open the copy already added).
+function presetSheet(p) {
+  if (!p) return null;
+  const ws = deckWords({ words: p.words, own: p.own }), have = presetDeck(p.id);
+  const el = document.createElement('div');
+  el.className = 'sheet-wrap';
+  el.innerHTML = `<div class="sheet" role="dialog" aria-label="${esc(p.name)}"><div class="grab"></div><div class="sheet-body">
+    <div class="row" style="gap:10px"><span class="dk-ic">${p.icon}</span><div class="grow"><b>${esc(p.name)}</b><div class="small muted">${presetN(p)} คำ · ${esc(p.sub)}</div></div></div>
+    <div class="pre-words" id="preWords">${ws.map((w) => `<button class="wrow" data-w="${esc(w.w)}"><span class="w" lang="en">${esc(w.w)}</span><span class="t grow">${esc(w.t)}</span>${w.own ? '<span class="small muted" title="คำนอกคลังคำ">✍️</span>' : ''}</button>`).join('')}</div>
+    ${have ? `<button class="btn primary block" id="preOpen">📚 เปิดชุด “${esc(have.name)}”</button>` : '<button class="btn primary block" id="preAdd">➕ เพิ่มเป็นชุดของฉัน</button>'}
+    <p class="small muted" style="margin:8px 2px 0">✍️ = คำนอกคลังคำ (คำแปลและประโยคตัวอย่างมากับชุด) · ความคืบหน้าของชุดแยกจากสถิติหลัก</p></div></div>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('open'));
+  const close = () => { el.classList.remove('open'); setTimeout(() => el.remove(), 250); };
+  el.onclick = (e) => {
+    if (e.target === el) return close();
+    const r = e.target.closest('#preWords .wrow');
+    if (r) { speak(r.dataset.w); return; }
+    if (e.target.closest('#preOpen')) { close(); renderDeck(have.id); return; }
+    if (e.target.closest('#preAdd')) {
+      const d = addDeck(p.name, p.icon, p.words, p.own);
+      close();
+      if (!d) return;
+      d.pre = p.id; touchDeck(d);
+      toast(`📦 เพิ่มชุด “${p.name}” แล้ว ${presetN(p)} คำ`);
+      renderDeck(d.id);
+    }
+  };
+  return el;
+}
+
 // Create and store a set. Returns it, or null when the limit is reached.
 function addDeck(name, icon, words, own) {
   if (liveDecks().length >= DECK_MAX.decks) { toast(`มีชุดครบ ${DECK_MAX.decks} ชุดแล้ว ลบชุดที่ไม่ใช้ก่อนนะคะ`); return null; }

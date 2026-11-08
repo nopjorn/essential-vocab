@@ -1467,6 +1467,14 @@ details.danger-group > summary { color: var(--bad-ink); }
 .list-head .lib-sw { margin-bottom: 8px; }
 .deck-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .deck-card { margin-bottom: 10px; }
+.pre-grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.pre-tile { display: grid; gap: 2px; justify-items: start; text-align: left; padding: 12px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
+.pre-tile .pre-ic { font-size: 26px; line-height: 1.1; }
+.pre-tile small { color: var(--muted); }
+.pre-tile.have { border-color: var(--primary); }
+.pre-words { display: grid; gap: 2px; margin: 10px 0; max-height: 48vh; overflow: auto; }
+.pre-words .wrow { gap: 10px; text-align: left; font: inherit; color: inherit; background: none; border: 0; width: 100%; }
+.pre-words .w { font-weight: 700; flex: 0 0 auto; }
 .dk-w { min-width: 0; }
 .dk-x { flex: none; min-width: 40px; min-height: 40px; padding: 0; }
 .dk-sec { margin-bottom: 12px; }
