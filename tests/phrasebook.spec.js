@@ -2,7 +2,7 @@
 const { test, expect } = require('@playwright/test');
 const { openApp, readState } = require('./helpers');
 
-const BOOKS = [['chat', 'toCh'], ['abbr', 'toAb']];
+const BOOKS = [['thai', 'toTh'], ['chat', 'toCh'], ['abbr', 'toAb']];
 
 for (const [id, btn] of BOOKS) {
   test(`${id}: the page lists every row by category, speaks, keeps a row in a set and starts the game`, async ({ page }) => {

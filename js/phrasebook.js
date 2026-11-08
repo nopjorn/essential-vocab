@@ -28,6 +28,13 @@ const PB = {
       ['Fair enough.', 'That makes sense.'], ['kinda', 'a bit of a'], ['ASAP-ish', 'sevenish'], ['It\'s on me.', 'Let\'s split the bill.'], ['Not gonna lie', 'To be fair', 'I mean', 'Between you and me'],
       ['I\'m so over it.', 'I can\'t be bothered.'], ['Anyway', 'By the way', 'Speaking of which']],
   },
+  thai: {
+    file: 'data/thaitalk.js', key: 'THAITALK', icon: '🇹🇭', title: 'เล่าเรื่องไทยเป็นอังกฤษ', modes: ['th', 'th', 'en'], sayEn: false,
+    intro: 'คำและประโยคไว้อธิบายอาหาร วัด เทศกาล และธรรมเนียมไทยให้เพื่อนต่างชาติฟัง · ประโยคตัวอย่างพูดตามได้เลย · 💡 บอกคำที่มักใช้ผิด · แตะเพื่อฟัง · ＋ เก็บเข้าชุดของฉัน',
+    ask: { en: 'คำนี้หมายถึงอะไรในภาษาไทย', th: 'อธิบายให้ฝรั่งฟังว่าอะไร' },
+    cats: { food: ['🍜', 'อาหารและการสั่ง'], temple: ['🛕', 'วัดและศาสนา'], fest: ['🎉', 'เทศกาล'], custom: ['🙏', 'ธรรมเนียมไทย'], daily: ['🛵', 'ชีวิตประจำวัน'], place: ['🏝️', 'สถานที่เที่ยว'] },
+    same: [['shrine', 'spirit house', 'offering'], ['make merit', 'give alms', 'offering'], ['take off your shoes', 'don\'t touch the head'], ['not spicy', 'less sweet'], ['mango sticky rice', 'sticky rice'], ['countryside', 'rice field']],
+  },
 };
 const PB_DATA = {};
 const loadBook = (id) => loadData(PB[id].file, PB[id].key).then((rows) => {

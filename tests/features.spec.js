@@ -1811,11 +1811,11 @@ test('games menu layout (1.127): list view by default, card toggle, folding skil
   await expect(view.locator('.ref-tile')).toHaveCount(0);
   await view.locator('#toRef').click();
   await expect(page.locator('#title')).toHaveText('คลังความรู้');
-  await expect(view.locator('.ref-tile')).toHaveCount(19);
+  await expect(view.locator('.ref-tile')).toHaveCount(20);
   await view.locator('#toPairs').click();
   await expect(view.locator('.pair-card').first()).toBeVisible();
   await page.locator('#topBack').click();
-  await expect(view.locator('.ref-tile')).toHaveCount(19);
+  await expect(view.locator('.ref-tile')).toHaveCount(20);
   await page.locator('#topBack').click();
   await expect(view.locator('#gSkill')).toBeVisible();
   expect(errors).toEqual([]);
