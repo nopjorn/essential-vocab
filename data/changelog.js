@@ -1,6 +1,7 @@
 // Changelog shown in the app (settings → ประวัติการอัปเดต). Newest first. Keep in sync with the README table.
 // [version, what changed, release date YYYY-MM-DD (Thailand time)]; loaded lazily by loadChangelog().
 window.CHANGELOG = [
+  ["1.195.3", "ชุดธุรกิจชุดสุดท้ายอีก 84 คำ (R–W เช่น stakeholder, subsidiary, tariff, valuation, volatile) ครบ 354 คำ", "2026-11-07"],
   ["1.195.2", "ชุดธุรกิจเพิ่มอีก 90 คำ (M–R เช่น milestone, outsource, procurement, prototype, refinance) รวม 270 คำ", "2026-11-07"],
   ["1.195.1", "ชุดธุรกิจเพิ่มอีก 89 คำ (D–M เช่น equity, liquidity, leverage, logistics, lucrative) รวม 180 คำ", "2026-11-07"],
   ["1.195.0", "ชุดเสริมใหม่ 📊 ธุรกิจ: ศัพท์การเงิน การลงทุน สัญญา และข่าวเศรษฐกิจจาก Business Service List ที่ไม่อยู่ในชุดอื่นของแอป ชุดแรก 91 คำ (A–D เช่น collateral, depreciation, arbitration, deliverable) เปิดได้ที่ ⚙️ ตั้งค่า → ระดับคำศัพท์ → ชิป ธุรกิจ · ทยอยเพิ่มชุดต่อไป", "2026-11-07"],
