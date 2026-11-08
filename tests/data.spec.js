@@ -463,6 +463,27 @@ test('ready-made word sets (presets) are valid', () => {
   expect(bad).toEqual([]);
 });
 
+test('work email / chat phrases (1.199): known category, one [key], 3 distinct wrong keys, Thai and tip, no duplicates', () => {
+  const { WORKPHR } = load('data/workphr.js');
+  const cats = ['open', 'ask', 'follow', 'attach', 'meet', 'opinion', 'sorry', 'thanks', 'close', 'chat'];
+  expect(WORKPHR.length).toBeGreaterThanOrEqual(60);
+  const bad = [], seen = new Set(), n = {};
+  WORKPHR.forEach(([cat, en, th, wrong, tip], i) => {
+    const id = `#${i} ${en}`;
+    n[cat] = (n[cat] || 0) + 1;
+    if (!cats.includes(cat)) bad.push(`${id}: category ${cat}`);
+    const keys = en.match(/\[([^\]]+)\]/g) || [];
+    if (keys.length !== 1) bad.push(`${id}: needs exactly one [key]`);
+    const key = keys.length ? keys[0].slice(1, -1) : '';
+    if (!Array.isArray(wrong) || wrong.length !== 3 || new Set([key, ...wrong].map((x) => x.toLowerCase())).size !== 4) bad.push(`${id}: needs 3 different wrong keys`);
+    if (!/[\u0E00-\u0E7F]/.test(th) || !/[\u0E00-\u0E7F]/.test(tip || '')) bad.push(`${id}: Thai meaning and tip`);
+    if (seen.has(en) || seen.has(th)) bad.push(`${id}: duplicate phrase or meaning`);
+    seen.add(en); seen.add(th);
+  });
+  cats.forEach((c) => { if ((n[c] || 0) < 5) bad.push(`category ${c} has ${n[c] || 0}`); });
+  expect(bad).toEqual([]);
+});
+
 test('real-life texts are valid practice data', () => {
   const { REALTEXT } = load('data/realtext.js');
   const { WORDS } = load(...WORD_FILES);

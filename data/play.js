@@ -162,6 +162,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'thaierr') return qMistake(w);
     if (m === 'gpat') return qGpat(w);
     if (m === 'real') return qReal(w);
+    if (m === 'wphr') return qWphr(w);
     if (m === 'toeic5') return qP5(w);
     if (m === 'toeic7') return qP7(w);
     if (m === 'toeic6') return qP6(w);
@@ -1133,6 +1134,37 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       view.querySelector('[data-sayex]').onclick = () => speak(gpPlain(r));
       $('#nextQ').onclick = next;
       speak(gpPlain(r));
+    };
+  }
+
+  // Work email / chat phrases (1.199.0): half the time fill the key part of the phrase (3 wrong forms that never fit),
+  // otherwise read the Thai meaning and pick the whole phrase (the other 3 come from other categories).
+  function qWphr(w) {
+    const r = w._wp, [ic, cat] = WP_CAT[r.cat] || ['📧', ''], fill = wpMode ? wpMode === 'fill' : Math.random() < 0.5;
+    const opts = fill ? shuffle([r.key, ...r.wrong]) : shuffle([r, ...wpOthers(r)]).map((x) => x.plain);
+    const right = fill ? r.key : r.plain;
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit pop"><div class="small muted">📧 ${ic} ${cat} · ${fill ? 'เติมคำให้ถูก' : 'เลือกประโยคที่ตรงความหมาย'}</div>
+        ${fill ? `<div class="h2 p5-s" lang="en" style="margin-top:8px">${wpHTML(r, '<span class="blank">_____</span>')}</div><button class="hint-btn" id="wpHint">💡 ดูคำแปล</button><div class="thx" id="wpTh" hidden>${esc(r.th)}</div>`
+          : `<div class="h2" style="margin-top:8px">${esc(r.th)}</div>`}</div>
+      <div class="options">${opts.map((o) => `<button class="opt" lang="en" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    if ($('#wpHint')) $('#wpHint').onclick = () => { $('#wpTh').hidden = false; $('#wpHint').remove(); };
+    let answered = false;
+    view.querySelector('.options').onclick = (e) => {
+      const b = e.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === right;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ที่ถูกคือ'} <b lang="en">${esc(right)}</b>
+        <div class="example"><div class="en" lang="en">${wpHTML(r)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(r.th)}</div><div class="thx">💡 ${esc(r.tip)}</div></div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('[data-sayex]').onclick = () => speak(r.plain);
+      $('#nextQ').onclick = next;
+      speak(r.plain);
     };
   }
 

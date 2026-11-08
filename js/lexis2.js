@@ -87,6 +87,42 @@ function renderUkUs() {
   $('#ukList').onclick = (e) => { const b = e.target.closest('[data-uk]'); if (b) speakBoth(b.dataset.uk, b.dataset.us); };
 }
 
+/* ---------- work email & chat phrases (1.199.0) ---------- */
+// data/workphr.js rows: [cat, phrase with the [key part], Thai, [3 wrong key parts], Thai tip]. Game `wphr` (qWphr in data/play.js), page renderWorkPhr().
+const WP_CAT = { open: ['👋', 'เปิดอีเมล'], ask: ['🙏', 'ขอร้อง / สอบถาม'], follow: ['⏰', 'ติดตามงาน'], attach: ['📎', 'แนบไฟล์ / ส่งข้อมูล'], meet: ['🗓️', 'นัดประชุม'],
+  opinion: ['💭', 'แสดงความเห็น'], sorry: ['🙇', 'แจ้งปัญหา / ขอโทษ'], thanks: ['💐', 'ขอบคุณ'], close: ['✍️', 'ปิดอีเมล'], chat: ['💬', 'แชตงาน'] };
+let WORKPHR = null;
+const loadWorkPhr = () => loadData('data/workphr.js', 'WORKPHR').then((rows) => {
+  if (!WORKPHR && rows.length) WORKPHR = rows.map(([cat, en, th, wrong, tip]) => ({ cat, en, th, wrong, tip, key: en.match(/\[([^\]]+)\]/)[1], plain: en.replace(/[[\]]/g, '') }));
+  return WORKPHR || [];
+});
+const wpHTML = (r, fill) => esc(r.en).replace(/\[([^\]]+)\]/, (m, k) => (fill == null ? `<mark>${k}</mark>` : fill));
+const wpItems = () => WORKPHR.map((r) => ({ idx: -1, w: r.key, t: r.th, p: '', g: '', _wp: r, _q: [r.en.replace(/\[[^\]]+\]/, '___'), r.key, '', r.th] }));
+// Three phrases from other categories (their meaning cannot be the asked one).
+const wpOthers = (r) => shuffle(WORKPHR.filter((x) => x.cat !== r.cat)).slice(0, 3);
+let wpCat = 'all';
+let wpMode = null; // tests force 'fill' / 'pick'; null = either at random
+function renderWorkPhr() {
+  if (!WORKPHR) { withLoading(loadWorkPhr()).then(renderWorkPhr); return; }
+  $('#title').textContent = 'สำนวนอีเมล / แชตงาน';
+  view.scrollTop = 0;
+  const cats = Object.keys(WP_CAT).filter((c) => WORKPHR.some((r) => r.cat === c));
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="wpBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="wpPlay">📧 เล่นเกม</button></div>
+    <p class="small muted" style="margin:0 4px 10px">${WORKPHR.length} ประโยคพร้อมใช้ในอีเมลและแชตที่ทำงาน · ส่วนที่ไฮไลต์คือคำที่คนไทยมักใช้ผิด · แตะประโยคเพื่อฟัง</p>
+    <div class="chips scroll" id="wpCats"><button class="chip" data-c="all">ทั้งหมด</button>${cats.map((c) => `<button class="chip" data-c="${c}">${WP_CAT[c][0]} ${WP_CAT[c][1]}</button>`).join('')}</div>
+    <div class="pair-list" id="wpList"></div>`;
+  const paint = () => {
+    view.querySelectorAll('#wpCats .chip').forEach((c) => { const on = c.dataset.c === wpCat; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
+    $('#wpList').innerHTML = cats.filter((c) => wpCat === 'all' || c === wpCat).map((c) => `<div class="card-box pair-card"><div class="pair-h"><b>${WP_CAT[c][0]} ${WP_CAT[c][1]}</b></div>
+      ${WORKPHR.filter((r) => r.cat === c).map((r) => `<button class="pair-ex" data-say="${esc(r.plain)}"><span lang="en">${wpHTML(r)}</span><span>${esc(r.th)}</span><small class="muted">💡 ${esc(r.tip)}</small></button>`).join('')}</div>`).join('');
+  };
+  paint();
+  $('#wpCats').onclick = (e) => { const c = e.target.closest('[data-c]'); if (c) { wpCat = c.dataset.c; paint(); } };
+  $('#wpBack').onclick = () => go('ref');
+  $('#wpPlay').onclick = () => startGame('wphr');
+  $('#wpList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
+}
+
 /* ---------- real-life texts (1.113) ---------- */
 // data/realtext.js rows: [kind, Thai situation, text with ___, answer, [3 wrong words], Thai translation, list word?]. Game `real` (qReal in data/play.js).
 let REALTEXT = null;

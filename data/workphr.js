@@ -1,0 +1,83 @@
+// Ready-to-use phrases for work emails and chat (1.199.0, lazy-loaded by loadWorkPhr() in js/lexis2.js). All original.
+// [category (WP_CAT), phrase with the key part in [brackets], Thai meaning, [3 wrong options for the key part], Thai tip]
+// The wrong options never fit the sentence (wrong word, wrong preposition or wrong form), so only one answer is right.
+window.WORKPHR = [
+// opening an email
+['open', 'I [hope] this email finds you well.', 'หวังว่าคุณสบายดีนะคะ (ประโยคเปิดอีเมลแบบสุภาพ)', ['wish', 'want', 'think'], 'ใช้เปิดอีเมลถึงคนที่ไม่ได้คุยกันมาสักพัก ถ้าคุยกันทุกวันใช้ "Hi …," แล้วเข้าเรื่องได้เลย'],
+['open', 'Thank you for [getting back] to me so quickly.', 'ขอบคุณที่ตอบกลับมาเร็วมาก', ['getting on', 'going back', 'giving back'], 'get back to someone = ตอบกลับ ติดต่อกลับ'],
+['open', 'I am [writing] to ask about your new pricing.', 'ฉันเขียนมาเพื่อสอบถามเรื่องราคาใหม่ของคุณ', ['typing', 'saying', 'telling'], 'I am writing to … ใช้บอกจุดประสงค์ของอีเมลตั้งแต่ประโยคแรก'],
+['open', 'I am [reaching out] about the job you posted.', 'ฉันติดต่อมาเรื่องตำแหน่งงานที่คุณประกาศไว้', ['reaching up', 'getting out', 'coming over'], 'reach out = ติดต่อไปหา (คำนิยมในอีเมลงาน)'],
+['open', 'It was great [meeting] you at the conference.', 'ดีใจที่ได้พบคุณที่งานสัมมนา', ['to meeting', 'met', 'meets'], 'ใช้เปิดอีเมลหลังเพิ่งเจอกันครั้งแรก'],
+['open', 'As [discussed] in our call, here are the next steps.', 'ตามที่คุยกันทางโทรศัพท์ นี่คือขั้นตอนต่อไป', ['discussing', 'discuss', 'discussion'], 'As discussed = ตามที่ได้คุยกันไว้ ใช้รูป past participle'],
+['open', '[Further] to our meeting, I have updated the plan.', 'ต่อจากการประชุมของเรา ฉันได้ปรับแผนแล้ว', ['Farther', 'Forward', 'Next'], 'Further to … = ต่อจากเรื่อง … (ทางการ ใช้ในอีเมลธุรกิจ)'],
+// asking for something
+['ask', 'Could you [please] send me the latest version?', 'ช่วยส่งเวอร์ชันล่าสุดมาให้หน่อยได้ไหม', ['kindly to', 'pleasing', 'pleased'], 'Could you please … สุภาพกว่า Send me … มาก'],
+['ask', 'Would it be possible to [move] the meeting to Friday?', 'เลื่อนประชุมไปวันศุกร์ได้ไหม', ['moving', 'moved', 'moves'], 'Would it be possible to + กริยารูปปกติ = ขอแบบสุภาพมาก'],
+['ask', 'I would [appreciate] it if you could check the numbers.', 'จะขอบคุณมากถ้าคุณช่วยตรวจตัวเลขให้', ['thank', 'grateful', 'like'], 'I would appreciate it if … = ขอร้องอย่างสุภาพ (appreciate ต้องมี it)'],
+['ask', 'Could you [let me know] when the report is ready?', 'รายงานเสร็จแล้วช่วยบอกด้วยนะ', ['let me knowing', 'make me know', 'let me to know'], 'let me know = บอกให้รู้ ใช้บ่อยที่สุดในอีเมลงาน'],
+['ask', 'Do you have time for a [quick] call this afternoon?', 'บ่ายนี้ว่างคุยโทรศัพท์สั้นๆ ไหม', ['fastly', 'quickly', 'shortly'], 'a quick call / a quick chat = คุยสั้นๆ'],
+['ask', 'Please [confirm] that you have received the files.', 'ช่วยยืนยันด้วยว่าได้รับไฟล์แล้ว', ['conform', 'confirmed', 'affirm to'], 'confirm (ยืนยัน) อย่าสับสนกับ conform (ทำตาม)'],
+['ask', 'I was [wondering] if you could help me with this.', 'ไม่ทราบว่าคุณพอจะช่วยเรื่องนี้ได้ไหม', ['wandering', 'wonder', 'wondered about'], 'I was wondering if … = ถามอ้อมๆ แบบสุภาพ (wondering ไม่ใช่ wandering ที่แปลว่าเดินเตร็ดเตร่)'],
+// following up
+['follow', 'I am just [following up] on my last email.', 'ขอติดตามเรื่องจากอีเมลก่อนหน้านะคะ', ['following on', 'following after', 'following to'], 'follow up on … = ติดตามเรื่อง …'],
+['follow', 'Any [update] on the budget?', 'เรื่องงบประมาณมีความคืบหน้าไหม', ['updating', 'news of', 'updated'], 'Any update on …? = ถามความคืบหน้าแบบสั้นๆ ใช้ได้ทั้งอีเมลและแชต'],
+['follow', 'Just a [gentle] reminder that the deadline is Friday.', 'ขอเตือนเบาๆ ว่ากำหนดส่งคือวันศุกร์', ['gently', 'kindly', 'gentleman'], 'a gentle reminder = เตือนอย่างสุภาพ ไม่กดดัน'],
+['follow', 'I wanted to [check in] on the order status.', 'อยากสอบถามสถานะคำสั่งซื้อหน่อย', ['check up', 'check off', 'check over'], 'check in on … = ถามไถ่ความคืบหน้า'],
+['follow', 'I haven\'t [heard back] from the supplier yet.', 'ยังไม่ได้รับคำตอบจากซัพพลายเออร์เลย', ['listened back', 'heard about', 'hearing back'], 'hear back from … = ได้รับคำตอบจาก …'],
+['follow', 'Could you give me an [estimate] of when it will be done?', 'ช่วยประเมินคร่าวๆ ได้ไหมว่าจะเสร็จเมื่อไร', ['estimation of time', 'estimating', 'esteem'], 'an estimate = ตัวเลขหรือเวลาโดยประมาณ'],
+// sending files and information
+['attach', 'Please [find attached] the invoice for March.', 'แนบใบแจ้งหนี้เดือนมีนาคมมาให้แล้ว', ['find attaching', 'look attached', 'see attach'], 'Please find attached … = แนบไฟล์มาให้ (ทางการ) แบบสบายๆ ใช้ I\'ve attached …'],
+['attach', 'I\'ve [attached] the slides from today\'s meeting.', 'แนบสไลด์จากการประชุมวันนี้มาให้แล้ว', ['attach', 'attaching', 'attachment'], 'I\'ve attached … = present perfect บอกว่าแนบไว้แล้ว'],
+['attach', 'Here is the link to the [shared] folder.', 'นี่คือลิงก์โฟลเดอร์ที่แชร์กันไว้', ['sharing', 'share', 'shares'], 'shared folder = โฟลเดอร์ที่แชร์กัน (shared ทำหน้าที่เหมือนคุณศัพท์)'],
+['attach', 'For your [reference], I\'ve included last year\'s figures.', 'ใส่ตัวเลขของปีที่แล้วไว้ให้ดูประกอบ', ['refer', 'referring', 'preference'], 'for your reference = ไว้ดูประกอบ ไว้อ้างอิง'],
+['attach', 'Please see the [details] below.', 'รายละเอียดอยู่ด้านล่าง', ['detail of', 'detailing', 'detailed'], 'see below / see the details below = ให้ดูข้อความถัดไปในอีเมล'],
+['attach', 'I\'m [forwarding] you the email from the client.', 'ฉันส่งต่ออีเมลจากลูกค้ามาให้คุณ', ['forward to', 'forwarded at', 'sending forward'], 'forward = ส่งต่ออีเมล'],
+// meetings and scheduling
+['meet', 'Are you [available] on Tuesday at 10?', 'วันอังคาร 10 โมงคุณว่างไหม', ['availability', 'free time', 'possible'], 'Are you available …? สุภาพกว่า Are you free …? เล็กน้อย'],
+['meet', 'Does 3 p.m. [work] for you?', 'บ่ายสามโมงสะดวกไหม', ['works', 'working', 'fit to'], 'Does … work for you? = เวลานี้สะดวกไหม'],
+['meet', 'I\'ll [send] a calendar invite shortly.', 'เดี๋ยวจะส่งนัดในปฏิทินไปให้นะ', ['sending', 'sent', 'to send'], 'a calendar invite = นัดหมายที่ส่งทางปฏิทิน'],
+['meet', 'Something has [come up], so I need to reschedule.', 'มีธุระด่วนเข้ามา เลยต้องขอเลื่อนนัด', ['come over', 'came on', 'come off'], 'something came up = มีเรื่องด่วนแทรกเข้ามา (ไม่ต้องบอกรายละเอียด)'],
+['meet', 'Let\'s [touch base] next week.', 'สัปดาห์หน้าคุยอัปเดตกันสั้นๆ นะ', ['touch bases', 'touching base', 'take base'], 'touch base = คุยอัปเดตกันสั้นๆ'],
+['meet', 'Can we [push] the meeting back by 30 minutes?', 'ขอเลื่อนประชุมออกไป 30 นาทีได้ไหม', ['pull', 'put', 'pushed'], 'push back = เลื่อนให้ช้าลง · bring forward = เลื่อนให้เร็วขึ้น'],
+['meet', 'Sorry, I have a [conflict] at that time.', 'ขอโทษ ช่วงเวลานั้นฉันติดนัดอื่น', ['conflicting', 'contrast', 'confuse'], 'have a conflict = เวลาชนกับนัดอื่น'],
+// giving opinions, agreeing and disagreeing
+['opinion', 'That [makes sense] to me.', 'ฟังดูสมเหตุสมผลนะ', ['does sense', 'makes senses', 'has sense'], 'make sense = มีเหตุผล เข้าใจได้'],
+['opinion', 'I see your [point], but the cost is too high.', 'เข้าใจประเด็นของคุณ แต่ค่าใช้จ่ายสูงเกินไป', ['view of', 'pointing', 'sight'], 'I see your point, but … = ไม่เห็นด้วยแบบนุ่มนวล'],
+['opinion', 'I\'m [on board] with the new plan.', 'ฉันเห็นด้วยกับแผนใหม่', ['in board', 'on boarding', 'at board'], 'on board = เห็นด้วย ร่วมด้วย'],
+['opinion', 'I have a few [concerns] about the timeline.', 'ฉันมีข้อกังวลเล็กน้อยเรื่องกำหนดเวลา', ['concerning', 'concerned', 'worry'], 'have concerns about … = มีข้อกังวลเกี่ยวกับ …'],
+['opinion', 'In my [opinion], we should wait.', 'ในความเห็นของฉัน เราควรรอก่อน', ['opinions', 'thinking', 'mind of'], 'In my opinion, … = ในความเห็นของฉัน'],
+['opinion', 'I\'m not [sure] that will work.', 'ไม่แน่ใจว่าวิธีนั้นจะได้ผล', ['surely', 'certainty', 'agree'], 'I\'m not sure … = ไม่เห็นด้วยอ้อมๆ'],
+['opinion', 'Good [point]. Let\'s add that to the list.', 'ประเด็นดี ใส่ไว้ในรายการด้วยเลย', ['pointing', 'points', 'idea of'], 'Good point = ประเด็นดี เห็นด้วย'],
+// problems and apologies
+['sorry', 'Sorry for the [delay] in getting back to you.', 'ขอโทษที่ตอบกลับช้า', ['delayed', 'late', 'lately'], 'Sorry for the delay = ขอโทษที่ช้า (ใช้ตอนตอบอีเมลช้า)'],
+['sorry', 'Apologies for any [inconvenience].', 'ขออภัยในความไม่สะดวก', ['inconvenient', 'convenience', 'uncomfortable'], 'Apologies for any inconvenience = ขออภัยในความไม่สะดวก (ทางการ)'],
+['sorry', 'It [looks like] there was a mistake in the invoice.', 'ดูเหมือนใบแจ้งหนี้จะผิดพลาด', ['looks', 'sees like', 'looking like'], 'It looks like … = ดูเหมือนว่า … ฟังนุ่มกว่าการบอกว่าอีกฝ่ายผิดตรงๆ'],
+['sorry', 'We are [looking into] the issue now.', 'ตอนนี้เรากำลังตรวจสอบปัญหาอยู่', ['looking at for', 'looking after', 'looking up'], 'look into = ตรวจสอบ สืบหาสาเหตุ'],
+['sorry', 'Thank you for your [patience].', 'ขอบคุณที่รอนะคะ', ['patient', 'patients', 'patiently'], 'patience (ความอดทน) ไม่ใช่ patients (คนไข้)'],
+['sorry', 'I\'m afraid we [can\'t] meet that deadline.', 'เกรงว่าเราจะทำไม่ทันกำหนด', ['don\'t can', 'can\'t to', 'couldn\'t to'], 'I\'m afraid … = เกรงว่า … ใช้บอกข่าวร้ายอย่างสุภาพ'],
+['sorry', 'Please [disregard] my previous email.', 'กรุณาไม่ต้องสนใจอีเมลก่อนหน้า', ['disagree', 'regard', 'discard of'], 'disregard = ไม่ต้องสนใจ (ใช้เมื่อส่งอีเมลผิด)'],
+// thanks
+['thanks', 'Thanks for [your help] with the launch.', 'ขอบคุณที่ช่วยเรื่องการเปิดตัว', ['you help', 'helping me to', 'your helping'], 'Thanks for + คำนาม หรือ -ing'],
+['thanks', 'I really [appreciate] your support.', 'ขอบคุณมากที่ช่วยสนับสนุน', ['thank', 'grateful', 'appreciation'], 'appreciate + สิ่งที่ขอบคุณ (ไม่ต้องมี for)'],
+['thanks', 'Thanks [in advance] for your help.', 'ขอบคุณล่วงหน้าสำหรับความช่วยเหลือ', ['on advance', 'at advance', 'in advanced'], 'Thanks in advance = ขอบคุณล่วงหน้า'],
+['thanks', 'Great [job] on the presentation!', 'พรีเซนต์ได้ดีมาก!', ['work of', 'jobs', 'doing'], 'Great job on … = ชมผลงาน'],
+['thanks', 'Thanks for [bringing] this to my attention.', 'ขอบคุณที่แจ้งเรื่องนี้ให้ทราบ', ['taking', 'bring', 'giving'], 'bring something to someone\'s attention = แจ้งให้รู้'],
+// closing an email
+['close', 'I look forward to [hearing] from you.', 'หวังว่าจะได้รับการติดต่อกลับ', ['hear', 'heard', 'listen'], 'look forward to + -ing (to ตรงนี้เป็นบุพบท)'],
+['close', 'Please let me know if you have any [questions].', 'หากมีคำถามแจ้งได้เลยนะ', ['question', 'asking', 'questioned'], 'any questions ใช้พหูพจน์'],
+['close', 'Feel [free] to contact me at any time.', 'ติดต่อฉันได้ทุกเมื่อเลย', ['freely', 'freedom', 'easy'], 'Feel free to … = ทำได้เลยไม่ต้องเกรงใจ'],
+['close', 'Best [regards],', 'ขอแสดงความนับถือ (ลงท้ายอีเมล)', ['regard', 'regarding', 'respect'], 'Best regards / Kind regards = ลงท้ายอีเมลงานแบบสุภาพ'],
+['close', 'Have a great [weekend]!', 'ขอให้มีความสุขในวันหยุดสุดสัปดาห์', ['weekends', 'end week', 'week end of'], 'ใช้ปิดอีเมลวันศุกร์'],
+['close', 'I\'ll [keep] you posted.', 'จะคอยอัปเดตให้ทราบนะ', ['make', 'let', 'have'], 'keep someone posted = อัปเดตให้รู้เรื่อยๆ'],
+['close', 'Happy to [discuss] further if needed.', 'ยินดีคุยรายละเอียดเพิ่มถ้าต้องการ', ['discuss about', 'discussing', 'discussion'], 'discuss ไม่ต้องมี about ตามหลัง'],
+// work chat
+['chat', 'Quick [question]: where is the latest file?', 'ถามสั้นๆ ไฟล์ล่าสุดอยู่ที่ไหน', ['ask', 'asking', 'questions'], 'ใช้เริ่มแชตแบบไม่รบกวนนาน'],
+['chat', 'I\'m [out of office] until Monday.', 'ฉันไม่อยู่ออฟฟิศถึงวันจันทร์', ['out of offices', 'off of office', 'outside office'], 'out of office (OOO) = ลา ไม่อยู่'],
+['chat', 'I\'ll get it done by [end of day].', 'จะทำให้เสร็จภายในวันนี้', ['end of the days', 'day of end', 'end day'], 'end of day (EOD) = ภายในเวลาเลิกงานวันนี้'],
+['chat', 'No [worries], take your time.', 'ไม่เป็นไร ไม่ต้องรีบ', ['worry', 'worried', 'worrying'], 'No worries = ไม่เป็นไร (แบบเป็นกันเอง)'],
+['chat', 'I\'m [on it]!', 'กำลังจัดการให้อยู่!', ['in it', 'at it to', 'on that it'], 'I\'m on it = รับเรื่องแล้ว กำลังทำ'],
+['chat', 'Can you [hop on] a call?', 'เข้ามาคุยในคอลหน่อยได้ไหม', ['hop in on', 'jump at', 'hop off'], 'hop on a call = เข้ามาคุยในคอลแป๊บหนึ่ง'],
+['chat', 'Let me [double-check] and get back to you.', 'ขอเช็กให้แน่ใจก่อนแล้วจะตอบกลับนะ', ['double-checking', 'twice check', 'check double'], 'double-check = ตรวจซ้ำให้แน่ใจ'],
+['chat', 'Sorry, I [missed] your message earlier.', 'ขอโทษ เมื่อกี้ไม่ทันเห็นข้อความ', ['lost', 'missing', 'passed'], 'miss a message = ไม่ทันเห็นข้อความ'],
+['chat', 'I\'m [running] a few minutes late.', 'จะไปช้าไม่กี่นาทีนะ', ['being run', 'going on', 'walking'], 'I\'m running late = กำลังจะไปสาย'],
+];
