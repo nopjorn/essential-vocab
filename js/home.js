@@ -137,6 +137,7 @@ function renderHome() {
           <button class="chip" data-dkgo="${d.id}" aria-label="เรียนชุด ${esc(d.name || '')}" ${st.n ? '' : 'disabled'}>▶︎ เรียน</button></div>`; }).join('')}</div>`;
     },
     wotd: wotdCard,
+    goalfit: () => (goalFitKeys().length ? '<div class="card-box" id="goalFit"></div>' : ''),
     wpday: () => '<div class="card-box wpday" id="wpDay" aria-live="polite"></div>',
     level: levelCard,
     forecast: () => `<div class="card-box"><b>🔮 ทบทวน 7 วันข้างหน้า</b><div style="margin-top:8px">${forecastChart()}</div></div>`,
@@ -209,6 +210,7 @@ function renderHome() {
   view.querySelectorAll('[data-dkopen]').forEach((b) => { b.onclick = () => go('decks', b.dataset.dkopen); });
   view.querySelectorAll('[data-dkgo]').forEach((b) => { b.onclick = () => go('cards', { deck: b.dataset.dkgo }); });
   wpDayCard();
+  goalFitCard();
   const wd = $('#wotd');
   if (wd) wd.onclick = (e) => {
     const w = wotd();
@@ -390,6 +392,7 @@ const HOME_BLOCKS = [
   { id: 'wotd', ic: '✨', name: 'คำประจำวัน', w: 'full', on: true },
   { id: 'wpday', ic: '📧', name: 'สำนวนทำงานประจำวัน', w: 'full', on: true },
   { id: 'prog', ic: '📈', name: 'ความคืบหน้า', w: 'full', on: true },
+  { id: 'goalfit', ic: '🎯', name: 'แนะนำชุดคำและเกมตามเป้าหมาย', w: 'full', on: true },
   { id: 'mascot', ic: '🫧', name: 'น้องคำ (มาสคอต) + กล่องรางวัล', w: 'full', on: true },
   { id: 'level', ic: '⭐', name: 'เลเวลและ XP', w: 'half', on: false },
   { id: 'forecast', ic: '🔮', name: 'ทบทวน 7 วันข้างหน้า', w: 'full', on: false },
@@ -441,6 +444,47 @@ function wotdRandom(cur) {
   S.wotdPick = { day: today(), key: JSON.stringify(wotdCfg()) + '|' + S.settings.levels.join(), w: n.idx };
   save();
   return n;
+}
+// Suggestions for my goal (1.209.0): settings.goal (a TAGS id) and a TOEIC exam date → ready-made sets not added yet (open the preview sheet)
+// and games for that goal (✓ when played today). Hidden without a goal. Sets need data/presets.js (lazy), so the card is filled after it loads.
+const GOAL_FIT = {
+  travel: [['airport', 'hotel', 'transport', 'food'], ['sit', 'real']],
+  work: [['meeting', 'call', 'service', 'finance'], ['wphr', 'email', 'regi', 'bizcol']],
+  exam: [[], ['wform', 'dprep', 'gpat']],
+  tech: [['dev', 'devops'], ['wphr', 'wpdict']],
+  health: [['clinic'], ['sit']],
+  social: [['food', 'shopping'], ['sit', 'idiom']],
+  job: [['interview', 'meeting'], ['email', 'regi']],
+  abroad: [['rent', 'bank', 'transport'], ['sit', 'real']],
+  report: [['finance', 'marketing'], ['bizcol', 'wform']],
+  shopping: [['shopping', 'food'], ['real', 'sit']],
+  toeic: [['meeting', 'logistics', 'finance'], ['toeicMock', 'bizcol', 'wphr']],
+};
+function goalFitKeys() {
+  const out = [];
+  const x = examPlan();
+  if (x && !x.past && isToeicGoal(x.name)) out.push('toeic');
+  if (S.settings.goal && GOAL_FIT[S.settings.goal] && !out.includes(S.settings.goal)) out.push(S.settings.goal);
+  return out;
+}
+function goalFitCard() {
+  const el = $('#goalFit'); if (!el) return;
+  const keys = goalFitKeys();
+  const paint = () => {
+    if (!el.isConnected) return;
+    const sets = [...new Set(keys.flatMap((k) => GOAL_FIT[k][0]))].map((id) => (PRESETS || []).find((p) => p.id === id)).filter((p) => p && !presetDeck(p.id)).slice(0, 3);
+    const games = [...new Set(keys.flatMap((k) => GOAL_FIT[k][1]))].filter((g) => GAMES[g]).slice(0, 4);
+    const label = keys.map((k) => (k === 'toeic' ? '💼 สอบ TOEIC' : TAG_LABEL[k])).join(' · ');
+    el.innerHTML = `<div class="row" style="justify-content:space-between"><b>🎯 แนะนำตามเป้าหมาย</b><span class="small muted">${esc(label)}</span></div>
+      ${sets.length ? `<div class="small muted" style="margin:8px 0 6px">📦 ชุดคำสำเร็จรูป (แตะดูคำแล้วเพิ่มเป็นชุดของฉัน)</div><div class="chips">${sets.map((p) => `<button class="chip" data-gfp="${p.id}">${p.icon} ${esc(p.name)}</button>`).join('')}</div>` : ''}
+      <div class="small muted" style="margin:10px 0 6px">🎮 เกมที่ช่วยเป้าหมายนี้</div>
+      <div class="chips">${games.map((g) => { const done = S.glast[g] === today(); return `<button class="chip${done ? ' on' : ''}" data-gfg="${g}">${GAMES[g].icon} ${esc(GAMES[g].name)}${done ? ' ✓' : ''}</button>`; }).join('')}</div>`;
+  };
+  if (PRESETS) paint(); else { paint(); loadPresets().then(paint); }
+  el.onclick = (e) => {
+    const p = e.target.closest('[data-gfp]'); if (p) { presetSheet(PRESETS.find((x) => x.id === p.dataset.gfp)); return; }
+    const g = e.target.closest('[data-gfg]'); if (g) startGame(g.dataset.gfg);
+  };
 }
 // Work phrase of the day (1.203.0): one data/workphr.js phrase per day (same for the whole day, by day number), › shows the next one
 // for this visit only, 🔊 speaks it, "ดูทั้งหมด" opens the phrase page. Filled after the data loads (lazy, small).
