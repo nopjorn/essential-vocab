@@ -7,7 +7,7 @@
 // ⚡ fast answers (1.168.0): only for kinds answered with one tap on reading; these need listening, typing, speaking,
 // ordering or drawing first, so they never get the badge.
 const FAST_MS = 2000;
-const SLOW_MODES = ['listen', 'spell', 'dict', 'dictW', 'dictS', 'speak', 'speakS', 'order', 'sOrder', 'hand', 'compose', 'hangman', 'anagram', 'minpair', 'num'];
+const SLOW_MODES = ['listen', 'spell', 'dict', 'dictW', 'dictS', 'speak', 'speakS', 'order', 'sOrder', 'hand', 'compose', 'hangman', 'anagram', 'minpair', 'num', 'wpdict'];
 function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   const ROUND = 10;
   // Endless run (emojiRun): no round limit, wrong answers only reset the streak; the player ends it themselves.
@@ -166,6 +166,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'bizcol') return qBizcol(w);
     if (m === 'regi') return qRegi(w);
     if (m === 'email') return qEmail(w);
+    if (m === 'wpdict') return qWpDict(w);
     if (m === 'toeic5') return qP5(w);
     if (m === 'toeic7') return qP7(w);
     if (m === 'toeic6') return qP6(w);
@@ -1138,6 +1139,54 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       $('#nextQ').onclick = next;
       speak(gpPlain(r));
     };
+  }
+
+  // Listen and type a work phrase (1.208.0): the whole phrase is spoken, the key part is blank; 2 tries, the 2nd shows the first letter.
+  function qWpDict(w) {
+    const r = w._wp, [ic, cat] = WP_CAT[r.cat] || ['📧', ''];
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit pop"><div class="small muted">🎧 ${ic} ${cat}</div><div style="height:8px"></div>
+        <button class="speak" data-say aria-label="ฟังประโยค" style="width:76px;height:76px;font-size:34px;margin:0">🔊</button>
+        <div>${slowBtn(r.plain)}</div>
+        <div class="cloze" lang="en" style="margin-top:12px">${wpHTML(r, '<span class="blank" id="hint">_____</span>')}</div>
+        <button class="hint-btn" id="dHint">💡 ดูคำแปล</button><div class="thx" id="dTh" hidden>${esc(r.th)}</div></div>
+      <form id="sf" autocomplete="off">
+        <input class="spell-input" id="si" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="พิมพ์คำที่ได้ยิน">
+        <div class="row" style="margin-top:10px">
+          <button type="button" class="btn grow" id="skip">ไม่รู้ / เฉลย</button>
+          <button type="submit" class="btn primary grow">ตรวจคำตอบ</button>
+        </div>
+      </form>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = leave;
+    view.querySelector('[data-say]').onclick = () => speak(r.plain);
+    $('#dHint').onclick = () => { $('#dTh').hidden = false; $('#dHint').remove(); };
+    const inp = $('#si');
+    let tries = 0, answered = false;
+    const norm = (x) => x.trim().toLowerCase().replace(/[’']/g, "'").replace(/[.,!?]+$/, '').replace(/\s+/g, ' ');
+    const done = (ok) => {
+      answered = true;
+      mark(w, ok);
+      inp.blur(); inp.value = r.key; inp.classList.add(ok ? 'ok' : 'no');
+      $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ คำตอบคือ'} <b lang="en">${esc(r.key)}</b>
+        <div class="example"><div class="en" lang="en">${wpHTML(r)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(r.th)}</div><div class="thx">💡 ${esc(r.tip)}</div></div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      view.querySelector('[data-sayex]').onclick = () => speak(r.plain);
+      $('#nextQ').onclick = next;
+    };
+    if (typeof appKbd === 'function') appKbd($('#si'), $('#sf'));
+    $('#sf').onsubmit = (e) => {
+      e.preventDefault(); if (answered) return;
+      if (norm(inp.value) === norm(r.key)) return done(tries === 0);
+      tries++;
+      inp.classList.remove('no'); void inp.offsetWidth; inp.classList.add('no');
+      if (tries >= 2) return done(false);
+      $('#reveal').textContent = 'ยังไม่ถูก ฟังอีกครั้งนะ 💪';
+      $('#hint').textContent = r.key[0] + r.key.slice(1).replace(/[a-zA-Z]/g, '_');
+      speak(r.plain);
+    };
+    $('#skip').onclick = () => { if (!answered) done(false); };
+    setTimeout(() => speak(r.plain), 200);
   }
 
   // Build an email (1.206.0): the email so far, the next part to choose (3 options: right, wrong register / too blunt, off topic).

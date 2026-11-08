@@ -46,3 +46,31 @@ for (const mode of ['fill', 'pick']) {
     expect(errors).toEqual([]);
   });
 }
+
+test('wpdict (1.208.0): the phrase is spoken, typing the key part is right; two misses show the answer and play to the result', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.evaluate(() => startGame('wpdict'));
+  const view = page.locator('#view');
+  await expect(view.locator('#si')).toBeVisible();
+  let r = await page.evaluate(() => playQuiz.cur._wp);
+  await expect.poll(() => page.evaluate(() => window.__said.at(-1))).toBe(r.plain);
+  await page.fill('#si', r.key.toUpperCase() + '.');
+  await page.locator('#sf button[type=submit]').click();
+  await expect(view.locator('#reveal')).toContainText('ถูกต้อง');
+  await expect(view.locator('#reveal')).toContainText(r.tip);
+  for (let q = 1; q < 10; q++) {
+    await view.locator('#nextQ').click();
+    r = await page.evaluate(() => playQuiz.cur._wp);
+    await page.fill('#si', 'zzz'); await page.locator('#sf button[type=submit]').click();
+    await expect(view.locator('#hint')).toHaveText(new RegExp('^' + r.key[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    await page.fill('#si', 'zzz'); await page.locator('#sf button[type=submit]').click();
+    await expect(view.locator('#reveal')).toContainText('คำตอบคือ');
+  }
+  await view.locator('#nextQ').click();
+  await expect(view.locator('.res-top')).toBeVisible();
+  await page.evaluate(() => flushSave());
+  const keys = Object.entries((await readState(page)).lex).filter(([k]) => k.startsWith('wpdict:'));
+  expect(keys.length).toBe(10);
+  expect(keys.filter(([, p]) => p.c === 1)).toHaveLength(1);
+  expect(errors).toEqual([]);
+});
