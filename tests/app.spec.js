@@ -288,6 +288,8 @@ test('home layout: hide, reorder and resize blocks from settings', async ({ page
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click(); // 1.56: the sets block (hidden without sets) is one more slot above it
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click(); // 1.114: the weekly adventure block is one more slot above it
   await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click(); // 1.115: and the fun zone block
+  await page.locator('.hc-row[data-id="prog"] [data-act="up"]').click(); // 1.203.0: and the work phrase of the day
+  await page.locator('.hc-row[data-id="wpday"] [data-act="tog"]').evaluate((el) => el.click());
   await page.locator('.hc-row[data-id="quest"] [data-act="w"][data-v="half"]').click();
   await page.locator('.hc-row[data-id="level"] [data-act="tog"]').evaluate((el) => el.click());
   await page.evaluate(() => go('home'));

@@ -1,6 +1,7 @@
 // Changelog shown in the app (settings → ประวัติการอัปเดต). Newest first. Keep in sync with the README table.
 // [version, what changed, release date YYYY-MM-DD (Thailand time)]; loaded lazily by loadChangelog().
 window.CHANGELOG = [
+  ["1.203.0", "การ์ด 📧 สำนวนทำงานประจำวันบนหน้าแรก วันละ 1 ประโยคพร้อมคำแปลและเคล็ดลับ กดฟัง กด › ดูอันถัดไป (ปิดได้ในจัดเรียงหน้าแรก)", "2026-11-08"],
   ["1.202.0", "เก็บคำคู่ธุรกิจเข้าชุดของฉันได้ (＋ ในคลังความรู้และหน้ารายละเอียดคำ, 📚 หลังตอบในเกม, เก็บทั้งหมวด) แล้วท่องเป็นแฟลชการ์ด", "2026-11-08"],
   ["1.201.0", "หน้ารายละเอียดคำมีกล่อง 🤝 คำคู่ธุรกิจ และ 📧 ใช้ในอีเมล / แชตงาน ของคำนั้น (เช่น deadline → meet a deadline) แตะเพื่อฟังประโยค", "2026-11-08"],
   ["1.200.0", "Collocation ธุรกิจ 73 คู่คำ (meet a deadline, place an order, competitive price, on schedule ฯลฯ) ในคลังความรู้ และเกม 🤝 คำคู่ธุรกิจ แบบ TOEIC Part 5 อยู่ในชิป 💼 TOEIC ด้วย · ย่อคำอธิบายเกมสำนวนอีเมลให้พอดีบรรทัด", "2026-11-08"],

@@ -504,6 +504,9 @@ body { touch-action: manipulation; }
 .tip-box { margin-top: 10px; background: color-mix(in srgb, var(--warn) 22%, var(--surface)); border-radius: 14px; padding: 10px 12px; text-align: left; font-size: var(--fs-sm); line-height: 1.5; }
 .pair-h { font-size: 20px; }
 .pair-ex { display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left; border: 0; border-top: 1px solid var(--border); background: none; color: inherit; font: inherit; padding: 10px 2px; margin-top: 8px; cursor: pointer; }
+.wpday { cursor: pointer; }
+.wp-day { font-size: var(--fs-lg, 18px); font-weight: 600; margin-top: 8px; }
+.wp-day mark { background: none; color: var(--pink-ink); font-weight: 800; }
 .bc-item { position: relative; }
 .bc-item .pair-ex { padding-right: 46px; }
 .bc-item .col-row { padding-right: 48px; }

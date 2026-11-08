@@ -137,6 +137,7 @@ function renderHome() {
           <button class="chip" data-dkgo="${d.id}" aria-label="เรียนชุด ${esc(d.name || '')}" ${st.n ? '' : 'disabled'}>▶︎ เรียน</button></div>`; }).join('')}</div>`;
     },
     wotd: wotdCard,
+    wpday: () => '<div class="card-box wpday" id="wpDay" aria-live="polite"></div>',
     level: levelCard,
     forecast: () => `<div class="card-box"><b>🔮 ทบทวน 7 วันข้างหน้า</b><div style="margin-top:8px">${forecastChart()}</div></div>`,
     prog: () => `<button class="card-box prog-card" id="statsBtn">
@@ -207,6 +208,7 @@ function renderHome() {
   click('#qRiddle', () => go('riddle', 'home'));
   view.querySelectorAll('[data-dkopen]').forEach((b) => { b.onclick = () => go('decks', b.dataset.dkopen); });
   view.querySelectorAll('[data-dkgo]').forEach((b) => { b.onclick = () => go('cards', { deck: b.dataset.dkgo }); });
+  wpDayCard();
   const wd = $('#wotd');
   if (wd) wd.onclick = (e) => {
     const w = wotd();
@@ -386,6 +388,7 @@ const HOME_BLOCKS = [
   { id: 'riddle', ic: '🔤', name: 'ปริศนาศัพท์ประจำวัน', w: 'full', on: true },
   { id: 'decks', ic: '📚', name: 'ชุดของฉัน', w: 'full', on: true },
   { id: 'wotd', ic: '✨', name: 'คำประจำวัน', w: 'full', on: true },
+  { id: 'wpday', ic: '📧', name: 'สำนวนทำงานประจำวัน', w: 'full', on: true },
   { id: 'prog', ic: '📈', name: 'ความคืบหน้า', w: 'full', on: true },
   { id: 'mascot', ic: '🫧', name: 'น้องคำ (มาสคอต) + กล่องรางวัล', w: 'full', on: true },
   { id: 'level', ic: '⭐', name: 'เลเวลและ XP', w: 'half', on: false },
@@ -438,6 +441,28 @@ function wotdRandom(cur) {
   S.wotdPick = { day: today(), key: JSON.stringify(wotdCfg()) + '|' + S.settings.levels.join(), w: n.idx };
   save();
   return n;
+}
+// Work phrase of the day (1.203.0): one data/workphr.js phrase per day (same for the whole day, by day number), › shows the next one
+// for this visit only, 🔊 speaks it, "ดูทั้งหมด" opens the phrase page. Filled after the data loads (lazy, small).
+let wpDayOff = 0;
+const wpDayRow = () => { const n = Math.floor(Date.parse(today() + 'T12:00:00') / DAY); return WORKPHR[((n * 7 + wpDayOff) % WORKPHR.length + WORKPHR.length) % WORKPHR.length]; };
+function wpDayCard() {
+  const el = $('#wpDay'); if (!el) return;
+  const paint = () => {
+    if (!el.isConnected || !WORKPHR || !WORKPHR.length) { if (el.isConnected && WORKPHR) el.remove(); return; }
+    const r = wpDayRow(), [ic, cat] = WP_CAT[r.cat] || ['📧', ''];
+    el.innerHTML = `<div class="row" style="justify-content:space-between"><b>📧 สำนวนทำงานประจำวัน</b><span class="row small muted" style="gap:8px">${ic} ${cat}<button class="say-ex" data-wpn aria-label="สำนวนถัดไป">›</button></span></div>
+      <div class="wp-day" lang="en">${wpHTML(r)} <button class="say-ex" data-wps aria-label="ฟังประโยค">🔊</button></div>
+      <div class="th" style="margin:4px 0">${esc(r.th)}</div><div class="small muted">💡 ${esc(r.tip)}</div>
+      <button class="small muted dk-all" data-wpall style="margin-top:6px">ดูทั้งหมด ›</button>`;
+  };
+  if (WORKPHR) paint(); else loadWorkPhr().then(paint);
+  el.onclick = (e) => {
+    if (!WORKPHR) return;
+    if (e.target.closest('[data-wpn]')) { wpDayOff++; paint(); }
+    else if (e.target.closest('[data-wpall]')) renderWorkPhr();
+    else speak(wpDayRow().plain);
+  };
 }
 function wotdCard() {
   const w = wotd(); if (!w) return '';
