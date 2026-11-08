@@ -591,7 +591,7 @@ body { touch-action: manipulation; }
 .he-go { border: 0; background: none; color: var(--muted); font: inherit; padding: 8px 12px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .he-bar { position: sticky; top: -8px; z-index: 5; display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding: 12px 16px; border-radius: var(--radius); background: #5443d1; color: #fff; box-shadow: var(--shadow); }
 .he-bar .btn { background: #fff; color: #4535b8; }
-.home-edit .hb, .hb:has(> .he-tools) { position: relative; }
+.hb:has(> .he-tools) { position: relative; }
 .hb:has(> .he-tools) > :not(.he-tools) { pointer-events: none; opacity: .55; filter: saturate(.7); height: auto; }
 .hb > .he-tools { height: auto; }
 .hb:has(> .he-tools) { outline: 2px dashed var(--border); outline-offset: 2px; border-radius: var(--radius); margin-bottom: 14px; }
@@ -719,8 +719,6 @@ body { touch-action: manipulation; }
 .trend-leg .up { color: var(--c-master); font-weight: 700; }
 .chart .xhair { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
 .s-card { fill: var(--c-card); background: var(--c-card); }
-.s-game { fill: var(--c-game); background: var(--c-game); }
-.s-unk { fill: var(--c-unk); background: var(--c-unk); }
 .s-master { background: var(--c-master); }
 /* activity kinds (1.158.0, ACT_CATS order) — categorical palette validated (adjacent CVD / normal-vision) on #fff and #1d1b2e;
    light slots under 3:1 get relief from the numbers in the "ใช้เวลากับอะไรบ้าง" table */
@@ -1355,7 +1353,6 @@ details.danger-group > summary { color: var(--bad-ink); }
 .syn-box { margin-top: 10px; text-align: left; }
 .col-row mark, .tip-box mark { background: none; color: var(--pink-ink); font-weight: 800; }
 .af-x { font-size: 22px; color: var(--primary-text, var(--primary)); }
-.ref-box { padding: 12px; }
 .ref-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
 .ref-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 72px; padding: 8px 4px; border: 2px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); font: inherit; font-size: var(--fs-xs); font-weight: 700; line-height: 1.25; text-align: center; overflow-wrap: anywhere; }
 .ref-tile span { font-size: 22px; line-height: 1; }
