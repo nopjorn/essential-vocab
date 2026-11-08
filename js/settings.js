@@ -194,6 +194,7 @@ function renderSettings() {
         : `ความคืบหน้าเก็บไว้ในเครื่องนี้เท่านั้น ถ้าลบไอคอนแอปออกจากหน้าจอโฮม ข้อมูลจะหายด้วย แนะนำให้สำรองเก็บไว้ใน iCloud Drive (แอปจะเตือนทุก ${BACKUP_EVERY} วัน)`}</p>
       <div class="off-box" id="offBox"><b>📴 ใช้งานออฟไลน์</b><div class="small" id="offState">⏳ กำลังตรวจ…</div><div class="small muted" id="offUsed"></div><div class="small muted" id="offStart"></div>
         <button class="btn block" id="offGet" hidden>⬇️ โหลดเก็บไว้ในเครื่อง</button></div>
+      ${storeBox()}
       <p class="small" style="margin-top:0"><b>สำรองล่าสุด:</b> ${S.backupAt ? new Date(S.backupAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : 'ยังไม่เคยสำรอง'}<br><span class="muted" id="persist"></span></p>
       <div class="row"><button class="btn grow" id="exp">📤 ส่งออก</button><button class="btn grow" id="imp">📥 นำเข้า</button></div>
       <input type="file" id="file" accept=".json,application/json" hidden>
@@ -569,6 +570,16 @@ function startText(st) {
   return `🌐 เปิดแอปครั้งล่าสุดโหลดไฟล์แอป ${st.net} ไฟล์จากเน็ต (ตรวจเวอร์ชันไม่ทันหรือเน็ตไม่พร้อม)`;
 }
 const mbText = (b) => (b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
+// 💾 how full this site's localStorage is (1.210.0): Safari allows about STORE_LIMIT characters.
+function storeBox() {
+  const use = storeUse(), pct = Math.min(100, Math.round(use / STORE_LIMIT * 100));
+  const lvl = pct >= STORE_TRIM * 100 ? 'bad' : pct >= STORE_WARN * 100 ? 'warn' : 'ok';
+  let rescue = 0; try { rescue = (localStorage.getItem(KEY + '.rescue') || '').length; } catch (e) { /* blocked */ }
+  return `<div class="off-box store-box ${lvl}" id="storeBox"><b>📦 พื้นที่เก็บความคืบหน้า</b>
+    <div class="small" id="storeUse">ใช้ไป ${pct}% ของพื้นที่ที่ Safari ให้ (${mbText(use)} จากราว ${mbText(STORE_LIMIT)})</div>
+    <div class="store-bar" role="progressbar" aria-label="พื้นที่เก็บความคืบหน้า" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${Math.max(pct, 1)}%"></i></div>
+    <div class="small muted">${lvl === 'ok' ? 'ยังเหลืออีกเยอะ ไม่ต้องทำอะไร' : 'ใกล้เต็มแล้ว แอปจะย่อสถิติเก่าให้เองเมื่อจำเป็น (ความคืบหน้าของคำไม่หาย) แนะนำให้สำรองข้อมูลไว้'}${rescue ? ` · มีสำเนากู้คืนข้อมูลเก่าอยู่ ${mbText(rescue)}` : ''}</div></div>`;
+}
 function offlineBox() {
   const el = document.getElementById('offBox'); if (!el) return;
   const paint = (r, used) => {

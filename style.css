@@ -2920,6 +2920,10 @@ html.pen-mode .spell-input::placeholder { font-size: 20px; font-weight: 600; }
 .off-box { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; margin: 0 0 12px; border-radius: 14px; background: var(--surface-2); }
 .off-box .btn { margin-top: 6px; }
 .off-box .btn[hidden] { display: none; }
+.store-bar { height: 8px; border-radius: 99px; background: var(--surface); overflow: hidden; margin: 4px 0 2px; }
+.store-bar i { display: block; height: 100%; border-radius: inherit; background: var(--good, #2fa36b); }
+.store-box.warn .store-bar i { background: #e9a23b; }
+.store-box.bad .store-bar i { background: var(--bad, #e05561); }
 
 /* 🪟 room for the iPadOS window buttons (1.149, html.win-gap = applyWinGap()): narrow windows keep their top bar clear of the
    top-left corner; wide ones have the tab rail there (its logo sits under the buttons, nothing to tap) */

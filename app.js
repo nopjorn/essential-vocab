@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.209.1';
+const APP_VERSION = '1.210.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -357,13 +357,52 @@ function flushSave() {
   saveDirty = false;
   if (typeof checkAch === 'function') checkAch(); // may call save() again (new medal): that one flushes in another 300 ms
   if (typeof takeSnap === 'function') takeSnap();
-  try { localStorage.setItem(KEY, JSON.stringify(S)); saveFailed = false; } catch (e) {
+  let json = JSON.stringify(S);
+  // Close to the limit: thin out old statistics first (never progress), so the write below still fits (1.210.0).
+  if (json.length > STORE_LIMIT * STORE_TRIM && storeTrim()) json = JSON.stringify(S);
+  if (!storeWrite(json) && storeTrim()) storeWrite(JSON.stringify(S));
+}
+function storeWrite(json) {
+  try { localStorage.setItem(KEY, json); saveFailed = false; saveLen = json.length; storeCheck(json.length); return true; } catch (e) {
     // Storage full or blocked: tell the person once, otherwise progress silently stops being saved.
     if (!saveFailed && typeof toast === 'function') toast('⚠️ บันทึกข้อมูลลงเครื่องไม่ได้ (พื้นที่เต็มหรือถูกปิดไว้) ลองสำรองข้อมูลไว้ก่อนนะ');
-    saveFailed = true;
+    saveFailed = true; return false;
   }
 }
-let saveFailed = false;
+let saveFailed = false, saveLen = 0;
+/* ---------- storage room (1.210.0) ---------- */
+// Safari gives a site about 5 MB of localStorage, counted as UTF-16 (2 bytes a character): plan on STORE_LIMIT characters.
+// Someone who has learned every word with a year of activity uses about 1 M characters (measured), so this is a safety net.
+const STORE_LIMIT = 2500000, STORE_WARN = 0.7, STORE_TRIM = 0.85, STORE_WARN_DAYS = 7;
+const STORE_KEEP_ACT = 90; // days of S.act whose detail (x: games, hours, events) survives a trim
+function storeUse() { // characters in this site's localStorage (all keys)
+  let n = 0;
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); n += k.length + (localStorage.getItem(k) || '').length; } } catch (e) { /* blocked */ }
+  return n;
+}
+// Drops statistics detail only: S.act x-detail older than STORE_KEEP_ACT days, S.rev beyond half of REV_MAX, S.missY before this year.
+// Card progress, sets, notes and sketches are never touched. Returns true when something was removed.
+function storeTrim() {
+  let cut = false;
+  const old = ymd(new Date(Date.now() - STORE_KEEP_ACT * 864e5));
+  for (const k of Object.keys(S.act || {})) if (k < old && S.act[k] && S.act[k].x) { delete S.act[k].x; cut = true; }
+  if (Array.isArray(S.rev) && S.rev.length > REV_MAX / 2) { S.rev = S.rev.slice(-REV_MAX / 2); cut = true; }
+  const y = String(new Date().getFullYear());
+  for (const k of Object.keys(S.missY || {})) if (k !== y) { delete S.missY[k]; cut = true; }
+  if (cut) { storeTrim.at = Date.now(); if (typeof toast === 'function') toast('🧹 พื้นที่เก็บข้อมูลใกล้เต็ม เลยย่อสถิติเก่าลง (ความคืบหน้าของคำยังอยู่ครบ) แนะนำให้สำรองข้อมูลไว้นะ'); }
+  return cut;
+}
+// Past STORE_WARN of the limit: one toast per STORE_WARN_DAYS days (device-local stamp o3k.storeWarn).
+function storeCheck(len) {
+  if (len < STORE_LIMIT * STORE_WARN * 0.8) return; // cheap exit: the other keys are small
+  const use = storeUse(); if (use < STORE_LIMIT * STORE_WARN) return;
+  try {
+    const last = +localStorage.getItem('o3k.storeWarn') || 0;
+    if (Date.now() - last < STORE_WARN_DAYS * 864e5) return;
+    localStorage.setItem('o3k.storeWarn', String(Date.now()));
+  } catch (e) { return; }
+  if (typeof toast === 'function') toast(`💾 ใช้พื้นที่เก็บข้อมูลในเครื่องไปแล้ว ${Math.round(use / STORE_LIMIT * 100)}% แนะนำให้สำรองข้อมูลไว้ (ตั้งค่า → 💾 สำรองข้อมูล)`);
+}
 document.addEventListener('visibilitychange', () => { if (document.hidden) flushSave(); });
 addEventListener('pagehide', flushSave);
 

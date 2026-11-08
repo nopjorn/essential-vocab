@@ -62,3 +62,8 @@ Full notes on stored fields, sync/merge and scheduling. CLAUDE.md keeps only the
   start/visibility. Email OTP code login (`create_user:false` = invite-only). `requireLogin` locks the UI.
   Tests: `fakeSupabase(page, store)` in `tests/helpers.js` mocks the `progress` table with `page.route` (see `tests/decks.spec.js`; before 1.54 there were no sync tests).
 - Streak freezes: +1 per 7-day streak, max 2, auto-used for missed days.
+
+## Storage room (1.210.0, app.js after `flushSave`)
+- `flushSave()` → `storeWrite(json)`; `STORE_LIMIT` 2.5 M characters (Safari ≈ 5 MB of UTF-16). Above `STORE_TRIM` (85 %), or when the write throws, `storeTrim()` drops statistics detail only (`S.act[day].x` older than `STORE_KEEP_ACT` 90 days, `S.rev` to `REV_MAX / 2`, `S.missY` years before this one; `storeTrim.at` for tests) and the write is retried once.
+- `storeCheck(len)` after a good write: past `STORE_WARN` (70 %) of `storeUse()` (all keys) → one toast per `STORE_WARN_DAYS` (localStorage `o3k.storeWarn`).
+- Settings backup group: `storeBox()` (`#storeBox` `.ok/.warn/.bad`, `#storeUse`, `.store-bar`, size of the `.rescue` copy). Measured: every word learned + a year of activity ≈ 1 M characters. Test `tests/storage.spec.js`.
