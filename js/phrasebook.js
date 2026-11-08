@@ -35,6 +35,14 @@ const PB = {
     cats: { food: ['🍜', 'อาหารและการสั่ง'], temple: ['🛕', 'วัดและศาสนา'], fest: ['🎉', 'เทศกาล'], custom: ['🙏', 'ธรรมเนียมไทย'], daily: ['🛵', 'ชีวิตประจำวัน'], place: ['🏝️', 'สถานที่เที่ยว'] },
     same: [['shrine', 'spirit house', 'offering'], ['make merit', 'give alms', 'offering'], ['take off your shoes', 'don\'t touch the head'], ['not spicy', 'less sweet'], ['mango sticky rice', 'sticky rice'], ['countryside', 'rice field']],
   },
+  doctor: {
+    file: 'data/doctor.js', key: 'DOCTOR', icon: '🩺', title: 'คุยกับหมอ / ร้านยา', modes: ['en', 'th'], sayEn: true,
+    intro: 'ประโยคที่ใช้ตอนไม่สบาย: บอกอาการ ติดต่อโรงพยาบาล ฟังหมอ ซื้อยา และเหตุฉุกเฉิน · มีบทสนทนาตัวอย่างและ 💡 คำที่ใช้ต่อได้ · ศัพท์โรคและยาอยู่ในชุดคำ 🩺 สุขภาพ · แตะเพื่อฟัง',
+    ask: { en: 'ประโยคนี้หมายความว่าอะไร', th: 'จะพูดกับหมอ / เภสัชกรว่าอะไร' },
+    cats: { symptom: ['🤒', 'บอกอาการ'], clinic: ['🏥', 'ที่โรงพยาบาล / คลินิก'], doctor: ['👩‍⚕️', 'หมอพูด / ถาม'], pharmacy: ['💊', 'ร้านยา'], emergency: ['🚑', 'ฉุกเฉิน'], health: ['🥗', 'สุขภาพทั่วไป'] },
+    same: [['I feel sick.', 'I threw up twice.'], ['I\'m trying to lose weight.', 'I\'m on a diet.'], ['I\'m feeling much better.', 'Get well soon!'], ['It\'s an emergency.', 'Call an ambulance!'],
+      ['Can I see a doctor today?', 'I\'d like to make an appointment.'], ['How often should I take it?', 'Take one tablet three times a day.'], ['He can\'t breathe.', 'Take a deep breath.']],
+  },
 };
 const PB_DATA = {};
 const loadBook = (id) => loadData(PB[id].file, PB[id].key).then((rows) => {
