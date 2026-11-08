@@ -241,22 +241,25 @@ function addDeck(name, icon, words, own) {
 }
 
 /* ---------- add words from anywhere + share a set (1.123) ---------- */
-// Adds list words to a set; returns how many were new.
-function addToDeck(d, words) {
-  const before = new Set(d.words.map((x) => x.toLowerCase()));
+// Adds list words (and, 1.202.0, words of my own {w, t, e, et} such as a collocation) to a set; returns how many were new.
+function addToDeck(d, words, own = []) {
+  const before = new Set([...d.words, ...(d.own || []).map((o) => o.w)].map((x) => x.toLowerCase()));
   const add = words.filter((x) => !before.has(x.toLowerCase()));
-  d.words = [...d.words, ...add].slice(0, DECK_MAX.words);
+  let room = DECK_MAX.words - before.size, n = 0;
+  if (add.length && room > 0) { const take = add.slice(0, room); d.words = [...d.words, ...take]; n += take.length; room -= take.length; }
+  const addOwn = own.filter((o) => !before.has(o.w.toLowerCase())).slice(0, Math.max(0, Math.min(room, DECK_MAX.own - (d.own || []).length)));
+  if (addOwn.length) { d.own = [...(d.own || []), ...addOwn.map((o) => ({ w: o.w, t: o.t, e: o.e || '', et: o.et || '' }))]; n += addOwn.length; }
   touchDeck(d);
-  return Math.min(add.length, DECK_MAX.words - before.size);
+  return n;
 }
 // A small sheet listing the sets (+ a new one) to put `words` into (word sheet, wrong answers of a game).
-function pickDeck(words) {
-  const ds = liveDecks();
+function pickDeck(words, own = []) {
+  const ds = liveDecks(), all = [...words, ...own.map((o) => o.w)], inDeck = (d, x) => d.words.some((y) => y.toLowerCase() === x.toLowerCase()) || (d.own || []).some((o) => o.w.toLowerCase() === x.toLowerCase());
   const el = document.createElement('div');
   el.className = 'sheet-wrap';
   el.innerHTML = `<div class="sheet" role="dialog" aria-label="ใส่คำเข้าชุด"><div class="grab"></div><div class="sheet-body">
-    <b>📚 ใส่ ${words.length === 1 ? `“${esc(words[0])}”` : words.length + ' คำ'} เข้าชุด</b>
-    <div class="pick-decks">${ds.map((d) => { const has = words.every((x) => d.words.some((y) => y.toLowerCase() === x.toLowerCase())); return `<button class="wrow pick-deck" data-pd="${d.id}" ${has ? 'disabled' : ''}><span class="dk-ic">${esc(d.icon)}</span><span class="grow">${esc(d.name || 'ชุดไม่มีชื่อ')}</span><span class="small muted">${has ? '✓ มีแล้ว' : d.words.length + ' คำ'}</span></button>`; }).join('')}
+    <b>📚 ใส่ ${all.length === 1 ? `“${esc(all[0])}”` : all.length + ' คำ'} เข้าชุด</b>
+    <div class="pick-decks">${ds.map((d) => { const has = all.every((x) => inDeck(d, x)); return `<button class="wrow pick-deck" data-pd="${d.id}" ${has ? 'disabled' : ''}><span class="dk-ic">${esc(d.icon)}</span><span class="grow">${esc(d.name || 'ชุดไม่มีชื่อ')}</span><span class="small muted">${has ? '✓ มีแล้ว' : d.words.length + ' คำ'}</span></button>`; }).join('')}
       <button class="wrow pick-deck" data-pd="new"><span class="dk-ic">＋</span><span class="grow">สร้างชุดใหม่</span></button></div></div></div>`;
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('open'));
@@ -268,7 +271,7 @@ function pickDeck(words) {
     if (b.dataset.pd === 'new') { d = addDeck(`ชุดใหม่ ${thDate(Date.now())}`, '📚', []); if (!d) return close(); }
     else d = deckById(b.dataset.pd);
     if (!d) return close();
-    const n = addToDeck(d, words);
+    const n = addToDeck(d, words, own);
     close(); toast(n ? `📚 ใส่ ${n} คำเข้าชุด “${d.name}” แล้ว` : 'คำนี้อยู่ในชุดแล้ว');
   };
   return el;

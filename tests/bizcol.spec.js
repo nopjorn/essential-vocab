@@ -60,3 +60,42 @@ test('word sheet (1.201.0): business collocations and work phrases that use the 
   expect(await page.evaluate(() => [bizcolOf('the').length, workPhrOf('you').length])).toEqual([0, 0]);
   expect(errors).toEqual([]);
 });
+
+test('keep collocations in ชุดของฉัน (1.202.0): ＋ on the page, all shown, word sheet and the game reveal', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.evaluate(() => go('ref'));
+  await page.locator('#toBc').click();
+  await page.locator('#bcList [data-add]').first().click();
+  await page.locator('.sheet-wrap.open [data-pd="new"]').click();
+  let st = await readState(page);
+  expect(st.decks).toHaveLength(1);
+  expect(st.decks[0].own[0]).toMatchObject({ w: 'meet a deadline', t: 'ทันกำหนดส่ง' });
+  expect(st.decks[0].own[0].e).toContain('meet the deadline');
+  // the whole "preposition" group into the same set; the one already there is not doubled
+  await page.locator('#bcGrps [data-g="p"]').click();
+  await page.locator('#bcAll').click();
+  const id = st.decks[0].id;
+  await page.locator(`.sheet-wrap.open [data-pd="${id}"]`).click();
+  st = await readState(page);
+  const n = await page.evaluate(() => BIZCOL.filter((r) => r.g === 'p').length);
+  expect(st.decks[0].own).toHaveLength(1 + n);
+  // set already has them all → disabled
+  await page.locator('#bcAll').click();
+  await expect(page.locator(`.sheet-wrap.open [data-pd="${id}"]`)).toBeDisabled();
+  await page.evaluate(() => document.querySelectorAll('.sheet-wrap').forEach((x) => x.remove()));
+  // studying the set shows the collocation as a card
+  await page.evaluate((id) => go('decks', id), id);
+  await expect(page.locator('#dkList')).toContainText('meet a deadline');
+  // word sheet ＋
+  await page.evaluate(() => openSheet(WORD_BY.order));
+  await page.locator('#bcBox [data-add]').first().click();
+  await expect(page.locator('.sheet-wrap.open .pick-decks')).toBeVisible();
+  await page.evaluate(() => document.querySelectorAll('.sheet-wrap').forEach((x) => x.remove()));
+  // game reveal
+  await page.evaluate(() => startGame('bizcol'));
+  const r = await page.evaluate(() => playQuiz.cur._bc);
+  await page.locator(`.opt[data-o="${r.ans}"]`).click();
+  await page.locator('#bcKeep').click();
+  await expect(page.locator('.sheet-wrap.open')).toContainText(r.plain);
+  expect(errors).toEqual([]);
+});

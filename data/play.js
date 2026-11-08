@@ -1159,9 +1159,10 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       mark(w, ok);
       $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ที่ถูกคือ'} <b lang="en">${esc(r.ans)}</b>
         <div class="example"><div class="en" lang="en">${esc(r.sent).replace('___', `<mark>${esc(r.ans)}</mark>`)} <button class="say-ex" data-sayex aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(r.sth)}</div>
-          <div class="thx bc-col">🤝 <b lang="en">${bcHTML(r)}</b> = ${esc(r.th)}</div></div>
+          <div class="thx bc-col">🤝 <b lang="en">${bcHTML(r)}</b> = ${esc(r.th)} <button class="hint-btn" id="bcKeep">📚 เก็บเข้าชุด</button></div></div>
         <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
       view.querySelector('[data-sayex]').onclick = () => speak(r.full);
+      $('#bcKeep').onclick = () => bcKeep([r]);
       $('#nextQ').onclick = next;
       speak(r.full);
     };

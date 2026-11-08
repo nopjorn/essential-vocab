@@ -504,6 +504,11 @@ body { touch-action: manipulation; }
 .tip-box { margin-top: 10px; background: color-mix(in srgb, var(--warn) 22%, var(--surface)); border-radius: 14px; padding: 10px 12px; text-align: left; font-size: var(--fs-sm); line-height: 1.5; }
 .pair-h { font-size: 20px; }
 .pair-ex { display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left; border: 0; border-top: 1px solid var(--border); background: none; color: inherit; font: inherit; padding: 10px 2px; margin-top: 8px; cursor: pointer; }
+.bc-item { position: relative; }
+.bc-item .pair-ex { padding-right: 46px; }
+.bc-item .col-row { padding-right: 48px; }
+.bc-add { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--primary-ink, var(--text)); font: inherit; font-size: 20px; font-weight: 700; cursor: pointer; }
+.bc-item .pair-ex + .bc-add { top: calc(50% + 4px); }
 .pair-ex mark { background: none; color: var(--pink-ink); font-weight: 800; }
 /* sticker book */
 .stk-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }

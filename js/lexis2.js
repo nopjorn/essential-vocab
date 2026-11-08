@@ -133,6 +133,9 @@ const loadBizCol = () => loadData('data/bizcol.js', 'BIZCOL').then((rows) => {
   return BIZCOL || [];
 });
 const bcHTML = (r) => esc(r.col).replace(/\[([^\]]+)\]/, '<mark>$1</mark>');
+// A collocation as a word of my own for ชุดของฉัน (1.202.0): front = the collocation, back = Thai + the sentence.
+const bcOwn = (r) => ({ w: r.plain, t: r.th, e: r.full, et: r.sth });
+const bcKeep = (rows) => pickDeck([], rows.map(bcOwn));
 const bcItems = () => BIZCOL.map((r) => ({ idx: -1, w: r.plain, t: r.th, p: '', g: '', _bc: r, _q: [r.sent, r.ans, '', r.sth] }));
 let bcGrp = 'all';
 function renderBizCol() {
@@ -143,17 +146,20 @@ function renderBizCol() {
   view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="bcBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="bcPlay">🤝 เล่นเกม</button></div>
     <p class="small muted" style="margin:0 4px 10px">${BIZCOL.length} คู่คำที่ใช้คู่กันในงานธุรกิจ เช่น meet a deadline (ไม่ใช่ make a deadline) · ข้อสอบ TOEIC Part 5/6 ชอบถาม · แตะเพื่อฟังประโยค</p>
     <div class="chips scroll" id="bcGrps"><button class="chip" data-g="all">ทั้งหมด</button>${gs.map((g) => `<button class="chip" data-g="${g}">${BC_GROUP[g][0]} ${BC_GROUP[g][1]}</button>`).join('')}</div>
-    <div class="pair-list" id="bcList"></div>`;
+    <div class="pair-list" id="bcList"></div>
+    <button class="btn block" id="bcAll" style="margin-top:10px">📚 เก็บคู่คำที่แสดงทั้งหมดเข้าชุดของฉัน</button>
+    <p class="small muted" style="margin:8px 4px">กด ＋ ที่คู่คำเพื่อเก็บเข้าชุดของฉัน แล้วท่องเป็นแฟลชการ์ดได้ (ด้านหน้าเป็นคู่คำ ด้านหลังเป็นคำแปลและประโยค)</p>`;
   const paint = () => {
     view.querySelectorAll('#bcGrps .chip').forEach((c) => { const on = c.dataset.g === bcGrp; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
     $('#bcList').innerHTML = gs.filter((g) => bcGrp === 'all' || g === bcGrp).map((g) => `<div class="card-box pair-card"><div class="pair-h"><b>${BC_GROUP[g][0]} ${BC_GROUP[g][1]}</b> <span class="small muted">${BIZCOL.filter((r) => r.g === g).length} คู่</span></div>
-      ${BIZCOL.filter((r) => r.g === g).map((r) => `<button class="pair-ex" data-say="${esc(r.full)}"><span><b lang="en">${bcHTML(r)}</b> = ${esc(r.th)}</span><span lang="en">${esc(r.full)}</span><small class="muted">${esc(r.sth)} · ✗ ${r.wrong.map(esc).join(', ')}</small></button>`).join('')}</div>`).join('');
+      ${BIZCOL.filter((r) => r.g === g).map((r) => `<div class="bc-item"><button class="pair-ex" data-say="${esc(r.full)}"><span><b lang="en">${bcHTML(r)}</b> = ${esc(r.th)}</span><span lang="en">${esc(r.full)}</span><small class="muted">${esc(r.sth)} · ✗ ${r.wrong.map(esc).join(', ')}</small></button><button class="bc-add" data-add="${BIZCOL.indexOf(r)}" aria-label="เก็บ ${esc(r.plain)} เข้าชุดของฉัน">＋</button></div>`).join('')}</div>`).join('');
   };
   paint();
   $('#bcGrps').onclick = (e) => { const c = e.target.closest('[data-g]'); if (c) { bcGrp = c.dataset.g; paint(); } };
   $('#bcBack').onclick = () => go('ref');
   $('#bcPlay').onclick = () => startGame('bizcol');
-  $('#bcList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
+  $('#bcList').onclick = (e) => { const a = e.target.closest('[data-add]'); if (a) { bcKeep([BIZCOL[+a.dataset.add]]); return; } const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
+  $('#bcAll').onclick = () => bcKeep(BIZCOL.filter((r) => bcGrp === 'all' || r.g === bcGrp));
 }
 
 /* ---------- real-life texts (1.113) ---------- */
@@ -304,15 +310,15 @@ function lxIndex(rows, text) {
 let BC_OF = null, WP_OF = null;
 const bizcolOf = (word) => { if (!BIZCOL) return []; if (!BC_OF) BC_OF = lxIndex(BIZCOL, (r) => r.plain); return BC_OF.get(word.toLowerCase()) || []; };
 const workPhrOf = (word) => { if (!WORKPHR) return []; if (!WP_OF) WP_OF = lxIndex(WORKPHR, (r) => r.key); return WP_OF.get(word.toLowerCase()) || []; };
-const bcRow = (r) => `<button class="col-row bc-row" data-say="${esc(r.full)}"><b lang="en">${bcHTML(r)}</b><span>${esc(r.th)}</span></button>`;
+const bcRow = (r) => `<div class="bc-item"><button class="col-row bc-row" data-say="${esc(r.full)}"><b lang="en">${bcHTML(r)}</b><span>${esc(r.th)}</span></button><button class="bc-add" data-add="${BIZCOL.indexOf(r)}" aria-label="เก็บ ${esc(r.plain)} เข้าชุดของฉัน">＋</button></div>`;
 const wpRow = (r) => `<button class="col-row" data-say="${esc(r.plain)}"><b lang="en" style="font-weight:500">${wpHTML(r)}</b><span>${esc(r.th)}</span></button>`;
 
 function lexis2Boxes(el, w) {
   loadBizCol().then(() => {
     const box = el.querySelector('#bcBox'), list = bizcolOf(w.w);
     if (box && list.length) {
-      box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🤝 คำคู่ธุรกิจ</b> (แตะเพื่อฟังประโยค)</div>${list.slice(0, 6).map(bcRow).join('')}`;
-      box.onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
+      box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>🤝 คำคู่ธุรกิจ</b> (แตะเพื่อฟังประโยค · ＋ เก็บเข้าชุด)</div>${list.slice(0, 6).map(bcRow).join('')}`;
+      box.onclick = (e) => { const a = e.target.closest('[data-add]'); if (a) { bcKeep([BIZCOL[+a.dataset.add]]); return; } const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); };
     }
   });
   loadWorkPhr().then(() => {
