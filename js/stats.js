@@ -224,7 +224,7 @@ view.addEventListener('click', (e) => {
   const box = $('#fskBox'); if (box) box.outerHTML = fskBox();
 });
 
-function renderStats(from) {
+function renderStats() {
   takeSnap();
   const h = habits();
   const { rate, measured } = learnRate(h);
@@ -272,7 +272,6 @@ function renderStats(from) {
     + (lvRest.length ? `<details class="lv-more"><summary>ระดับอื่นที่ยังไม่ได้เริ่ม (${lvRest.map((l) => LV_LABEL[l]).join(' · ')})</summary>${lvRest.map(lvRow).join('')}</details>` : '');
 
   view.innerHTML = `
-    <div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="sBack">‹ กลับ</button></div>
     ${starterCard()}
     ${statNav()}
     ${statSum(snap, rate, h)}
@@ -346,7 +345,6 @@ function renderStats(from) {
   { const wk = $('#weak'); if (wk) wk.onclick = (e) => { const b = e.target.closest('[data-weak]'); if (b) weakGo(b.dataset.weak); }; }
   countUp(view.querySelectorAll('.tile-s b'));
   view.querySelectorAll('[data-lt]').forEach((b) => { b.onclick = () => go('ltest', b.dataset.lt); });
-  $('#sBack').onclick = () => go(from || 'home');
   startLazy({
     heat: [yearHeatmap, bindHeatmap],
     trend: [(el) => { el.dataset.w = hostW(el); return trendChart(+el.dataset.w); }, bindTrend],
