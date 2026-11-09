@@ -71,6 +71,26 @@ function pbEarItems() {
   pbEarOnly = null;
   return ids.filter((id) => PB_DATA[id]).flatMap((id) => pbItems(id).map((w) => ({ ...w, _ear: true })));
 }
+// Word sheet box (1.221.0): phrases of the spoken books (ear) whose English uses this word in any form (lxIndex in js/lexis2.js).
+let PB_OF = null;
+function phrasesOf(word) {
+  if (!PB_OF) {
+    const rows = pbEarIds().flatMap((id) => (PB_DATA[id] || []).map((r) => ({ r, id })));
+    PB_OF = lxIndex(rows, (x) => x.r.en);
+  }
+  return PB_OF.get(word.toLowerCase()) || [];
+}
+function pbBox(el, w) {
+  pbEarLoad().then(() => {
+    const box = el.querySelector('#pbBox'), list = phrasesOf(w.w);
+    if (!box || !list.length) return;
+    box.innerHTML = `<div class="small muted" style="margin:12px 0 6px"><b>📚 ใช้ในวลี</b> (แตะเพื่อฟัง · ＋ เก็บเข้าชุด)</div>${list.slice(0, 5).map(({ r, id }) => `<div class="bc-item"><button class="col-row" data-say="${esc(r.en)}"><b lang="en" style="font-weight:500">${PB[id].icon} ${esc(r.en)}</b><span>${esc(r.th)}</span></button><button class="bc-add" data-pb="${id}" data-pi="${PB_DATA[id].indexOf(r)}" aria-label="เก็บ ${esc(r.en)} เข้าชุดของฉัน">＋</button></div>`).join('')}`;
+    box.onclick = (e) => {
+      const a = e.target.closest('[data-pb]'); if (a) { pickDeck([], [pbOwn(PB_DATA[a.dataset.pb][+a.dataset.pi], a.dataset.pb)]); return; }
+      const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say);
+    };
+  }).catch(() => {});
+}
 const pbOwn = (r, id) => ({ w: r.en, t: PB[id].noteEn && r.note ? `${r.th} (${r.note})` : r.th, e: r.ex, et: r.exTh });
 // the note: English beside the phrase (noteEn) or a 💡 Thai tip line
 const pbNoteIn = (r, id) => (PB[id].noteEn && r.note ? ` <span class="small muted" lang="en">${esc(r.note)}</span>` : '');

@@ -84,3 +84,20 @@ test('pbear (1.220): hear a phrase from the listening books, pick the Thai; a bo
   expect(await page.evaluate(() => playQuiz.cur._book)).toBe('doctor');
   expect(errors).toEqual([]);
 });
+
+test('word sheet (1.221): a 📚 box lists phrases from the spoken books that use the word, speaks and keeps one', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.evaluate(() => openSheet(WORD_BY.throat)); // "I have a sore throat." in the doctor book
+  const box = page.locator('#pbBox');
+  await expect(box).toContainText('I have a sore throat.');
+  await box.locator('[data-say]').first().click();
+  await expect.poll(() => page.evaluate(() => window.__said.at(-1))).toMatch(/throat/i);
+  await box.locator('[data-pb]').first().click();
+  await page.locator('.sheet-wrap.open [data-pd="new"]').click();
+  await expect.poll(() => page.evaluate(() => (S.decks.at(-1).own || []).map((o) => o.w))).toContain('I have a sore throat.');
+  // a word with no phrase leaves the box empty
+  await page.evaluate(() => { document.querySelectorAll('.sheet-wrap').forEach((s) => s.remove()); openSheet(WORD_BY.algebra || W.find((w) => w.w === 'zebra') || W[0]); });
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => ['algebra', 'zebra'].some((x) => phrasesOf(x).length))).toBe(false);
+  expect(errors).toEqual([]);
+});

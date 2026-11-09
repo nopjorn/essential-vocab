@@ -349,6 +349,7 @@ const bcRow = (r) => `<div class="bc-item"><button class="col-row bc-row" data-s
 const wpRow = (r) => `<button class="col-row" data-say="${esc(r.plain)}"><b lang="en" style="font-weight:500">${wpHTML(r)}</b><span>${esc(r.th)}</span></button>`;
 
 function lexis2Boxes(el, w) {
+  if (typeof pbBox === 'function') pbBox(el, w); // phrase books (js/phrasebook.js, 1.221.0)
   loadBizCol().then(() => {
     const box = el.querySelector('#bcBox'), list = bizcolOf(w.w);
     if (box && list.length) {
