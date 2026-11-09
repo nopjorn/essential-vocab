@@ -1995,7 +1995,7 @@ test('1.130: every topic has a drawn icon (sticker book, map), soft background s
 });
 
 test('iPad look 1.132: every sidebar item has a drawn icon, feed splits prompt | answers in landscape', async ({ page }) => {
-  await page.setViewportSize({ width: 1180, height: 820 });
+  await page.setViewportSize({ width: 1376, height: 1032 }); // 1.217.0: on an 11" iPad the card stacks them beside the round panel (feed-side.spec.js)
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   // every rail button (main tabs, ฝึกต่อ, คลังความรู้, คู่มือ) uses the same line-icon set; search still gets an emoji from data-ic
   const plain = await page.evaluate(() => [...document.querySelectorAll('#tabbar button:not(.tab-h)')].filter((b) => !b.querySelector('.ti-svg > svg.tic') || !b.querySelector('.ti-svg').dataset.ic).map((b) => b.textContent.trim()));

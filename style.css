@@ -2597,6 +2597,30 @@ html[data-theme="dark"]:not(.no-pbg) body, html[data-theme="black"]:not(.no-pbg)
   .f-body .options.tf { flex-direction: column; }
 }
 
+/* ---------- 1.217.0: feed (ไถศัพท์) on the iPad in landscape — this round's numbers in a panel beside the cards ---------- */
+@media (min-width: 1100px) and (min-height: 700px) and (orientation: landscape) {
+  .topbar:has(~ .view.feed-mode > #fSide) { --maxw: 1280px; }
+  .view.feed-mode:has(> #fSide) { --maxw: 1280px; display: grid; grid-template-columns: minmax(0, 1fr) 260px; grid-template-rows: auto minmax(0, 1fr); column-gap: 20px; }
+  .view.feed-mode > .feed-hud { grid-column: 1; grid-row: 1; }
+  .view.feed-mode > .feed { grid-column: 1; grid-row: 2; }
+  .view.feed-mode > .fs-panel { display: block; grid-column: 2; grid-row: 2; align-self: start; max-height: calc(100% - 28px); overflow-y: auto; margin: 10px 0 18px; background: var(--surface); border-radius: 22px; box-shadow: var(--shadow); padding: 14px 16px 16px; }
+  .fs-panel .ss-grid b { font-size: 20px; }
+  .fs-panel .ss-big b { font-size: 40px; }
+  .fs-panel .fs-bad { color: var(--bad-ink); }
+  .fs-dots { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+  .fs-dots i { display: block; aspect-ratio: 1; border-radius: 50%; }
+  .fs-dots i.ok { background: var(--good); }
+  .fs-dots i.bad { background: var(--bad); }
+  .fs-miss { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fs-miss .chip { min-height: 36px; padding: 4px 12px; }
+}
+/* narrower landscape (11" iPad): the card is too narrow for prompt | answers beside the panel, so it stacks them again */
+@media (min-width: 1100px) and (max-width: 1299.98px) and (min-height: 700px) and (orientation: landscape) {
+  .feed-mode:has(> #fSide) .f-body:has(> .options) { display: block; max-width: 620px; }
+  .feed-mode:has(> #fSide) .f-body:has(> .options) > .options { margin-top: 26px; }
+  .feed-mode:has(> #fSide) .f-in { padding-right: 96px; }
+}
+
 /* ---------- 1.133: iPad sidebar — foldable groups; portrait = a narrow rail (icon + small label under it) ---------- */
 .tab-grp { display: flex; flex-direction: column; gap: 2px; }
 .tabbar .tab-h.tab-h { flex: none; min-height: 32px; flex-direction: row; justify-content: space-between; align-items: center; gap: 6px; width: auto; margin: 8px 0 2px; padding: 4px 14px; border-radius: 10px; font-size: var(--fs-xs); font-weight: 700; color: var(--muted); background: none; cursor: pointer; }
