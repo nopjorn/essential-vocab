@@ -2155,3 +2155,33 @@ test('voice picker (1.221): automatic voice prefers Premium/Enhanced of the acce
   expect(await page.evaluate(() => window.__voice)).toEqual(['Fred']);
   expect(errors).toEqual([]);
 });
+
+test('error log (1.224): uncaught errors and rejections are kept on the device, counted, reported and cleared in settings', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  await page.evaluate(() => {
+    for (let i = 0; i < 2; i++) setTimeout(() => { throw new Error('boom test'); }, 0);
+    Promise.reject(new Error('lost promise'));
+  });
+  await page.waitForFunction(() => errLog.read().length === 2);
+  const log = await page.evaluate(() => errLog.read());
+  const boom = log.find((e) => e.m.includes('boom test'));
+  expect(boom.n).toBe(2); expect(boom.v).toBe(await page.evaluate(() => APP_VERSION));
+  expect(log.some((e) => e.m === 'Promise: lost promise')).toBe(true);
+  // a failed image load is not a script error
+  await page.evaluate(() => { const i = new Image(); i.src = 'nope.png'; document.body.appendChild(i); });
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => errLog.read().length)).toBe(2);
+  // not part of the backup
+  expect(await page.evaluate(() => JSON.stringify(S).includes('boom test'))).toBe(false);
+  // settings box: count, copy a report, clear
+  await page.evaluate(() => { window.__clip = ''; navigator.clipboard.writeText = (t) => { window.__clip = t; return Promise.resolve(); }; go('settings'); document.querySelector('details[data-g="backup"]').open = true; });
+  await expect(page.locator('#errN')).toContainText('เจอ 3 ครั้ง (2 แบบ)');
+  await page.click('#errCopy');
+  const clip = await page.evaluate(() => window.__clip);
+  expect(clip).toContain('boom test'); expect(clip).toContain('lost promise'); expect(clip).toContain(await page.evaluate(() => APP_VERSION));
+  await page.click('#errClear');
+  await expect(page.locator('#errN')).toContainText('ยังไม่เจอ');
+  await expect(page.locator('#errCopy')).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('o3k.errs'))).toBeNull();
+  expect(errors.filter((e) => !/boom test|lost promise/.test(e))).toEqual([]);
+});

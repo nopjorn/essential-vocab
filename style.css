@@ -371,6 +371,7 @@ html.no-ans .ring-burst { display: none; } html.no-ans .hero.ring-party .ring { 
 /* settings */
 .set-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; }
 .set-row + .set-row { border-top: 1px solid var(--border); }
+.err-box { margin-top: 16px; }
 .voice-tip { margin: 0 0 8px; padding: 8px 10px; border-radius: 12px; background: var(--surface-2); }
 .voice-tip ol { margin: 6px 0 0; padding-left: 20px; }
 .voice-tip li { margin: 3px 0; }

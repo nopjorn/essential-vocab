@@ -194,7 +194,7 @@ function renderSettings() {
       : '<p class="small muted" style="margin-top:0">เข้าสู่ระบบด้วยอีเมลที่ได้รับเชิญ แล้วความคืบหน้าจะซิงก์ขึ้นคลาวด์อัตโนมัติ ใช้ได้หลายเครื่อง</p><button class="btn primary block" id="login">เข้าสู่ระบบ</button>'}
     </div></details>` : ''}
 
-    <details class="set-group" data-g="backup" ${setIsOpen('backup')}><summary data-k="backup export import offline สำรอง ส่งออก นำเข้า ออฟไลน์ csv anki">💾 สำรองข้อมูล</summary><div class="card-box">
+    <details class="set-group" data-g="backup" ${setIsOpen('backup')}><summary data-k="backup export import offline สำรอง ส่งออก นำเข้า ออฟไลน์ csv anki bug error ปัญหา ข้อผิดพลาด รายงาน">💾 สำรองข้อมูล</summary><div class="card-box">
       <p class="small muted" style="margin-top:0">${syncOn() && auth
         ? '☁️ ความคืบหน้าซิงก์ขึ้นคลาวด์อัตโนมัติแล้ว ลบแอปหรือเปลี่ยนเครื่องก็ไม่หาย จะส่งออกเป็นไฟล์เก็บไว้อีกชั้นก็ได้'
         : `ความคืบหน้าเก็บไว้ในเครื่องนี้เท่านั้น ถ้าลบไอคอนแอปออกจากหน้าจอโฮม ข้อมูลจะหายด้วย แนะนำให้สำรองเก็บไว้ใน iCloud Drive (แอปจะเตือนทุก ${BACKUP_EVERY} วัน)`}</p>
@@ -209,6 +209,7 @@ function renderSettings() {
       <select class="sel block-sel" id="xpWhich" aria-label="คำที่จะส่งออก">${Object.entries(EXPORT_SETS).map(([k, [name, f]]) => `<option value="${k}">${name} (${W.filter(f).length})</option>`).join('')}</select>
       <div class="row" style="margin-top:8px"><button class="btn grow" id="xpCsv">📄 CSV</button><button class="btn grow" id="xpAnki">🃏 Anki</button></div>
       <button class="btn block" id="toPrint" style="margin-top:8px">🖨️ ทำใบงานพิมพ์ / PDF</button>
+      ${errBox()}
     </div></details>
 
     <button class="card-box guide-link" id="guideBtn" style="margin-top:24px"><span>📘</span><div class="grow"><b>คู่มือการใช้งาน & ทริก</b><div class="small muted">วิธีใช้ทุกส่วนของแอป และวิธีจำศัพท์ให้ได้ผลที่สุด</div></div><span class="muted">›</span></button>
@@ -358,6 +359,7 @@ function renderSettings() {
   };
   $('#exp').onclick = async () => { await exportBackup(); renderSettings(); };
   $('#toPrint').onclick = () => go('print', null, 'settings');
+  bindErrBox();
   $('#xpCsv').onclick = () => exportWords($('#xpWhich').value, 'csv');
   $('#xpAnki').onclick = () => exportWords($('#xpWhich').value, 'anki');
   if (navigator.storage && navigator.storage.persisted) {
@@ -586,6 +588,37 @@ function storeBox() {
     <div class="small" id="storeUse">ใช้ไป ${pct}% ของพื้นที่ที่ Safari ให้ (${mbText(use)} จากราว ${mbText(STORE_LIMIT)})</div>
     <div class="store-bar" role="progressbar" aria-label="พื้นที่เก็บความคืบหน้า" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${Math.max(pct, 1)}%"></i></div>
     <div class="small muted">${lvl === 'ok' ? 'ยังเหลืออีกเยอะ ไม่ต้องทำอะไร' : 'ใกล้เต็มแล้ว แอปจะย่อสถิติเก่าให้เองเมื่อจำเป็น (ความคืบหน้าของคำไม่หาย) แนะนำให้สำรองข้อมูลไว้'}${rescue ? ` · มีสำเนากู้คืนข้อมูลเก่าอยู่ ${mbText(rescue)}` : ''}</div></div>`;
+}
+// 🐞 error log (1.224.0): what js/errlog.js caught on this device, copy/share as a report or clear it.
+function errBox() {
+  const a = window.errLog ? errLog.read() : [], n = a.reduce((s, e) => s + (e.n || 1), 0);
+  const last = a.length ? new Date(a[a.length - 1].t).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+  return `<div class="off-box err-box" id="errBox"><b>🐞 บันทึกข้อผิดพลาด</b>
+    <div class="small" id="errN">${a.length ? `เจอ ${n} ครั้ง (${a.length} แบบ) ล่าสุด ${last}` : 'ยังไม่เจอข้อผิดพลาดในเครื่องนี้ 🎉'}</div>
+    <div class="small muted">ถ้าแอปทำงานแปลกๆ ส่งรายงานนี้ให้ผู้พัฒนาได้ (มีแค่ข้อความ error รุ่นแอปและรุ่นเครื่อง ไม่มีข้อมูลการเรียน)</div>
+    ${a.length ? `<div class="row" style="margin-top:8px"><button class="btn grow" id="errCopy">📋 คัดลอกรายงาน</button><button class="btn grow" id="errClear">🗑️ ล้าง</button></div>` : ''}</div>`;
+}
+function errReport() {
+  const a = window.errLog ? errLog.read() : [];
+  const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  const head = [`ศัพท์ต้องรู้ ${APP_VERSION} · ${new Date().toISOString()}`, navigator.userAgent,
+    `จอ ${screen.width}×${screen.height} หน้าต่าง ${innerWidth}×${innerHeight} @${devicePixelRatio}x · ${standalone ? 'แอปหน้าจอโฮม' : 'เบราว์เซอร์'} · ${navigator.onLine ? 'ออนไลน์' : 'ออฟไลน์'}`];
+  const rows = a.slice().reverse().map((e, i) => `#${i + 1} ×${e.n || 1} ${new Date(e.t).toISOString()} v${e.v || '?'} [${e.r || '-'}]\n${e.m}${e.s ? `\n@ ${e.s}` : ''}${e.k ? `\n${e.k}` : ''}`);
+  return head.concat('', rows).join('\n');
+}
+function bindErrBox() {
+  const copy = document.getElementById('errCopy'), clear = document.getElementById('errClear');
+  if (copy) copy.onclick = async () => {
+    const text = errReport();
+    try { await navigator.clipboard.writeText(text); toast('📋 คัดลอกรายงานแล้ว นำไปวางส่งให้ผู้พัฒนาได้เลย'); } catch (e) {
+      if (navigator.share) navigator.share({ text }).catch(() => {}); else toast('คัดลอกไม่ได้ ลองใหม่อีกครั้งนะ');
+    }
+  };
+  if (clear) clear.onclick = () => {
+    errLog.clear();
+    const box = document.getElementById('errBox'); if (box) { box.outerHTML = errBox(); bindErrBox(); }
+    toast('🗑️ ล้างบันทึกข้อผิดพลาดแล้ว');
+  };
 }
 function offlineBox() {
   const el = document.getElementById('offBox'); if (!el) return;
