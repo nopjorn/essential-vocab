@@ -2607,6 +2607,11 @@ html[data-theme="dark"]:not(.no-pbg) body, html[data-theme="black"]:not(.no-pbg)
   .fs-panel .ss-grid b { font-size: 20px; }
   .fs-panel .ss-big b { font-size: 40px; }
   .fs-panel .fs-bad { color: var(--bad-ink); }
+  .view.feed-mode:has(> #fSide.fs-left) { grid-template-columns: 260px minmax(0, 1fr); }
+  .view.feed-mode:has(> #fSide.fs-left) > .feed-hud, .view.feed-mode:has(> #fSide.fs-left) > .feed { grid-column: 2; }
+  .view.feed-mode > .fs-panel.fs-left { grid-column: 1; }
+  .fs-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .fs-swap { border: 0; background: var(--surface-2); color: var(--muted); font: inherit; font-size: var(--fs-xs, 12px); font-weight: 700; border-radius: 999px; padding: 4px 10px; min-height: 32px; cursor: pointer; }
   .fs-dots { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
   .fs-dots i { display: block; aspect-ratio: 1; border-radius: 50%; }
   .fs-dots i.ok { background: var(--good); }

@@ -50,7 +50,7 @@ function feedStoryQ() {
 
 function renderFeed() {
   view.classList.add('feed-mode');
-  view.innerHTML = `<div class="feed-hud"><span id="fCombo" class="combo"></span><span class="small f-goal" id="fGoal"></span><span class="small" id="fXp"></span></div><div class="feed" id="feed"></div><aside class="side-stats fs-panel" id="fSide" aria-label="สถิติรอบนี้"></aside>`;
+  view.innerHTML = `<div class="feed-hud"><span id="fCombo" class="combo"></span><span class="small f-goal" id="fGoal"></span><span class="small" id="fXp"></span></div><div class="feed" id="feed"></div>${S.settings.feedSide === 'off' ? '' : `<aside class="side-stats fs-panel${S.settings.feedSide === 'left' ? ' fs-left' : ''}" id="fSide" aria-label="สถิติรอบนี้"></aside>`}`;
   const feed = $('#feed');
   const seen = new Set();
   const later = [];            // { at: card number, w } quizzes on words just introduced
@@ -75,7 +75,8 @@ function renderFeed() {
   function updSide() {
     const el = $('#fSide'); if (!el || !sideMQ.matches) return; // hidden on phones: don't build it
     const bad = sess.n - sess.ok, acc = sess.n ? Math.round(sess.ok / sess.n * 100) : null, ms = Date.now() - sess.t0;
-    el.innerHTML = `<div class="ss-h">รอบนี้</div>
+    const left = S.settings.feedSide === 'left';
+    el.innerHTML = `<div class="ss-h fs-top">รอบนี้<button class="fs-swap" data-fsswap aria-label="ย้ายแผงไปฝั่ง${left ? 'ขวา' : 'ซ้าย'}">${left ? 'ย้ายไปขวา ›' : '‹ ย้ายไปซ้าย'}</button></div>
       <div class="ss-big"><b>${acc == null ? '–' : acc + '%'}</b><span>ตอบถูก</span></div>
       <div class="qbar"><span style="width:${acc || 0}%"></span></div>
       <div class="ss-grid">
@@ -95,7 +96,13 @@ function renderFeed() {
       ${sess.miss.length ? `<div class="ss-h">คำที่ผิดรอบนี้ (แตะเพื่อดู)</div><div class="fs-miss">${sess.miss.slice(-12).reverse().map((w) => `<button class="chip" data-fsw="${w.idx}" lang="en">${esc(w.w)}</button>`).join('')}</div>` : ''}`;
   }
   const side = $('#fSide');
-  side.onclick = (e) => { const b = e.target.closest('[data-fsw]'); if (b && W[+b.dataset.fsw]) openSheet(W[+b.dataset.fsw]); };
+  if (side) side.onclick = (e) => {
+    if (e.target.closest('[data-fsswap]')) { // 1.218.0: left / right (also in settings, where it can be switched off)
+      S.settings.feedSide = S.settings.feedSide === 'left' ? 'right' : 'left'; save();
+      side.classList.toggle('fs-left', S.settings.feedSide === 'left'); return updSide();
+    }
+    const b = e.target.closest('[data-fsw]'); if (b && W[+b.dataset.fsw]) openSheet(W[+b.dataset.fsw]);
+  };
   const sideTick = setInterval(() => { const c = $('#fsClock'); if (c && sideMQ.matches) c.textContent = clock(Date.now() - sess.t0); }, 1000);
   const sideMQon = () => updSide();
   sideMQ.addEventListener('change', sideMQon);

@@ -39,3 +39,25 @@ test('feed side panel: right / wrong / total / % / time, missed words open the w
   await expect(side).toBeHidden();
   expect(errors).toEqual([]);
 });
+
+test('1.218.0 feed panel side: swap button moves it left and back, the setting can switch it off', async ({ page }) => {
+  await page.setViewportSize({ width: 1376, height: 1032 });
+  const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1'] } });
+  await page.evaluate(() => go('feed'));
+  const side = page.locator('#fSide'), x = async (sel) => (await page.locator(sel).boundingBox()).x;
+  expect(await x('#fSide')).toBeGreaterThan(await x('#feed'));
+  await side.locator('[data-fsswap]').click();
+  await expect(side).toHaveClass(/fs-left/);
+  expect(await x('#fSide')).toBeLessThan(await x('#feed'));
+  expect(await page.evaluate(() => S.settings.feedSide)).toBe('left');
+  await page.evaluate(() => go('feed')); // remembered
+  await expect(page.locator('#fSide')).toHaveClass(/fs-left/);
+  await side.locator('[data-fsswap]').click();
+  expect(await page.evaluate(() => S.settings.feedSide)).toBe('right');
+  await page.evaluate(() => { go('settings'); document.querySelector('#feedSide').closest('details').open = true; });
+  await page.locator('#feedSide').selectOption('off');
+  await page.evaluate(() => go('feed'));
+  await expect(page.locator('.fcard').first()).toBeVisible();
+  await expect(page.locator('#fSide')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

@@ -175,6 +175,8 @@ function renderSettings() {
         <select class="sel" id="thumbs" aria-label="ปุ่มสองข้าง (ถือสองมือ)">${[['auto', autoTxt('thumbs', thumbsOn)], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.thumbs || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>🎮 ฝั่งของตัวเลือกคำตอบ<br><span class="small muted">iPad แนวนอน ถือสองมือ: เลือกฝั่งที่ถนัด</span></span>
         <select class="sel" id="optSide" aria-label="ฝั่งของตัวเลือกคำตอบ">${[['right', '👉 ขวา'], ['left', '👈 ซ้าย']].map(([v, t]) => `<option value="${v}" ${(st.optSide || 'right') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="set-row"><span>📊 แผงสถิติรอบนี้ในไถศัพท์<br><span class="small muted">iPad แนวนอน: อยู่ฝั่งไหนของการ์ด หรือปิดไว้</span></span>
+        <select class="sel" id="feedSide" aria-label="แผงสถิติรอบนี้ในไถศัพท์">${[['right', '👉 ขวา'], ['left', '👈 ซ้าย'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.feedSide || 'right') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>🪟 เว้นที่ให้ปุ่มหน้าต่าง iPad<br><span class="small muted">ถ้าปุ่มปิด/ย่อหน้าต่างทับปุ่ม ‹ ให้เลือก “เปิด”</span></span>
         <select class="sel" id="winGap" aria-label="เว้นที่ให้ปุ่มหน้าต่าง iPad">${[['auto', autoTxt('winGap', winGapOn)], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.winGap || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <button class="set-row set-link" id="keysBtn"><span>⌨️ คีย์ลัด<br><span class="small muted">สำหรับ iPad ที่ต่อคีย์บอร์ด หรือคอมพิวเตอร์ (กด ? ที่หน้าไหนก็ได้)</span></span><span class="muted">›</span></button>
@@ -264,6 +266,7 @@ function renderSettings() {
   $('#swipeUD').onchange = (e) => { st.swipeUD = e.target.checked; save(); };
   $('#thumbs').onchange = (e) => { st.thumbs = e.target.value; save(); applyThumbs(); };
   $('#optSide').onchange = (e) => { st.optSide = e.target.value; save(); applyThumbs(); };
+  $('#feedSide').onchange = (e) => { st.feedSide = e.target.value; save(); };
   $('#auto').onchange = (e) => { st.autoSpeak = e.target.checked; save(); };
   $('#badge').onchange = async (e) => {
     st.badge = e.target.checked; save();
