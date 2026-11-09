@@ -1286,8 +1286,9 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
         <button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:76px;height:76px;font-size:34px;margin:0">🔊</button><div>${slowBtn(r.en)}</div>
         <button class="hint-btn" id="pbHint">💡 ดูตัวหนังสือ</button><div class="h2 pb-q" lang="en" id="pbTxt" hidden>${esc(r.en)}</div>`
       : `<div class="small muted">${b.icon} ${esc(b.ask[q.m])}</div>
-        <div class="h2 pb-q" ${q.m === 'th' ? '' : 'lang="en"'} style="margin-top:8px">${esc(q.prompt)}</div>
-        ${q.m === 'th' ? '' : `<div class="small muted" lang="en" style="margin-top:6px">${pbMark(r)}</div>`}`;
+        ${q.m === 'fill' ? `<div class="h2 p5-s pb-q" lang="en" style="margin-top:8px">${esc(q.prompt).replace('___', '<span class="blank">_____</span>')}</div><div class="small muted" style="margin-top:6px">${esc(r.th)}</div>`
+          : `<div class="h2 pb-q" ${q.m === 'th' ? '' : 'lang="en"'} style="margin-top:8px">${esc(q.prompt)}</div>`}
+        ${q.m === 'th' || q.m === 'fill' ? '' : `<div class="small muted" lang="en" style="margin-top:6px">${pbMark(r)}</div>`}`;
     view.innerHTML = `${header()}
       <div class="card-box q-prompt fit pop">${prompt}</div>
       <div class="options">${q.opts.map((o) => `<button class="opt" ${isEn ? 'lang="en"' : ''} data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
@@ -1308,7 +1309,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       mark(w, ok);
       const say = pbSay(r, id);
       $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ยังไม่ถูก'}
-        <div class="example pb-ex"><div><b lang="en">${esc(r.en)}</b>${pbNoteIn(r, id)} = ${esc(r.th)}</div>
+        <div class="example pb-ex"><div><b lang="en">${r.enBr ? `<span style="font-weight:500">${pbEnHTML(r)}</span>` : esc(r.en)}</b>${pbNoteIn(r, id)} = ${esc(r.th)}${r.wrong ? `<div class="small muted">✗ <span lang="en">${r.wrong.map(esc).join(', ')}</span></div>` : ''}</div>
           <div class="en" lang="en" style="margin-top:6px">${esc(r.ex)} <button class="say-ex" id="pbSayQ" aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(r.exTh)}</div>${pbTip(r, id) ? `<div class="thx">${pbTip(r, id)}</div>` : ''}</div>
         <div class="row" style="gap:10px;margin-top:12px"><button class="btn" id="pbKeep">＋ เก็บเข้าชุด</button><button class="btn primary grow" id="nextQ">ถัดไป →</button></div>`;
       $('#nextQ').onclick = next;

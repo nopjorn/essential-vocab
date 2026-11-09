@@ -44,16 +44,32 @@ const PB = {
     same: [['I feel sick.', 'I threw up twice.'], ['I\'m trying to lose weight.', 'I\'m on a diet.'], ['I\'m feeling much better.', 'Get well soon!'], ['It\'s an emergency.', 'Call an ambulance!'],
       ['Can I see a doctor today?', 'I\'d like to make an appointment.'], ['How often should I take it?', 'Take one tablet three times a day.'], ['He can\'t breathe.', 'Take a deep breath.']],
   },
+  itcol: {
+    file: 'data/itcol.js', key: 'ITCOL', icon: '🧑‍💻', title: 'คำคู่ไอที', modes: ['fill', 'fill', 'en', 'th'], fill: true, sayEn: false,
+    intro: 'คำที่ใช้คู่กันในงานซอฟต์แวร์ เช่น fix a bug (ไม่ใช่ repair) · run the tests · deploy to production · ส่วนที่ทำตัวหนาคือคำที่มักใช้ผิด · ✗ คือคำที่ไม่ไปด้วยกัน · แตะเพื่อฟังประโยค · ＋ เก็บเข้าชุดของฉัน',
+    ask: { fill: 'เลือกคำที่ใช้คู่กันในงานไอที', en: 'คำคู่นี้หมายความว่าอะไร', th: 'พูดเป็นอังกฤษว่าอะไร' },
+    cats: { code: ['⌨️', 'เขียนโค้ด'], git: ['🌿', 'Git / รีวิวโค้ด'], bug: ['🐞', 'บั๊กและทิกเก็ต'], ops: ['🚀', 'ดีพลอย / เซิร์ฟเวอร์'], team: ['👥', 'ทำงานเป็นทีม'], term: ['🧩', 'คำศัพท์คู่'] },
+    same: [['run the tests', 'run a query'], ['raise a ticket', 'file a bug report', 'pick up a ticket'], ['take down a server', 'the server went down'], ['ship a feature', 'go live', 'deploy to production']],
+  },
 };
 const PB_DATA = {};
+// fill books (1.223.0): rows [cat, phrase with [part], Thai, example with [part] as used, Thai example, 'wrong|wrong|wrong', tip];
+// the game's 'fill' mode blanks the part in the example. en / ex are kept without brackets; key / ans = the parts, exBr = the bracketed example.
+const pbInner = (s) => ((s.match(/\[([^\]]+)\]/) || [])[1] || '');
+const pbPlain = (s) => s.replace(/[[\]]/g, '');
 const loadBook = (id) => loadData(PB[id].file, PB[id].key).then((rows) => {
-  if (!PB_DATA[id] && rows.length) PB_DATA[id] = rows.map(([cat, en, th, ex, exTh, note]) => ({ cat, en, th, ex, exTh, note: note || '' }));
+  if (!PB_DATA[id] && rows.length) {
+    PB_DATA[id] = PB[id].fill
+      ? rows.map(([cat, en, th, ex, exTh, wrong, tip]) => ({ cat, en: pbPlain(en), key: pbInner(en), enBr: en, th, ex: pbPlain(ex), exBr: ex, ans: pbInner(ex), exTh, wrong: wrong.split('|'), note: tip || '' }))
+      : rows.map(([cat, en, th, ex, exTh, note]) => ({ cat, en, th, ex, exTh, note: note || '' }));
+  }
   return PB_DATA[id] || [];
 });
 const pbItems = (id) => PB_DATA[id].map((r) => ({ idx: -1, w: r.en, t: r.th, p: '', g: '', _pb: r, _book: id, _q: [r.ex, r.en, '', r.th] }));
 // the question for one item: mode, prompt, the right option and 3 others from the same book (same category first, no repeated text)
 function pbQuestion(id, r, mode) {
   const b = PB[id], m = mode || pick(b.modes);
+  if (m === 'fill') return { m, field: 'ans', right: r.ans, opts: shuffle([r.ans, ...r.wrong]), prompt: r.exBr.replace(/\[[^\]]+\]/, '___') };
   const field = m === 'en' ? 'th' : m === 'th' ? 'en' : 'note';
   const near0 = new Set((b.same || []).filter((g) => g.includes(r.en)).flat());
   const right = r[field], rows = PB_DATA[id].filter((x) => x !== r && x[field] && x[field] !== right && !near0.has(x.en));
@@ -91,6 +107,8 @@ function pbBox(el, w) {
     };
   }).catch(() => {});
 }
+// the phrase with its tested part in bold (fill books)
+const pbEnHTML = (r) => (r.enBr ? esc(r.enBr).replace(/\[([^\]]+)\]/, '<b>$1</b>') : esc(r.en));
 const pbOwn = (r, id) => ({ w: r.en, t: PB[id].noteEn && r.note ? `${r.th} (${r.note})` : r.th, e: r.ex, et: r.exTh });
 // the note: English beside the phrase (noteEn) or a 💡 Thai tip line
 const pbNoteIn = (r, id) => (PB[id].noteEn && r.note ? ` <span class="small muted" lang="en">${esc(r.note)}</span>` : '');
@@ -118,7 +136,7 @@ function renderBook(id) {
   const paint = () => {
     view.querySelectorAll('#pbCats .chip').forEach((c) => { const on = c.dataset.c === cur(); c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
     $('#pbList').innerHTML = cats.filter((c) => cur() === 'all' || c === cur()).map((c) => `<div class="card-box pair-card"><div class="pair-h"><b>${b.cats[c][0]} ${b.cats[c][1]}</b> <span class="small muted">${rows.filter((r) => r.cat === c).length}</span></div>
-      ${rows.filter((r) => r.cat === c).map((r) => `<div class="bc-item pb-item"><button class="pair-ex" data-say="${esc(pbSay(r, id))}"><span><b lang="en">${esc(r.en)}</b>${pbNoteIn(r, id)} = ${esc(r.th)}</span><span lang="en">${esc(r.ex)}</span><small class="muted">${esc(r.exTh)}</small>${pbTip(r, id)}</button><button class="bc-add" data-add="${rows.indexOf(r)}" aria-label="เก็บ ${esc(r.en)} เข้าชุดของฉัน">＋</button></div>`).join('')}</div>`).join('');
+      ${rows.filter((r) => r.cat === c).map((r) => `<div class="bc-item pb-item"><button class="pair-ex" data-say="${esc(pbSay(r, id))}"><span><b lang="en">${r.enBr ? `<span style="font-weight:500">${pbEnHTML(r)}</span>` : esc(r.en)}</b>${pbNoteIn(r, id)} = ${esc(r.th)}</span><span lang="en">${esc(r.ex)}</span><small class="muted">${esc(r.exTh)}${r.wrong ? ` · ✗ <span lang="en">${r.wrong.map(esc).join(', ')}</span>` : ''}</small>${pbTip(r, id)}</button><button class="bc-add" data-add="${rows.indexOf(r)}" aria-label="เก็บ ${esc(r.en)} เข้าชุดของฉัน">＋</button></div>`).join('')}</div>`).join('');
   };
   paint();
   $('#pbCats').onclick = (e) => { const c = e.target.closest('[data-c]'); if (c) { pbCat[id] = c.dataset.c; paint(); } };

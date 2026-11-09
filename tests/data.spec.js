@@ -713,7 +713,13 @@ test('phrase books (1.212+): rows [cat, English, Thai, example, Thai example, no
     if (!(rows.length >= 30)) bad.push(`${id}: only ${rows.length} rows`);
     const seen = new Set();
     rows.forEach((r, i) => {
-      if (r.length !== 6 || r.slice(0, 5).some((x) => typeof x !== 'string' || !x.trim())) bad.push(`${id} ${i}: shape`);
+      const fill = /\n    file: [^\n]*fill: true/.test(src.slice(src.indexOf(`  ${id}: {`), src.indexOf(`  ${id}: {`) + 400));
+      if (r.length !== (fill ? 7 : 6) || r.slice(0, 5).some((x) => typeof x !== 'string' || !x.trim())) bad.push(`${id} ${i}: shape`);
+      if (fill) { // one [part] in the phrase and the example, 3 wrong forms that differ from the answer
+        const ans = (r[3].match(/\[([^\]]+)\]/) || [])[1], wr = r[5].split('|');
+        if ((r[1].match(/\[/g) || []).length !== 1 || !ans || (r[3].match(/\[/g) || []).length !== 1 || wr.length !== 3 || new Set(wr).size !== 3 || wr.includes(ans)) bad.push(`${id} ${r[1]}: fill parts`);
+        r = [r[0], r[1].replace(/[[\]]/g, ''), r[2], r[3].replace(/[[\]]/g, '')];
+      }
       if (!cats.includes(`${r[0]}:`)) bad.push(`${id} ${i}: category ${r[0]}`);
       if (seen.has(r[1].toLowerCase())) bad.push(`${id}: ${r[1]} twice`);
       seen.add(r[1].toLowerCase());

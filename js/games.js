@@ -60,6 +60,7 @@ const GAMES = {
   thai: { icon: '🇹🇭', name: 'เล่าเรื่องไทย', desc: 'ส้มตำ ทำบุญ เกรงใจ พูดเป็นอังกฤษว่าอะไร' },
   doctor: { icon: '🩺', name: 'คุยกับหมอ', desc: 'บอกอาการ ฟังหมอ ซื้อยาเป็นอังกฤษ' },
   pbear: { icon: '👂', name: 'ฟังวลี', desc: 'ฟังภาษาพูด คุยกับหมอ เรื่องไทย แล้วเลือกความหมาย' },
+  itcol: { icon: '🧑‍💻', name: 'คำคู่ไอที', desc: 'fix a bug ไม่ใช่ repair a bug' },
   abbr: { icon: '🔤', name: 'ตัวย่อในงาน', desc: 'ASAP, FYI, EOD แปลว่าอะไร' },
   bizcol: { icon: '🤝', name: 'คำคู่ธุรกิจ', desc: 'meet a deadline ไม่ใช่ make' },
   wphr: { icon: '📧', name: 'สำนวนอีเมลงาน', desc: 'ประโยคอีเมลและแชตที่ทำงาน' },
@@ -94,7 +95,7 @@ const PAIR_GAMES = ['confuse', 'minpair'];
 // Skill games with their own items (idx -1): practice only, no flashcard scheduling.
 // Generated skill games: the questions are made up on the spot, so they are not scheduled (no S.lex keys).
 const GEN_GAMES = ['num'];
-const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix', 'root', 'idiom', 'sit', 'irreg', 'dprep', 'thaierr', 'gpat', 'real', 'wphr', 'bizcol', 'regi', 'email', 'wpdict', 'pbear', 'abbr', 'doctor', 'thai', 'chat', 'toeic1', 'toeic2', 'toeic3', 'toeic4', 'toeic5', 'toeic6', 'toeic7', 'toeicMock', ...GEN_GAMES];
+const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix', 'root', 'idiom', 'sit', 'irreg', 'dprep', 'thaierr', 'gpat', 'real', 'wphr', 'bizcol', 'regi', 'email', 'wpdict', 'pbear', 'abbr', 'itcol', 'doctor', 'thai', 'chat', 'toeic1', 'toeic2', 'toeic3', 'toeic4', 'toeic5', 'toeic6', 'toeic7', 'toeicMock', ...GEN_GAMES];
 // The games menu groups every game by the skill it trains (1.106): chips filter, and "all" lists them under these headings.
 // Every game id is in exactly one group (a test checks).
 const GAME_SKILLS = [
@@ -103,7 +104,7 @@ const GAME_SKILLS = [
   ['mean', '📖', 'ความหมาย', ['en2th', 'th2en', 'match', 'emoji', 'guess', 'syn', 'confuse', 'review', 'toeic7']],
   ['write', '✍️', 'สะกดและเขียน', ['spell', 'hand', 'hangman', 'anagram', 'cloze', 'sCloze', 'order', 'sOrder', 'compose']],
   ['gram', '📐', 'ไวยากรณ์และรูปคำ', ['wform', 'affix', 'root', 'gpat', 'thaierr', 'dprep', 'irreg', 'toeic5', 'toeic6']],
-  ['phrase', '🧩', 'วลีและสำนวน', ['colloc', 'phrasal', 'idiom', 'sit', 'real', 'wphr', 'bizcol', 'regi', 'email', 'abbr', 'chat', 'thai', 'doctor']],
+  ['phrase', '🧩', 'วลีและสำนวน', ['colloc', 'phrasal', 'idiom', 'sit', 'real', 'wphr', 'bizcol', 'regi', 'email', 'abbr', 'chat', 'thai', 'doctor', 'itcol']],
   ['chal', '🎉', 'ท้าทาย', ['survival', 'timeAttack', 'emojiRun', 'toeicMock']],
 ];
 let gameSkill = 'all'; // chip selected in the games menu: 'all', 'toeic' or a GAME_SKILLS id
@@ -126,7 +127,7 @@ const gridCls = () => `game-grid${gameView() === 'list' ? ' list' : ''}`;
 const gameFolded = () => new Set(S.settings.gameFold || []); // skill groups folded shut under "ทั้งหมด"
 // The reference pages (route 'ref'): [REF_PAGES key in app.js, button id, icon, name].
 const REF_LIST = [['pairs', 'toPairs', '🤔', 'คู่คำสับสน'], ['fams', 'toFams', '🧬', 'ครอบครัวคำ'], ['syn', 'toSyn', '≈', 'คำเหมือน–ตรงข้าม'], ['affix', 'toAf', '🧱', 'prefix / suffix'],
-  ['roots', 'toRt', '🌱', 'รากศัพท์'], ['ukus', 'toUk', '🇬🇧', 'อังกฤษ–อเมริกัน'], ['phrasal', 'toPV', '🧩', 'Phrasal verbs'], ['idiom', 'toId', '🎭', 'สำนวน'], ['wphr', 'toWp', '📧', 'สำนวนอีเมล / แชตงาน'], ['bizcol', 'toBc', '🤝', 'Collocation ธุรกิจ'], ['abbr', 'toAb', '🔤', 'ตัวย่อในงาน'], ['doctor', 'toDr', '🩺', 'คุยกับหมอ / ร้านยา'], ['thai', 'toTh', '🇹🇭', 'เล่าเรื่องไทยเป็นอังกฤษ'], ['chat', 'toCh', '💬', 'ภาษาพูด / แชต'], ['regi', 'toRg', '🎩', 'ทางการ ↔ เป็นกันเอง'],
+  ['roots', 'toRt', '🌱', 'รากศัพท์'], ['ukus', 'toUk', '🇬🇧', 'อังกฤษ–อเมริกัน'], ['phrasal', 'toPV', '🧩', 'Phrasal verbs'], ['idiom', 'toId', '🎭', 'สำนวน'], ['wphr', 'toWp', '📧', 'สำนวนอีเมล / แชตงาน'], ['bizcol', 'toBc', '🤝', 'Collocation ธุรกิจ'], ['abbr', 'toAb', '🔤', 'ตัวย่อในงาน'], ['itcol', 'toIc', '🧑‍💻', 'คำคู่ไอที'], ['doctor', 'toDr', '🩺', 'คุยกับหมอ / ร้านยา'], ['thai', 'toTh', '🇹🇭', 'เล่าเรื่องไทยเป็นอังกฤษ'], ['chat', 'toCh', '💬', 'ภาษาพูด / แชต'], ['regi', 'toRg', '🎩', 'ทางการ ↔ เป็นกันเอง'],
   ['sit', 'toSit', '🗨️', 'ศัพท์ตามสถานการณ์'], ['irr', 'toIrr', '⏪', 'กริยาไม่ปกติ'], ['dprep', 'toDp', '🔗', 'บุพบทที่ตามหลังคำ'], ['mis', 'toMis', '🩹', 'ข้อผิดที่พบบ่อย'],
   ['gpat', 'toGp', '📐', 'ไวยากรณ์ผูกกับคำ'], ['ipa', 'toIpa', '🔡', 'ตารางเสียง IPA']];
 function renderRef() {
