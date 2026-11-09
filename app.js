@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.215.1';
+const APP_VERSION = '1.216.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1987,7 +1987,7 @@ function sectionize(box, brk) {
 /* ---------- router ---------- */
 let current = 'home', firstGo = true;
 let cleanup = null;
-const TITLES = { toeic: 'ศูนย์ TOEIC', print: 'ใบงานพิมพ์', mine: 'เก็บคำจากบทความ', ref: 'คลังความรู้', room: 'ห้องของน้องคำ', paths: 'นิยายเลือกทาง', pic: 'เล่าภาพ', build: 'ต่อคำเป็นประโยค', cases: 'คดีนักสืบ', cafe: 'ร้านน้องคำ', puzzle: 'ปริศนาประจำวัน', album: 'อัลบั้มการ์ด', garden: 'สวนคำศัพท์', fun: 'โซนสนุก', tower: 'หอคอยไม่รู้จบ', wboss: 'บอสประจำสัปดาห์', chain: 'ต่อคำ', coinshop: 'ร้านค้าเหรียญ', adv: 'ผจญภัยสัปดาห์', ear: 'ฟังทบทวน', wsearch: 'ค้นหาคำในตาราง', map: 'แผนที่ด่าน', duel: 'ท้าดวลเพื่อน', event: 'กิจกรรมเทศกาล', mascot: 'น้องคำ', year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
+const TITLES = { toeic: 'ศูนย์ TOEIC', print: 'ใบงานพิมพ์', mine: 'เก็บคำจากบทความ', ref: 'คลังความรู้', room: 'ห้องของน้องคำ', paths: 'นิยายเลือกทาง', pic: 'เล่าภาพ', build: 'ต่อคำเป็นประโยค', cases: 'คดีนักสืบ', cafe: 'ร้านน้องคำ', puzzle: 'ปริศนาประจำวัน', album: 'อัลบั้มการ์ด', garden: 'สวนคำศัพท์', fun: 'โซนสนุก', tower: 'หอคอยไม่รู้จบ', wboss: 'บอสประจำสัปดาห์', chain: 'ต่อคำ', coinshop: 'ร้านค้าเหรียญ', adv: 'ผจญภัยสัปดาห์', ear: 'ฟังทบทวน', wsearch: 'ค้นหาคำในตาราง', map: 'แผนที่ด่าน', duel: 'ท้าดวลเพื่อน', event: 'กิจกรรมเทศกาล', mascot: 'น้องคำ', year: 'สรุปปีของฉัน', ltest: 'ทดสอบจบระดับ', mtest: 'แบบทดสอบประจำเดือน', home: 'ศัพท์ต้องรู้', cards: 'แฟลชการ์ด', games: 'เกมฝึกศัพท์', list: 'คำศัพท์', settings: 'ตั้งค่า', guide: 'คู่มือการใช้งาน', homeset: 'จัดเรียงหน้าแรก', wotdset: 'ตั้งค่าคำประจำวัน', feed: 'ไถศัพท์', stats: 'สถิติ', day: 'กิจกรรมรายวัน', login: 'เข้าสู่ระบบ', read: 'อ่านเรื่องสั้น', placement: 'วัดระดับ', changelog: 'ประวัติการอัปเดต', riddle: 'ปริศนาศัพท์', decks: 'ชุดของฉัน' };
 let gameBackTo = ''; // a page that started a game and wants the game's way out (go('games')) to land back on it (1.211.0, TOEIC hub)
 let navSeq = 0; // bumped by every go(): a page that finishes loading late checks it before drawing (1.148)
 function go(tab, ...args) {
@@ -2005,10 +2005,10 @@ function go(tab, ...args) {
   view.dataset.route = tab; // CSS uses this for wide (iPad/landscape) layouts
   // the sets page sits under the word list: on a phone the "คำศัพท์" tab stays lit, on the iPad rail its own item does
   const wide = matchMedia('(min-width: 700px)').matches;
-  document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab || (tab === 'decks' && !wide && b.dataset.tab === 'list') || (tab === 'ref' && b.dataset.tab === 'games')));
+  document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab || (tab === 'decks' && !wide && b.dataset.tab === 'list') || (tab === 'ref' && b.dataset.tab === 'games') || (tab === 'day' && b.dataset.tab === 'stats')));
   $('#title').textContent = TITLES[tab] || 'ศัพท์ต้องรู้';
   if (firstGo) view.scrollTop = 0; // later pages: done in animPrep() while the layout is still clean
-  ({ home: renderHome, cards: renderCards, ear: renderEar, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, mascot: renderMascot, event: renderEvent, riddle: renderRiddle, duel: renderDuel, map: renderMap, wsearch: renderWSearch, decks: renderDecks, adv: renderAdventure, fun: renderFun, tower: renderTower, wboss: renderWboss, chain: renderChain, coinshop: renderCoinShop, puzzle: renderPuzzle, album: renderAlbum, garden: renderGarden, cases: renderCases, cafe: renderCafe, room: renderRoom, paths: renderPaths, pic: renderPic, build: renderBuild, ref: renderRef, print: renderPrint, mine: renderMine, toeic: renderToeic }[tab])(...args);
+  ({ home: renderHome, cards: renderCards, ear: renderEar, games: renderGames, list: renderList, settings: renderSettings, guide: renderGuide, homeset: renderHomeSet, wotdset: renderWotdSet, feed: renderFeed, stats: renderStats, day: renderDay, login: renderLogin, read: renderRead, placement: renderPlacement, changelog: renderChangelog, mtest: renderMonthTest, ltest: renderLevelTest, year: renderYear, mascot: renderMascot, event: renderEvent, riddle: renderRiddle, duel: renderDuel, map: renderMap, wsearch: renderWSearch, decks: renderDecks, adv: renderAdventure, fun: renderFun, tower: renderTower, wboss: renderWboss, chain: renderChain, coinshop: renderCoinShop, puzzle: renderPuzzle, album: renderAlbum, garden: renderGarden, cases: renderCases, cafe: renderCafe, room: renderRoom, paths: renderPaths, pic: renderPic, build: renderBuild, ref: renderRef, print: renderPrint, mine: renderMine, toeic: renderToeic }[tab])(...args);
   updateStreak();
   if (firstGo) { firstGo = false; return; } // the first screen at start-up just appears: no fade, no forced layout before the first paint (1.126)
   const a = TAB_ORDER.indexOf(prev), b = TAB_ORDER.indexOf(tab);

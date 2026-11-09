@@ -174,3 +174,38 @@ test('1.161.0 stats: hardest words, accuracy by level, growth, 30-day forecast a
   await expect(page.locator('.options .opt').first()).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('1.216.0 day page: a tap on a bar opens that day in detail, ‹ › step days, back returns to stats', async ({ page }) => {
+  const key = (k) => { const d = new Date(); d.setDate(d.getDate() - k); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const errors = await openApp(page, {
+    placedAt: '2026-01-01', hist: { [key(1)]: 34, [key(2)]: 7 }, chist: { [key(1)]: 10 },
+    act: { [key(1)]: { card: [10, 300, 10, 8], skill: [6, 240, 6, 3], fun: [6, 600],
+      x: { g: { cards: [10, 300, 10, 8], phrasal: [6, 240, 6, 3], tower: [6, 600, 0, 0] }, h: Array.from({ length: 24 }, (_, i) => (i === 20 ? 20 : i === 7 ? 2 : 0)), e: { speak: 5 }, ss: [2, 800], on: 1800 } } },
+    snap: { [key(3)]: [10, 2, 10, 2], [key(1)]: [25, 6, 25, 6] },
+  });
+  await page.evaluate(() => go('stats'));
+  await page.locator('[data-chart="act"] rect.hit').nth(26).click();
+  await expect(page.locator('#title')).toHaveText('กิจกรรมรายวัน');
+  await expect(page.locator('.day-head')).toContainText('เมื่อวาน');
+  const tiles = page.locator('.day-tiles');
+  await expect(tiles).toContainText('34');     // answers
+  await expect(tiles).toContainText('≈ 19 นาที');
+  await expect(tiles).toContainText('69%');    // 11 right of 16 judged
+  await expect(tiles).toContainText('+15');    // new words
+  await expect(tiles).toContainText('+4');     // mastered
+  await expect(page.locator('.act-row').first()).toContainText('โซนสนุก');
+  await expect(page.getByText('อีก 12 ข้อยังไม่แยกประเภท')).toBeVisible();
+  await expect(page.locator('.act-ev')).toContainText('5');
+  await page.locator('.day-hours .mb-b').nth(20).click();
+  await expect(page.locator('#toast')).toContainText('20:00–21:00 · 20 ข้อ');
+  await page.locator('#dayPrev').click();
+  await expect(page.locator('.day-head')).toContainText('2 วันก่อน');
+  await expect(page.getByText('ก่อนเวอร์ชัน 1.158.0')).toBeVisible();
+  await page.locator('#dayNext').click();
+  await page.locator('#dayNext').click();
+  await expect(page.locator('.day-head')).toContainText('วันนี้');
+  await expect(page.locator('#dayNext')).toBeDisabled();
+  await page.locator('#topBack').click();
+  expect(await page.evaluate(() => current)).toBe('stats');
+  expect(errors).toEqual([]);
+});

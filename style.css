@@ -712,6 +712,11 @@ body { touch-action: manipulation; }
 .chart .grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 4; opacity: .7; }
 .chart.big .ax, .chart.big .lab { font-size: var(--fs-sm); }
 .chart .hit { fill: transparent; }
+.chart .hit[data-day] { cursor: pointer; }
+/* day page (1.216.0) */
+.day-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.day-head .btn { min-width: 44px; font-size: var(--fs-md); }
+@media (min-width: 520px) { .act-tiles.day-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .trend-range { margin-bottom: 10px; }
 .trend-range .chip { padding: 5px 14px; font-size: var(--fs-sm); }
 .legend.trend-leg { font-size: var(--fs-sm); gap: 18px; }
