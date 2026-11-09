@@ -267,6 +267,15 @@ function diffShort() {
   return '⭐'.repeat(d) + ' ' + ['ปกติ', 'ยากขึ้น', 'ยาก + จับเวลา'][d - 1] + (auto ? ` · แม่น ${Math.round(((S.gacc || {}).a || 0.7) * 100)}%` : ' · ตั้งเอง');
 }
 // Games not pinned or hidden, as the "all games" list: chips by skill + the tiles (grouped under headings when "all").
+// 🌱 simple mode (1.232.0): a short list of core games; "show all" opens the full menu until the app is reopened (gameAllNow).
+let gameAllNow = false;
+const gameSimple = () => simpleOn() && !gameAllNow;
+function simpleGameList() {
+  const hid = gameHidden(), ids = SIMPLE_GAMES.filter((g) => GAMES[g] && !hid.has(g));
+  const n = Object.keys(GAMES).length;
+  return `<div class="${gridCls()}">${ids.map(gameTile).join('')}</div>
+    <button class="card-box guide-link" id="gAll"><span>🎮</span><div class="grow"><b>แสดงเกมทั้งหมด (${n} เกม)</b><div class="small muted">🌱 โหมดเรียบง่ายแสดงแค่ ${ids.length} เกมหลัก · ปิดโหมดได้ที่ ⚙️ ตั้งค่า → หน้าตา</div></div></button>`;
+}
 function gameList() {
   const skip = new Set([...gamePins(), ...gameHidden()]);
   const groups = GAME_SKILLS.map(([id, ic, name, ids]) => [id, ic, name, ids.filter((g) => GAMES[g] && !skip.has(g))]).filter((g) => g[3].length);
@@ -316,9 +325,9 @@ function renderGames() {
       ${gameSource === 'goal' ? `<select class="sel block-sel" id="gGoal" style="margin-top:10px" aria-label="เป้าหมาย">${TAGS.map((t) => `<option value="${t.id}" ${gameGoal === t.id ? 'selected' : ''}>${TAG_LABEL[t.id]} (${t.w.length})</option>`).join('')}</select>` : ''}
       ${gameSource === 'mastered' ? '<div class="small muted" style="margin-top:8px">เช็คว่ายังจำได้จริงไหม คำที่ตอบผิดจะกลับไปอยู่ในแฟลชการ์ดให้ทบทวนอีกครั้ง</div>' : ''}
     </div>
-    ${gameEdit ? '' : gamePickCard() + gameShortcuts() + gameSections()}
+    ${gameEdit ? '' : gamePickCard() + (gameSimple() ? '' : gameShortcuts() + gameSections())}
     <div class="row games-head"><b class="grow">${gameEdit ? '✏️ จัดหน้าเกม' : (gamePins().length ? '🎮 เกมอื่นๆ' : '🎮 เกมทั้งหมด')}</b>${gameEdit ? '' : `<div class="seg gview-seg" id="gView" role="group" aria-label="รูปแบบรายการเกม">${[['list', '☰', 'รายการ'], ['card', '🔲', 'การ์ด']].map(([v, ic, t]) => `<button data-gv="${v}" class="${gameView() === v ? 'on' : ''}" aria-pressed="${gameView() === v}" aria-label="ดูแบบ${t}"><span aria-hidden="true">${ic}</span><span class="gv-t"> ${t}</span></button>`).join('')}</div>`}<button class="btn${gameEdit ? ' primary' : ''}" id="gEdit">${gameEdit ? '✓ เสร็จ' : '✏️ จัดเกม'}</button></div>
-    ${gameEdit ? gameEditor() : `${gameList()}
+    ${gameEdit ? gameEditor() : gameSimple() ? simpleGameList() : `${gameList()}
     ${gameHidden().size ? `<details class="card-box hidden-games"><summary class="small muted">🙈 เกมที่ซ่อนไว้ (${gameHidden().size})</summary><div class="${gridCls()}" style="margin-top:10px">${[...gameHidden()].map(gameTile).join('')}</div></details>` : ''}`}`;
   if ($('#gSkill')) $('#gSkill').onclick = (e) => {
     const c = e.target.closest('[data-skill]'); if (!c) return;
@@ -331,12 +340,9 @@ function renderGames() {
   if (!gameEdit) {
     bindGamePick();
     edgeFade(view.querySelector('.short-grid')); edgeFade($('#gSkill'));
-    $('#toRead').onclick = () => go('read');
-    $('#toRiddle').onclick = () => go('riddle');
-    $('#toDuel').onclick = () => go('duel');
-    $('#toMap').onclick = () => go('map');
-    $('#toWs').onclick = () => go('wsearch');
-    $('#toRef').onclick = () => go('ref');
+    const to = (sel, r) => { const el = $(sel); if (el) el.onclick = () => go(r); }; // the strip is not there in simple mode
+    to('#toRead', 'read'); to('#toRiddle', 'riddle'); to('#toDuel', 'duel'); to('#toMap', 'map'); to('#toWs', 'wsearch'); to('#toRef', 'ref');
+    if ($('#gAll')) $('#gAll').onclick = () => { gameAllNow = true; renderGames(); };
     if ($('#toToeic')) $('#toToeic').onclick = () => go('toeic', 'games');
     $('#gView').onclick = (e) => {
       const b = e.target.closest('[data-gv]'); if (!b || b.dataset.gv === gameView()) return;

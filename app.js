@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.231.0';
+const APP_VERSION = '1.232.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -220,7 +220,7 @@ function sanitizeDecks(r) {
 }
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, fsk: 1, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, pageBg: true, exam: { date: '', name: '' }, fest: true, season: true, sfxPack: 'chime', qMascot: true, headFont: true, glassBar: true, fsz: 'md', appKbd: 'auto', thumbs: 'auto', optSide: 'right', feedSide: 'right', penMode: 'auto', winGap: 'auto', shareTpl: 'classic', palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, timeGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], gameView: 'list', gameFold: [], riddleLv: ['A1', 'A2'], cardPick: { lv: '', tp: '' }, swipeUD: true },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, fsk: 1, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, pageBg: true, exam: { date: '', name: '' }, fest: true, season: true, sfxPack: 'chime', qMascot: true, headFont: true, glassBar: true, fsz: 'md', appKbd: 'auto', thumbs: 'auto', optSide: 'right', feedSide: 'right', penMode: 'auto', winGap: 'auto', shareTpl: 'classic', palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, timeGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], gameView: 'list', gameFold: [], riddleLv: ['A1', 'A2'], cardPick: { lv: '', tp: '' }, swipeUD: true, simple: false },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -336,6 +336,12 @@ function load() {
   }
   return defaults();
 }
+// 🌱 Simple mode (1.232.0): home shows only SIMPLE_HOME blocks and the games menu only SIMPLE_GAMES (+ a "show all" button),
+// for people who feel lost among all the features. The saved home layout and game pins stay as they were.
+const simpleOn = () => S.settings.simple === true;
+const SIMPLE_HOME = ['hero', 'feed', 'play', 'quest', 'wotd', 'prog'];
+const SIMPLE_GAMES = ['en2th', 'th2en', 'match', 'listen', 'spell', 'cloze', 'review', 'survival'];
+const SIMPLE_GROWN = 50; // learned words after which the simple-mode bar suggests opening the rest
 // Settings that are shared across devices: everything in settings + the home layout, except the voice
 // (voice ids differ between devices). save() stamps settingsAt when this changes.
 const settingsSig = () => JSON.stringify([{ ...S.settings, voice: '' }, S.homeCfg]);

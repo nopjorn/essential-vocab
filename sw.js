@@ -1,5 +1,5 @@
 // Offline cache. Bump VERSION (keep it equal to APP_VERSION in app.js) on every push.
-const VERSION = 'o3k-1.231.0';
+const VERSION = 'o3k-1.232.0';
 // App shell: replaced as a whole with every version.
 const FILES = [
   './',
@@ -145,7 +145,7 @@ async function refreshData(cache, file) {
   await cache.put(dataKey(url), res);
 }
 
-// App files (1.229.0): a new version used to download all ~60 of them (~800 KB) although a release changes only a few.
+// App files (1.230.0): a new version used to download all ~60 of them (~800 KB) although a release changes only a few.
 // Now each one is asked for with the ETag / Last-Modified of the copy in the previous version's cache; 304 = unchanged → that
 // copy is reused. The counts go into the new cache under INSTALL_KEY for the settings offline box ({reuse, net, at}).
 const INSTALL_KEY = '__install-stats';

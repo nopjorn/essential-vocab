@@ -99,7 +99,9 @@ function renderSettings() {
         <label class="switch"><input type="checkbox" id="badge" ${st.badge !== false ? 'checked' : ''}><span></span></label></div>
     </div></details>
 
-    <details class="set-group" data-g="look" ${setIsOpen('look')}><summary data-k="theme dark light มืด สว่าง สี color colour ฟอนต์ font ขนาดตัวอักษร ตัวหนังสือ ไอคอน icon">🎨 หน้าตา</summary><div class="card-box">
+    <details class="set-group" data-g="look" ${setIsOpen('look')}><summary data-k="theme dark light มืด สว่าง สี color colour ฟอนต์ font ขนาดตัวอักษร ตัวหนังสือ ไอคอน icon simple เรียบง่าย ง่าย ซ่อน">🎨 หน้าตา</summary><div class="card-box">
+      <div class="set-row"><span>🌱 โหมดเรียบง่าย<br><span class="small muted">หน้าแรกและหน้าเกมแสดงแค่สิ่งจำเป็น (การ์ดวันนี้ ไถศัพท์ ภารกิจ คำประจำวัน ความคืบหน้า และ ${SIMPLE_GAMES.length} เกมหลัก)</span></span>
+        <label class="switch"><input type="checkbox" id="simple" ${st.simple ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>🔠 ขนาดตัวอักษร<br><span class="small muted">ขยายทุกหน้า (ยกเว้นแถบเมนู)</span></span>
         <select class="sel" id="fsz" aria-label="ขนาดตัวอักษร">${[['sm', 'เล็ก'], ['md', 'ปกติ'], ['lg', 'ใหญ่'], ['xl', 'ใหญ่มาก']].map(([v, t]) => `<option value="${v}" ${(st.fsz || 'md') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>ธีม</span>
@@ -297,6 +299,7 @@ function renderSettings() {
   $('#test').onclick = () => speak('Hello! Let\'s learn English together.');
   fillVoices();
   $('#voice').onchange = (e) => { st.voice = e.target.value; save(); fillVoices(); speak('Hello! This is how I sound when I read your words.'); };
+  $('#simple').onchange = (e) => { st.simple = e.target.checked; save(); };
   $('#fsz').onchange = (e) => { st.fsz = e.target.value; save(); applyAnim(); };
   $('#appKbd').onchange = (e) => { st.appKbd = e.target.value; save(); };
   $('#theme').onchange = (e) => { st.theme = e.target.value; save(); applyTheme(); };

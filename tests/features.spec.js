@@ -2185,3 +2185,48 @@ test('error log (1.224): uncaught errors and rejections are kept on the device, 
   expect(await page.evaluate(() => localStorage.getItem('o3k.errs'))).toBeNull();
   expect(errors.filter((e) => !/boom test|lost promise/.test(e))).toEqual([]);
 });
+
+test('simple mode (1.232): home and games menu show only the core, "show all" opens the rest, the welcome turns it on', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'], simple: true } });
+  const ids = () => page.evaluate(() => [...document.querySelectorAll('#view [data-hb]')].map((e) => e.dataset.hb));
+  const core = await page.evaluate(() => SIMPLE_HOME);
+  const hb = await ids();
+  expect(hb.length).toBeGreaterThan(0);
+  expect(hb.every((id) => [...core, 'notices', 'strip'].includes(id))).toBe(true);
+  expect(hb).not.toContain('fun'); expect(hb).not.toContain('adv');
+  await expect(page.locator('#simpleBar')).toContainText('โหมดเรียบง่าย');
+  await expect(page.locator('#heGo')).toHaveCount(0);
+  // games menu: the core games and a button for the rest
+  await page.evaluate(() => go('games'));
+  const tiles = await page.evaluate(() => [...document.querySelectorAll('#view [data-game]')].map((b) => b.dataset.game).filter((g) => !document.querySelector('#gPick [data-game="' + g + '"]')));
+  const coreG = await page.evaluate(() => SIMPLE_GAMES);
+  expect(tiles.length).toBeGreaterThan(4);
+  expect(tiles.every((g) => coreG.includes(g))).toBe(true);
+  await expect(page.locator('#gSkill')).toHaveCount(0);
+  await expect(page.locator('.short-grid')).toHaveCount(0);
+  await page.locator('#view [data-game="en2th"]').first().waitFor();
+  await page.click('#gAll');
+  await expect(page.locator('#gSkill')).toBeVisible();
+  await expect(page.locator('.short-grid')).toBeVisible();
+  // a learner who has come far gets invited to open the rest; the button turns the mode off
+  await page.evaluate(() => { for (const w of W.slice(0, SIMPLE_GROWN)) S.prog[w.w] = { b: 1, i: 1, e: 2.5, d: Date.now() + 864e5, s: 1, c: 1 }; go('home'); });
+  await expect(page.locator('#simpleBar')).toHaveClass(/grown/);
+  await page.click('#simpleOff');
+  await expect(page.locator('#simpleBar')).toHaveCount(0);
+  await expect(page.locator('#heGo')).toBeVisible();
+  expect((await readState(page)).settings.simple).toBe(false);
+  // settings switch
+  await page.evaluate(() => { go('settings'); document.querySelector('details[data-g="look"]').open = true; });
+  await page.evaluate(() => { const c = document.getElementById('simple'); c.checked = true; c.dispatchEvent(new Event('change')); });
+  expect((await readState(page)).settings.simple).toBe(true);
+  // the first-run welcome: on by default, a tap turns it off
+  await page.evaluate(() => onboard(true));
+  await page.locator('.onb [data-act=next]').click();
+  await page.locator('.onb [data-act=next]').click();
+  await expect(page.locator('.onb [data-simple]')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('.onb [data-simple]').click();
+  await expect(page.locator('.onb [data-simple]')).toHaveAttribute('aria-pressed', 'false');
+  await page.locator('.onb [data-act=next]').click();
+  expect((await readState(page)).settings.simple).toBe(false);
+  expect(errors).toEqual([]);
+});

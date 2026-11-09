@@ -23,7 +23,7 @@ const onbDue = () => !onbSeen() && !Object.keys(S.prog).length && !S.placedAt &&
 function onboard(force) {
   if (!force && !onbDue()) return;
   document.querySelectorAll('.onb').forEach((x) => x.remove());
-  const pickd = { goal: S.settings.goal || '', lvl: 'zero', pace: S.settings.newPerDay === 10 || S.settings.newPerDay === 30 ? S.settings.newPerDay : 20 };
+  const pickd = { simple: true, goal: S.settings.goal || '', lvl: 'zero', pace: S.settings.newPerDay === 10 || S.settings.newPerDay === 30 ? S.settings.newPerDay : 20 };
   let step = 0;
   const el = document.createElement('div');
   el.className = 'onb'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'ยินดีต้อนรับ');
@@ -38,7 +38,9 @@ function onboard(force) {
       <div class="onb-list">${ONB_LEVELS.map((l) => opt(pickd.lvl === l.id, `data-lvl="${l.id}"`, l.ic, l.t, l.d)).join('')}</div>`,
     () => `<h2 class="h2">วันละกี่คำดี?</h2>
       <p class="muted small">เริ่มน้อยๆ แล้วทำให้ต่อเนื่องดีที่สุด ปรับได้ทุกเมื่อ</p>
-      <div class="onb-list">${ONB_PACE.map((p) => opt(pickd.pace === p.n, `data-pace="${p.n}"`, '⏱️', p.t, p.d)).join('')}</div>`,
+      <div class="onb-list">${ONB_PACE.map((p) => opt(pickd.pace === p.n, `data-pace="${p.n}"`, '⏱️', p.t, p.d)).join('')}</div>
+      <p class="muted small" style="margin:14px 0 6px">แอปนี้มีเกมและกิจกรรมเยอะมาก เริ่มแบบเรียบง่ายก่อนก็ได้นะ</p>
+      <div class="onb-list">${opt(pickd.simple, 'data-simple="1"', '🌱', 'เริ่มแบบเรียบง่าย (แนะนำ)', 'แสดงแค่สิ่งจำเป็นก่อน แตะอีกครั้งถ้าอยากเห็นทุกอย่างตั้งแต่แรก · เปิดทีหลังได้')}</div>`,
   ];
   const draw = () => {
     el.innerHTML = `<div class="onb-card">
@@ -54,7 +56,7 @@ function onboard(force) {
   const finish = (apply) => {
     if (apply) {
       const l = ONB_LEVELS.find((x) => x.id === pickd.lvl);
-      S.settings.goal = pickd.goal; S.settings.levels = l.lv.slice(); S.settings.newPerDay = pickd.pace; S.settings.minutes = 0;
+      S.settings.goal = pickd.goal; S.settings.levels = l.lv.slice(); S.settings.newPerDay = pickd.pace; S.settings.minutes = 0; S.settings.simple = pickd.simple;
       save();
     }
     onbMark();
@@ -67,6 +69,7 @@ function onboard(force) {
     if (b.dataset.goal != null) { pickd.goal = b.dataset.goal; draw(); }
     else if (b.dataset.lvl) { pickd.lvl = b.dataset.lvl; draw(); }
     else if (b.dataset.pace) { pickd.pace = +b.dataset.pace; draw(); }
+    else if (b.dataset.simple) { pickd.simple = !pickd.simple; draw(); }
     else if (b.dataset.act === 'next') { if (step < 2) { step++; draw(); } else finish(true); }
     else if (b.dataset.act === 'back') { step--; draw(); }
     else if (b.dataset.act === 'skip') finish(false);

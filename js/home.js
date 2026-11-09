@@ -167,7 +167,8 @@ function renderHome() {
       <div><b>🎯 รู้ศัพท์อยู่แล้วบ้างไหม?</b><div class="small muted">วัดระดับ 3–5 นาที แล้วข้ามคำที่รู้แล้ว</div></div>
       <button class="btn primary" data-pl="go">วัดระดับ</button><button class="x" data-pl="no" aria-label="ไม่ต้อง">✕</button></div>` : '',
     standalone || installHidden() ? '' : `<div class="card-box install-tip slim small" id="installTip">${installTipInner()}</div>`].filter(Boolean);
-  const blocks = homeBlocks().filter((b) => b.on).map((b) => ({ ...b, html: homeBlockHtml(B, b.id) }))
+  const simple = simpleOn() && !homeEdit;
+  const blocks = homeBlocks().filter((b) => b.on && (!simple || SIMPLE_HOME.includes(b.id))).map((b) => ({ ...b, html: homeBlockHtml(B, b.id) }))
     .map((b) => (homeEdit ? { ...b, w: 'full', html: heTools(b) + (b.html || `<div class="card-box he-empty small muted">${b.ic} ${b.name} — วันนี้ยังไม่มีอะไรให้แสดง</div>`) } : b)).filter((b) => b.html);
   // 1.179.8: the small "something to play today" blocks share one sideways strip of tiles (2+ of them shown), at the first one's place
   const strip = blocks.filter((b) => STRIP_IDS.includes(b.id));
@@ -192,7 +193,7 @@ function renderHome() {
     ${homeGridHtml(blocks)}
     ${hidden.length ? `<div class="card-box he-hidden"><b>➕ กล่องที่ซ่อนอยู่</b><div class="he-chips">${hidden.map((b) => `<button class="chip" data-he="show" data-id="${b.id}">${b.ic} ${b.name}</button>`).join('')}</div></div>` : ''}
     ${blocks.some((b) => b.id !== 'notices') ? '' : '<div class="card-box center small muted">ซ่อนทุกกล่องอยู่ — เปิดกล่องที่ต้องการได้ที่ ⚙️ ตั้งค่า → จัดหน้าแรก</div>'}
-    ${homeEdit ? '' : '<p class="center"><button class="he-go small" id="heGo">✏️ จัดหน้าแรก</button></p>'}
+    ${simple ? simpleBar() : homeEdit ? '' : '<p class="center"><button class="he-go small" id="heGo">✏️ จัดหน้าแรก</button></p>'}
     <p class="center small muted">เวอร์ชัน ${APP_VERSION}</p>`;
   if (homeEdit) cleanup = () => { homeEdit = false; }; // leaving home ends the edit mode
   const click = (sel, fn) => { const el = $(sel); if (el) el.onclick = fn; };
@@ -252,6 +253,7 @@ function renderHome() {
   bindNoticeDeck();
   edgeFade($('#dsTrack'));
   click('#heGo', () => homeEditSet(true));
+  click('#simpleOff', () => { S.settings.simple = false; save(); toast('🧭 เปิดทุกส่วนแล้ว ปิดได้อีกที่ ⚙️ ตั้งค่า → หน้าตา → โหมดเรียบง่าย'); renderHome(); });
   click('#heDone', () => homeEditSet(false));
   view.querySelectorAll('[data-he]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); homeEditDo(b.dataset.he, b.dataset.id); }; });
   const qf = $('#qFold'); if (qf) qf.ontoggle = () => { try { localStorage.setItem('o3k.qopen', qf.open ? '1' : '0'); } catch (e) { /* ignore */ } masonry([view.querySelector('.home-grid')]); };
@@ -374,6 +376,13 @@ function stripDone() {
   return out;
 }
 // Home layout: the blocks the user can show/hide, reorder and size (settings → จัดหน้าแรก). S.homeCfg stores the choice.
+// 🌱 simple mode bar under the home blocks (1.232.0): says what is hidden; after SIMPLE_GROWN learned words it invites to open the rest.
+function simpleBar() {
+  const grown = Object.keys(S.prog).length >= SIMPLE_GROWN;
+  return `<div class="card-box simple-bar${grown ? ' grown' : ''}" id="simpleBar"><div class="grow"><b>${grown ? '🌳 เก่งขึ้นเยอะแล้ว!' : '🌱 โหมดเรียบง่าย'}</b>
+    <div class="small muted">${grown ? `เรียนไปแล้ว ${Object.keys(S.prog).length} คำ ลองเปิดเกม กิจกรรม และโซนสนุกอื่นๆ ดูไหม` : 'ตอนนี้แสดงแค่สิ่งจำเป็น ส่วนอื่น (ภารกิจรายสัปดาห์ โซนสนุก ชุดของฉัน ฯลฯ) ซ่อนไว้ก่อน'}</div></div>
+    <button class="btn${grown ? ' primary' : ''}" id="simpleOff">แสดงทุกอย่าง</button></div>`;
+}
 const HOME_BLOCKS = [
   { id: 'hero', ic: '🏠', name: 'การ์ดวันนี้ + ปุ่มเริ่มเรียน', w: 'full', on: true },
   { id: 'feed', ic: '📱', name: 'ปุ่มไถศัพท์', w: 'half', on: true },

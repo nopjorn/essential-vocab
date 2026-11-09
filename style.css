@@ -3227,3 +3227,7 @@ html.opt-left .f-body:has(> .options) > .options { grid-column: 1; }
   .fs-panel .ss-h { margin: 0 0 -4px; }
   .fs-panel .fs-opt { margin-top: auto; min-height: 40px; }
 }
+
+/* 🌱 simple mode bar on home (1.232.0) */
+.simple-bar { display: flex; align-items: center; gap: 12px; }
+.simple-bar.grown { border: 1px solid var(--good); }
