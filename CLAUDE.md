@@ -76,7 +76,10 @@ Details: `docs/notes/state-learning.md`. The rules that always apply:
 - `@playwright/test` is pinned to 1.63.0 (same Chromium build as the container's `/opt/pw-browsers/chromium-1243`; 1.56 could not see or route a service worker's own requests).
 - Run before every push: `npm ci` (once) then `PW_CHROMIUM=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome npm test`
   (the config starts `python3 -m http.server 8765` itself). CI (GitHub Actions "Tests") runs the same suite on every
-  push to `master`; it must stay green.
+  push to `master`; it must stay green. Since 1.233 it runs in 3 shards (`--shard=n/3`, one job each, Chromium cached) and a newer
+  push cancels the older run. To run one shard locally: `npx playwright test --shard=1/3`.
+- Size budget (1.233, `data.spec.js`): app.js ≤ 210 KB, style.css ≤ 330 KB, each eager `js/*.js` ≤ 125 KB, all start-up scripts
+  except the word lists ≤ 1500 KB. Over a limit → move the new part into its own (preferably lazy-loaded) file instead of raising it.
 - `tests/data.spec.js` (no browser): version in app.js/sw.js/README, sw.js file list, word rows, families, pairs,
   collocations, stories. `app.spec.js`: every route, word sheet, family browser, flashcards. `games.spec.js`: every
   game plays a full round with right **and** wrong answers to the result screen. `features.spec.js`: features from 1.32 on. `responsive.spec.js`: no sideways

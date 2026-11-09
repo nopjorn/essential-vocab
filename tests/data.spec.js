@@ -756,3 +756,17 @@ test('the reminder edge function only answers the cron job (service-role key)', 
   expect(src.indexOf('forbidden')).toBeLessThan(src.indexOf(".from('push_subs')"));
 });
 
+
+// 1.233.0: size budget for the files every app start loads (the word lists and lazy-loaded data are not counted). Growing past
+// a limit is a hint to move the new part into its own file (lazy-loaded where it can be, like data/play.js and data/guide.js).
+test('files loaded at every start stay within their size budget', () => {
+  const size = (f) => fs.statSync(path.join(root, f)).size;
+  const eager = [...read('index.html').matchAll(/<script src="([^"?]+)/g)].map((m) => m[1]).filter((f) => !f.startsWith('data/words/'));
+  const over = [];
+  const budget = (f, kb) => { if (size(f) > kb * 1024) over.push(`${f} ${Math.round(size(f) / 1024)} KB > ${kb} KB`); };
+  budget('app.js', 210); budget('style.css', 330);
+  for (const f of eager) if (f.startsWith('js/')) budget(f, 125);
+  const total = eager.reduce((a, f) => a + size(f), 0);
+  if (total > 1500 * 1024) over.push(`all start-up scripts ${Math.round(total / 1024)} KB > 1500 KB`);
+  expect(over).toEqual([]);
+});

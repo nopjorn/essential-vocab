@@ -5,10 +5,19 @@ on:
   pull_request:
   workflow_dispatch:
 
+# 1.233.0: a newer push to the same branch cancels the run still going for an older one (it tests the same code plus more).
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-24.04
     timeout-minutes: 25 # the Chromium download alone took 10 min once (1.154.1 run was cancelled at 15)
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3] # 1.233.0: the suite runs in 3 parallel parts (about 12 min in one job before)
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,11 +25,19 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+      - run: npx playwright install-deps chromium
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+      - run: npx playwright test --shard=${{ matrix.shard }}/3
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: test-results
+          name: test-results-${{ matrix.shard }}
           path: test-results/
           retention-days: 7
