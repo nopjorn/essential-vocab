@@ -1,5 +1,5 @@
 // Offline cache. Bump VERSION (keep it equal to APP_VERSION in app.js) on every push.
-const VERSION = 'o3k-1.229.0';
+const VERSION = 'o3k-1.230.0';
 // App shell: replaced as a whole with every version.
 const FILES = [
   './',
@@ -145,9 +145,33 @@ async function refreshData(cache, file) {
   await cache.put(dataKey(url), res);
 }
 
+// App files (1.229.0): a new version used to download all ~60 of them (~800 KB) although a release changes only a few.
+// Now each one is asked for with the ETag / Last-Modified of the copy in the previous version's cache; 304 = unchanged → that
+// copy is reused. The counts go into the new cache under INSTALL_KEY for the settings offline box ({reuse, net, at}).
+const INSTALL_KEY = '__install-stats';
+async function fillShell(cache) {
+  const scope = self.registration.scope;
+  const olds = await Promise.all((await caches.keys()).filter((k) => /^o3k-\d/.test(k) && k !== VERSION).map((k) => caches.open(k)));
+  const n = { reuse: 0, net: 0, at: Date.now() };
+  await Promise.all(FILES.map(async (f) => {
+    const url = new URL(f, scope).href;
+    let old = null;
+    for (const c of olds) { old = await c.match(url, { ignoreSearch: true }); if (old) break; }
+    const headers = {};
+    if (old && old.headers.get('ETag')) headers['If-None-Match'] = old.headers.get('ETag');
+    else if (old && old.headers.get('Last-Modified')) headers['If-Modified-Since'] = old.headers.get('Last-Modified');
+    const res = await fetch(url, { headers, cache: 'no-store' });
+    if (res.status === 304 && old) { n.reuse++; return cache.put(url, old); }
+    if (!res.ok) throw new Error(f + ' ' + res.status);
+    n.net++;
+    return cache.put(url, res);
+  }));
+  await cache.put(new URL(INSTALL_KEY, scope).href, new Response(JSON.stringify(n), { headers: { 'Content-Type': 'application/json' } }));
+}
+
 self.addEventListener('install', (e) => {
   e.waitUntil(Promise.all([
-    caches.open(VERSION).then((c) => c.addAll(FILES)),
+    caches.open(VERSION).then(fillShell),
     caches.open(DATA_CACHE).then((c) => Promise.all(DATA.map((f) => refreshData(c, f)))),
   ]).then(() => self.skipWaiting()));
 });
@@ -274,12 +298,13 @@ self.addEventListener('message', (e) => {
   const d = e.data || {}, port = e.ports && e.ports[0];
   if (!port || (d.type !== 'offline-status' && d.type !== 'offline-fetch')) return;
   e.waitUntil((async () => {
-    let miss = await offlineMissing();
+    let miss = await offlineMissing(), install = null;
+    try { const r = await (await caches.open(VERSION)).match(new URL(INSTALL_KEY, self.registration.scope).href); if (r) install = await r.json(); } catch (err) { /* none */ }
     if (d.type === 'offline-fetch' && miss.length) {
       const shell = await caches.open(VERSION), data = await caches.open(DATA_CACHE);
       await Promise.all(miss.map((f) => (DATA.includes(f) ? refreshData(data, f) : shell.add(f)).catch(() => {})));
       miss = await offlineMissing();
     }
-    port.postMessage({ version: VERSION, total: FILES.length + DATA.length, miss, start });
+    port.postMessage({ version: VERSION, total: FILES.length + DATA.length, miss, start, install });
   })());
 });

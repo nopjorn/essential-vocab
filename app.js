@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.229.0';
+const APP_VERSION = '1.230.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -300,7 +300,7 @@ const defaults = () => ({
 });
 // Set when the saved state could not be read: the old text is copied to KEY + '.rescue' before anything new is written (1.105.4).
 let loadRescued = false;
-let loadHadRaw = false; // localStorage had a saved state at start (1.227.0: idbRecover() restores the IndexedDB copy when it had none)
+let loadHadRaw = false; // localStorage had a saved state at start (1.228.0: idbRecover() restores the IndexedDB copy when it had none)
 let S = load();
 // Users from before 1.8.0 get XP for the work they already did.
 if (S.xp == null) S.xp = Object.values(S.prog).reduce((a, p) => a + (p.s || 0) + (p.c || 0), 0);

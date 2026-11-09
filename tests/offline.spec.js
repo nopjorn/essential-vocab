@@ -129,3 +129,4 @@ test.describe('with the service worker', () => {
     await context.setOffline(false);
   });
 });
+

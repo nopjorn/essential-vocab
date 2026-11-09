@@ -578,6 +578,11 @@ function startText(st) {
   if (st.same === false) return '🆕 เปิดแอปครั้งล่าสุดเจอเวอร์ชันใหม่ เลยโหลดไฟล์แอปจากเน็ต';
   return `🌐 เปิดแอปครั้งล่าสุดโหลดไฟล์แอป ${st.net} ไฟล์จากเน็ต (ตรวจเวอร์ชันไม่ทันหรือเน็ตไม่พร้อม)`;
 }
+// 1.230.0: how the last update fetched its app files (sw.js fillShell: unchanged ones reused from the previous version).
+function installText(n) {
+  if (!n || !(n.reuse + n.net)) return '';
+  return n.reuse ? `🆙 อัปเดตล่าสุดโหลดใหม่แค่ ${n.net} ไฟล์ ใช้ไฟล์เดิมที่ไม่เปลี่ยน ${n.reuse} ไฟล์` : `🆙 อัปเดตล่าสุดโหลดไฟล์แอปใหม่ทั้งหมด ${n.net} ไฟล์`;
+}
 const mbText = (b) => (b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
 // 💾 how full this site's localStorage is (1.210.0): Safari allows about STORE_LIMIT characters.
 function storeBox() {
@@ -629,7 +634,7 @@ function offlineBox() {
       : ok ? `✅ พร้อมใช้ออฟไลน์ครบทั้ง ${r.total} ไฟล์`
       : `⚠️ ยังขาด ${r.miss.length} จาก ${r.total} ไฟล์ · ต่อเน็ตแล้วกด “โหลดเก็บไว้ในเครื่อง”`;
     el.querySelector('#offUsed').textContent = used ? `ใช้พื้นที่ในเครื่องราว ${mbText(used)}` : '';
-    el.querySelector('#offStart').textContent = startText(r && r.start);
+    el.querySelector('#offStart').textContent = [startText(r && r.start), installText(r && r.install)].filter(Boolean).join(' · ');
     el.querySelector('#offGet').hidden = !r || ok;
   };
   const run = (fetch) => Promise.all([offlineStatus(fetch), navigator.storage && navigator.storage.estimate ? navigator.storage.estimate().then((x) => x.usage).catch(() => 0) : 0])
