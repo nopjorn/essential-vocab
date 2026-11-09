@@ -1,6 +1,7 @@
 // Changelog shown in the app (settings → ประวัติการอัปเดต). Newest first. Keep in sync with the README table.
 // [version, what changed, release date YYYY-MM-DD (Thailand time)]; loaded lazily by loadChangelog().
 window.CHANGELOG = [
+  ["1.226.0", "ภาษาทีมนักพัฒนา 👩‍💻 51 ประโยคสำหรับรีวิวโค้ด สแตนด์อัป แชตทีม ตอนระบบมีปัญหา และวางแผนงาน (Nice catch!, I'm blocked on …, Heads up:, Let's break it down.) ในคลังความรู้ เกมของตัวเอง และอยู่ในเกม 👂 ฟังวลี", "2026-11-09"],
   ["1.225.0", "คำที่มักออกเสียงผิด 🗣️ 40 คำ ทั้งศัพท์ไอที (cache, suite, query, schema) และคำทั่วไป (receipt, salmon, Wednesday) ในคลังความรู้ และเกมเลือกคำอ่านที่ถูก ตอบแล้วฟังเสียงจริงพร้อมเคล็ดลับ", "2026-11-09"],
   ["1.224.0", "ใหม่ 🐞 บันทึกข้อผิดพลาด: ถ้าแอปเจอปัญหา จะจดไว้ในเครื่อง (ไม่มีข้อมูลการเรียน) ดูได้ที่ ⚙️ ตั้งค่า → 💾 สำรองข้อมูล แล้วกด 📋 คัดลอกรายงาน ส่งให้ผู้พัฒนาได้", "2026-11-09"],
   ["1.223.0", "คำคู่ไอที 🧑‍💻 52 คู่ (fix a bug, run the tests, raise a ticket, deploy to production, technical debt ฯลฯ) ในคลังความรู้ และเกมเติมคำแบบ TOEIC Part 5 ตัวเลือกผิดเป็นคำที่คนไทยมักใช้ผิด", "2026-11-09"],

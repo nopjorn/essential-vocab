@@ -58,6 +58,14 @@ const PB = {
     cats: { tech: ['💻', 'ศัพท์ไอที'], work: ['💼', 'ที่ทำงาน'], daily: ['🏠', 'ชีวิตประจำวัน'] },
     same: [['determine', 'determined'], ['debt', 'doubt']],
   },
+  devtalk: {
+    file: 'data/devtalk.js', key: 'DEVTALK', icon: '👩‍💻', title: 'ภาษาทีมนักพัฒนา', modes: ['en', 'th'], sayEn: true, ear: true,
+    intro: 'ประโยคที่ใช้รีวิวโค้ด สแตนด์อัป แชตทีม รับมือระบบล่ม และวางแผนงาน · เขียนให้สุภาพแบบที่ทีมต่างชาติใช้กันจริง · 💡 บอกวิธีใช้ · แตะเพื่อฟัง · ＋ เก็บเข้าชุดของฉัน',
+    ask: { en: 'ประโยคนี้หมายความว่าอะไร', th: 'พูดในทีมเป็นอังกฤษว่าอะไร' },
+    cats: { review: ['🔍', 'รีวิวโค้ด'], standup: ['🧍', 'สแตนด์อัป'], chat: ['💬', 'แชตในทีม'], incident: ['🚨', 'ระบบมีปัญหา'], plan: ['🗂️', 'วางแผนงาน'] },
+    same: [['Nit:', 'Non-blocking:'], ['This looks good to me.', 'Done, thanks!', 'Good point.'], ['I\'ll look into it.', 'I\'m on it.', 'We\'re investigating.'], ['Could we …?', 'What do you think about …?'],
+      ['I\'m still working on …', 'It\'s taking longer than expected.'], ['Do you have a minute?', 'Quick question:'], ['Let\'s hop on a call.', 'Let\'s take this offline.'], ['It\'s been fixed.', 'That did the trick.']],
+  },
 };
 const PB_DATA = {};
 // fill books (1.223.0): rows [cat, phrase with [part], Thai, example with [part] as used, Thai example, 'wrong|wrong|wrong', tip];

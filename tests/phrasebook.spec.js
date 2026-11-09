@@ -1,8 +1,10 @@
 // Phrase books (1.212.0+, js/phrasebook.js): each book has a reference page and a game with its id (qBook in data/play.js).
 const { test, expect } = require('@playwright/test');
 const { openApp, readState } = require('./helpers');
+// an option whose whole text is t (options can contain each other, e.g. คิว / คิว-อี)
+const exact = (t) => new RegExp('^\\s*' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$');
 
-const BOOKS = [['sayit', 'toSy'], ['itcol', 'toIc'], ['doctor', 'toDr'], ['thai', 'toTh'], ['chat', 'toCh'], ['abbr', 'toAb']];
+const BOOKS = [['devtalk', 'toDv'], ['sayit', 'toSy'], ['itcol', 'toIc'], ['doctor', 'toDr'], ['thai', 'toTh'], ['chat', 'toCh'], ['abbr', 'toAb']];
 
 for (const [id, btn] of BOOKS) {
   test(`${id}: the page lists every row by category, speaks, keeps a row in a set and starts the game`, async ({ page }) => {
@@ -43,12 +45,12 @@ for (const [id, btn] of BOOKS) {
     const view = page.locator('#view');
     await expect(view.locator('.options .opt')).toHaveCount(4);
     let q = await page.evaluate(() => pbQuestion.last);
-    await view.locator('.opt').filter({ hasText: q.right }).first().click();
+    await view.locator('.opt').filter({ hasText: exact(q.right) }).first().click();
     await expect(view.locator('#reveal')).toContainText('ถูกต้อง');
     await expect(view.locator('.pb-ex')).toBeVisible();
     await view.locator('#nextQ').click();
     q = await page.evaluate(() => pbQuestion.last);
-    await view.locator('.opt').filter({ hasNotText: q.right }).first().click();
+    await view.locator('.opt').filter({ hasNotText: exact(q.right) }).first().click();
     await expect(view.locator('#reveal')).toContainText('ยังไม่ถูก');
     await page.evaluate(() => flushSave());
     const keys = Object.entries((await readState(page)).lex).filter(([k]) => k.startsWith(id + ':'));
@@ -69,11 +71,11 @@ test('pbear (1.220): hear a phrase from the listening books, pick the Thai; a bo
   await expect.poll(() => page.evaluate(() => window.__said.at(-1))).toBe(cur.en);
   await view.locator('#pbHint').click();
   await expect(view.locator('#pbTxt')).toHaveText(cur.en);
-  await view.locator('.opt').filter({ hasText: cur.q.right }).first().click();
+  await view.locator('.opt').filter({ hasText: exact(cur.q.right) }).first().click();
   await expect(view.locator('#reveal')).toContainText('ถูกต้อง');
   await view.locator('#nextQ').click();
   const q2 = await page.evaluate(() => pbQuestion.last);
-  await view.locator('.opt').filter({ hasNotText: q2.right }).first().click();
+  await view.locator('.opt').filter({ hasNotText: exact(q2.right) }).first().click();
   await expect(view.locator('#reveal')).toContainText('ยังไม่ถูก');
   expect(await page.evaluate(() => Object.keys(S.lex).filter((k) => k.startsWith('pbear:')).length)).toBe(2);
   // abbreviations are never in it; the doctor page's 🎧 button plays doctor phrases only
