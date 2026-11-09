@@ -2618,6 +2618,8 @@ html[data-theme="dark"]:not(.no-pbg) body, html[data-theme="black"]:not(.no-pbg)
   .fs-dots i.bad { background: var(--bad); }
   .fs-miss { display: flex; flex-wrap: wrap; gap: 6px; }
   .fs-miss .chip { min-height: 36px; padding: 4px 12px; }
+  .fs-top > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fs-opt { display: block; width: 100%; margin-top: 14px; }
 }
 /* narrower landscape (11" iPad): the card is too narrow for prompt | answers beside the panel, so it stacks them again */
 @media (min-width: 1100px) and (max-width: 1299.98px) and (min-height: 700px) and (orientation: landscape) {
@@ -3157,4 +3159,38 @@ html.no-ans .ans-fx { animation: ansFade 1.05s linear forwards; }
 @media (min-width: 700px) {
   .th-parts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .th-words { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ---------- 1.219.0: answers on the left (settings.optSide) in every split layout, not only with the thumb buttons ----------
+   Quizzes and the feed card put the question on the left and the answers on the right wherever they split (phone landscape,
+   iPad landscape); html.opt-left swaps the two columns. The thumb layout (html.thumbs.opt-left, 1.150) keeps its own rules. */
+html.opt-left .view:has(> .q-prompt) { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
+html.opt-left .view:has(> .q-prompt) > * { grid-column: 1; }
+html.opt-left .view:has(> .q-prompt) > .q-prompt { grid-column: 2; }
+html.opt-left .view:has(> .q-prompt) > .session-top { grid-column: 1 / -1; }
+html.opt-left .f-body:has(> .options) { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
+html.opt-left .f-body:has(> .options) > * { grid-column: 2; }
+html.opt-left .f-body:has(> .options) > .options { grid-column: 1; }
+
+/* ---------- 1.219.0: "รอบนี้" panel beside the quiz games (iPad landscape, #gSide from data/play.js) ----------
+   Three columns: question, answers, panel. --wa = the answers' width (the thumb layout keeps its narrower column);
+   the panel goes left with .fs-left (settings.feedSide), the answers before the question with html.opt-left. */
+@media (min-width: 1100px) and (min-height: 700px) and (orientation: landscape) {
+  .topbar:has(~ .view > #gSide) { --maxw: 1280px; }
+  html .view:has(> .q-prompt):has(> #gSide) { --maxw: 1280px; --wa: minmax(0, 1fr); --cp: 1; --ca: 2; --cs: 3; grid-template-columns: minmax(0, 1.1fr) var(--wa) 240px; column-gap: 20px; }
+  html.thumbs .view:has(> .q-prompt):has(> #gSide) { --ow: clamp(240px, 24vw, 320px); --wa: var(--ow); }
+  html.opt-left .view:has(> .q-prompt):has(> #gSide) { --cp: 2; --ca: 1; grid-template-columns: var(--wa) minmax(0, 1.1fr) 240px; }
+  html .view:has(> .q-prompt):has(> #gSide.fs-left) { --cs: 1; --cp: 2; --ca: 3; grid-template-columns: 240px minmax(0, 1.1fr) var(--wa); }
+  html.opt-left .view:has(> .q-prompt):has(> #gSide.fs-left) { --cp: 3; --ca: 2; grid-template-columns: 240px var(--wa) minmax(0, 1.1fr); }
+  html .view:has(> .q-prompt):has(> #gSide) > * { grid-column: var(--ca); }
+  html .view:has(> .q-prompt):has(> #gSide) > .q-prompt { grid-column: var(--cp); }
+  html .view:has(> .q-prompt):has(> #gSide) > .session-top { grid-column: 1 / -1; }
+  html .view:has(> .q-prompt):has(> #gSide) > #gSide { display: block; grid-column: var(--cs); grid-row: 2 / -1; align-self: start; position: sticky; top: 0; max-height: calc(100dvh - 200px); overflow-y: auto;
+    background: var(--surface); border-radius: 22px; box-shadow: var(--shadow); padding: 14px 16px 16px; }
+  html .view:has(> .q-prompt):has(> #gSide) > .options .opt { font-size: 18px; }
+  /* the thumb layout's fixed next button sits under the answers column, whatever side it is on */
+  html.thumbs .view:has(> .q-prompt):has(> .options):has(> #gSide) #nextQ { right: calc(env(safe-area-inset-right) + max(20px, (100vw - var(--rail-w, 0px) - 1280px) / 2) + 260px); }
+  html.thumbs.opt-left .view:has(> .q-prompt):has(> .options):has(> #gSide) #nextQ { right: auto; left: calc(var(--rail-w, 0px) + env(safe-area-inset-left) + max(20px, (100vw - var(--rail-w, 0px) - 1280px) / 2)); }
+  html.thumbs .view:has(> .q-prompt):has(> .options):has(> #gSide.fs-left) #nextQ { right: calc(env(safe-area-inset-right) + max(20px, (100vw - var(--rail-w, 0px) - 1280px) / 2)); }
+  html.thumbs.opt-left .view:has(> .q-prompt):has(> .options):has(> #gSide.fs-left) #nextQ { right: auto; left: calc(var(--rail-w, 0px) + env(safe-area-inset-left) + max(20px, (100vw - var(--rail-w, 0px) - 1280px) / 2) + 260px); }
 }

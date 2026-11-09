@@ -1774,6 +1774,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     qmReact(ok);
     answerBadges(ok);
     runLog.push(ok);
+    rpDraw();
   }
   function next() { if ((SURV || BOSS) && hearts <= 0) return result(); i++; q(); }
 
@@ -1888,6 +1889,28 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     countUp(view.querySelectorAll('.res-cnt, .res-xp b'));
   }
 
+  // 📊 "รอบนี้" panel (1.219.0, rpHtml in js/games.js): iPad landscape, beside every question of the round (not the TOEIC mock).
+  // Each question redraws the whole view, so an observer puts the panel back after each one; it stops on the result screen
+  // or when another page opens.
+  const rpT0 = Date.now(), seq = navSeq;
+  function rpDraw() {
+    const el = view.querySelector(':scope > #gSide'); if (!el || !RP_MQ.matches) return;
+    el.innerHTML = rpHtml({ title: GNAME, ok: asked - wrong.length, bad: wrong.length, of: ENDLESS ? 0 : items.length, t0: rpT0,
+      pts: [`+${Math.max(0, (S.xp || 0) - xp0)}`, 'XP'], combo, best: bestCombo,
+      rows: [...(SURV || BOSS ? [['❤️ หัวใจ', hearts]] : []), ...(!ENDLESS && !BOSS ? [['แต้ม', score]] : [])], log: runLog, miss: wrong });
+  }
+  if (!MOCK && S.settings.feedSide !== 'off') {
+    const rpObs = new MutationObserver(() => {
+      if (navSeq !== seq || finished) { rpObs.disconnect(); RP_MQ.removeEventListener('change', rpDraw); return; }
+      if (!view.querySelector(':scope > .session-top') || view.querySelector(':scope > #gSide')) return;
+      view.insertAdjacentHTML('beforeend', rpAside('gSide'));
+      const el = view.querySelector(':scope > #gSide'); if (!el) return;
+      el.onclick = (e) => rpClick(e, el, rpDraw);
+      rpDraw();
+    });
+    rpObs.observe(view, { childList: true });
+    RP_MQ.addEventListener('change', rpDraw);
+  }
   q();
 }
 

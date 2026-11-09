@@ -173,10 +173,10 @@ function renderSettings() {
         <label class="switch"><input type="checkbox" id="swipeUD" aria-label="ปัดการ์ดขึ้น/ลง" ${st.swipeUD !== false ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>👐 ปุ่มสองข้าง (ถือสองมือ)<br><span class="small muted">iPad แนวนอน: ลืม/ยาก อยู่ซ้าย จำได้/ง่าย อยู่ขวา</span></span>
         <select class="sel" id="thumbs" aria-label="ปุ่มสองข้าง (ถือสองมือ)">${[['auto', autoTxt('thumbs', thumbsOn)], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.thumbs || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-      <div class="set-row"><span>🎮 ฝั่งของตัวเลือกคำตอบ<br><span class="small muted">iPad แนวนอน ถือสองมือ: เลือกฝั่งที่ถนัด</span></span>
+      <div class="set-row"><span>🎮 ฝั่งของตัวเลือกคำตอบ<br><span class="small muted">แนวนอน: เกมแบบเลือกคำตอบและไถศัพท์ คำตอบอยู่ฝั่งไหนของโจทย์</span></span>
         <select class="sel" id="optSide" aria-label="ฝั่งของตัวเลือกคำตอบ">${[['right', '👉 ขวา'], ['left', '👈 ซ้าย']].map(([v, t]) => `<option value="${v}" ${(st.optSide || 'right') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-      <div class="set-row"><span>📊 แผงสถิติรอบนี้ในไถศัพท์<br><span class="small muted">iPad แนวนอน: อยู่ฝั่งไหนของการ์ด หรือปิดไว้</span></span>
-        <select class="sel" id="feedSide" aria-label="แผงสถิติรอบนี้ในไถศัพท์">${[['right', '👉 ขวา'], ['left', '👈 ซ้าย'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.feedSide || 'right') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="set-row"><span>📊 แผงสถิติรอบนี้<br><span class="small muted">iPad แนวนอน: ไถศัพท์และเกม แผงอยู่ฝั่งไหน หรือปิดไว้</span></span>
+        <select class="sel" id="feedSide" aria-label="แผงสถิติรอบนี้">${[['right', '👉 ขวา'], ['left', '👈 ซ้าย'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.feedSide || 'right') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="set-row"><span>🪟 เว้นที่ให้ปุ่มหน้าต่าง iPad<br><span class="small muted">ถ้าปุ่มปิด/ย่อหน้าต่างทับปุ่ม ‹ ให้เลือก “เปิด”</span></span>
         <select class="sel" id="winGap" aria-label="เว้นที่ให้ปุ่มหน้าต่าง iPad">${[['auto', autoTxt('winGap', winGapOn)], ['on', 'เปิด'], ['off', 'ปิด']].map(([v, t]) => `<option value="${v}" ${(st.winGap || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <button class="set-row set-link" id="keysBtn"><span>⌨️ คีย์ลัด<br><span class="small muted">สำหรับ iPad ที่ต่อคีย์บอร์ด หรือคอมพิวเตอร์ (กด ? ที่หน้าไหนก็ได้)</span></span><span class="muted">›</span></button>

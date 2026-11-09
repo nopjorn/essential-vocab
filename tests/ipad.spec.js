@@ -531,7 +531,7 @@ test('room for the iPad window buttons: off by default in a browser, on moves a 
 // exactly: the flashcard did not fit (its height was guessed from 100dvh) and the quiz question was a narrow strip.
 test('thumb layouts fill the screen that is left: card and buttons fit, the question card is wide and as tall as the answers', async ({ page }) => {
   await page.setViewportSize({ width: 1180, height: 820 });
-  const errors = await openApp(page, { settings: { levels: ['A1'], thumbs: 'on' } });
+  const errors = await openApp(page, { settings: { levels: ['A1'], thumbs: 'on', feedSide: 'off' } }); // 1.219.0: without the round panel (feed-side.spec.js)
   await page.addStyleTag({ content: '.topbar { padding-top: 44px !important; }' }); // like the status bar of a home-screen app
   await page.evaluate(() => go('cards'));
   await expect(page.locator('#fc')).toBeVisible();

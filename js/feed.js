@@ -50,7 +50,7 @@ function feedStoryQ() {
 
 function renderFeed() {
   view.classList.add('feed-mode');
-  view.innerHTML = `<div class="feed-hud"><span id="fCombo" class="combo"></span><span class="small f-goal" id="fGoal"></span><span class="small" id="fXp"></span></div><div class="feed" id="feed"></div>${S.settings.feedSide === 'off' ? '' : `<aside class="side-stats fs-panel${S.settings.feedSide === 'left' ? ' fs-left' : ''}" id="fSide" aria-label="สถิติรอบนี้"></aside>`}`;
+  view.innerHTML = `<div class="feed-hud"><span id="fCombo" class="combo"></span><span class="small f-goal" id="fGoal"></span><span class="small" id="fXp"></span></div><div class="feed" id="feed"></div>${rpAside('fSide')}`;
   const feed = $('#feed');
   const seen = new Set();
   const later = [];            // { at: card number, w } quizzes on words just introduced
@@ -69,43 +69,15 @@ function renderFeed() {
     const fresh = S.daily.date === today() ? S.daily.fresh : 0, goal = newGoal();
     $('#fGoal').textContent = fresh >= goal ? '🎯 ครบเป้าคำใหม่' : `✨ คำใหม่ ${fresh}/${goal}`;
   };
-  // 1.217.0 iPad landscape (CSS shows it from 1100×700): this round's numbers beside the feed, refreshed with every answer + a clock.
-  const sideMQ = matchMedia('(min-width: 1100px) and (min-height: 700px) and (orientation: landscape)');
-  const clock = (ms) => { const t = Math.floor(ms / 1000); return t >= 3600 ? `${Math.floor(t / 3600)}:${String(Math.floor(t / 60) % 60).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}` : `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+  // 1.217.0 iPad landscape: this round's numbers beside the feed (rpHtml in js/games.js), refreshed with every answer.
   function updSide() {
-    const el = $('#fSide'); if (!el || !sideMQ.matches) return; // hidden on phones: don't build it
-    const bad = sess.n - sess.ok, acc = sess.n ? Math.round(sess.ok / sess.n * 100) : null, ms = Date.now() - sess.t0;
-    const left = S.settings.feedSide === 'left';
-    el.innerHTML = `<div class="ss-h fs-top">รอบนี้<button class="fs-swap" data-fsswap aria-label="ย้ายแผงไปฝั่ง${left ? 'ขวา' : 'ซ้าย'}">${left ? 'ย้ายไปขวา ›' : '‹ ย้ายไปซ้าย'}</button></div>
-      <div class="ss-big"><b>${acc == null ? '–' : acc + '%'}</b><span>ตอบถูก</span></div>
-      <div class="qbar"><span style="width:${acc || 0}%"></span></div>
-      <div class="ss-grid">
-        <div><b class="fs-ok">${sess.ok}</b><span>✅ ถูก</span></div>
-        <div><b class="fs-bad">${bad}</b><span>❌ ผิด</span></div>
-        <div><b>${sess.n}</b><span>ข้อทั้งหมด</span></div></div>
-      <div class="ss-grid">
-        <div><b id="fsClock">${clock(ms)}</b><span>⏱️ เวลา</span></div>
-        <div><b>${sess.n ? Math.round(ms / 1000 / sess.n) : '–'}</b><span>วิ/ข้อ</span></div>
-        <div><b>+${sess.xp}</b><span>XP</span></div></div>
-      <div class="ss-h">คอมโบ</div>
-      <div class="ss-row"><span>ตอนนี้</span><b>${combo ? '🔥 ' + combo : 0}</b></div>
-      <div class="ss-row"><span>สูงสุดรอบนี้</span><b>${sess.best}</b></div>
-      <div class="ss-row"><span>คำใหม่ที่เรียน</span><b>${newDone}</b></div>
-      ${sess.bosses ? `<div class="ss-row"><span>👾 ปราบบอส</span><b>${sess.bosses}</b></div>` : ''}
-      ${sess.log.length ? `<div class="ss-h">ล่าสุด ${sess.log.length} ข้อ</div><div class="fs-dots" aria-label="ถูก ${sess.log.filter(Boolean).length} จาก ${sess.log.length} ข้อล่าสุด">${sess.log.map((ok) => `<i class="${ok ? 'ok' : 'bad'}"></i>`).join('')}</div>` : ''}
-      ${sess.miss.length ? `<div class="ss-h">คำที่ผิดรอบนี้ (แตะเพื่อดู)</div><div class="fs-miss">${sess.miss.slice(-12).reverse().map((w) => `<button class="chip" data-fsw="${w.idx}" lang="en">${esc(w.w)}</button>`).join('')}</div>` : ''}`;
+    const el = $('#fSide'); if (!el || !RP_MQ.matches) return; // hidden on phones: don't build it
+    el.innerHTML = rpHtml({ title: 'รอบนี้', ok: sess.ok, bad: sess.n - sess.ok, of: 0, t0: sess.t0, pts: [`+${sess.xp}`, 'XP'], combo, best: sess.best,
+      rows: [['คำใหม่ที่เรียน', newDone], ...(sess.bosses ? [['👾 ปราบบอส', sess.bosses]] : [])], log: sess.log, miss: sess.miss });
   }
   const side = $('#fSide');
-  if (side) side.onclick = (e) => {
-    if (e.target.closest('[data-fsswap]')) { // 1.218.0: left / right (also in settings, where it can be switched off)
-      S.settings.feedSide = S.settings.feedSide === 'left' ? 'right' : 'left'; save();
-      side.classList.toggle('fs-left', S.settings.feedSide === 'left'); return updSide();
-    }
-    const b = e.target.closest('[data-fsw]'); if (b && W[+b.dataset.fsw]) openSheet(W[+b.dataset.fsw]);
-  };
-  const sideTick = setInterval(() => { const c = $('#fsClock'); if (c && sideMQ.matches) c.textContent = clock(Date.now() - sess.t0); }, 1000);
-  const sideMQon = () => updSide();
-  sideMQ.addEventListener('change', sideMQon);
+  if (side) side.onclick = (e) => rpClick(e, side, updSide);
+  RP_MQ.addEventListener('change', updSide);
   hud();
   updSide();
   // Data for the special cards loads in the background; a special is skipped until its data is in.
@@ -416,6 +388,6 @@ function renderFeed() {
       while (n - k < 4) addCard();
     });
   }, { root: feed, threshold: 0.6 });
-  cleanup = () => { alive = false; io.disconnect(); clearInterval(sideTick); sideMQ.removeEventListener('change', sideMQon); };
+  cleanup = () => { alive = false; io.disconnect(); RP_MQ.removeEventListener('change', updSide); };
   for (let k = 0; k < 4; k++) addCard();
 }

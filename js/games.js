@@ -490,6 +490,49 @@ function gamePool(id) {
   return list;
 }
 
+/* ---------- round panel ---------- */
+// "รอบนี้" panel beside ไถศัพท์ (1.217.0) and the quiz games (1.219.0) on an iPad in landscape (CSS shows it from 1100×700).
+// settings.feedSide 'right' | 'left' | 'off' places it; settings.optSide moves the answers. Both can be switched from the panel.
+const RP_MQ = matchMedia('(min-width: 1100px) and (min-height: 700px) and (orientation: landscape)');
+const rpClock = (ms) => { const t = Math.max(0, Math.floor(ms / 1000)); return t >= 3600 ? `${Math.floor(t / 3600)}:${String(Math.floor(t / 60) % 60).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}` : `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+const rpAside = (id) => (S.settings.feedSide === 'off' ? '' : `<aside class="side-stats fs-panel${S.settings.feedSide === 'left' ? ' fs-left' : ''}" id="${id}" aria-label="สถิติรอบนี้"></aside>`);
+// o = { title, ok, bad, of (questions in the round, or 0), t0, pts: [value, label], combo, best, rows: [[label, value]], log: [true/false], miss: [words] }
+function rpHtml(o) {
+  const n = o.ok + o.bad, acc = n ? Math.round(o.ok / n * 100) : null, ms = Date.now() - o.t0, left = S.settings.feedSide === 'left', oLeft = S.settings.optSide === 'left';
+  const log = o.log.slice(-20), miss = o.miss.filter((w) => w && w.idx >= 0 && W[w.idx] === w);
+  return `<div class="ss-h fs-top"><span>${esc(o.title || 'รอบนี้')}</span><button class="fs-swap" data-fsswap aria-label="ย้ายแผงไปฝั่ง${left ? 'ขวา' : 'ซ้าย'}">${left ? 'ย้ายไปขวา ›' : '‹ ย้ายไปซ้าย'}</button></div>
+    <div class="ss-big"><b>${acc == null ? '–' : acc + '%'}</b><span>ตอบถูก</span></div>
+    <div class="qbar"><span style="width:${acc || 0}%"></span></div>
+    <div class="ss-grid">
+      <div><b>${o.ok}</b><span>✅ ถูก</span></div>
+      <div><b class="fs-bad">${o.bad}</b><span>❌ ผิด</span></div>
+      <div><b>${n}${o.of ? `<small>/${o.of}</small>` : ''}</b><span>${o.of ? 'ข้อ' : 'ข้อทั้งหมด'}</span></div></div>
+    <div class="ss-grid">
+      <div><b class="rp-clock" data-t0="${o.t0}">${rpClock(ms)}</b><span>⏱️ เวลา</span></div>
+      <div><b>${n ? Math.round(ms / 1000 / n) : '–'}</b><span>วิ/ข้อ</span></div>
+      <div><b>${o.pts[0]}</b><span>${o.pts[1]}</span></div></div>
+    <div class="ss-h">คอมโบ</div>
+    <div class="ss-row"><span>ตอนนี้</span><b>${o.combo ? '🔥 ' + o.combo : 0}</b></div>
+    <div class="ss-row"><span>สูงสุดรอบนี้</span><b>${o.best}</b></div>
+    ${(o.rows || []).map(([t, v]) => `<div class="ss-row"><span>${t}</span><b>${v}</b></div>`).join('')}
+    ${log.length ? `<div class="ss-h">ล่าสุด ${log.length} ข้อ</div><div class="fs-dots" role="img" aria-label="ถูก ${log.filter(Boolean).length} จาก ${log.length} ข้อล่าสุด">${log.map((ok) => `<i class="${ok ? 'ok' : 'bad'}"></i>`).join('')}</div>` : ''}
+    ${miss.length ? `<div class="ss-h">คำที่ผิดรอบนี้ (แตะเพื่อดู)</div><div class="fs-miss">${[...new Set(miss)].slice(-12).reverse().map((w) => `<button class="chip" data-fsw="${w.idx}" lang="en">${esc(w.w)}</button>`).join('')}</div>` : ''}
+    <button class="fs-swap fs-opt" data-optswap aria-label="ย้ายตัวเลือกคำตอบไปฝั่ง${oLeft ? 'ขวา' : 'ซ้าย'}">🎮 คำตอบไปฝั่ง${oLeft ? 'ขวา ›' : 'ซ้าย'}</button>`;
+}
+// Clicks inside a panel: move it, move the answers, open a missed word. redraw() rebuilds the panel's content.
+function rpClick(e, el, redraw) {
+  if (e.target.closest('[data-fsswap]')) {
+    S.settings.feedSide = S.settings.feedSide === 'left' ? 'right' : 'left'; save();
+    el.classList.toggle('fs-left', S.settings.feedSide === 'left'); return redraw();
+  }
+  if (e.target.closest('[data-optswap]')) {
+    S.settings.optSide = S.settings.optSide === 'left' ? 'right' : 'left'; save(); applyThumbs(); return redraw();
+  }
+  const b = e.target.closest('[data-fsw]'); if (b && W[+b.dataset.fsw]) openSheet(W[+b.dataset.fsw]);
+}
+// The clock in any open panel ticks every second.
+setInterval(() => { if (!RP_MQ.matches) return; view.querySelectorAll('.rp-clock').forEach((c) => { c.textContent = rpClock(Date.now() - +c.dataset.t0); }); }, 1000);
+
 /* ---------- automatic difficulty ---------- */
 // Level 1 = normal, 2 = look-alike wrong options, 3 = look-alike options + 12 s per question (15 s for sentences).
 // settings.gdiff: 'auto' (default, from the rolling accuracy S.gacc of multiple-choice answers) or a fixed '1' | '2' | '3'.
