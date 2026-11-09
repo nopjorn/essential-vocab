@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.220.0';
+const APP_VERSION = '1.221.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -1472,12 +1472,26 @@ function englishVoices() {
   return voices.filter((v) => /^en[-_]/i.test(v.lang)).map((v) => ({ v, lang: v.lang.replace('_', '-') }))
     .sort((a, b) => voiceRank(a.v) - voiceRank(b.v) || a.lang.localeCompare(b.lang) || a.v.name.localeCompare(b.v.name));
 }
+// "Automatic" voice (1.221): the best voice of the chosen accent — Premium, then Enhanced/Siri, then a known clear
+// default voice — before any other voice of that accent, then any English voice.
+const KNOWN_VOICE = /Samantha|Daniel|Karen|Ava|Zoe|Evan|Serena|Kate|Siri/i;
+function autoVoice(lang) {
+  const norm = (v) => (v.lang || '').replace('_', '-');
+  const pick = (list) => list.sort((a, b) => voiceRank(a) - voiceRank(b) || (KNOWN_VOICE.test(a.name) ? 0 : 1) - (KNOWN_VOICE.test(b.name) ? 0 : 1))[0];
+  return pick(voices.filter((v) => norm(v) === lang)) || pick(voices.filter((v) => /^en-/i.test(norm(v)))) || null;
+}
 function fillVoices() {
   const sel = document.getElementById('voice'); if (!sel) return;
   const list = englishVoices();
   sel.innerHTML = `<option value="">✨ อัตโนมัติ (ตามสำเนียง)</option>` + list.map(({ v, lang }) =>
     `<option value="${esc(v.voiceURI)}" ${v.voiceURI === S.settings.voice ? 'selected' : ''}>${FLAG[lang] || '🌐'} ${esc(v.name)}${voiceRank(v) < 2 ? ' ⭐' : ''}</option>`).join('');
-  const n = document.getElementById('voiceN'); if (n) n.textContent = list.length ? `มี ${list.length} เสียง · ⭐ = เสียงคุณภาพสูง` : 'ยังโหลดรายชื่อเสียงไม่ได้ ลองเปิดหน้านี้ใหม่';
+  const n = document.getElementById('voiceN');
+  if (n) {
+    const auto = !S.settings.voice && autoVoice(S.settings.accent);
+    n.textContent = list.length ? `มี ${list.length} เสียง · ⭐ = เสียงคุณภาพสูง${auto ? ` · อัตโนมัติตอนนี้ใช้ ${auto.name}` : ''}` : 'ยังโหลดรายชื่อเสียงไม่ได้ ลองเปิดหน้านี้ใหม่';
+  }
+  // No Premium/Enhanced voice on this device yet → show how to download one (1.221).
+  const tip = document.getElementById('voiceTip'); if (tip) tip.hidden = !list.length || list.some(({ v }) => voiceRank(v) < 2);
 }
 // Theme: 'auto' follows the system; 'light'/'dark'/'black' (pure-black OLED) override it. Palette = accent colours (violet is the :root default).
 // Both are mirrored to localStorage (o3k.theme / o3k.palette) for the early script in index.html.
@@ -1571,8 +1585,8 @@ function speak(text, opt) {
   u.lang = lang; u.rate = slow ? slowRate() : S.settings.rate;
   const chosen = !(opt && opt.lang) && S.settings.voice && voices.find((x) => x.voiceURI === S.settings.voice);
   if (chosen) { try { u.voice = chosen; u.lang = chosen.lang; } catch (e) { /* voice went away */ } return say(u, busy); }
-  const v = voices.find((v) => v.lang === lang && /Samantha|Daniel|Karen|Ava|Siri/i.test(v.name)) || voices.find((v) => v.lang === lang) || voices.find((v) => v.lang && v.lang.startsWith('en'));
-  if (v) u.voice = v;
+  const v = autoVoice(lang);
+  if (v) try { u.voice = v; } catch (e) { /* voice went away */ }
   return say(u, busy);
 }
 

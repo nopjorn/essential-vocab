@@ -2121,3 +2121,37 @@ test('story quiz (1.151): 5 questions, dots, 🔎 find in story, wrong + right a
   await expect(page.locator('.st-card[data-id="1"] .st-score.full')).toContainText('5/5');
   expect(errors).toEqual([]);
 });
+
+test('voice picker (1.221): automatic voice prefers Premium/Enhanced of the accent, download tip only without ⭐ voices', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'], accent: 'en-US', voice: '' } });
+  const setVoices = (list) => page.evaluate((list) => {
+    voices = list.map(([name, lang]) => ({ name, lang, voiceURI: name }));
+    window.__voice = [];
+    window.SpeechSynthesisUtterance = class { constructor(text) { this.text = text; } }; // real utterances only take real voices
+    if (speechSynthesis.__w) return; speechSynthesis.__w = 1;
+    const sp = speechSynthesis.speak; speechSynthesis.speak = (u) => { window.__voice.push(u.voice && u.voice.name); sp.call(speechSynthesis, u); };
+  }, list);
+  await setVoices([['Fred', 'en-US'], ['Samantha', 'en-US'], ['Ava (Premium)', 'en-US'], ['Daniel', 'en-GB'], ['Kanya', 'th-TH']]);
+  expect(await page.evaluate(() => autoVoice('en-US').name)).toBe('Ava (Premium)');
+  expect(await page.evaluate(() => autoVoice('en-GB').name)).toBe('Daniel');
+  expect(await page.evaluate(() => autoVoice('en-AU').name)).toBe('Ava (Premium)'); // no voice for that accent → best English one
+  await page.evaluate(() => speak('apple'));
+  expect(await page.evaluate(() => window.__voice)).toEqual(['Ava (Premium)']);
+  // settings: ⭐ voice on the device → no tip, the auto voice is named
+  await page.evaluate(() => go('settings'));
+  await page.evaluate(() => { document.querySelector('details[data-g="sound"]').open = true; fillVoices(); });
+  await expect(page.locator('#voiceN')).toContainText('Ava (Premium)');
+  await expect(page.locator('#voiceTip')).toBeHidden();
+  // only plain voices → the download steps show; switching the accent updates the named voice
+  await setVoices([['Fred', 'en-US'], ['Samantha', 'en-US'], ['Daniel', 'en-GB']]);
+  await page.evaluate(() => fillVoices());
+  await expect(page.locator('#voiceTip')).toBeVisible();
+  await expect(page.locator('#voiceN')).toContainText('Samantha');
+  await page.selectOption('#acc', 'en-GB');
+  await expect(page.locator('#voiceN')).toContainText('Daniel');
+  // a voice the user picked wins over the automatic one
+  await page.selectOption('#voice', 'Fred');
+  await page.evaluate(() => { window.__voice = []; speak('pear'); });
+  expect(await page.evaluate(() => window.__voice)).toEqual(['Fred']);
+  expect(errors).toEqual([]);
+});

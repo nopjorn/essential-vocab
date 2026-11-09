@@ -149,6 +149,10 @@ function renderSettings() {
     <details class="set-group" data-g="sound" ${setIsOpen('sound')}><summary data-k="sound voice speech audio เสียง ลำโพง สำเนียง accent">🔊 เสียง</summary><div class="card-box">
       <div class="set-row"><span>เสียงอ่าน</span><select class="sel" id="voice" style="max-width:62%"></select></div>
       <div class="small muted" id="voiceN" style="margin:-4px 0 6px"></div>
+      <div class="voice-tip small" id="voiceTip" hidden><b>✨ อยากได้เสียงชัดเหมือนคนจริง? (เครื่องนี้ยังไม่มีเสียง ⭐)</b>
+        <ol><li>iPhone/iPad → <b>การตั้งค่า</b> → <b>การช่วยการเข้าถึง</b> → <b>เนื้อหาที่ถูกพูด</b> → <b>เสียง</b> → <b>อังกฤษ</b></li>
+        <li>เลือกเสียง เช่น Ava, Zoe, Evan (อเมริกัน) หรือ Serena, Daniel (อังกฤษ) แล้วดาวน์โหลดแบบ <b>ขั้นสูง (Enhanced)</b> หรือ <b>พรีเมียม</b> (ใช้ Wi-Fi ประมาณ 100–400 MB)</li>
+        <li>ปิดแอปนี้แล้วเปิดใหม่ เสียงใหม่จะขึ้น ⭐ ในรายการ และโหมด "อัตโนมัติ" จะเลือกใช้ให้เอง</li></ol></div>
       <div class="set-row"><span>อ่านออกเสียงอัตโนมัติ</span>
         <label class="switch"><input type="checkbox" id="auto" ${st.autoSpeak ? 'checked' : ''}><span></span></label></div>
       <div class="set-row"><span>เสียงเอฟเฟกต์ในเกม</span>
@@ -281,7 +285,7 @@ function renderSettings() {
     st.sfxPack = e.target.value; save();
     const was = st.sfx; st.sfx = true; sfx('ok'); setTimeout(() => sfx('win'), 450); st.sfx = was;
   };
-  $('#acc').onchange = (e) => { st.accent = e.target.value; save(); speak('Hello! Nice to meet you.'); };
+  $('#acc').onchange = (e) => { st.accent = e.target.value; save(); fillVoices(); speak('Hello! Nice to meet you.'); };
   $('#rate').onchange = (e) => { st.rate = +e.target.value; save(); speak('vocabulary'); };
   $('#wgoal').onchange = (e) => { st.weekGoal = +e.target.value; save(); };
   const examSave = () => { st.exam = { date: $('#examDate').value || '', name: $('#examName').value.trim().slice(0, 40) }; save(); };
@@ -291,7 +295,7 @@ function renderSettings() {
   $('#slowRep').onchange = (e) => { st.slowRepeat = e.target.checked; save(); };
   $('#test').onclick = () => speak('Hello! Let\'s learn English together.');
   fillVoices();
-  $('#voice').onchange = (e) => { st.voice = e.target.value; save(); speak('Hello! This is how I sound when I read your words.'); };
+  $('#voice').onchange = (e) => { st.voice = e.target.value; save(); fillVoices(); speak('Hello! This is how I sound when I read your words.'); };
   $('#fsz').onchange = (e) => { st.fsz = e.target.value; save(); applyAnim(); };
   $('#appKbd').onchange = (e) => { st.appKbd = e.target.value; save(); };
   $('#theme').onchange = (e) => { st.theme = e.target.value; save(); applyTheme(); };

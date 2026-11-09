@@ -371,6 +371,9 @@ html.no-ans .ring-burst { display: none; } html.no-ans .hero.ring-party .ring { 
 /* settings */
 .set-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; }
 .set-row + .set-row { border-top: 1px solid var(--border); }
+.voice-tip { margin: 0 0 8px; padding: 8px 10px; border-radius: 12px; background: var(--surface-2); }
+.voice-tip ol { margin: 6px 0 0; padding-left: 20px; }
+.voice-tip li { margin: 3px 0; }
 .switch { position: relative; width: 52px; height: 32px; flex: none; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .switch span { position: absolute; inset: 0; background: var(--surface-2); border-radius: 99px; transition: .2s; }
