@@ -74,6 +74,15 @@ const PB = {
     same: [['Let me make sure I understand the question.', 'Can I ask a clarifying question?'], ['Let me walk you through my approach.', 'My first idea is …', 'I would start by …'], ['I\'m open to discussion.', 'Could I have a few days to think it over?'],
       ['I specialize in …', 'I have … years of experience in …'], ['The situation was …', 'Tell me about a time when …'], ['What I did was …', 'I was responsible for …']],
   },
+  meeting: {
+    file: 'data/meetingtalk.js', key: 'MEETINGTALK', icon: '🗓️', title: 'พูดในประชุม', modes: ['en', 'th'], sayEn: true, ear: true,
+    intro: 'ประโยคสำหรับออกความเห็น เห็นด้วย ไม่เห็นด้วยแบบสุภาพ ขอแทรก ถามให้ชัด ดำเนินการประชุม และนำเสนองาน · 💡 บอกว่าใช้ตอนไหน · แตะเพื่อฟัง · ＋ เก็บเข้าชุดของฉัน',
+    ask: { en: 'ประโยคนี้หมายความว่าอะไร', th: 'พูดในประชุมเป็นอังกฤษว่าอะไร' },
+    cats: { opinion: ['💡', 'ออกความเห็น'], agree: ['👍', 'เห็นด้วย'], disagree: ['🤔', 'ไม่เห็นด้วยแบบสุภาพ'], turn: ['✋', 'ขอพูด / ส่งต่อ'], clear: ['🔍', 'ถามให้ชัด'], run: ['🧭', 'ดำเนินการประชุม'], present: ['📊', 'นำเสนองาน'] },
+    same: [['In my view, …', 'The way I see it, …', 'From a technical point of view, …'], ['I completely agree.', 'I\'m on the same page.', 'That\'s a good point.'], ['I\'m not sure I agree.', 'I have a different view.', 'I see your point, but …'],
+      ['Can I jump in here?', 'Sorry to interrupt, but …', 'If I may add something, …'], ['Could you say that again?', 'What do you mean by …?', 'Just to be clear, …', 'So what you\'re saying is …'],
+      ['Let\'s move on to the next item.', 'Let\'s park that for now.'], ['To sum up, …', 'The key takeaway is …'], ['I\'d suggest …', 'Have we considered …?']],
+  },
 };
 const PB_DATA = {};
 // fill books (1.223.0): rows [cat, phrase with [part], Thai, example with [part] as used, Thai example, 'wrong|wrong|wrong', tip];
