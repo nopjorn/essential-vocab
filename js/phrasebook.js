@@ -146,6 +146,14 @@ function pbBox(el, w) {
 const pbEnHTML = (r) => (r.enBr ? esc(r.enBr).replace(/\[([^\]]+)\]/, '<b>$1</b>') : esc(r.en));
 // extra line: the right reading and the wrong ones (say books) or the wrong partners (fill books)
 const pbExtra = (r) => (r.read ? `🔈 อ่านว่า <b>${esc(r.read)}</b> · ✗ ${r.wrong.map(esc).join(', ')}` : r.wrong ? `✗ <span lang="en">${r.wrong.map(esc).join(', ')}</span>` : '');
+// Speak-along game `pbsay` (1.230.0): say the English of every `ear` book; checked by speech recognition, or self-checked without it.
+// The words to say: the phrase without its … gap or end colon (Could we …? → Could we).
+const pbSayText = (r) => r.en.replace(/\s*…\s*/g, ' ').replace(/[:,]\s*$/, '').replace(/\s+([?.!])/g, '$1').trim();
+function pbSayItems() {
+  const ids = pbEarOnly && PB[pbEarOnly] ? [pbEarOnly] : pbEarIds();
+  pbEarOnly = null;
+  return ids.filter((id) => PB_DATA[id]).flatMap((id) => pbItems(id).map((w) => ({ ...w, _say: true })));
+}
 const pbOwn = (r, id) => ({ w: r.en, t: PB[id].noteEn && r.note ? `${r.th} (${r.note})` : r.th, e: r.ex, et: r.exTh });
 // the note: English beside the phrase (noteEn) or a 💡 Thai tip line
 const pbNoteIn = (r, id) => (PB[id].noteEn && r.note ? ` <span class="small muted" lang="en">${esc(r.note)}</span>` : '');
@@ -163,7 +171,7 @@ function renderBook(id) {
   const rows = PB_DATA[id], cats = Object.keys(b.cats).filter((c) => rows.some((r) => r.cat === c));
   $('#title').textContent = b.title;
   view.scrollTop = 0;
-  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="pbBack">‹ กลับ</button><div class="grow"></div>${b.ear ? '<button class="btn" id="pbEar">🎧 ฝึกฟัง</button>' : ''}<button class="btn primary" id="pbPlay">${b.icon} เล่นเกม</button></div>
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="pbBack">‹ กลับ</button><div class="grow"></div>${b.ear ? '<button class="btn" id="pbEar">🎧 ฝึกฟัง</button><button class="btn" id="pbTalk">🎙️ พูดตาม</button>' : ''}<button class="btn primary" id="pbPlay">${b.icon} เล่นเกม</button></div>
     <p class="small muted" style="margin:0 4px 10px">${rows.length} รายการ · ${b.intro}</p>
     <div class="chips scroll" id="pbCats"><button class="chip" data-c="all">ทั้งหมด</button>${cats.map((c) => `<button class="chip" data-c="${c}">${b.cats[c][0]} ${b.cats[c][1]}</button>`).join('')}</div>
     <div class="row" style="margin:6px 4px 8px"><div class="grow"></div><button class="btn ghost" id="pbAll">＋ เก็บทั้งหมวดเข้าชุดของฉัน</button></div>
@@ -180,6 +188,7 @@ function renderBook(id) {
   $('#pbBack').onclick = () => go('ref');
   $('#pbPlay').onclick = () => startGame(id);
   if (b.ear) $('#pbEar').onclick = () => { pbEarOnly = id; startGame('pbear'); };
+  if (b.ear) $('#pbTalk').onclick = () => { pbEarOnly = id; startGame('pbsay'); };
   $('#pbAll').onclick = () => pickDeck([], shown().map((r) => pbOwn(r, id)));
   $('#pbList').onclick = (e) => {
     const a = e.target.closest('[data-add]'); if (a) { pickDeck([], [pbOwn(rows[+a.dataset.add], id)]); return; }

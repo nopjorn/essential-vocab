@@ -7,7 +7,7 @@
 // ⚡ fast answers (1.168.0): only for kinds answered with one tap on reading; these need listening, typing, speaking,
 // ordering or drawing first, so they never get the badge.
 const FAST_MS = 2000;
-const SLOW_MODES = ['listen', 'spell', 'dict', 'dictW', 'dictS', 'speak', 'speakS', 'order', 'sOrder', 'hand', 'compose', 'hangman', 'anagram', 'minpair', 'num', 'wpdict', 'pbear'];
+const SLOW_MODES = ['listen', 'spell', 'dict', 'dictW', 'dictS', 'speak', 'speakS', 'order', 'sOrder', 'hand', 'compose', 'hangman', 'anagram', 'minpair', 'num', 'wpdict', 'pbear', 'pbsay'];
 function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   const ROUND = 10;
   // Endless run (emojiRun): no round limit, wrong answers only reset the streak; the player ends it themselves.
@@ -166,6 +166,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'bizcol') return qBizcol(w);
     if (m === 'regi') return qRegi(w);
     if (PB[m] || m === 'pbear') return qBook(w);
+    if (m === 'pbsay') return qBookSay(w);
     if (m === 'email') return qEmail(w);
     if (m === 'wpdict') return qWpDict(w);
     if (m === 'toeic5') return qP5(w);
@@ -1317,6 +1318,65 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       $('#pbSayQ').onclick = () => speak(say);
       speak(say);
     };
+  }
+
+  // Speak along with a phrase-book phrase (1.230.0): hear it, say it (3 tries, sentenceMatch); without speech recognition the learner
+  // says it aloud and grades it (✅ พูดได้ / ↺ ยังไม่คล่อง).
+  function qBookSay(w) {
+    const id = w._book, b = PB[id], r = w._pb, target = pbSayText(r);
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit pop"><div class="small muted">🎙️ ${b.icon} ฟังแล้วพูดตาม</div>
+        <div class="h2 pb-q" lang="en" style="margin-top:8px">${esc(r.en)}</div><div class="muted" style="margin-top:4px">${esc(r.th)}</div>
+        <button class="hint-btn" data-say>🔊 ฟังอีกครั้ง</button> ${slowBtn(target)}</div>
+      ${canListen ? '<div class="center"><button class="mic" id="mic" aria-label="กดแล้วพูด">🎤</button></div>'
+        : '<div class="row" style="gap:10px"><button class="btn grow" id="pbNo">↺ ยังไม่คล่อง</button><button class="btn primary grow" id="pbYes">✅ พูดได้</button></div>'}
+      <div class="center small muted" id="heard">${canListen ? 'แตะไมค์แล้วพูดประโยคนี้' : 'พูดออกเสียงตามดังๆ แล้วให้คะแนนตัวเอง'}</div>
+      ${canListen ? '<button class="btn block" id="skip" style="margin-top:12px">ข้าม / เฉลย</button>' : ''}
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = leave;
+    view.querySelector('[data-say]').onclick = () => speak(target);
+    const heard = $('#heard'), mic = $('#mic');
+    let tries = 0, answered = false, rec = null;
+    cleanup = () => { if (rec) try { rec.abort(); } catch (e) { /* ignore */ } };
+    const done = (ok) => {
+      if (answered) return;
+      answered = true; cleanup();
+      mark(w, ok);
+      view.querySelectorAll('#mic, #pbYes, #pbNo').forEach((x) => { x.disabled = true; });
+      if ($('#skip')) $('#skip').remove();
+      $('#reveal').innerHTML = `${ok ? '✅ เยี่ยม! พูดได้แล้ว' : '👂 ฟังอีกรอบแล้วค่อยลองใหม่ครั้งหน้านะ'}
+        <div class="example pb-ex"><div class="en" lang="en">${esc(r.ex)} <button class="say-ex" id="pbSayQ" aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(r.exTh)}</div>${pbTip(r, id) ? `<div class="thx">${pbTip(r, id)}</div>` : ''}</div>
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      $('#pbSayQ').onclick = () => speak(r.ex);
+      $('#nextQ').onclick = () => { cleanup = null; next(); };
+      if (!ok) speak(target);
+    };
+    if (!canListen) { $('#pbYes').onclick = () => done(true); $('#pbNo').onclick = () => done(false); }
+    else {
+      $('#skip').onclick = () => done(false);
+      mic.onclick = () => {
+        if (answered) return;
+        if (rec) { rec.stop(); return; }
+        if (window.speechSynthesis) speechSynthesis.cancel();
+        rec = new SR();
+        rec.lang = S.settings.accent; rec.interimResults = false; rec.maxAlternatives = 5; rec.continuous = false;
+        mic.classList.add('on'); heard.textContent = 'กำลังฟัง... พูดได้เลย';
+        rec.onresult = (e) => {
+          const alts = Array.from(e.results[0]).map((a) => a.transcript);
+          if (alts.some((a) => sentenceMatch(a, target))) return done(true);
+          tries++;
+          heard.innerHTML = `ได้ยินว่า "<b>${esc(alts[0] || '')}</b>" ลองอีกครั้งนะ 💪 (${tries}/3)`;
+          if (tries >= 3) done(false);
+        };
+        rec.onerror = (e) => {
+          heard.textContent = e.error === 'not-allowed' || e.error === 'service-not-allowed'
+            ? 'ยังไม่ได้อนุญาตให้ใช้ไมค์/การรู้จำเสียง ลองเปิดในตั้งค่า iPhone ดูนะ' : 'ไม่ได้ยินเสียง แตะไมค์แล้วลองอีกครั้งนะ';
+        };
+        rec.onend = () => { rec = null; mic.classList.remove('on'); };
+        try { rec.start(); } catch (err) { rec = null; mic.classList.remove('on'); heard.textContent = 'เปิดไมค์ไม่ได้ ลองอีกครั้งนะ'; }
+      };
+    }
+    speak(target);
   }
 
   // Work email / chat phrases (1.199.0): half the time fill the key part of the phrase (3 wrong forms that never fit),

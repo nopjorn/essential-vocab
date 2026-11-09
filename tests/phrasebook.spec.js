@@ -103,3 +103,27 @@ test('word sheet (1.221): a 📚 box lists phrases from the spoken books that us
   expect(await page.evaluate(() => ['algebra', 'zebra'].some((x) => phrasesOf(x).length))).toBe(false);
   expect(errors).toEqual([]);
 });
+
+test('pbsay (1.230): say a phrase; a match passes, three misses fail; the doctor page starts it for that book', async ({ page }) => {
+  const errors = await openApp(page);
+  expect(await page.evaluate(() => [pbSayText({ en: 'Could we …?' }), pbSayText({ en: 'Nit:' }), pbSayText({ en: 'My expected salary is …' })]))
+    .toEqual(['Could we?', 'Nit', 'My expected salary is']);
+  await page.evaluate(() => startGame('pbsay'));
+  const view = page.locator('#view');
+  await expect(view.locator('#mic')).toBeVisible();
+  let t = await page.evaluate(() => pbSayText(playQuiz.cur._pb));
+  await expect.poll(() => page.evaluate(() => window.__said.at(-1))).toBe(t);
+  await page.evaluate((t) => { window.__heard = t; }, t);
+  await view.locator('#mic').click();
+  await expect(view.locator('#reveal')).toContainText('เยี่ยม');
+  await view.locator('#nextQ').click();
+  await page.evaluate(() => { window.__heard = 'zzzz'; });
+  for (let k = 0; k < 3; k++) { await view.locator('#mic').click(); await page.waitForTimeout(80); }
+  await expect(view.locator('#reveal')).toContainText('ฟังอีกรอบ');
+  expect(await page.evaluate(() => Object.keys(S.lex).filter((k) => k.startsWith('pbsay:')).length)).toBe(2);
+  await page.evaluate(() => { go('ref'); REF_PAGES.doctor(); });
+  await page.locator('#pbTalk').click();
+  await expect(view.locator('#mic')).toBeVisible();
+  expect(await page.evaluate(() => playQuiz.cur._book)).toBe('doctor');
+  expect(errors).toEqual([]);
+});
