@@ -8,7 +8,7 @@ test('feed side panel: right / wrong / total / % / time, missed words open the w
   await page.evaluate(() => go('feed'));
   const side = page.locator('#fSide');
   await expect(side).toBeVisible();
-  await expect(side).toContainText('ข้อทั้งหมด');
+  await expect(side).toContainText('ทั้งหมด');
   // 11" landscape: no room for prompt | answers beside the panel, so the answers sit under the prompt
   const below = await page.evaluate(() => { const b = [...document.querySelectorAll('.f-body')].find((x) => x.querySelector(':scope > .options')); return b.querySelector(':scope > .options').getBoundingClientRect().top > b.querySelector(':scope > .f-tag').getBoundingClientRect().bottom; });
   expect(below).toBe(true);
@@ -21,12 +21,12 @@ test('feed side panel: right / wrong / total / % / time, missed words open the w
     await expect(card).toHaveClass(/\b(ok|bad)\b/);
     if (t >= 1 && await page.locator('.fcard.bad').count()) break;
   }
-  const [ok, bad, all] = (await side.locator('.ss-grid').first().locator('b').allTextContents()).map(Number);
+  const [ok, bad, all] = (await side.locator('.rp-cnt b').allTextContents()).map(Number);
   expect(bad).toBe(await page.locator('.fcard.bad').count());
   expect(ok).toBe(await page.locator('.fcard.ok').count());
   expect(all).toBe(ok + bad);
   expect(bad).toBeGreaterThan(0);
-  await expect(side.locator('.ss-big b')).toHaveText(`${Math.round(ok / all * 100)}%`);
+  await expect(side.locator('.rp-ring b')).toHaveText(`${Math.round(ok / all * 100)}%`);
   await expect(side.locator('.fs-dots i')).toHaveCount(all);
   await expect(side.locator('.fs-dots i.bad')).toHaveCount(bad);
   if (await side.locator('[data-fsw]').count()) { // a missed list word (special cards are not listed)

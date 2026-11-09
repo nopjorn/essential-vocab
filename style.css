@@ -2603,7 +2603,7 @@ html[data-theme="dark"]:not(.no-pbg) body, html[data-theme="black"]:not(.no-pbg)
   .view.feed-mode:has(> #fSide) { --maxw: 1280px; display: grid; grid-template-columns: minmax(0, 1fr) 260px; grid-template-rows: auto minmax(0, 1fr); column-gap: 20px; }
   .view.feed-mode > .feed-hud { grid-column: 1; grid-row: 1; }
   .view.feed-mode > .feed { grid-column: 1; grid-row: 2; }
-  .view.feed-mode > .fs-panel { display: block; grid-column: 2; grid-row: 2; align-self: start; max-height: calc(100% - 28px); overflow-y: auto; margin: 10px 0 18px; background: var(--surface); border-radius: 22px; box-shadow: var(--shadow); padding: 14px 16px 16px; }
+  .view.feed-mode > .fs-panel { display: flex; grid-column: 2; grid-row: 2; align-self: stretch; overflow-y: auto; margin: 10px 0 18px; background: var(--surface); border-radius: 22px; box-shadow: var(--shadow); padding: 14px 16px 16px; }
   .fs-panel .ss-grid b { font-size: 20px; }
   .fs-panel .ss-big b { font-size: 40px; }
   .fs-panel .fs-bad { color: var(--bad-ink); }
@@ -3185,7 +3185,11 @@ html.opt-left .f-body:has(> .options) > .options { grid-column: 1; }
   html .view:has(> .q-prompt):has(> #gSide) > * { grid-column: var(--ca); }
   html .view:has(> .q-prompt):has(> #gSide) > .q-prompt { grid-column: var(--cp); }
   html .view:has(> .q-prompt):has(> #gSide) > .session-top { grid-column: 1 / -1; }
-  html .view:has(> .q-prompt):has(> #gSide) > #gSide { display: block; grid-column: var(--cs); grid-row: 2 / -1; align-self: start; position: sticky; top: 0; max-height: calc(100dvh - 200px); overflow-y: auto;
+  /* 1.219.1: the three columns line up — the question card, the answers (centred) and the panel all fill the height left */
+  html .view:has(> .q-prompt):has(> #gSide) { align-content: start; }
+  html .view:has(> .q-prompt):has(> #gSide) > .q-prompt { grid-row: 2 / -1; align-self: stretch; position: static; max-height: none; height: auto; margin: 0;
+    min-height: max(420px, calc(100dvh - 196px - env(safe-area-inset-top) - env(safe-area-inset-bottom))); }
+  html .view:has(> .q-prompt):has(> #gSide) > #gSide { display: flex; grid-column: var(--cs); grid-row: 2 / -1; align-self: stretch; min-height: max(420px, calc(100dvh - 196px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
     background: var(--surface); border-radius: 22px; box-shadow: var(--shadow); padding: 14px 16px 16px; }
   html .view:has(> .q-prompt):has(> #gSide) > .options .opt { font-size: 18px; }
   /* the thumb layout's fixed next button sits under the answers column, whatever side it is on */
@@ -3193,4 +3197,29 @@ html.opt-left .f-body:has(> .options) > .options { grid-column: 1; }
   html.thumbs.opt-left .view:has(> .q-prompt):has(> .options):has(> #gSide) #nextQ { right: auto; left: calc(var(--rail-w, 0px) + env(safe-area-inset-left) + max(20px, (100vw - var(--rail-w, 0px) - 1280px) / 2)); }
   html.thumbs .view:has(> .q-prompt):has(> .options):has(> #gSide.fs-left) #nextQ { right: calc(env(safe-area-inset-right) + max(20px, (100vw - var(--rail-w, 0px) - 1280px) / 2)); }
   html.thumbs.opt-left .view:has(> .q-prompt):has(> .options):has(> #gSide.fs-left) #nextQ { right: auto; left: calc(var(--rail-w, 0px) + env(safe-area-inset-left) + max(20px, (100vw - var(--rail-w, 0px) - 1280px) / 2) + 260px); }
+}
+
+/* ---------- 1.219.1: round panel look (feed + games) ---------- */
+@media (min-width: 1100px) and (min-height: 700px) and (orientation: landscape) {
+  .fs-panel { flex-direction: column; gap: 12px; }
+  .fs-panel .fs-top { font-size: var(--fs-sm, 14px); font-weight: 800; color: var(--muted); }
+  .rp-head { display: flex; align-items: center; gap: 14px; }
+  .rp-ring { --p: 0; flex: none; width: 92px; height: 92px; border-radius: 50%; display: grid; place-content: center; text-align: center; position: relative;
+    background: conic-gradient(var(--primary) calc(var(--p) * 1%), var(--surface-2) 0); }
+  .rp-ring::before { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: var(--surface); }
+  .rp-ring > * { position: relative; }
+  .rp-ring b { font-size: 26px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text); }
+  .rp-ring b small { font-size: 14px; }
+  .rp-ring span { font-size: var(--fs-xs, 12px); color: var(--muted); }
+  .rp-cnt { flex: 1; min-width: 0; display: grid; gap: 4px; }
+  .rp-cnt > div { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: var(--fs-sm, 14px); color: var(--muted); }
+  .rp-cnt b { font-size: 20px; color: var(--text); font-variant-numeric: tabular-nums; }
+  .rp-cnt b small, .rp-t b small { font-size: 12px; font-weight: 700; color: var(--muted); }
+  .rp-cnt .fs-bad { color: var(--bad-ink); }
+  .rp-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .rp-t { background: var(--surface-2); border-radius: 14px; padding: 8px 10px; min-width: 0; }
+  .rp-t b { display: block; font-size: 18px; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rp-t span { font-size: var(--fs-xs, 12px); color: var(--muted); }
+  .fs-panel .ss-h { margin: 0 0 -4px; }
+  .fs-panel .fs-opt { margin-top: auto; min-height: 40px; }
 }
