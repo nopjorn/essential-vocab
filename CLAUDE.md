@@ -44,7 +44,7 @@ Core files below. Feature-by-feature notes (names, ids, state fields, tests) liv
 | `tools/make-icons.js` | Playwright script that renders the icon SVG to all `icons/*.png` sizes |
 | `tools/make-splash.js` | iOS launch images `icons/splash/<device>-<light|dark>-<portrait|landscape>.png` + the `<link rel="apple-touch-startup-image">` tags it prints; devices (1.146): iPhone 17 Pro Max, iPad Pro 11/13, iPad mini 744×1133, iPad Air 11 (820×1180) / 13 (1024×1366); data.spec checks 24 links |
 | `fonts/anuphan-thai-700.woff2` | Heading font (1.117, Thai glyphs only, OFL in `fonts/OFL-Anuphan.txt`), `--head` in style.css, off with `settings.headFont = false` (`html.no-hf`) |
-| `docs/word-list-licence.md` | Notes on replacing the OUP-derived word list (NGSL etc.) if the app is ever sold |
+| `docs/word-list-licence.md` | Notes on replacing the OUP-derived word list (NGSL etc.) if the app is ever sold; numbers in `docs/word-list-audit.md`, made by `tools/licence-audit.js` (1.234, NGSL/NAWL/CMUdict files downloaded by hand, see the script's header) |
 
 Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` = Oxford 5000-only
 (rows with trailing `5`).
