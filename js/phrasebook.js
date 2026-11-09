@@ -51,6 +51,13 @@ const PB = {
     cats: { code: ['⌨️', 'เขียนโค้ด'], git: ['🌿', 'Git / รีวิวโค้ด'], bug: ['🐞', 'บั๊กและทิกเก็ต'], ops: ['🚀', 'ดีพลอย / เซิร์ฟเวอร์'], team: ['👥', 'ทำงานเป็นทีม'], term: ['🧩', 'คำศัพท์คู่'] },
     same: [['run the tests', 'run a query'], ['raise a ticket', 'file a bug report', 'pick up a ticket'], ['take down a server', 'the server went down'], ['ship a feature', 'go live', 'deploy to production']],
   },
+  sayit: {
+    file: 'data/saywrong.js', key: 'SAYWRONG', icon: '🗣️', title: 'คำที่มักออกเสียงผิด', modes: ['say', 'say', 'en'], say: true, sayEn: true,
+    intro: 'คำที่คนไทยมักอ่านผิด ทั้งศัพท์ไอที (cache, suite, query) และคำทั่วไป (receipt, salmon, Wednesday) · คำอ่านภาษาไทยเป็นแค่ตัวช่วยคร่าวๆ ฟังเสียงจริงด้วยการแตะ · 💡 บอกเสียงที่ต้องระวัง',
+    ask: { say: 'คำนี้อ่านว่าอะไร', en: 'คำนี้หมายความว่าอะไร' },
+    cats: { tech: ['💻', 'ศัพท์ไอที'], work: ['💼', 'ที่ทำงาน'], daily: ['🏠', 'ชีวิตประจำวัน'] },
+    same: [['determine', 'determined'], ['debt', 'doubt']],
+  },
 };
 const PB_DATA = {};
 // fill books (1.223.0): rows [cat, phrase with [part], Thai, example with [part] as used, Thai example, 'wrong|wrong|wrong', tip];
@@ -59,7 +66,9 @@ const pbInner = (s) => ((s.match(/\[([^\]]+)\]/) || [])[1] || '');
 const pbPlain = (s) => s.replace(/[[\]]/g, '');
 const loadBook = (id) => loadData(PB[id].file, PB[id].key).then((rows) => {
   if (!PB_DATA[id] && rows.length) {
-    PB_DATA[id] = PB[id].fill
+    PB_DATA[id] = PB[id].say // say books (1.224.0): [cat, word, Thai, example, Thai, 'right reading|wrong|wrong|wrong', tip]
+      ? rows.map(([cat, en, th, ex, exTh, reads, tip]) => { const x = reads.split('|'); return { cat, en, th, ex, exTh, read: x[0], wrong: x.slice(1), note: tip || '' }; })
+      : PB[id].fill
       ? rows.map(([cat, en, th, ex, exTh, wrong, tip]) => ({ cat, en: pbPlain(en), key: pbInner(en), enBr: en, th, ex: pbPlain(ex), exBr: ex, ans: pbInner(ex), exTh, wrong: wrong.split('|'), note: tip || '' }))
       : rows.map(([cat, en, th, ex, exTh, note]) => ({ cat, en, th, ex, exTh, note: note || '' }));
   }
@@ -69,6 +78,7 @@ const pbItems = (id) => PB_DATA[id].map((r) => ({ idx: -1, w: r.en, t: r.th, p: 
 // the question for one item: mode, prompt, the right option and 3 others from the same book (same category first, no repeated text)
 function pbQuestion(id, r, mode) {
   const b = PB[id], m = mode || pick(b.modes);
+  if (m === 'say') return { m, field: 'read', right: r.read, opts: shuffle([r.read, ...r.wrong]), prompt: r.en };
   if (m === 'fill') return { m, field: 'ans', right: r.ans, opts: shuffle([r.ans, ...r.wrong]), prompt: r.exBr.replace(/\[[^\]]+\]/, '___') };
   const field = m === 'en' ? 'th' : m === 'th' ? 'en' : 'note';
   const near0 = new Set((b.same || []).filter((g) => g.includes(r.en)).flat());
@@ -109,6 +119,8 @@ function pbBox(el, w) {
 }
 // the phrase with its tested part in bold (fill books)
 const pbEnHTML = (r) => (r.enBr ? esc(r.enBr).replace(/\[([^\]]+)\]/, '<b>$1</b>') : esc(r.en));
+// extra line: the right reading and the wrong ones (say books) or the wrong partners (fill books)
+const pbExtra = (r) => (r.read ? `🔈 อ่านว่า <b>${esc(r.read)}</b> · ✗ ${r.wrong.map(esc).join(', ')}` : r.wrong ? `✗ <span lang="en">${r.wrong.map(esc).join(', ')}</span>` : '');
 const pbOwn = (r, id) => ({ w: r.en, t: PB[id].noteEn && r.note ? `${r.th} (${r.note})` : r.th, e: r.ex, et: r.exTh });
 // the note: English beside the phrase (noteEn) or a 💡 Thai tip line
 const pbNoteIn = (r, id) => (PB[id].noteEn && r.note ? ` <span class="small muted" lang="en">${esc(r.note)}</span>` : '');
@@ -136,7 +148,7 @@ function renderBook(id) {
   const paint = () => {
     view.querySelectorAll('#pbCats .chip').forEach((c) => { const on = c.dataset.c === cur(); c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
     $('#pbList').innerHTML = cats.filter((c) => cur() === 'all' || c === cur()).map((c) => `<div class="card-box pair-card"><div class="pair-h"><b>${b.cats[c][0]} ${b.cats[c][1]}</b> <span class="small muted">${rows.filter((r) => r.cat === c).length}</span></div>
-      ${rows.filter((r) => r.cat === c).map((r) => `<div class="bc-item pb-item"><button class="pair-ex" data-say="${esc(pbSay(r, id))}"><span><b lang="en">${r.enBr ? `<span style="font-weight:500">${pbEnHTML(r)}</span>` : esc(r.en)}</b>${pbNoteIn(r, id)} = ${esc(r.th)}</span><span lang="en">${esc(r.ex)}</span><small class="muted">${esc(r.exTh)}${r.wrong ? ` · ✗ <span lang="en">${r.wrong.map(esc).join(', ')}</span>` : ''}</small>${pbTip(r, id)}</button><button class="bc-add" data-add="${rows.indexOf(r)}" aria-label="เก็บ ${esc(r.en)} เข้าชุดของฉัน">＋</button></div>`).join('')}</div>`).join('');
+      ${rows.filter((r) => r.cat === c).map((r) => `<div class="bc-item pb-item"><button class="pair-ex" data-say="${esc(pbSay(r, id))}"><span><b lang="en">${r.enBr ? `<span style="font-weight:500">${pbEnHTML(r)}</span>` : esc(r.en)}</b>${pbNoteIn(r, id)} = ${esc(r.th)}</span><span lang="en">${esc(r.ex)}</span><small class="muted">${esc(r.exTh)}${r.wrong ? ` · ${pbExtra(r)}` : ''}</small>${pbTip(r, id)}</button><button class="bc-add" data-add="${rows.indexOf(r)}" aria-label="เก็บ ${esc(r.en)} เข้าชุดของฉัน">＋</button></div>`).join('')}</div>`).join('');
   };
   paint();
   $('#pbCats').onclick = (e) => { const c = e.target.closest('[data-c]'); if (c) { pbCat[id] = c.dataset.c; paint(); } };

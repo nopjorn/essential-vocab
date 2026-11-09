@@ -1280,7 +1280,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   function qBook(w) {
     const id = w._book, b = PB[id], r = w._pb, ear = !!w._ear, q = pbQuestion(id, r, ear ? 'en' : pbQuestion.force);
     pbQuestion.last = q; // read by tests
-    const isEn = q.field !== 'th';
+    const isEn = q.field !== 'th' && q.field !== 'read';
     // listening (pbear): the phrase is only heard; 💡 shows it written
     const prompt = ear ? `<div class="small muted">🎧 ${b.icon} ฟังแล้วเลือกความหมาย</div><div style="height:8px"></div>
         <button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:76px;height:76px;font-size:34px;margin:0">🔊</button><div>${slowBtn(r.en)}</div>
@@ -1309,7 +1309,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       mark(w, ok);
       const say = pbSay(r, id);
       $('#reveal').innerHTML = `${ok ? '✅ ถูกต้อง!' : '❌ ยังไม่ถูก'}
-        <div class="example pb-ex"><div><b lang="en">${r.enBr ? `<span style="font-weight:500">${pbEnHTML(r)}</span>` : esc(r.en)}</b>${pbNoteIn(r, id)} = ${esc(r.th)}${r.wrong ? `<div class="small muted">✗ <span lang="en">${r.wrong.map(esc).join(', ')}</span></div>` : ''}</div>
+        <div class="example pb-ex"><div><b lang="en">${r.enBr ? `<span style="font-weight:500">${pbEnHTML(r)}</span>` : esc(r.en)}</b>${pbNoteIn(r, id)} = ${esc(r.th)}${r.wrong ? `<div class="small muted">${pbExtra(r)}</div>` : ''}</div>
           <div class="en" lang="en" style="margin-top:6px">${esc(r.ex)} <button class="say-ex" id="pbSayQ" aria-label="ฟังประโยค">🔊</button></div><div class="thx">${esc(r.exTh)}</div>${pbTip(r, id) ? `<div class="thx">${pbTip(r, id)}</div>` : ''}</div>
         <div class="row" style="gap:10px;margin-top:12px"><button class="btn" id="pbKeep">＋ เก็บเข้าชุด</button><button class="btn primary grow" id="nextQ">ถัดไป →</button></div>`;
       $('#nextQ').onclick = next;

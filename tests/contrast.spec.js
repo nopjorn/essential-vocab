@@ -4,7 +4,7 @@ const { test, expect } = require('@playwright/test');
 const { openApp } = require('./helpers');
 
 const ROUTES = ['home', 'cards', 'games', 'list', 'stats', 'settings', 'guide', 'read', 'mascot', 'decks', 'adv', 'fun', 'tower', 'wboss', 'chain', 'coinshop', 'puzzle', 'album', 'garden', 'cases', 'cafe', 'room', 'paths', 'pic', 'build', 'map', 'riddle', 'changelog', 'day', 'ref', 'print', 'mine', 'toeic'];
-const REFS = ['pairs', 'fams', 'syn', 'affix', 'roots', 'ukus', 'phrasal', 'idiom', 'sit', 'irr', 'dprep', 'mis', 'gpat', 'ipa', 'wphr', 'bizcol', 'regi', 'abbr', 'itcol', 'doctor', 'thai', 'chat'];
+const REFS = ['pairs', 'fams', 'syn', 'affix', 'roots', 'ukus', 'phrasal', 'idiom', 'sit', 'irr', 'dprep', 'mis', 'gpat', 'ipa', 'wphr', 'bizcol', 'regi', 'abbr', 'sayit', 'itcol', 'doctor', 'thai', 'chat'];
 const now = Date.now();
 const prog = {};
 ['abandon', 'ability', 'able', 'about', 'above', 'accept', 'access', 'account', 'achieve', 'across', 'act', 'active'].forEach((w, k) => {
