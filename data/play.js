@@ -167,6 +167,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'regi') return qRegi(w);
     if (PB[m] || m === 'pbear') return qBook(w);
     if (m === 'pbsay') return qBookSay(w);
+    if (m === 'rplay') return qRplay(w);
     if (m === 'email') return qEmail(w);
     if (m === 'wpdict') return qWpDict(w);
     if (m === 'toeic5') return qP5(w);
@@ -1317,6 +1318,36 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       $('#pbKeep').onclick = () => pickDeck([], [pbOwn(r, id)]);
       $('#pbSayQ').onclick = () => speak(say);
       speak(say);
+    };
+  }
+
+  // Role play (1.232.0): the chat so far, their new line (spoken), pick your reply (right / off the point / rude); a scene's steps stay together.
+  function qRplay(w) {
+    const e = w._rp, d = e.d, opts = shuffle([e.right, ...e.wrong]);
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt pop"><div class="small muted">🎭 ${d.icon} ${esc(d.title)} · ${e.k + 1}/${d.steps.length} · คุณ = ${esc(d.you)}</div>
+        <div class="rp-log" id="rpLog">${rpLog(d, e.k)}<button class="rp-b rp-now" lang="en" data-say="${esc(e.them)}">${esc(e.them)}<small class="muted">${esc(e.themTh)}</small></button><div class="rp-b rp-me rp-gap">… ตอบว่าอะไรดี</div></div></div>
+      <div class="options">${opts.map((o) => `<button class="opt" lang="en" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
+    $('#quit').onclick = () => go('games');
+    const log = $('#rpLog'), toEnd = () => requestAnimationFrame(() => { log.scrollTop = log.scrollHeight; });
+    log.onclick = (ev) => { const s = ev.target.closest('[data-say]'); if (s) speak(s.dataset.say); };
+    toEnd();
+    setTimeout(() => speak(e.them), 200);
+    let answered = false;
+    view.querySelector('.options').onclick = (ev) => {
+      const b = ev.target.closest('.opt'); if (!b || answered) return;
+      answered = true;
+      const ok = b.dataset.o === e.right, last = e.k === d.steps.length - 1;
+      view.querySelectorAll('.opt').forEach((o) => { if (o.dataset.o === e.right) o.classList.add('correct'); });
+      if (!ok) b.classList.add('wrong');
+      mark(w, ok);
+      const gap = view.querySelector('.rp-gap'); gap.classList.remove('rp-gap'); gap.textContent = e.right; toEnd();
+      $('#reveal').innerHTML = `${ok ? '✅ ตอบได้เหมาะ!' : '❌ ควรตอบว่า'} <b lang="en">${esc(e.right)}</b><div class="thx">${esc(e.th)}</div><div class="thx">💡 ${esc(e.why)}</div>
+        ${last ? `<div class="small muted" style="margin-top:8px">🎉 จบเรื่อง “${esc(d.title)}” แล้ว</div>` : ''}
+        <button class="btn primary block" id="nextQ" style="margin-top:12px">ถัดไป →</button>`;
+      $('#nextQ').onclick = next;
+      speak(e.right);
     };
   }
 

@@ -731,6 +731,18 @@ test('phrase books (1.212+): rows [cat, English, Thai, example, Thai example, no
   expect(bad).toEqual([]);
 });
 
+test('role play (1.232): scenes of 5 steps, a reply and 2 different wrong ones, unique ids', () => {
+  const { ROLEPLAY } = load('data/roleplay.js');
+  expect(ROLEPLAY.length).toBeGreaterThanOrEqual(8);
+  const bad = [];
+  expect(new Set(ROLEPLAY.map((d) => d.id)).size).toBe(ROLEPLAY.length);
+  ROLEPLAY.forEach((d) => {
+    if (!d.icon || !d.title || !d.who || !d.you || d.steps.length < 4) bad.push(`${d.id}: shape`);
+    d.steps.forEach((s, k) => { if (s.length !== 6 || s.slice(0, 3).concat(s.slice(4)).some((x) => typeof x !== 'string' || !x) || s[3].length !== 2 || new Set([s[2], ...s[3]]).size !== 3) bad.push(`${d.id} ${k}`); });
+  });
+  expect(bad).toEqual([]);
+});
+
 test('the manual states the real number of games', () => {
   const games = read('js/games.js'), body = games.slice(games.indexOf('const GAMES = {'));
   const n = (body.slice(0, body.indexOf('\n};')).match(/^  [a-zA-Z0-9]+: \{/gm) || []).length;

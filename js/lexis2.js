@@ -236,7 +236,7 @@ function setOrder(picked, src, n = 10) {
   return out;
 }
 const p7Order = setOrder;
-const SET_GAMES = ['toeic3', 'toeic4', 'toeic6', 'toeic7', 'email'];
+const SET_GAMES = ['toeic3', 'toeic4', 'toeic6', 'toeic7', 'email', 'rplay'];
 /* ---------- TOEIC Part 6 (1.185.0) ---------- */
 // data/toeicp6.js: [{id, kind, title, text with [1]–[4], th, q: [[[4 options], answer index, Thai]]}]. Game `toeic6` (qP6): one item per blank,
 // earlier blanks are shown filled in, the questions of a text stay together (setOrder); own SRS in S.lex.

@@ -3228,6 +3228,17 @@ html.opt-left .f-body:has(> .options) > .options { grid-column: 1; }
   .fs-panel .fs-opt { margin-top: auto; min-height: 40px; }
 }
 
+<<<<<<< HEAD
 /* 🌱 simple mode bar on home (1.232.0) */
 .simple-bar { display: flex; align-items: center; gap: 12px; }
 .simple-bar.grown { border: 1px solid var(--good); }
+=======
+/* role play (1.232.0, js/phrasebook.js + qRplay): chat bubbles, theirs left, mine right */
+.rp-log { display: flex; flex-direction: column; gap: 6px; align-self: stretch; width: 100%; text-align: left; margin-top: 8px; }
+.rp-b { align-self: flex-start; max-width: 85%; padding: 8px 12px; border-radius: 14px 14px 14px 4px; background: var(--surface-2); color: var(--text); font: inherit; font-size: var(--fs-sm, 14px); line-height: 1.4; border: 0; text-align: left; display: flex; flex-direction: column; gap: 2px; }
+.rp-b.rp-me { align-self: flex-end; border-radius: 14px 14px 4px 14px; background: color-mix(in srgb, var(--primary) 14%, var(--surface)); }
+.rp-b.rp-now { outline: 2px solid var(--primary); font-weight: 700; }
+.rp-b.rp-gap { opacity: .7; font-style: italic; }
+/* in the game the chat scrolls inside the question card (newest line kept in view by qRplay) */
+#rpLog { max-height: min(38vh, 320px); overflow-y: auto; overscroll-behavior: contain; padding: 2px; }
+>>>>>>> 43fe9a2 (1.232.0: role-play conversations game and page)

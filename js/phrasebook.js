@@ -195,3 +195,33 @@ function renderBook(id) {
     const s = e.target.closest('[data-say]'); if (s) speak(s.dataset.say);
   };
 }
+
+/* ---------- role play (1.232.0) ---------- */
+// data/roleplay.js scenes {id, icon, title, who, you, steps: [[their line, Thai, best reply, [2 wrong], Thai of reply, why]]}.
+// Game `rplay` (qRplay in data/play.js): one item per step, a scene's steps stay together (SET_GAMES → setOrder); the chat so far is shown
+// as bubbles. Page renderRoleplay() (REF_PAGES 'rplay') reads every scene and starts one (rpOnly = that scene for the next round).
+let ROLEPLAY = null, rpOnly = null;
+const loadRoleplay = () => loadData('data/roleplay.js', 'ROLEPLAY').then((rows) => { if (!ROLEPLAY && rows.length) ROLEPLAY = rows; return ROLEPLAY || []; });
+function rpItems() {
+  const ds = rpOnly ? ROLEPLAY.filter((d) => d.id === rpOnly) : ROLEPLAY;
+  rpOnly = null;
+  return ds.flatMap((d) => d.steps.map(([them, themTh, right, wrong, th, why], k) => ({
+    idx: -1, w: right, t: th, p: '', g: '', _rp: { d, k, them, themTh, right, wrong, th, why }, _set: { d, k }, _q: [them, right, '', th] })));
+}
+// the chat bubbles of steps before k (and step k's reply when `upto`)
+const rpLog = (d, k, upto) => d.steps.slice(0, upto ? k + 1 : k).map((s) => `<div class="rp-b" lang="en">${esc(s[0])}</div><div class="rp-b rp-me" lang="en">${esc(s[2])}</div>`).join('');
+function renderRoleplay() {
+  if (!ROLEPLAY) { withLoading(loadRoleplay()).then(renderRoleplay); return; }
+  $('#title').textContent = 'บทบาทสมมติ';
+  view.scrollTop = 0;
+  view.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn" id="rpBack">‹ กลับ</button><div class="grow"></div><button class="btn primary" id="rpPlay">🎭 เล่นเกม</button></div>
+    <p class="small muted" style="margin:0 4px 10px">${ROLEPLAY.length} สถานการณ์ คุยโต้ตอบทีละประโยคจนจบเรื่อง: หาหมอ ร้านยา พาเพื่อนกินข้าว สแตนด์อัป สัมภาษณ์งาน ประชุม โทรหาไอที โรงแรม · แตะบรรทัดเพื่อฟัง · ▶️ เล่นเฉพาะเรื่องนั้น</p>
+    <div class="pair-list" id="rpList">${ROLEPLAY.map((d) => `<div class="card-box pair-card"><div class="pair-h"><b>${d.icon} ${esc(d.title)}</b> <span class="small muted">คุณ = ${esc(d.you)} · คุยกับ ${esc(d.who)}</span><div class="grow"></div><button class="btn" data-rp="${d.id}" aria-label="เล่นเรื่อง ${esc(d.title)}">▶️</button></div>
+      <div class="rp-log">${d.steps.map((s) => `<button class="rp-b" lang="en" data-say="${esc(s[0])}">${esc(s[0])}</button><button class="rp-b rp-me" lang="en" data-say="${esc(s[2])}">${esc(s[2])}<small class="muted">${esc(s[4])}</small></button>`).join('')}</div></div>`).join('')}</div>`;
+  $('#rpBack').onclick = () => go('ref');
+  $('#rpPlay').onclick = () => startGame('rplay');
+  $('#rpList').onclick = (e) => {
+    const p = e.target.closest('[data-rp]'); if (p) { rpOnly = p.dataset.rp; startGame('rplay'); return; }
+    const s = e.target.closest('[data-say]'); if (s) speak(s.dataset.say);
+  };
+}
