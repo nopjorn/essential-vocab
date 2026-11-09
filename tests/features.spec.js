@@ -2146,6 +2146,8 @@ test('voice picker (1.221): automatic voice prefers Premium/Enhanced of the acce
   await setVoices([['Fred', 'en-US'], ['Samantha', 'en-US'], ['Daniel', 'en-GB']]);
   await page.evaluate(() => fillVoices());
   await expect(page.locator('#voiceTip')).toBeVisible();
+  await expect(page.locator('#voiceTip')).toContainText('Read & Speak'); // 1.235.1: menu names in the device language (Chromium: English)
+  await expect(page.locator('#voiceTip')).toContainText('Voices');
   await expect(page.locator('#voiceN')).toContainText('Samantha');
   await page.selectOption('#acc', 'en-GB');
   await expect(page.locator('#voiceN')).toContainText('Daniel');

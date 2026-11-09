@@ -152,8 +152,8 @@ function renderSettings() {
       <div class="set-row"><span>เสียงอ่าน</span><select class="sel" id="voice" style="max-width:62%"></select></div>
       <div class="small muted" id="voiceN" style="margin:-4px 0 6px"></div>
       <div class="voice-tip small" id="voiceTip" hidden><b>✨ อยากได้เสียงชัดเหมือนคนจริง? (เครื่องนี้ยังไม่มีเสียง ⭐)</b>
-        <ol><li>iPhone/iPad → <b>การตั้งค่า</b> → <b>การช่วยการเข้าถึง</b> → <b>เนื้อหาที่ถูกพูด</b> → <b>เสียง</b> → <b>อังกฤษ</b></li>
-        <li>เลือกเสียง เช่น Ava, Zoe, Evan (อเมริกัน) หรือ Serena, Daniel (อังกฤษ) แล้วดาวน์โหลดแบบ <b>ขั้นสูง (Enhanced)</b> หรือ <b>พรีเมียม</b> (ใช้ Wi-Fi ประมาณ 100–400 MB)</li>
+        <ol>${voiceSteps()}
+        <li>เลือกเสียง เช่น Ava, Zoe, Evan (อเมริกัน) หรือ Serena, Daniel (อังกฤษ) แล้วดาวน์โหลดแบบ <b>ขั้นสูง (Enhanced)</b> หรือ <b>พรีเมียม (Premium)</b> (ใช้ Wi-Fi ประมาณ 100–400 MB)</li>
         <li>ปิดแอปนี้แล้วเปิดใหม่ เสียงใหม่จะขึ้น ⭐ ในรายการ และโหมด "อัตโนมัติ" จะเลือกใช้ให้เอง</li></ol></div>
       <div class="set-row"><span>อ่านออกเสียงอัตโนมัติ</span>
         <label class="switch"><input type="checkbox" id="auto" ${st.autoSpeak ? 'checked' : ''}><span></span></label></div>
@@ -627,6 +627,17 @@ function bindErrBox() {
     const box = document.getElementById('errBox'); if (box) { box.outerHTML = errBox(); bindErrBox(); }
     toast('🗑️ ล้างบันทึกข้อผิดพลาดแล้ว');
   };
+}
+// Where to download a better voice (1.235.1): the menu path in the language the device is set to (navigator.language), plus a
+// search tip that works whatever iOS renamed the menu to ("Spoken Content" became "Read & Speak" in newer iOS).
+function voiceSteps() {
+  const th = /^th/i.test(navigator.language || '');
+  const b = (t) => `<b lang="${th ? 'th' : 'en'}">${t}</b>`;
+  const path = th
+    ? `${b('การตั้งค่า')} → ${b('การช่วยการเข้าถึง')} → ${b('เนื้อหาที่ถูกพูด')} → ${b('เสียง')} → ${b('อังกฤษ')}`
+    : `${b('Settings')} → ${b('Accessibility')} → ${b('Read &amp; Speak')} (iOS เก่าชื่อ ${b('Spoken Content')}) → ${b('Voices')} → ${b('English')}`;
+  return `<li>iPhone/iPad (เครื่องตั้งเป็น${th ? 'ภาษาไทย' : 'ภาษาอังกฤษ'}): ${path}</li>
+        <li>หาเมนูไม่เจอ: เปิดแอป${th ? 'การตั้งค่า' : ' Settings'} ปัดลงนิดหนึ่งแล้วพิมพ์ค้นหา ${b(th ? 'เสียง' : 'Voices')} (ชื่อเมนูเปลี่ยนไปตามรุ่น iOS)</li>`;
 }
 function offlineBox() {
   const el = document.getElementById('offBox'); if (!el) return;
