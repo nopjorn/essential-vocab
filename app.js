@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.227.0';
+const APP_VERSION = '1.228.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -300,6 +300,7 @@ const defaults = () => ({
 });
 // Set when the saved state could not be read: the old text is copied to KEY + '.rescue' before anything new is written (1.105.4).
 let loadRescued = false;
+let loadHadRaw = false; // localStorage had a saved state at start (1.227.0: idbRecover() restores the IndexedDB copy when it had none)
 let S = load();
 // Users from before 1.8.0 get XP for the work they already did.
 if (S.xp == null) S.xp = Object.values(S.prog).reduce((a, p) => a + (p.s || 0) + (p.c || 0), 0);
@@ -308,6 +309,7 @@ function load() {
   let raw = null;
   try {
     raw = localStorage.getItem(KEY);
+    loadHadRaw = !!raw;
     if (raw) {
       const d = defaults(), s = JSON.parse(raw);
       const r = { ...d, ...s, settings: { ...d.settings, ...(s.settings || {}) } };
@@ -360,10 +362,12 @@ function flushSave() {
   let json = JSON.stringify(S);
   // Close to the limit: thin out old statistics first (never progress), so the write below still fits (1.210.0).
   if (json.length > STORE_LIMIT * STORE_TRIM && storeTrim()) json = JSON.stringify(S);
-  if (!storeWrite(json) && storeTrim()) storeWrite(JSON.stringify(S));
+  let ok = storeWrite(json);
+  if (!ok && storeTrim()) ok = storeWrite(json = JSON.stringify(S));
+  idbNote(json, ok);
 }
 function storeWrite(json) {
-  try { localStorage.setItem(KEY, json); saveFailed = false; saveLen = json.length; storeCheck(json.length); return true; } catch (e) {
+  try { localStorage.setItem(KEY, json); saveFailed = false; saveLen = json.length; storeCheck(json.length); try { localStorage.setItem('o3k.lsAt', String(Date.now())); } catch (e2) { /* full */ } return true; } catch (e) {
     // Storage full or blocked: tell the person once, otherwise progress silently stops being saved.
     if (!saveFailed && typeof toast === 'function') toast('⚠️ บันทึกข้อมูลลงเครื่องไม่ได้ (พื้นที่เต็มหรือถูกปิดไว้) ลองสำรองข้อมูลไว้ก่อนนะ');
     saveFailed = true; return false;
@@ -403,8 +407,61 @@ function storeCheck(len) {
   } catch (e) { return; }
   if (typeof toast === 'function') toast(`💾 ใช้พื้นที่เก็บข้อมูลในเครื่องไปแล้ว ${Math.round(use / STORE_LIMIT * 100)}% แนะนำให้สำรองข้อมูลไว้ (ตั้งค่า → 💾 สำรองข้อมูล)`);
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden) flushSave(); });
-addEventListener('pagehide', flushSave);
+/* ---------- IndexedDB copy (1.228.0) ---------- */
+// A second copy of the saved state in IndexedDB (its own, much larger quota), record 'state' = {at, v, json, lsOk} in db o3k / store kv.
+// Written at most every IDB_EVERY ms after a save, when the app is hidden, after a reset, and right away when localStorage
+// refused a write (lsOk false). o3k.lsAt = ms of the last good localStorage write. At boot idbRecover() merges the copy back
+// (mergeBackup: the further-ahead progress wins) when localStorage had no state, could not be read, or the copy holds
+// writes that never reached localStorage. Never replaces localStorage as the main store (tests and sync read it).
+const IDB_EVERY = 30000;
+let idbJson = '', idbOk = true, idbAt = 0, idbTimer = 0, idbDb = null;
+function idbOpen() {
+  if (idbDb) return idbDb;
+  idbDb = new Promise((res, rej) => {
+    if (!window.indexedDB) return rej(new Error('no indexedDB'));
+    const q = indexedDB.open('o3k', 1);
+    q.onupgradeneeded = () => q.result.createObjectStore('kv');
+    q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); q.onblocked = () => rej(new Error('blocked'));
+  });
+  idbDb.catch(() => { idbDb = null; });
+  return idbDb;
+}
+function idbReq(mode, fn) {
+  return idbOpen().then((db) => new Promise((res, rej) => {
+    const tx = db.transaction('kv', mode), q = fn(tx.objectStore('kv'));
+    tx.oncomplete = () => res(q.result); tx.onerror = tx.onabort = () => rej(tx.error);
+  }));
+}
+const idbGet = (k) => idbReq('readonly', (st) => st.get(k));
+const idbPut = (k, v) => idbReq('readwrite', (st) => st.put(v, k));
+function idbNote(json, ok) {
+  idbJson = json; idbOk = ok;
+  if (!ok) return idbFlush(); // localStorage refused: keep this one safe now
+  if (!idbTimer) idbTimer = setTimeout(idbFlush, Math.max(0, idbAt + IDB_EVERY - Date.now()));
+}
+function idbFlush() {
+  clearTimeout(idbTimer); idbTimer = 0;
+  if (!idbJson) return Promise.resolve(false);
+  const rec = { at: Date.now(), v: APP_VERSION, json: idbJson, lsOk: idbOk };
+  idbJson = ''; idbAt = Date.now();
+  return idbPut('state', rec).then(() => true, () => false);
+}
+function idbRecover() {
+  let lsAt = 0; try { lsAt = +localStorage.getItem('o3k.lsAt') || 0; } catch (e) { /* blocked */ }
+  return idbGet('state').then((rec) => {
+    if (!rec || typeof rec.json !== 'string') return false;
+    if (loadHadRaw && !loadRescued && (rec.lsOk !== false || rec.at <= lsAt)) return false;
+    let d; try { d = JSON.parse(rec.json); } catch (e) { return false; }
+    if (!d || typeof d !== 'object' || !d.prog) return false;
+    mergeBackup(d); save(); flushSave();
+    idbRecover.done = rec.at;
+    if (typeof toast === 'function') toast('💾 กู้ความคืบหน้าจากสำเนาสำรองในเครื่องแล้ว');
+    if (typeof current !== 'undefined' && typeof go === 'function' && current === 'home') go('home');
+    return true;
+  }, () => false);
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) { flushSave(); idbFlush(); } });
+addEventListener('pagehide', () => { flushSave(); idbFlush(); });
 
 /* ---------- backup ---------- */
 const BACKUP_EVERY = 7; // days before the home screen nags about a backup

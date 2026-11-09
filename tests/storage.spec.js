@@ -65,3 +65,42 @@ test('past 70 %: one warning toast, not again within a week; the box turns amber
   await page.evaluate(() => localStorage.removeItem('o3k.pad'));
   expect(errors).toEqual([]);
 });
+
+// 1.228.0: a second copy in IndexedDB comes back when localStorage refused the latest saves or lost the state.
+test('IndexedDB copy: kept after saves, restores progress that localStorage refused or lost, not used when all is well', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] }, prog: { apple: { b: 1, i: 1, e: 2.5, d: Date.now() + 864e5, s: 1, c: 1 } } });
+  const copy = () => page.evaluate(() => idbGet('state').then((r) => r && { lsOk: r.lsOk, words: Object.keys(JSON.parse(r.json).prog).sort() }));
+  await page.evaluate(() => { save(); flushSave(); return idbFlush(); });
+  expect(await copy()).toEqual({ lsOk: true, words: ['apple'] });
+  // all is well: a reload does not merge anything back
+  await page.reload(); await expect(page.locator('#view')).not.toBeEmpty();
+  expect(await page.evaluate(() => idbRecover())).toBe(false);
+  // localStorage refuses the main key: the new word only reaches the copy, at once
+  await page.evaluate(() => {
+    const set = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) { if (k === KEY) throw new DOMException('full', 'QuotaExceededError'); return set.call(this, k, v); };
+    S.prog.bread = { b: 2, i: 3, e: 2.5, d: Date.now() + 3 * 864e5, s: 2, c: 2 }; save(); flushSave();
+  });
+  await expect.poll(copy).toEqual({ lsOk: false, words: ['apple', 'bread'] });
+  expect(Object.keys(JSON.parse(await page.evaluate(() => localStorage.getItem(KEY))).prog)).toEqual(['apple']);
+  // next start: the copy is merged back and written to localStorage
+  await page.reload(); await expect(page.locator('#view')).not.toBeEmpty();
+  await expect.poll(() => page.evaluate(() => Object.keys(S.prog).sort())).toEqual(['apple', 'bread']);
+  expect(Object.keys(JSON.parse(await page.evaluate(() => localStorage.getItem(KEY))).prog).sort()).toEqual(['apple', 'bread']);
+  // localStorage lost the state altogether: it comes back too
+  await page.evaluate(() => idbFlush());
+  await page.evaluate(() => { localStorage.removeItem(KEY); window.flushSave = () => {}; }); // nothing is written back on the way out
+  await page.reload(); await expect(page.locator('#view')).not.toBeEmpty();
+  await expect.poll(() => page.evaluate(() => Object.keys(S.prog).sort())).toEqual(['apple', 'bread']);
+  expect(errors).toEqual([]);
+});
+
+test('reset clears the IndexedDB copy too, so nothing comes back', async ({ page }) => {
+  const errors = await openApp(page, { settings: { levels: ['A1'] }, prog: { apple: { b: 1, i: 1, e: 2.5, d: Date.now() + 864e5, s: 1, c: 1 } } });
+  await page.evaluate(() => { save(); flushSave(); return idbFlush(); });
+  page.on('dialog', (d) => d.accept());
+  await page.evaluate(() => { go('settings'); document.querySelector('details[data-g="danger"]') && (document.querySelector('details[data-g="danger"]').open = true); });
+  await page.evaluate(() => document.getElementById('reset').click());
+  await expect.poll(() => page.evaluate(() => idbGet('state').then((r) => Object.keys(JSON.parse(r.json).prog).length))).toBe(0);
+  expect(errors).toEqual([]);
+});
