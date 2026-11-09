@@ -4,7 +4,7 @@ const { openApp, readState } = require('./helpers');
 // an option whose whole text is t (options can contain each other, e.g. คิว / คิว-อี)
 const exact = (t) => new RegExp('^\\s*' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$');
 
-const BOOKS = [['devtalk', 'toDv'], ['sayit', 'toSy'], ['itcol', 'toIc'], ['doctor', 'toDr'], ['thai', 'toTh'], ['chat', 'toCh'], ['abbr', 'toAb']];
+const BOOKS = [['interview', 'toIv'], ['devtalk', 'toDv'], ['sayit', 'toSy'], ['itcol', 'toIc'], ['doctor', 'toDr'], ['thai', 'toTh'], ['chat', 'toCh'], ['abbr', 'toAb']];
 
 for (const [id, btn] of BOOKS) {
   test(`${id}: the page lists every row by category, speaks, keeps a row in a set and starts the game`, async ({ page }) => {

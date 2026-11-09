@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.226.0';
+const APP_VERSION = '1.227.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -2154,7 +2154,7 @@ $('#topBack').addEventListener('click', () => { const b = view.querySelector('[i
   document.addEventListener('touchcancel', () => { if (on) reset(); }, { passive: true });
 })();
 // iPad sidebar extras: reference pages live under the คลังความรู้ page (route 'ref', 1.127), so open it first (their ‹ กลับ returns there).
-const REF_PAGES = { pairs: () => renderPairs(), fams: () => renderFamilies(), syn: () => renderSyn(), affix: () => renderAffix(), roots: () => renderRoots(), ukus: () => renderUkUs(), phrasal: () => renderPhrasal(), idiom: () => renderIdioms(), wphr: () => renderWorkPhr(), bizcol: () => renderBizCol(), regi: () => renderRegister(), abbr: () => renderBook('abbr'), devtalk: () => renderBook('devtalk'), sayit: () => renderBook('sayit'), itcol: () => renderBook('itcol'), doctor: () => renderBook('doctor'), thai: () => renderBook('thai'), chat: () => renderBook('chat'), sit: () => renderSit(), irr: () => renderIrregular(), dprep: () => renderDepPrep(), mis: () => renderMistakes(), gpat: () => renderGramPat(), ipa: () => renderIpa() };
+const REF_PAGES = { pairs: () => renderPairs(), fams: () => renderFamilies(), syn: () => renderSyn(), affix: () => renderAffix(), roots: () => renderRoots(), ukus: () => renderUkUs(), phrasal: () => renderPhrasal(), idiom: () => renderIdioms(), wphr: () => renderWorkPhr(), bizcol: () => renderBizCol(), regi: () => renderRegister(), abbr: () => renderBook('abbr'), interview: () => renderBook('interview'), devtalk: () => renderBook('devtalk'), sayit: () => renderBook('sayit'), itcol: () => renderBook('itcol'), doctor: () => renderBook('doctor'), thai: () => renderBook('thai'), chat: () => renderBook('chat'), sit: () => renderSit(), irr: () => renderIrregular(), dprep: () => renderDepPrep(), mis: () => renderMistakes(), gpat: () => renderGramPat(), ipa: () => renderIpa() };
 // iPad sidebar groups (1.133): a group heading folds its shortcuts away (the active one stays visible); the folded groups are remembered on this device.
 const RAIL_FOLD_KEY = 'o3k.railFold';
 function railFold(apply) {

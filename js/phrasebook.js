@@ -66,6 +66,14 @@ const PB = {
     same: [['Nit:', 'Non-blocking:'], ['This looks good to me.', 'Done, thanks!', 'Good point.'], ['I\'ll look into it.', 'I\'m on it.', 'We\'re investigating.'], ['Could we …?', 'What do you think about …?'],
       ['I\'m still working on …', 'It\'s taking longer than expected.'], ['Do you have a minute?', 'Quick question:'], ['Let\'s hop on a call.', 'Let\'s take this offline.'], ['It\'s been fixed.', 'That did the trick.']],
   },
+  interview: {
+    file: 'data/interview.js', key: 'INTERVIEW', icon: '🎤', title: 'สัมภาษณ์งานสายเทค', modes: ['en', 'th'], sayEn: true, ear: true,
+    intro: 'ประโยคสำหรับสัมภาษณ์งานสายไอที: แนะนำตัว เล่าโปรเจกต์ ตอบโจทย์เทคนิค ตอบแบบ STAR ถามกลับ และคุยข้อเสนองาน · 💡 บอกวิธีตอบให้ดูดี · แตะเพื่อฟัง · ＋ เก็บเข้าชุดของฉัน',
+    ask: { en: 'ประโยคนี้หมายความว่าอะไร', th: 'พูดตอนสัมภาษณ์เป็นอังกฤษว่าอะไร' },
+    cats: { intro: ['👋', 'แนะนำตัว'], project: ['📁', 'เล่าโปรเจกต์'], tech: ['🧠', 'โจทย์เทคนิค'], behavior: ['⭐', 'คำถามพฤติกรรม (STAR)'], ask: ['❓', 'ถามกลับ'], offer: ['🤝', 'เงินเดือน / ข้อเสนอ'] },
+    same: [['Let me make sure I understand the question.', 'Can I ask a clarifying question?'], ['Let me walk you through my approach.', 'My first idea is …', 'I would start by …'], ['I\'m open to discussion.', 'Could I have a few days to think it over?'],
+      ['I specialize in …', 'I have … years of experience in …'], ['The situation was …', 'Tell me about a time when …'], ['What I did was …', 'I was responsible for …']],
+  },
 };
 const PB_DATA = {};
 // fill books (1.223.0): rows [cat, phrase with [part], Thai, example with [part] as used, Thai example, 'wrong|wrong|wrong', tip];
