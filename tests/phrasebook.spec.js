@@ -57,3 +57,30 @@ for (const [id, btn] of BOOKS) {
     expect(errors).toEqual([]);
   });
 }
+
+test('pbear (1.220): hear a phrase from the listening books, pick the Thai; a book page starts it for that book only', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.evaluate(() => startGame('pbear'));
+  const view = page.locator('#view');
+  await expect(view.locator('.options .opt')).toHaveCount(4);
+  const cur = await page.evaluate(() => ({ en: playQuiz.cur._pb.en, ear: PB[playQuiz.cur._book].ear, q: pbQuestion.last }));
+  expect(cur.ear).toBe(true);
+  await expect(view.locator('#pbTxt')).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window.__said.at(-1))).toBe(cur.en);
+  await view.locator('#pbHint').click();
+  await expect(view.locator('#pbTxt')).toHaveText(cur.en);
+  await view.locator('.opt').filter({ hasText: cur.q.right }).first().click();
+  await expect(view.locator('#reveal')).toContainText('ถูกต้อง');
+  await view.locator('#nextQ').click();
+  const q2 = await page.evaluate(() => pbQuestion.last);
+  await view.locator('.opt').filter({ hasNotText: q2.right }).first().click();
+  await expect(view.locator('#reveal')).toContainText('ยังไม่ถูก');
+  expect(await page.evaluate(() => Object.keys(S.lex).filter((k) => k.startsWith('pbear:')).length)).toBe(2);
+  // abbreviations are never in it; the doctor page's 🎧 button plays doctor phrases only
+  expect(await page.evaluate(() => pbEarIds().includes('abbr'))).toBe(false);
+  await page.evaluate(() => { go('ref'); REF_PAGES.doctor(); });
+  await page.locator('#pbEar').click();
+  await expect(view.locator('.options .opt')).toHaveCount(4);
+  expect(await page.evaluate(() => playQuiz.cur._book)).toBe('doctor');
+  expect(errors).toEqual([]);
+});

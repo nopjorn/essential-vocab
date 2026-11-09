@@ -59,6 +59,7 @@ const GAMES = {
   chat: { icon: '💬', name: 'ภาษาพูด / แชต', desc: 'No worries, I’m down แปลว่าอะไร' },
   thai: { icon: '🇹🇭', name: 'เล่าเรื่องไทย', desc: 'ส้มตำ ทำบุญ เกรงใจ พูดเป็นอังกฤษว่าอะไร' },
   doctor: { icon: '🩺', name: 'คุยกับหมอ', desc: 'บอกอาการ ฟังหมอ ซื้อยาเป็นอังกฤษ' },
+  pbear: { icon: '👂', name: 'ฟังวลี', desc: 'ฟังภาษาพูด คุยกับหมอ เรื่องไทย แล้วเลือกความหมาย' },
   abbr: { icon: '🔤', name: 'ตัวย่อในงาน', desc: 'ASAP, FYI, EOD แปลว่าอะไร' },
   bizcol: { icon: '🤝', name: 'คำคู่ธุรกิจ', desc: 'meet a deadline ไม่ใช่ make' },
   wphr: { icon: '📧', name: 'สำนวนอีเมลงาน', desc: 'ประโยคอีเมลและแชตที่ทำงาน' },
@@ -93,11 +94,11 @@ const PAIR_GAMES = ['confuse', 'minpair'];
 // Skill games with their own items (idx -1): practice only, no flashcard scheduling.
 // Generated skill games: the questions are made up on the spot, so they are not scheduled (no S.lex keys).
 const GEN_GAMES = ['num'];
-const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix', 'root', 'idiom', 'sit', 'irreg', 'dprep', 'thaierr', 'gpat', 'real', 'wphr', 'bizcol', 'regi', 'email', 'wpdict', 'abbr', 'doctor', 'thai', 'chat', 'toeic1', 'toeic2', 'toeic3', 'toeic4', 'toeic5', 'toeic6', 'toeic7', 'toeicMock', ...GEN_GAMES];
+const SKILL_GAMES = [...PAIR_GAMES, 'wform', 'phrasal', 'syn', 'affix', 'root', 'idiom', 'sit', 'irreg', 'dprep', 'thaierr', 'gpat', 'real', 'wphr', 'bizcol', 'regi', 'email', 'wpdict', 'pbear', 'abbr', 'doctor', 'thai', 'chat', 'toeic1', 'toeic2', 'toeic3', 'toeic4', 'toeic5', 'toeic6', 'toeic7', 'toeicMock', ...GEN_GAMES];
 // The games menu groups every game by the skill it trains (1.106): chips filter, and "all" lists them under these headings.
 // Every game id is in exactly one group (a test checks).
 const GAME_SKILLS = [
-  ['hear', '👂', 'ฟังและเสียง', ['listen', 'minpair', 'num', 'dict', 'dictW', 'dictS', 'ipa', 'toeic1', 'toeic2', 'toeic3', 'toeic4', 'wpdict']],
+  ['hear', '👂', 'ฟังและเสียง', ['listen', 'minpair', 'num', 'dict', 'dictW', 'dictS', 'ipa', 'toeic1', 'toeic2', 'toeic3', 'toeic4', 'wpdict', 'pbear']],
   ['say', '🗣️', 'พูด', ['speak', 'speakS']],
   ['mean', '📖', 'ความหมาย', ['en2th', 'th2en', 'match', 'emoji', 'guess', 'syn', 'confuse', 'review', 'toeic7']],
   ['write', '✍️', 'สะกดและเขียน', ['spell', 'hand', 'hangman', 'anagram', 'cloze', 'sCloze', 'order', 'sOrder', 'compose']],
@@ -451,6 +452,7 @@ function gamePool(id) {
   if (id === 'bizcol') return bcItems();
   if (id === 'regi') return rgItems();
   if (PB[id]) return pbItems(id);
+  if (id === 'pbear') return pbEarItems();
   if (id === 'email') return emItems();
   if (id === 'wpdict') return wpItems();
   if (id === 'toeic5') return p5Items();
@@ -631,6 +633,7 @@ function startGame(id) {
   if (id === 'idiom' && !IDIOMS) { withLoading(loadIdioms()).then(() => startGame(id)); return; }
   if (id === 'wpdict' && !WORKPHR) { withLoading(loadWorkPhr()).then(() => startGame(id)); return; }
   if (id === 'email' && !EMAILS) { withLoading(loadEmails()).then(() => startGame(id)); return; }
+  if (id === 'pbear' && pbEarIds().some((b) => !PB_DATA[b])) { withLoading(pbEarLoad()).then(() => startGame(id)); return; }
   if (PB[id] && !PB_DATA[id]) { withLoading(loadBook(id)).then(() => startGame(id)); return; }
   if (id === 'regi' && !REGISTER) { withLoading(loadRegister()).then(() => startGame(id)); return; }
   if (id === 'bizcol' && !BIZCOL) { withLoading(loadBizCol()).then(() => startGame(id)); return; }

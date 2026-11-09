@@ -7,7 +7,7 @@
 // ⚡ fast answers (1.168.0): only for kinds answered with one tap on reading; these need listening, typing, speaking,
 // ordering or drawing first, so they never get the badge.
 const FAST_MS = 2000;
-const SLOW_MODES = ['listen', 'spell', 'dict', 'dictW', 'dictS', 'speak', 'speakS', 'order', 'sOrder', 'hand', 'compose', 'hangman', 'anagram', 'minpair', 'num', 'wpdict'];
+const SLOW_MODES = ['listen', 'spell', 'dict', 'dictW', 'dictS', 'speak', 'speakS', 'order', 'sOrder', 'hand', 'compose', 'hangman', 'anagram', 'minpair', 'num', 'wpdict', 'pbear'];
 function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   const ROUND = 10;
   // Endless run (emojiRun): no round limit, wrong answers only reset the streak; the player ends it themselves.
@@ -165,7 +165,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     if (m === 'wphr') return qWphr(w);
     if (m === 'bizcol') return qBizcol(w);
     if (m === 'regi') return qRegi(w);
-    if (PB[m]) return qBook(w);
+    if (PB[m] || m === 'pbear') return qBook(w);
     if (m === 'email') return qEmail(w);
     if (m === 'wpdict') return qWpDict(w);
     if (m === 'toeic5') return qP5(w);
@@ -1278,16 +1278,26 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
 
   // Phrase books (1.212.0, js/phrasebook.js): English → Thai, Thai → English or (abbreviations) English → the full form; 4 options.
   function qBook(w) {
-    const id = w._book, b = PB[id], r = w._pb, q = pbQuestion(id, r, pbQuestion.force);
+    const id = w._book, b = PB[id], r = w._pb, ear = !!w._ear, q = pbQuestion(id, r, ear ? 'en' : pbQuestion.force);
     pbQuestion.last = q; // read by tests
     const isEn = q.field !== 'th';
-    view.innerHTML = `${header()}
-      <div class="card-box q-prompt fit pop"><div class="small muted">${b.icon} ${esc(b.ask[q.m])}</div>
+    // listening (pbear): the phrase is only heard; 💡 shows it written
+    const prompt = ear ? `<div class="small muted">🎧 ${b.icon} ฟังแล้วเลือกความหมาย</div><div style="height:8px"></div>
+        <button class="speak" data-say aria-label="ฟังอีกครั้ง" style="width:76px;height:76px;font-size:34px;margin:0">🔊</button><div>${slowBtn(r.en)}</div>
+        <button class="hint-btn" id="pbHint">💡 ดูตัวหนังสือ</button><div class="h2 pb-q" lang="en" id="pbTxt" hidden>${esc(r.en)}</div>`
+      : `<div class="small muted">${b.icon} ${esc(b.ask[q.m])}</div>
         <div class="h2 pb-q" ${q.m === 'th' ? '' : 'lang="en"'} style="margin-top:8px">${esc(q.prompt)}</div>
-        ${q.m === 'th' ? '' : `<div class="small muted" lang="en" style="margin-top:6px">${pbMark(r)}</div>`}</div>
+        ${q.m === 'th' ? '' : `<div class="small muted" lang="en" style="margin-top:6px">${pbMark(r)}</div>`}`;
+    view.innerHTML = `${header()}
+      <div class="card-box q-prompt fit pop">${prompt}</div>
       <div class="options">${q.opts.map((o) => `<button class="opt" ${isEn ? 'lang="en"' : ''} data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = () => go('games');
+    if (ear) {
+      view.querySelector('.q-prompt [data-say]').onclick = () => speak(r.en);
+      $('#pbHint').onclick = () => { $('#pbTxt').hidden = false; $('#pbHint').remove(); };
+      setTimeout(() => speak(r.en), 200);
+    }
     let answered = false;
     view.querySelector('.options').onclick = (e) => {
       const btn = e.target.closest('.opt'); if (!btn || answered) return;
