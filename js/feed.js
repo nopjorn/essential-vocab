@@ -50,12 +50,12 @@ function feedStoryQ() {
 
 function renderFeed() {
   view.classList.add('feed-mode');
-  view.innerHTML = `<div class="feed-hud"><span id="fCombo" class="combo"></span><span class="small f-goal" id="fGoal"></span><span class="small" id="fXp"></span></div><div class="feed" id="feed"></div>`;
+  view.innerHTML = `<div class="feed-hud"><span id="fCombo" class="combo"></span><span class="small f-goal" id="fGoal"></span><span class="small" id="fXp"></span></div><div class="feed" id="feed"></div><aside class="side-stats fs-panel" id="fSide" aria-label="สถิติรอบนี้"></aside>`;
   const feed = $('#feed');
   const seen = new Set();
   const later = [];            // { at: card number, w } quizzes on words just introduced
   const cards = [];            // card number -> { w, type, el, done, sp (special), right, say, reveal, ... }
-  const sess = { n: 0, ok: 0, xp: 0, best: 0, bosses: 0, t0: Date.now() };
+  const sess = { n: 0, ok: 0, xp: 0, best: 0, bosses: 0, t0: Date.now(), log: [], miss: [] }; // log = last answers (true/false), miss = words answered wrong
   let n = 0, combo = 0, newDealt = 0, newDone = 0, activeN = -1, spTurn = 0, alive = true;
   let boss = null, bossNext = 8;   // boss = { w, hp, miss, at }
   let lastTap = { k: -1, t: 0 };
@@ -69,7 +69,38 @@ function renderFeed() {
     const fresh = S.daily.date === today() ? S.daily.fresh : 0, goal = newGoal();
     $('#fGoal').textContent = fresh >= goal ? '🎯 ครบเป้าคำใหม่' : `✨ คำใหม่ ${fresh}/${goal}`;
   };
+  // 1.217.0 iPad landscape (CSS shows it from 1100×700): this round's numbers beside the feed, refreshed with every answer + a clock.
+  const sideMQ = matchMedia('(min-width: 1100px) and (min-height: 700px) and (orientation: landscape)');
+  const clock = (ms) => { const t = Math.floor(ms / 1000); return t >= 3600 ? `${Math.floor(t / 3600)}:${String(Math.floor(t / 60) % 60).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}` : `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+  function updSide() {
+    const el = $('#fSide'); if (!el || !sideMQ.matches) return; // hidden on phones: don't build it
+    const bad = sess.n - sess.ok, acc = sess.n ? Math.round(sess.ok / sess.n * 100) : null, ms = Date.now() - sess.t0;
+    el.innerHTML = `<div class="ss-h">รอบนี้</div>
+      <div class="ss-big"><b>${acc == null ? '–' : acc + '%'}</b><span>ตอบถูก</span></div>
+      <div class="qbar"><span style="width:${acc || 0}%"></span></div>
+      <div class="ss-grid">
+        <div><b class="fs-ok">${sess.ok}</b><span>✅ ถูก</span></div>
+        <div><b class="fs-bad">${bad}</b><span>❌ ผิด</span></div>
+        <div><b>${sess.n}</b><span>ข้อทั้งหมด</span></div></div>
+      <div class="ss-grid">
+        <div><b id="fsClock">${clock(ms)}</b><span>⏱️ เวลา</span></div>
+        <div><b>${sess.n ? Math.round(ms / 1000 / sess.n) : '–'}</b><span>วิ/ข้อ</span></div>
+        <div><b>+${sess.xp}</b><span>XP</span></div></div>
+      <div class="ss-h">คอมโบ</div>
+      <div class="ss-row"><span>ตอนนี้</span><b>${combo ? '🔥 ' + combo : 0}</b></div>
+      <div class="ss-row"><span>สูงสุดรอบนี้</span><b>${sess.best}</b></div>
+      <div class="ss-row"><span>คำใหม่ที่เรียน</span><b>${newDone}</b></div>
+      ${sess.bosses ? `<div class="ss-row"><span>👾 ปราบบอส</span><b>${sess.bosses}</b></div>` : ''}
+      ${sess.log.length ? `<div class="ss-h">ล่าสุด ${sess.log.length} ข้อ</div><div class="fs-dots" aria-label="ถูก ${sess.log.filter(Boolean).length} จาก ${sess.log.length} ข้อล่าสุด">${sess.log.map((ok) => `<i class="${ok ? 'ok' : 'bad'}"></i>`).join('')}</div>` : ''}
+      ${sess.miss.length ? `<div class="ss-h">คำที่ผิดรอบนี้ (แตะเพื่อดู)</div><div class="fs-miss">${sess.miss.slice(-12).reverse().map((w) => `<button class="chip" data-fsw="${w.idx}" lang="en">${esc(w.w)}</button>`).join('')}</div>` : ''}`;
+  }
+  const side = $('#fSide');
+  side.onclick = (e) => { const b = e.target.closest('[data-fsw]'); if (b && W[+b.dataset.fsw]) openSheet(W[+b.dataset.fsw]); };
+  const sideTick = setInterval(() => { const c = $('#fsClock'); if (c && sideMQ.matches) c.textContent = clock(Date.now() - sess.t0); }, 1000);
+  const sideMQon = () => updSide();
+  sideMQ.addEventListener('change', sideMQon);
   hud();
+  updSide();
   // Data for the special cards loads in the background; a special is skipped until its data is in.
   loadFamilies(); loadColloc(); loadPairs(); loadStories();
   const spReady = {
@@ -277,6 +308,9 @@ function renderFeed() {
       }
     }
     if (xp) { addXP(xp); sess.xp += xp; }
+    sess.log.push(ok); if (sess.log.length > 20) sess.log.shift();
+    if (!ok && w && !c.sp && !sess.miss.includes(w)) sess.miss.push(w);
+    updSide();
     if (combo === 6) questEvent('round', { game: 'feed', correct: 0, bestCombo: combo });
     questEvent('answer', { game: 'feed', ok });
     hud();
@@ -375,6 +409,6 @@ function renderFeed() {
       while (n - k < 4) addCard();
     });
   }, { root: feed, threshold: 0.6 });
-  cleanup = () => { alive = false; io.disconnect(); };
+  cleanup = () => { alive = false; io.disconnect(); clearInterval(sideTick); sideMQ.removeEventListener('change', sideMQon); };
   for (let k = 0; k < 4; k++) addCard();
 }

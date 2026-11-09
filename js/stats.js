@@ -285,7 +285,7 @@ function renderStats() {
       <div class="tile-s"><b>${h.active ? Math.round(h.games / h.active) : 0}</b><span>ข้อเกม/วัน</span></div>
       <div class="tile-s"><b>${Math.round(h.acc * 100)}<small>%</small></b><span>ตอบถูก</span></div>
     </div>
-    <div class="card-box"><div class="small muted" style="margin-bottom:6px">กิจกรรมต่อวัน แยกตามประเภท (แตะแท่งเพื่อดูตัวเลข)</div><div class="chart-host" data-chart="act">${activityChart(W_)}</div></div>
+    <div class="card-box"><div class="small muted" style="margin-bottom:6px">กิจกรรมต่อวัน แยกตามประเภท (แตะแท่งเพื่อดูรายละเอียดวันนั้น)</div><div class="chart-host" data-chart="act">${activityChart(W_)}</div></div>
     <div class="h2">⏱️ ใช้เวลากับอะไรบ้าง</div>
     <div class="card-box" id="actBox">${actBreakdown()}</div>
     ${recordsCard()}
@@ -698,7 +698,7 @@ function activityChart(Wd) {
     const parts = [...ACT_IDS, 'unk'].filter((id) => d.seg[id] > 0).map((id) => `${ACT_SHORT[id]} ${sec ? minTxt(d.a.secBy[id]) : d.seg[id]}`);
     const lab = !d.sum ? `${date}: ${sec && d.all ? 'ยังไม่ได้จับเวลา' : 'ไม่ได้เล่น'}`
       : `${date}: ${sec ? `≈ ${minTxt(d.a.sec)}` : `${d.sum} ข้อ${d.a ? ` · ≈ ${minTxt(d.a.sec)}` : ''}`}${d.a && d.a.jd ? ` · ถูก ${Math.round(d.a.ok / d.a.jd * 100)}%` : ''}&#10;${parts.join(' · ')}`;
-    return `${out}<rect class="hit" data-tip="${lab}" x="${x - gap / 2}" y="0" width="${bw + gap}" height="${H}"/>`;
+    return `${out}<rect class="hit" data-day="${d.key}" data-tip="${lab}" x="${x - gap / 2}" y="0" width="${bw + gap}" height="${H}"/>`;
   }).join('');
   const ticks = [0, 7, 14, 21, 27].map((i) => `<text class="ax" x="${i * (bw + gap) + bw / 2}" y="${H - 7}" text-anchor="middle">${i === 27 ? 'วันนี้' : `${27 - i} วันก่อน`}</text>`).join('');
   const sw = `<div class="chips trend-range" role="group" aria-label="แสดงเป็น">${[['n', 'จำนวนข้อ'], ['sec', 'เวลา (นาที)']].map(([id, t]) => `<button class="chip${actMetric === id ? ' on' : ''}" data-am="${id}" aria-pressed="${actMetric === id}">${t}</button>`).join('')}</div>`;
@@ -781,11 +781,76 @@ function actBreakdown() {
 function bindAct(root = view) {
   const host = root.querySelector('[data-chart="act"]');
   if (host) host.querySelectorAll('[data-am]').forEach((b) => { b.onclick = () => { actMetric = b.dataset.am; delete host.dataset.w; paintChart(host); }; });
+  const svg = host && host.querySelector('svg'); // 1.216.0: a tap on a day's bar opens that day's page
+  if (svg) svg.onclick = (e) => { const r = e.target.closest('.hit[data-day]'); if (r) go('day', r.dataset.day); };
   const box = root.querySelector('#actBox');
   if (box) {
     box.querySelectorAll('[data-as]').forEach((b) => { b.onclick = () => { actSpan = +b.dataset.as; box.innerHTML = actBreakdown(); bindAct(root); }; });
     box.onclick = (e) => { const b = e.target.closest('.mb-b'); if (b) toast(b.dataset.tip); };
   }
+}
+
+/* ---------- day page ---------- */
+// One day in detail (1.216.0, route `day`, opened from a bar of the activity chart): totals, kinds, games, hours, other actions,
+// words learned / mastered. ‹ › step a day (up to ACT_DAYS back); ‹ กลับ returns to the stats page at the chart.
+const WD_FULL = ['วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์'];
+const daysAgo = (key) => Math.round((Date.parse(today() + 'T12:00:00') - Date.parse(key + 'T12:00:00')) / DAY);
+function dayBody(key) {
+  const k = daysAgo(key), a = actDay(key), x = (S.act[key] && S.act[key].x) || {}, all = S.hist[key] || 0;
+  const cards = S.chist[key] || 0, sn = S.snap[key], prevSn = Object.keys(S.snap).filter((d) => d < key).sort().pop(); // gains vs the last day with a snapshot
+  const nw = sn && prevSn ? sn[2] - S.snap[prevSn][2] : null, mst = sn && prevSn ? sn[3] - S.snap[prevSn][3] : null;
+  const ev = ACT_EVENTS.filter(([id]) => x.e && x.e[id]);
+  if (!all && !a && !ev.length && !x.on) return `<div class="card-box">${emptyArt({ kind: 'empty', title: k ? 'วันนั้นไม่ได้เล่น' : 'วันนี้ยังไม่ได้เล่น', sub: k ? 'ไม่มีการเล่นในวันนั้น ลองดูวันอื่นด้วยปุ่ม ‹ ›' : 'เล่นสักข้อ แล้วรายละเอียดของวันนี้จะขึ้นตรงนี้' })}</div>`;
+  const row = (cls, name, v, topV, total) => `<div class="act-row"><span class="act-n">${cls ? `<i class="${cls}"></i>` : ''}${esc(name)}</span>
+      <span class="act-bar"><i class="${cls || 'a-any'}" style="width:${Math.max(2, Math.round(v[1] / topV * 100))}%"></i></span>
+      <span class="act-v">≈ ${minTxt(v[1])}<small>${v[0].toLocaleString()} ข้อ${total ? ` · ${aPct(v[1], total)}%` : ''}${okTxt(v[3], v[2])}</small></span></div>`;
+  let kinds = '', games = '';
+  if (a) {
+    const rows = ACT_CATS.filter(([id]) => a.by[id]).sort((p, q) => a.secBy[q[0]] - a.secBy[p[0]]);
+    const top = Math.max(1, ...rows.map(([id]) => a.secBy[id]));
+    kinds = rows.map(([id, t]) => row(`a-${id}`, t, [a.by[id], a.secBy[id], a.jdBy[id], a.okBy[id]], top, a.sec)).join('');
+    const gl = Object.entries(x.g || {}).sort((p, q) => q[1][1] - p[1][1]), gTop = Math.max(1, ...gl.map((v) => v[1][1]));
+    games = gl.map(([id, v]) => row('', actName(id), v, gTop, a.sec)).join('');
+  }
+  const unk = Math.max(0, all - (a ? a.n : 0));
+  const h = Array.isArray(x.h) ? x.h : [], bestH = h.indexOf(Math.max(...h));
+  const tile = (v, t) => `<div><b>${v}</b><span>${t}</span></div>`;
+  return `<div class="card-box"><div class="act-tiles day-tiles">
+      ${tile(all.toLocaleString(), 'ข้อทั้งหมด')}
+      ${tile(a ? '≈ ' + minTxt(a.sec) : '–', 'ฝึกจริง')}
+      ${tile(a && a.jd ? aPct(a.ok, a.jd) + '%' : '–', `ตอบถูก${a && a.jd ? ` (${a.ok}/${a.jd})` : ''}`)}
+      ${tile(cards ? cards.toLocaleString() : '–', 'แฟลชการ์ด')}
+      ${tile(x.on ? minTxt(x.on) : '–', 'เปิดแอป')}
+      ${tile(x.ss ? x.ss[0] : '–', `รอบที่นั่งเล่น${x.ss ? ` · ยาวสุด ${minTxt(x.ss[1])}` : ''}`)}
+      ${tile(nw > 0 ? '+' + nw.toLocaleString() : '–', 'คำใหม่ที่เริ่มเรียน')}
+      ${tile(mst > 0 ? '+' + mst.toLocaleString() : '–', 'คำที่จำได้เพิ่ม')}
+    </div></div>
+    ${kinds ? `<div class="h2">แยกตามประเภท</div><div class="card-box"><div class="act-rows">${kinds}</div>
+      ${unk ? `<div class="small muted" style="margin-top:8px">อีก ${unk.toLocaleString()} ข้อยังไม่แยกประเภท</div>` : ''}</div>` : ''}
+    ${!a && all ? `<div class="card-box small muted">วันนั้นอยู่ก่อนเวอร์ชัน 1.158.0 ที่เริ่มแยกประเภท: รู้แค่จำนวนข้อ${cards ? ` (แฟลชการ์ด ${cards} ข้อ)` : ''}</div>` : ''}
+    ${games ? `<div class="h2">🎯 เล่นอะไรบ้าง</div><div class="card-box"><div class="act-rows">${games}</div></div>` : ''}
+    ${h.some((v) => v) ? `<div class="h2">🕐 ช่วงเวลาที่เล่น</div><div class="card-box day-hours"><div class="small muted" style="margin-bottom:6px">เยอะสุด ${String(bestH).padStart(2, '0')}:00–${String((bestH + 1) % 24).padStart(2, '0')}:00 (แตะแท่งเพื่อดูตัวเลข)</div>
+      ${miniBars(h, h.map((v, i) => String(i)), h.map((v, i) => `${String(i).padStart(2, '0')}:00–${String((i + 1) % 24).padStart(2, '0')}:00 · ${v} ข้อ`), 6)}</div>` : ''}
+    ${ev.length ? `<div class="h2">✨ ทำอะไรอีกบ้าง</div><div class="card-box"><div class="act-ev">${ev.map(([id, ic, t]) => `<div><span aria-hidden="true">${ic}</span><b>${x.e[id].toLocaleString()}</b><small>${t}</small></div>`).join('')}</div></div>` : ''}`;
+}
+function renderDay(key) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(key || '') || daysAgo(key) < 0) key = today();
+  const k = daysAgo(key), d = new Date(key + 'T12:00:00');
+  const name = k === 0 ? 'วันนี้' : k === 1 ? 'เมื่อวาน' : `${k} วันก่อน`;
+  view.innerHTML = `<div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="dayBack">‹ กลับ</button></div>
+    <div class="day-head"><button class="btn" id="dayPrev" aria-label="วันก่อนหน้า"${k >= ACT_DAYS - 1 ? ' disabled' : ''}>‹</button>
+      <div class="grow center"><div class="h2" style="margin:0">${WD_FULL[d.getDay()]}ที่ ${thDate(d.getTime())}</div><div class="small muted">${name}</div></div>
+      <button class="btn" id="dayNext" aria-label="วันถัดไป"${k ? '' : ' disabled'}>›</button></div>
+    ${dayBody(key)}`;
+  $('#dayBack').onclick = () => {
+    go('stats');
+    const c = view.querySelector('[data-chart="act"]');
+    if (c) requestAnimationFrame(() => { view.scrollTop += c.getBoundingClientRect().top - view.getBoundingClientRect().top - 80; });
+  };
+  $('#dayPrev').onclick = () => renderDay(dayKey(k + 1));
+  $('#dayNext').onclick = () => renderDay(dayKey(k - 1));
+  const hb = view.querySelector('.day-hours');
+  if (hb) hb.onclick = (e) => { const b = e.target.closest('.mb-b'); if (b) toast(b.dataset.tip); };
 }
 
 // Lines: words learned and words mastered (all levels), from daily snapshots. The SVG is drawn at the width of its box
