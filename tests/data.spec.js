@@ -13,7 +13,7 @@ function load(...files) {
   return window;
 }
 // All app code: app.js plus the js/*.js scripts it is split into.
-const appCode = () => ['app.js', ...fs.readdirSync(path.join(root, 'js')).map((f) => `js/${f}`), 'data/app/play.js', 'data/app/guide.js'].map(read).join('\n'); // + the lazy-loaded engine and manual (1.101)
+const appCode = () => ['app.js', ...fs.readdirSync(path.join(root, 'js')).map((f) => `js/${f}`), 'data/app/play.js', 'data/app/stats.js', 'data/app/guide.js'].map(read).join('\n'); // + the lazy-loaded engine and manual (1.101)
 const WORD_FILES = ['a1', 'a2', 'b1', 'b2', 'b2plus', 'c1', 'toeic', 'nawl', 'bsl', 'it', 'health'].map((l) => `data/words/${l}.js`);
 // Every data file, e.g. 'data/lexis/phrasal.js' (data/ is grouped into folders; nothing sits loose in data/ itself).
 const dataFiles = () => fs.readdirSync(path.join(root, 'data'), { withFileTypes: true })
@@ -26,7 +26,7 @@ test('version is the same in app.js, sw.js and the README changelog', () => {
 });
 
 test('changelog.js lists every README version, newest first', () => {
-  const { CHANGELOG } = load('data/app/changelog.js');
+  const CHANGELOG = [...load('data/app/changelog.js').CHANGELOG, ...load('data/app/changelog-old.js').CHANGELOG_OLD]; // newest rows + the archive (1.236)
   const readme = [...read('README.md').matchAll(/^\| (\d+\.\d+\.\d+) \|/gm)].map((m) => m[1]);
   expect(CHANGELOG.map((r) => r[0])).toEqual(readme);
   CHANGELOG.forEach(([v, t, d]) => { expect(typeof t).toBe('string'); expect(t.length, v).toBeGreaterThan(5); expect(d, v).toMatch(/^\d{4}-\d{2}-\d{2}$/); });
@@ -718,7 +718,7 @@ test('TOEIC Part 6 texts (1.185): blanks [1]–[4] in order, 4 distinct options 
 
 test('phrase books (1.212+): rows [cat, English, Thai, example, Thai example, note], unique English, every category known', () => {
   const src = read('js/phrasebook.js');
-  const books = [...src.matchAll(/^  (\w+): \{\n    file: '([^']+)', key: '(\w+)'/gm)].map((m) => m.slice(1));
+  const books = [...src.matchAll(/^  (\w+): \{\r?\n    file: '([^']+)', key: '(\w+)'/gm)].map((m) => m.slice(1));
   expect(books.length).toBeGreaterThanOrEqual(1);
   const bad = [];
   for (const [id, file, key] of books) {

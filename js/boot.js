@@ -121,5 +121,5 @@ document.addEventListener('keydown', (e) => {
 window.BOOT_MS = Math.round(performance.now()); // time from navigation start to the first screen (settings → ⏱ วัดความเร็ว)
 setSig = settingsSig(); // after boot-time migrations: only real changes from here on stamp settingsAt
 // Fetch the game engine (data/app/play.js) once the first screen is up, so the first game doesn't wait for it (1.101).
-(window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => loadPlay(), { timeout: 4000 });
+(window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => { loadPlay(); loadStats(); }, { timeout: 4000 }); // the stats page too (data/app/stats.js, 1.236)
 mascotWelcome(); // น้องคำ wakes up when you return after a few days (1.102)

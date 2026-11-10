@@ -1,5 +1,5 @@
 // Offline cache. Bump VERSION (keep it equal to APP_VERSION in app.js) on every push.
-const VERSION = 'o3k-1.235.2';
+const VERSION = 'o3k-1.236.0';
 // App shell: replaced as a whole with every version.
 const FILES = [
   './',
@@ -70,6 +70,8 @@ const DATA_CACHE = 'o3k-data';
 const DATA = [
   // app/: in-app manual and game engine (the changelog is in FILES: it changes every version)
   'data/app/play.js',
+  'data/app/stats.js',
+  'data/app/changelog-old.js',
   'data/app/guide.js',
   // sets/: ready-made word sets and goal tags
   'data/sets/presets.js',

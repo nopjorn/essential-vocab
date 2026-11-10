@@ -74,6 +74,7 @@ Details: `docs/notes/state-learning.md`. The rules that always apply:
   list should be replaced (e.g. an openly licensed list such as NGSL).
 
 ## Testing
+- **On Windows (the owner's PC)**: no `PW_CHROMIUM`, no `/opt/...`; plain `npx playwright test` (config uses `python3`, which exists on the PC). Full steps: `docs/howto-run-local.md`. Checkouts are CRLF (`core.autocrlf=true`), so a test regex that matches a line break in a source file must accept `\r?\n`. Running the app locally needs `config.js` with `url: ''` (restore it before committing; `git diff config.js` must be empty).
 - `@playwright/test` is pinned to 1.63.0 (same Chromium build as the container's `/opt/pw-browsers/chromium-1243`; 1.56 could not see or route a service worker's own requests).
 - Run before every push: `npm ci` (once) then `PW_CHROMIUM=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome npm test`
   (the config starts `python3 -m http.server 8765` itself). CI (GitHub Actions "Tests") runs the same suite on every

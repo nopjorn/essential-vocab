@@ -30,7 +30,14 @@ function loadChangelog() {
   return new Promise((res) => {
     const sc = document.createElement('script');
     sc.src = 'data/app/changelog.js?v=' + APP_VERSION;
-    const done = () => { CHANGELOG = window.CHANGELOG || []; res(CHANGELOG); };
+    // the newest rows are in changelog.js (re-downloaded every update); older ones in changelog-old.js (rarely changes, 1.236)
+    const done = () => {
+      const old = document.createElement('script');
+      old.src = 'data/app/changelog-old.js?v=' + APP_VERSION;
+      const fin = () => { CHANGELOG = (window.CHANGELOG || []).concat(window.CHANGELOG_OLD || []); res(CHANGELOG); };
+      old.onload = fin; old.onerror = fin;
+      document.head.appendChild(old);
+    };
     sc.onload = done; sc.onerror = done;
     document.head.appendChild(sc);
   });
