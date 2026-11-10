@@ -1,6 +1,6 @@
 // TOEIC Part 3 style conversations (1.187.0): original short workplace conversations, each with 3 questions, written for this app.
 // {id, kind (P34_KIND in js/lexis2.js), lines: [[speaker 'M' | 'W' | 'M2' | 'W2', text]], th: Thai summary, q: [[question, [4 options], index of the answer, Thai explanation]]}
-// Lazy-loaded by loadP34(3) in js/lexis2.js; game `toeic3` (qP34 in data/play.js): the conversation is spoken, the questions are read. A test checks the shape.
+// Lazy-loaded by loadP34(3) in js/lexis2.js; game `toeic3` (qP34 in data/app/play.js): the conversation is spoken, the questions are read. A test checks the shape.
 window.TOEICP3 = [
   { id: 'projector', kind: 'office',
     lines: [

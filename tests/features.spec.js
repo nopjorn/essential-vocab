@@ -299,7 +299,7 @@ test('page animations: tabs slide by side, sub pages push / pop; slow data shows
   await expect(page.locator('#synBack')).toBeAttached();
   expect(await anim()).toBe('vin-push');
   // phrasal.js answers slowly → skeleton, then the list
-  await page.route('**/data/phrasal.js*', async (r) => { await new Promise((s) => setTimeout(s, 700)); r.continue(); });
+  await page.route('**/data/lexis/phrasal.js*', async (r) => { await new Promise((s) => setTimeout(s, 700)); r.continue(); });
   await page.evaluate(() => renderPhrasal());
   await expect(page.locator('.skel')).toBeVisible();
   await expect(page.locator('#pvList .pair-card').first()).toBeVisible();

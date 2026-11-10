@@ -34,9 +34,9 @@ test.describe('with the service worker', () => {
     expect(r.total).toBeGreaterThan(60);
     expect(r.version).toBe(await page.evaluate(() => 'o3k-' + APP_VERSION));
     // drop one data file and one shell file from the caches: the check names them, the download brings them back
-    await page.evaluate(async () => { await (await caches.open('o3k-data')).delete(new URL('data/cases.js', location.href).href); await (await caches.open('o3k-' + APP_VERSION)).delete(new URL('js/tower.js', location.href).href); });
+    await page.evaluate(async () => { await (await caches.open('o3k-data')).delete(new URL('data/fun/cases.js', location.href).href); await (await caches.open('o3k-' + APP_VERSION)).delete(new URL('js/tower.js', location.href).href); });
     r = await page.evaluate(() => offlineStatus());
-    expect(r.miss.sort()).toEqual(['data/cases.js', 'js/tower.js']);
+    expect(r.miss.sort()).toEqual(['data/fun/cases.js', 'js/tower.js']);
     r = await page.evaluate(() => offlineStatus(true));
     expect(r.miss).toEqual([]);
     // no network at all: the app still opens from the device

@@ -3,7 +3,7 @@
 // Classic script sharing globals with app.js (load order: index.html).
 
 /* ---------- lazy data files ---------- */
-// loadData('data/phrasal.js', 'PHRASAL') → Promise of window.PHRASAL ([] if the file fails to load).
+// loadData('data/lexis/phrasal.js', 'PHRASAL') → Promise of window.PHRASAL ([] if the file fails to load).
 const DATA_P = {};
 // 1.123 offline check: a data file that could not load (no network and not cached yet) is announced once per file,
 // and the loaders try again on the next call / when the device is back online (each loader resets itself in onOnline hooks).
@@ -30,9 +30,9 @@ function loadData(file, key) {
 const isVerb = (w) => w.p.split('/').includes('v');
 
 /* ---------- phrasal verbs ---------- */
-// data/phrasal.js rows: [phrasal, level, thai, example with [verb] and [particles], thai example]
+// data/lexis/phrasal.js rows: [phrasal, level, thai, example with [verb] and [particles], thai example]
 let PHRASAL = null, PV_BY_VERB = null;
-const loadPhrasal = () => loadData('data/phrasal.js', 'PHRASAL').then((rows) => {
+const loadPhrasal = () => loadData('data/lexis/phrasal.js', 'PHRASAL').then((rows) => {
   if (!PHRASAL) {
     PHRASAL = rows.map(([pv, lv, th, ex, exTh]) => {
       const sp = pv.split(' ');
@@ -108,19 +108,19 @@ function lexisBoxes(el, w) {
 }
 
 /* ---------- emoji ---------- */
-// data/emoji.js: window.EMOJI = { headword: emoji } for concrete words (picture-guess game, emoji shown on the word sheet).
+// data/fun/emoji.js: window.EMOJI = { headword: emoji } for concrete words (picture-guess game, emoji shown on the word sheet).
 let EMOJI = null;
-const loadEmoji = () => loadData('data/emoji.js', 'EMOJI').then((m) => { EMOJI = Array.isArray(m) ? {} : m; return EMOJI; });
+const loadEmoji = () => loadData('data/fun/emoji.js', 'EMOJI').then((m) => { EMOJI = Array.isArray(m) ? {} : m; return EMOJI; });
 // The word's picture on the back of flashcards, the learn card in the feed and the word sheet (settings.cardEmoji, on by default); '' when there is none or it isn't loaded yet.
 const emojiOf = (w) => (S.settings.cardEmoji !== false && EMOJI && EMOJI[w.w]) || '';
 const emojiBox = (w) => (emojiOf(w) ? `<div class="card-emoji" role="img" aria-label="ภาพอีโมจิของคำนี้">${emojiOf(w)}</div>` : '');
 
 /* ---------- idioms ---------- */
-// data/idioms.js rows: [idiom, level, thai, example with the idiom as used in [brackets], thai example, meaning group?]
+// data/lexis/idioms.js rows: [idiom, level, thai, example with the idiom as used in [brackets], thai example, meaning group?]
 let IDIOMS = null, ID_OF = null;
 // Words of an idiom that don't link it to the word sheet (too common to be its key word).
 const ID_SKIP = new Set("a an the of in on at to for with by up out off and or as than like from into over under is be it its one you your my his her their our someone something that this all every has no not".split(' '));
-const loadIdioms = () => loadData('data/idioms.js', 'IDIOMS').then((rows) => {
+const loadIdioms = () => loadData('data/lexis/idioms.js', 'IDIOMS').then((rows) => {
   if (!IDIOMS) {
     IDIOMS = rows.map(([id, lv, th, ex, exTh, grp]) => ({ id, lv, th, ex, exTh, grp: grp || '', plain: ex.replace(/[[\]]/g, '') }));
     ID_OF = new Map();
@@ -165,9 +165,9 @@ function renderIdioms() {
 }
 
 /* ---------- situations ---------- */
-// data/situations.js: [{ id, icon, th, en, tip, w: [[phrase, thai]], d: [[speaker, english, thai]] }]
+// data/lexis/situations.js: [{ id, icon, th, en, tip, w: [[phrase, thai]], d: [[speaker, english, thai]] }]
 let SIT = null;
-const loadSit = () => loadData('data/situations.js', 'SITUATIONS').then((rows) => (SIT = rows));
+const loadSit = () => loadData('data/lexis/situations.js', 'SITUATIONS').then((rows) => (SIT = rows));
 // Item for the reply game: line k of a dialogue (k >= 1), answered after seeing line k − 1.
 const sitItems = () => SIT.flatMap((st) => st.d.slice(1).map((l, k) => ({ st, k: k + 1 })));
 // Three lines from other situations' dialogues as wrong replies.
@@ -332,9 +332,9 @@ function renderRole(st, me) {
 }
 
 /* ---------- synonyms & antonyms ---------- */
-// data/synonyms.js: [{ th, s: [near-synonyms], a: [antonyms], tip }]; a word may be in several groups.
+// data/lexis/synonyms.js: [{ th, s: [near-synonyms], a: [antonyms], tip }]; a word may be in several groups.
 let SYN = null, SYN_OF = null;
-const loadSyn = () => loadData('data/synonyms.js', 'SYNONYMS').then((rows) => {
+const loadSyn = () => loadData('data/lexis/synonyms.js', 'SYNONYMS').then((rows) => {
   if (!SYN) {
     SYN = rows; SYN_OF = new Map();
     SYN.forEach((g) => g.s.forEach((x) => { if (!SYN_OF.has(x)) SYN_OF.set(x, []); SYN_OF.get(x).push(g); }));
@@ -403,9 +403,9 @@ function renderSyn() {
 }
 
 /* ---------- word parts (prefixes / suffixes) ---------- */
-// data/affixes.js: [{ x, k: 'p'|'s', th, note, ex: [[word, thai], ...] }]
+// data/lexis/affixes.js: [{ x, k: 'p'|'s', th, note, ex: [[word, thai], ...] }]
 let AFFIX = null, AFFIX_OF = null;
-const loadAffix = () => loadData('data/affixes.js', 'AFFIXES').then((rows) => {
+const loadAffix = () => loadData('data/lexis/affixes.js', 'AFFIXES').then((rows) => {
   if (!AFFIX) {
     AFFIX = rows; AFFIX_OF = new Map();
     AFFIX.forEach((a) => a.ex.forEach(([w, th]) => AFFIX_OF.set(w, { a, w, th })));

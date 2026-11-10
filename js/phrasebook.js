@@ -1,7 +1,7 @@
 'use strict';
 // Phrase books (1.212.0): one engine for small lazy-loaded lists of words or phrases outside the word list.
 // Each book = data file rows [category, English, Thai, example sentence, Thai example, note], a reference page (REF_PAGES key = book id,
-// renderBook(id)) and a skill game with the same id (qBook in data/play.js, own SRS in S.lex).
+// renderBook(id)) and a skill game with the same id (qBook in data/app/play.js, own SRS in S.lex).
 // Classic script sharing globals with app.js (load order: index.html).
 
 /* ---------- phrase books ---------- */
@@ -11,14 +11,14 @@
 // whether the English is read aloud by itself (abbreviations are spelt oddly by speech engines: the example is read instead), categories.
 const PB = {
   abbr: {
-    file: 'data/abbr.js', key: 'ABBR', icon: '🔤', title: 'ตัวย่อที่ใช้ในงาน', modes: ['en', 'th', 'note'], noteEn: true, sayEn: false,
+    file: 'data/phrasebook/abbr.js', key: 'ABBR', icon: '🔤', title: 'ตัวย่อที่ใช้ในงาน', modes: ['en', 'th', 'note'], noteEn: true, sayEn: false,
     intro: 'ตัวย่อที่เจอในอีเมล แชต และการประชุม · แต่ละตัวมีคำเต็ม ความหมาย และประโยคตัวอย่าง · แตะเพื่อฟังประโยค · ＋ เก็บเข้าชุดของฉัน',
     ask: { en: 'ตัวย่อนี้แปลว่าอะไร', th: 'ตัวย่อไหนตรงกับความหมายนี้', note: 'ตัวย่อนี้ย่อมาจากอะไร' },
     cats: { mail: ['📧', 'อีเมล'], meet: ['🗓️', 'ประชุม'], hr: ['🧑‍💼', 'งานบุคคล / การลา'], biz: ['📈', 'ธุรกิจ'], tech: ['💻', 'ไอที'], chat: ['💬', 'แชต'] },
     same: [['TBD', 'TBC'], ['EOD', 'COB'], ['e.g.', 'i.e.'], ['UI', 'UX'], ['B2B', 'B2C'], ['Re:', 'Fwd:'], ['cc', 'bcc']],
   },
   chat: {
-    file: 'data/chat.js', key: 'CHAT', icon: '💬', title: 'ภาษาพูด / แชต', modes: ['en', 'th'], sayEn: true, ear: true,
+    file: 'data/phrasebook/chat.js', key: 'CHAT', icon: '💬', title: 'ภาษาพูด / แชต', modes: ['en', 'th'], sayEn: true, ear: true,
     intro: 'ประโยคสั้นที่เจ้าของภาษาพูดและแชตกันทุกวัน แต่ตำราไม่ค่อยสอน · มีบทสนทนาตัวอย่างและ 💡 บอกว่าใช้ตอนไหน · แตะเพื่อฟัง · ＋ เก็บเข้าชุดของฉัน',
     ask: { en: 'ประโยคนี้หมายความว่าอะไร', th: 'จะพูดแบบนี้เป็นภาษาอังกฤษว่าอะไร' },
     cats: { react: ['😮', 'ตอบรับ / แสดงความรู้สึก'], plan: ['📅', 'ชวน / นัด / ปฏิเสธ'], thanks: ['🙏', 'ขอบคุณ / ขอโทษ'], feel: ['😮‍💨', 'บอกสภาพตัวเอง'], talk: ['🗣️', 'คำเชื่อมเวลาคุย'], slang: ['😎', 'คำพูดติดปาก'] },
@@ -30,14 +30,14 @@ const PB = {
       ['I\'m so over it.', 'I can\'t be bothered.'], ['Anyway', 'By the way', 'Speaking of which']],
   },
   thai: {
-    file: 'data/thaitalk.js', key: 'THAITALK', icon: '🇹🇭', title: 'เล่าเรื่องไทยเป็นอังกฤษ', modes: ['th', 'th', 'en'], sayEn: false, ear: true,
+    file: 'data/phrasebook/thaitalk.js', key: 'THAITALK', icon: '🇹🇭', title: 'เล่าเรื่องไทยเป็นอังกฤษ', modes: ['th', 'th', 'en'], sayEn: false, ear: true,
     intro: 'คำและประโยคไว้อธิบายอาหาร วัด เทศกาล และธรรมเนียมไทยให้เพื่อนต่างชาติฟัง · ประโยคตัวอย่างพูดตามได้เลย · 💡 บอกคำที่มักใช้ผิด · แตะเพื่อฟัง · ＋ เก็บเข้าชุดของฉัน',
     ask: { en: 'คำนี้หมายถึงอะไรในภาษาไทย', th: 'อธิบายให้ฝรั่งฟังว่าอะไร' },
     cats: { food: ['🍜', 'อาหารและการสั่ง'], temple: ['🛕', 'วัดและศาสนา'], fest: ['🎉', 'เทศกาล'], custom: ['🙏', 'ธรรมเนียมไทย'], daily: ['🛵', 'ชีวิตประจำวัน'], place: ['🏝️', 'สถานที่เที่ยว'] },
     same: [['shrine', 'spirit house', 'offering'], ['make merit', 'give alms', 'offering'], ['take off your shoes', 'don\'t touch the head'], ['not spicy', 'less sweet'], ['mango sticky rice', 'sticky rice'], ['countryside', 'rice field']],
   },
   doctor: {
-    file: 'data/doctor.js', key: 'DOCTOR', icon: '🩺', title: 'คุยกับหมอ / ร้านยา', modes: ['en', 'th'], sayEn: true, ear: true,
+    file: 'data/phrasebook/doctor.js', key: 'DOCTOR', icon: '🩺', title: 'คุยกับหมอ / ร้านยา', modes: ['en', 'th'], sayEn: true, ear: true,
     intro: 'ประโยคที่ใช้ตอนไม่สบาย: บอกอาการ ติดต่อโรงพยาบาล ฟังหมอ ซื้อยา และเหตุฉุกเฉิน · มีบทสนทนาตัวอย่างและ 💡 คำที่ใช้ต่อได้ · ศัพท์โรคและยาอยู่ในชุดคำ 🩺 สุขภาพ · แตะเพื่อฟัง',
     ask: { en: 'ประโยคนี้หมายความว่าอะไร', th: 'จะพูดกับหมอ / เภสัชกรว่าอะไร' },
     cats: { symptom: ['🤒', 'บอกอาการ'], clinic: ['🏥', 'ที่โรงพยาบาล / คลินิก'], doctor: ['👩‍⚕️', 'หมอพูด / ถาม'], pharmacy: ['💊', 'ร้านยา'], emergency: ['🚑', 'ฉุกเฉิน'], health: ['🥗', 'สุขภาพทั่วไป'] },
@@ -45,21 +45,21 @@ const PB = {
       ['Can I see a doctor today?', 'I\'d like to make an appointment.'], ['How often should I take it?', 'Take one tablet three times a day.'], ['He can\'t breathe.', 'Take a deep breath.']],
   },
   itcol: {
-    file: 'data/itcol.js', key: 'ITCOL', icon: '🧑‍💻', title: 'คำคู่ไอที', modes: ['fill', 'fill', 'en', 'th'], fill: true, sayEn: false,
+    file: 'data/phrasebook/itcol.js', key: 'ITCOL', icon: '🧑‍💻', title: 'คำคู่ไอที', modes: ['fill', 'fill', 'en', 'th'], fill: true, sayEn: false,
     intro: 'คำที่ใช้คู่กันในงานซอฟต์แวร์ เช่น fix a bug (ไม่ใช่ repair) · run the tests · deploy to production · ส่วนที่ทำตัวหนาคือคำที่มักใช้ผิด · ✗ คือคำที่ไม่ไปด้วยกัน · แตะเพื่อฟังประโยค · ＋ เก็บเข้าชุดของฉัน',
     ask: { fill: 'เลือกคำที่ใช้คู่กันในงานไอที', en: 'คำคู่นี้หมายความว่าอะไร', th: 'พูดเป็นอังกฤษว่าอะไร' },
     cats: { code: ['⌨️', 'เขียนโค้ด'], git: ['🌿', 'Git / รีวิวโค้ด'], bug: ['🐞', 'บั๊กและทิกเก็ต'], ops: ['🚀', 'ดีพลอย / เซิร์ฟเวอร์'], team: ['👥', 'ทำงานเป็นทีม'], term: ['🧩', 'คำศัพท์คู่'] },
     same: [['run the tests', 'run a query'], ['raise a ticket', 'file a bug report', 'pick up a ticket'], ['take down a server', 'the server went down'], ['ship a feature', 'go live', 'deploy to production']],
   },
   sayit: {
-    file: 'data/saywrong.js', key: 'SAYWRONG', icon: '🗣️', title: 'คำที่มักออกเสียงผิด', modes: ['say', 'say', 'en'], say: true, sayEn: true,
+    file: 'data/phrasebook/saywrong.js', key: 'SAYWRONG', icon: '🗣️', title: 'คำที่มักออกเสียงผิด', modes: ['say', 'say', 'en'], say: true, sayEn: true,
     intro: 'คำที่คนไทยมักอ่านผิด ทั้งศัพท์ไอที (cache, suite, query) และคำทั่วไป (receipt, salmon, Wednesday) · คำอ่านภาษาไทยเป็นแค่ตัวช่วยคร่าวๆ ฟังเสียงจริงด้วยการแตะ · 💡 บอกเสียงที่ต้องระวัง',
     ask: { say: 'คำนี้อ่านว่าอะไร', en: 'คำนี้หมายความว่าอะไร' },
     cats: { tech: ['💻', 'ศัพท์ไอที'], work: ['💼', 'ที่ทำงาน'], daily: ['🏠', 'ชีวิตประจำวัน'] },
     same: [['determine', 'determined'], ['debt', 'doubt']],
   },
   devtalk: {
-    file: 'data/devtalk.js', key: 'DEVTALK', icon: '👩‍💻', title: 'ภาษาทีมนักพัฒนา', modes: ['en', 'th'], sayEn: true, ear: true,
+    file: 'data/phrasebook/devtalk.js', key: 'DEVTALK', icon: '👩‍💻', title: 'ภาษาทีมนักพัฒนา', modes: ['en', 'th'], sayEn: true, ear: true,
     intro: 'ประโยคที่ใช้รีวิวโค้ด สแตนด์อัป แชตทีม รับมือระบบล่ม และวางแผนงาน · เขียนให้สุภาพแบบที่ทีมต่างชาติใช้กันจริง · 💡 บอกวิธีใช้ · แตะเพื่อฟัง · ＋ เก็บเข้าชุดของฉัน',
     ask: { en: 'ประโยคนี้หมายความว่าอะไร', th: 'พูดในทีมเป็นอังกฤษว่าอะไร' },
     cats: { review: ['🔍', 'รีวิวโค้ด'], standup: ['🧍', 'สแตนด์อัป'], chat: ['💬', 'แชตในทีม'], incident: ['🚨', 'ระบบมีปัญหา'], plan: ['🗂️', 'วางแผนงาน'] },
@@ -67,7 +67,7 @@ const PB = {
       ['I\'m still working on …', 'It\'s taking longer than expected.'], ['Do you have a minute?', 'Quick question:'], ['Let\'s hop on a call.', 'Let\'s take this offline.'], ['It\'s been fixed.', 'That did the trick.']],
   },
   interview: {
-    file: 'data/interview.js', key: 'INTERVIEW', icon: '🎤', title: 'สัมภาษณ์งานสายเทค', modes: ['en', 'th'], sayEn: true, ear: true,
+    file: 'data/phrasebook/interview.js', key: 'INTERVIEW', icon: '🎤', title: 'สัมภาษณ์งานสายเทค', modes: ['en', 'th'], sayEn: true, ear: true,
     intro: 'ประโยคสำหรับสัมภาษณ์งานสายไอที: แนะนำตัว เล่าโปรเจกต์ ตอบโจทย์เทคนิค ตอบแบบ STAR ถามกลับ และคุยข้อเสนองาน · 💡 บอกวิธีตอบให้ดูดี · แตะเพื่อฟัง · ＋ เก็บเข้าชุดของฉัน',
     ask: { en: 'ประโยคนี้หมายความว่าอะไร', th: 'พูดตอนสัมภาษณ์เป็นอังกฤษว่าอะไร' },
     cats: { intro: ['👋', 'แนะนำตัว'], project: ['📁', 'เล่าโปรเจกต์'], tech: ['🧠', 'โจทย์เทคนิค'], behavior: ['⭐', 'คำถามพฤติกรรม (STAR)'], ask: ['❓', 'ถามกลับ'], offer: ['🤝', 'เงินเดือน / ข้อเสนอ'] },
@@ -75,7 +75,7 @@ const PB = {
       ['I specialize in …', 'I have … years of experience in …'], ['The situation was …', 'Tell me about a time when …'], ['What I did was …', 'I was responsible for …']],
   },
   meeting: {
-    file: 'data/meetingtalk.js', key: 'MEETINGTALK', icon: '🗓️', title: 'พูดในประชุม', modes: ['en', 'th'], sayEn: true, ear: true,
+    file: 'data/phrasebook/meetingtalk.js', key: 'MEETINGTALK', icon: '🗓️', title: 'พูดในประชุม', modes: ['en', 'th'], sayEn: true, ear: true,
     intro: 'ประโยคสำหรับออกความเห็น เห็นด้วย ไม่เห็นด้วยแบบสุภาพ ขอแทรก ถามให้ชัด ดำเนินการประชุม และนำเสนองาน · 💡 บอกว่าใช้ตอนไหน · แตะเพื่อฟัง · ＋ เก็บเข้าชุดของฉัน',
     ask: { en: 'ประโยคนี้หมายความว่าอะไร', th: 'พูดในประชุมเป็นอังกฤษว่าอะไร' },
     cats: { opinion: ['💡', 'ออกความเห็น'], agree: ['👍', 'เห็นด้วย'], disagree: ['🤔', 'ไม่เห็นด้วยแบบสุภาพ'], turn: ['✋', 'ขอพูด / ส่งต่อ'], clear: ['🔍', 'ถามให้ชัด'], run: ['🧭', 'ดำเนินการประชุม'], present: ['📊', 'นำเสนองาน'] },
@@ -197,11 +197,11 @@ function renderBook(id) {
 }
 
 /* ---------- role play (1.232.0) ---------- */
-// data/roleplay.js scenes {id, icon, title, who, you, steps: [[their line, Thai, best reply, [2 wrong], Thai of reply, why]]}.
-// Game `rplay` (qRplay in data/play.js): one item per step, a scene's steps stay together (SET_GAMES → setOrder); the chat so far is shown
+// data/phrasebook/roleplay.js scenes {id, icon, title, who, you, steps: [[their line, Thai, best reply, [2 wrong], Thai of reply, why]]}.
+// Game `rplay` (qRplay in data/app/play.js): one item per step, a scene's steps stay together (SET_GAMES → setOrder); the chat so far is shown
 // as bubbles. Page renderRoleplay() (REF_PAGES 'rplay') reads every scene and starts one (rpOnly = that scene for the next round).
 let ROLEPLAY = null, rpOnly = null;
-const loadRoleplay = () => loadData('data/roleplay.js', 'ROLEPLAY').then((rows) => { if (!ROLEPLAY && rows.length) ROLEPLAY = rows; return ROLEPLAY || []; });
+const loadRoleplay = () => loadData('data/phrasebook/roleplay.js', 'ROLEPLAY').then((rows) => { if (!ROLEPLAY && rows.length) ROLEPLAY = rows; return ROLEPLAY || []; });
 function rpItems() {
   const ds = rpOnly ? ROLEPLAY.filter((d) => d.id === rpOnly) : ROLEPLAY;
   rpOnly = null;

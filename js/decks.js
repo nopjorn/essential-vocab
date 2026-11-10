@@ -181,9 +181,9 @@ function renderDecks(openId) {
   });
 }
 /* ---------- ready-made sets (1.198.0) ---------- */
-// data/presets.js (lazy): { id, icon, name, sub, w: 'list|words', own: [[w, t, e, et]] }. Adding one copies it into S.decks with `pre` = its id.
+// data/sets/presets.js (lazy): { id, icon, name, sub, w: 'list|words', own: [[w, t, e, et]] }. Adding one copies it into S.decks with `pre` = its id.
 let PRESETS = null;
-const loadPresets = () => loadData('data/presets.js', 'PRESETS').then((rows) => {
+const loadPresets = () => loadData('data/sets/presets.js', 'PRESETS').then((rows) => {
   if (!PRESETS && rows.length) PRESETS = rows.map((p) => ({ ...p, words: p.w.split('|'), own: (p.own || []).map(([w, t, e, et]) => ({ w, t, e: e || '', et: et || '' })) }));
   return PRESETS || [];
 });

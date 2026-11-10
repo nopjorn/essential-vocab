@@ -1,6 +1,6 @@
 'use strict';
 // น้องคำ's room (1.122, single player; route `room`): buy furniture and pets with coins; each thing is a list word with its picture
-// (data/emoji.js) and sits at a fixed place in the room. Tap a thing → hear the English word and see the Thai meaning (labels can be shown).
+// (data/fun/emoji.js) and sits at a fixed place in the room. Tap a thing → hear the English word and see the Thai meaning (labels can be shown).
 // State: S.room = { own: [words] } (cleanRoom() / union merge in app.js). Classic script sharing globals with app.js.
 
 // [word, price, x %, y %, size em] — x/y = the thing's centre in the room box (wall above 58 %, floor below)

@@ -1,6 +1,6 @@
 // TOEIC Part 1 style picture description (1.189.0, 60 scenes since 1.190.0): original "photos" drawn with emoji scenes, each with 4 spoken statements, written for this app.
 // [scene (emoji, shown big), Thai place / caption, [4 statements], index of the true one, Thai of the true one, Thai tip about the traps]
-// Lazy-loaded by loadP1() in js/lexis2.js; game `toeic1` (qP1 in data/play.js): (A)–(D) are spoken, text hidden until 📝 or the answer. A test checks the shape.
+// Lazy-loaded by loadP1() in js/lexis2.js; game `toeic1` (qP1 in data/app/play.js): (A)–(D) are spoken, text hidden until 📝 or the answer. A test checks the shape.
 window.TOEICP1 = [
   ['👨‍🍳🍳🔥', 'ห้องครัว', ['A man is cooking in a pan.', 'A man is washing some dishes.', 'A man is eating breakfast.', 'A man is opening a refrigerator.'], 0, 'ผู้ชายกำลังทำอาหารในกระทะ', 'ดูท่าทางคนในภาพ: มีกระทะกับไฟ = กำลังทำอาหาร ไม่ใช่ล้างจานหรือกิน'],
   ['👩‍💻💻☕', 'ออฟฟิศ', ['A woman is working on a laptop.', 'A woman is pouring some coffee.', 'A woman is closing a window.', 'A woman is talking on the phone.'], 0, 'ผู้หญิงกำลังทำงานกับแล็ปท็อป', 'มีกาแฟในภาพแต่เธอไม่ได้รินอยู่ · กับดักยอดฮิต = พูดถึงของที่เห็นในภาพแต่ท่าทางผิด'],

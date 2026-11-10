@@ -31,7 +31,7 @@ window.EMOJI = {
   "ring": "💍", "river": "🏞️", "road": "🛣️", "robot": "🤖", "rock": "🪨", "rocket": "🚀", "rose": "🌹",
   "run": "🏃", "salad": "🥗", "salt": "🧂", "sandwich": "🥪", "satellite": "🛰️", "school": "🏫",
   "sheep": "🐑", "ship": "🚢", "shirt": "👕", "shoe": "👟", "shower": "🚿", "sing": "🎤", "ski": "🎿",
-  "skirt": "🩳", "sleep": "😴", "smile": "😊", "snake": "🐍", "snow": "❄️", "sock": "🧦", "soldier": "💂",
+  "sleep": "😴", "smile": "😊", "snake": "🐍", "snow": "❄️", "sock": "🧦", "soldier": "💂",
   "soup": "🍲", "speaker": "🔊", "spider": "🕷️", "spoon": "🥄", "stadium": "🏟️", "star": "⭐",
   "statue": "🗽", "storm": "⛈️", "sun": "☀️", "supermarket": "🛒", "swim": "🏊", "sword": "⚔️", "tap": "🚰",
   "target": "🎯", "taxi": "🚕", "tea": "🍵", "teacher": "🧑‍🏫", "television": "📺", "tennis": "🎾",

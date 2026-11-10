@@ -1,6 +1,6 @@
 // TOEIC Part 7 style reading (1.184.0): original short workplace texts, each with 3 questions, written for this app.
 // {id, kind (P7_KIND in js/lexis2.js), title, text ('\n' = new line), th: Thai summary, q: [[question, [4 options], index of the answer, Thai explanation]]}
-// Lazy-loaded by loadP7() in js/lexis2.js; game `toeic7` (qP7 in data/play.js). A test checks the shape.
+// Lazy-loaded by loadP7() in js/lexis2.js; game `toeic7` (qP7 in data/app/play.js). A test checks the shape.
 window.TOEICP7 = [
   { id: 'meetroom', kind: 'email', title: 'Subject: Change of meeting room',
     text: 'Dear team,\nTomorrow\'s monthly sales meeting will not take place in Room 301 as planned. The room is being painted this week, so we will meet in the boardroom on the fifth floor instead. The meeting will still start at 10 a.m. Please bring a printed copy of your quarterly report. Coffee and pastries will be provided.\nBest regards,\nLinda Park, Sales Manager',

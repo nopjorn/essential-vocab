@@ -6,12 +6,12 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
 
 ## Release rules (every push)
 - Bump the version on **every** push: `APP_VERSION` in `app.js` and `VERSION` in `sw.js`
-  (`o3k-<same version>`), and add a row to the changelog table at the end of `README.md` **and** to the top of `data/changelog.js` (shown in-app; a test checks both match).
+  (`o3k-<same version>`), and add a row to the changelog table at the end of `README.md` **and** to the top of `data/app/changelog.js` (shown in-app; a test checks both match).
   Tell the user the new version number.
 - Patch (x.y.Z) for small fixes, minor (x.Y.0) for new features.
 - Push directly to `master` (no PRs unless asked).
 - When adding or changing a feature, add/update its row in the matching `docs/notes/*.md` file (see the Files section).
-- The in-app manual (`GUIDE` / `renderGuideBody()` in `data/guide.js`, lazy-loaded by `loadGuide()`/`renderGuide()` in `js/guide.js`, route `guide`) describes every feature
+- The in-app manual (`GUIDE` / `renderGuideBody()` in `data/app/guide.js`, lazy-loaded by `loadGuide()`/`renderGuide()` in `js/guide.js`, route `guide`) describes every feature
   in Thai: update it whenever a feature is added or changed.
 - The version is shown at the bottom of the home and settings screens so the user can
   check whether the iPhone has picked up the update.
@@ -33,9 +33,10 @@ Core files below. Feature-by-feature notes (names, ids, state fields, tests) liv
 | `js/*.js` | The rest of the logic, one classic script per area (`home cards games feed reading words placement stats sync guide settings boot`), sections marked `/* ---------- name ---------- */`. They share globals (no modules, no build); `index.html` loads them after `app.js` and `boot.js` must stay last; `js/errlog.js` (1.224, device error log `o3k.errs`) is the exception: it loads first, before `config.js`. A new file goes in `index.html` **and** `sw.js` (a test checks) |
 | `style.css` | Mobile-first styles; colour tokens on `:root` with dark mode |
 | `data/words/<level>.js` | `a1 a2 b1 b2 b2plus c1` (Oxford 5000-only rows in `b2plus`/`c1`), one row per line, each pushes onto `window.WORDS`: `[word, pos, level, ipa, thai, example, thaiExample, topicId, 5?, [[ex, thaiEx], …]?]` (4,957 rows total; app.js sorts them A–Z, topic id → `w.tp`; the optional trailing array → `w.xe` = extra examples for other meanings, shown as extra `exampleBox()` boxes, never used by games — A1 since 1.40, A2 1.41, B1 1.42, B2/B2+/C1 1.43) |
-| `data/play.js` | Game engine `playQuiz`/`playMatch` (moved out of `js/games.js` in 1.101): `loadPlay()` + stubs in games.js, idle prefetch in boot.js; `openApp` in tests waits for `playOn` |
+| `data/<group>/*.js` | Layout of `data/`: every file lives in a group folder, nothing loose in `data/` (a test checks): `app/` (`changelog`, in-app manual `guide`, game engine `play`), `sets/` (`presets`, goal `tags`), `lexis/` (collocations, families, pairs, phrasal, synonyms, affixes, idioms, roots, ukus, situations, realtext), `grammar/` (irregular, depprep, grampat, mistakes), `toeic/` (`toeicp1`–`toeicp7`), `work/` (workphr, bizcol, register, emails), `phrasebook/` (the `PB` books in js/phrasebook.js + `roleplay`), `fun/` (emoji, cases, paths), plus `words/` and `stories/`. A new data file goes in the matching folder **and** in `sw.js` `DATA` (grouped by folder; a test checks); `sw.js` drops cached copies of paths no longer listed when a new worker activates |
+| `data/app/play.js` | Game engine `playQuiz`/`playMatch` (moved out of `js/games.js` in 1.101): `loadPlay()` + stubs in games.js, idle prefetch in boot.js; `openApp` in tests waits for `playOn` |
 | `sw.js` | Network-first service worker with versioned cache; an update re-downloads only the changed app files (`fillShell`, 1.230) |
-| `data/changelog.js` | `window.CHANGELOG = [[version, thai text, 'YYYY-MM-DD'], …]` newest first (same rows as README, plus the release date); lazy-loaded by `loadChangelog()`; page `renderChangelog()` (route `changelog`, linked from settings); `whatsNew()` shows a one-time bar after an update (`S.seenVer`, device-local) |
+| `data/app/changelog.js` | `window.CHANGELOG = [[version, thai text, 'YYYY-MM-DD'], …]` newest first (same rows as README, plus the release date); lazy-loaded by `loadChangelog()`; page `renderChangelog()` (route `changelog`, linked from settings); `whatsNew()` shows a one-time bar after an update (`S.seenVer`, device-local) |
 | `tests/*.spec.js`, `playwright.config.js` | Playwright test suite (`npm test`), run by `.github/workflows/test.yml` on every push to `master` |
 | `supabase/functions/daily-reminder/index.ts` | Hourly Edge Function sending Web Push reminders (VAPID secrets in Supabase) |
 | `config.js` | `window.SYNC_CONFIG = {url, anonKey, requireLogin, leaderboard, vapidPublicKey}` for Supabase sync (empty = off); see `SYNC-SETUP.md` |

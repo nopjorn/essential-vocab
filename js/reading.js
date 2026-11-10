@@ -26,15 +26,15 @@ function loadStories() {
     return out;
   });
 }
-// data/collocations.js: window.COLLOC = { headword: [[phrase, thai], ...] } — lazy-loaded like stories.
+// data/lexis/collocations.js: window.COLLOC = { headword: [[phrase, thai], ...] } — lazy-loaded like stories.
 let COLLOC = window.COLLOC || null;
 function loadColloc() {
   if (COLLOC) return Promise.resolve(COLLOC);
   return new Promise((res) => {
     const sc = document.createElement('script');
-    sc.src = 'data/collocations.js?v=' + APP_VERSION;
+    sc.src = 'data/lexis/collocations.js?v=' + APP_VERSION;
     sc.onload = () => res((COLLOC = window.COLLOC || {}));
-    sc.onerror = () => { loadFailed('data/collocations.js'); ON_ONLINE.push(() => { if (COLLOC && !Object.keys(COLLOC).length) COLLOC = null; }); res((COLLOC = {})); }; // 1.123: loads again once online
+    sc.onerror = () => { loadFailed('data/lexis/collocations.js'); ON_ONLINE.push(() => { if (COLLOC && !Object.keys(COLLOC).length) COLLOC = null; }); res((COLLOC = {})); }; // 1.123: loads again once online
     document.head.appendChild(sc);
   });
 }
@@ -50,27 +50,27 @@ function collocQ(w) {
   while (others.length < 3) { const k = pick(Object.keys(COLLOC)); if (k !== w.w && !others.includes(k)) others.push(k); }
   return { phrase, th, shown, opts: shuffle([w.w, ...others]) };
 }
-// data/pairs.js: window.CONFUSE (confusable words) + window.MINPAIRS (sound pairs) — lazy-loaded.
+// data/lexis/pairs.js: window.CONFUSE (confusable words) + window.MINPAIRS (sound pairs) — lazy-loaded.
 let CONFUSE = window.CONFUSE || null, MINPAIRS = window.MINPAIRS || [], MINPAIRS_TIP = window.MINPAIRS_TIP || {};
 function loadPairs() {
   if (CONFUSE) return Promise.resolve(CONFUSE);
   return new Promise((res) => {
     const sc = document.createElement('script');
-    sc.src = 'data/pairs.js?v=' + APP_VERSION;
+    sc.src = 'data/lexis/pairs.js?v=' + APP_VERSION;
     const done = () => { CONFUSE = window.CONFUSE || []; MINPAIRS = window.MINPAIRS || []; MINPAIRS_TIP = window.MINPAIRS_TIP || {}; res(CONFUSE); };
-    sc.onload = done; sc.onerror = () => { loadFailed('data/pairs.js'); ON_ONLINE.push(() => { if (CONFUSE && !CONFUSE.length) CONFUSE = null; }); done(); };
+    sc.onload = done; sc.onerror = () => { loadFailed('data/lexis/pairs.js'); ON_ONLINE.push(() => { if (CONFUSE && !CONFUSE.length) CONFUSE = null; }); done(); };
     document.head.appendChild(sc);
   });
 }
-// data/families.js: window.FAMILIES = [{ f: [[word, pos, thai], ...], q: [[sentence ___, answer, thai], ...] }] — lazy-loaded.
+// data/lexis/families.js: window.FAMILIES = [{ f: [[word, pos, thai], ...], q: [[sentence ___, answer, thai], ...] }] — lazy-loaded.
 let FAMILIES = window.FAMILIES || null, FAMILY_OF = null;
 function loadFamilies() {
   if (FAMILIES) return Promise.resolve(FAMILIES);
   return new Promise((res) => {
     const sc = document.createElement('script');
-    sc.src = 'data/families.js?v=' + APP_VERSION;
+    sc.src = 'data/lexis/families.js?v=' + APP_VERSION;
     const done = () => { FAMILIES = window.FAMILIES || []; res(FAMILIES); };
-    sc.onload = done; sc.onerror = () => { loadFailed('data/families.js'); ON_ONLINE.push(() => { if (FAMILIES && !FAMILIES.length) { FAMILIES = null; FAMILY_OF = null; } }); done(); };
+    sc.onload = done; sc.onerror = () => { loadFailed('data/lexis/families.js'); ON_ONLINE.push(() => { if (FAMILIES && !FAMILIES.length) { FAMILIES = null; FAMILY_OF = null; } }); done(); };
     document.head.appendChild(sc);
   });
 }

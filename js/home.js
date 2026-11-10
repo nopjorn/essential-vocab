@@ -456,7 +456,7 @@ function wotdRandom(cur) {
   return n;
 }
 // Suggestions for my goal (1.209.0): settings.goal (a TAGS id) and a TOEIC exam date → ready-made sets not added yet (open the preview sheet)
-// and games for that goal (✓ when played today). Hidden without a goal. Sets need data/presets.js (lazy), so the card is filled after it loads.
+// and games for that goal (✓ when played today). Hidden without a goal. Sets need data/sets/presets.js (lazy), so the card is filled after it loads.
 const GOAL_FIT = {
   travel: [['airport', 'hotel', 'transport', 'food'], ['sit', 'real']],
   work: [['meeting', 'call', 'service', 'finance'], ['wphr', 'email', 'regi', 'bizcol']],
@@ -497,7 +497,7 @@ function goalFitCard() {
     if (e.target.closest('[data-gft]')) go('toeic', 'home');
   };
 }
-// Work phrase of the day (1.203.0): one data/workphr.js phrase per day (same for the whole day, by day number), › shows the next one
+// Work phrase of the day (1.203.0): one data/work/workphr.js phrase per day (same for the whole day, by day number), › shows the next one
 // for this visit only, 🔊 speaks it, "ดูทั้งหมด" opens the phrase page. Filled after the data loads (lazy, small).
 let wpDayOff = 0;
 const wpDayRow = () => { const n = Math.floor(Date.parse(today() + 'T12:00:00') / DAY); return WORKPHR[((n * 7 + wpDayOff) % WORKPHR.length + WORKPHR.length) % WORKPHR.length]; };

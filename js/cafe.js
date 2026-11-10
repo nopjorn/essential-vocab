@@ -1,6 +1,6 @@
 'use strict';
 // ร้านน้องคำ (1.120, single player; route `cafe`, `runCafe(branch)`): a day at น้องคำ's shop. Each guest orders in English (spoken; the text
-// can be peeked at for a smaller tip), you tap the matching pictures (data/emoji.js) and serve before their patience runs out.
+// can be peeked at for a smaller tip), you tap the matching pictures (data/fun/emoji.js) and serve before their patience runs out.
 // 8 guests a day (orders grow from 1 to 3 items), 3 mistakes end the day early. Tips are coins (1–3 per guest, faster = more).
 // 1.121: three branches (CAFE_BR: 🍜 food, 👗 clothes from 10 guests served, 🛒 home goods from 20) and quantities ("two apples"):
 // tapping a picture counts up 1 → 2 → 3 → 0 (CAFE_MAX). Each ordered word counts as a game answer (gameResult).

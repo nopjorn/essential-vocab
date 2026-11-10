@@ -3,9 +3,9 @@
 // Classic script sharing globals with app.js (load order: index.html).
 
 /* ---------- word roots ---------- */
-// data/roots.js rows: [root (variants with /), Thai meaning, group, origin note, [example words from the word list]].
+// data/lexis/roots.js rows: [root (variants with /), Thai meaning, group, origin note, [example words from the word list]].
 let ROOT = null;
-const loadRoots = () => loadData('data/roots.js', 'ROOTS').then((rows) => {
+const loadRoots = () => loadData('data/lexis/roots.js', 'ROOTS').then((rows) => {
   if (!ROOT) ROOT = rows.map(([x, th, grp, note, ex]) => ({ x, th, grp, note, ex: ex.filter((w) => WORD_BY[w]), vs: x.split('/') }));
   return ROOT;
 });
@@ -47,9 +47,9 @@ function renderRoots() {
 }
 
 /* ---------- UK ↔ US ---------- */
-// data/ukus.js rows: [British, American, Thai, kind 'w' (word) | 's' (spelling)].
+// data/lexis/ukus.js rows: [British, American, Thai, kind 'w' (word) | 's' (spelling)].
 let UKUS_LIST = null, UKUS_OF = null;
-const loadUkUs = () => loadData('data/ukus.js', 'UKUS').then((rows) => {
+const loadUkUs = () => loadData('data/lexis/ukus.js', 'UKUS').then((rows) => {
   if (!UKUS_LIST) {
     UKUS_LIST = rows; UKUS_OF = new Map();
     rows.forEach((r) => [r[0], r[1]].forEach((w) => { const k = w.toLowerCase(); if (!UKUS_OF.has(k)) UKUS_OF.set(k, []); UKUS_OF.get(k).push(r); }));
@@ -88,11 +88,11 @@ function renderUkUs() {
 }
 
 /* ---------- work email & chat phrases (1.199.0) ---------- */
-// data/workphr.js rows: [cat, phrase with the [key part], Thai, [3 wrong key parts], Thai tip]. Game `wphr` (qWphr in data/play.js), page renderWorkPhr().
+// data/work/workphr.js rows: [cat, phrase with the [key part], Thai, [3 wrong key parts], Thai tip]. Game `wphr` (qWphr in data/app/play.js), page renderWorkPhr().
 const WP_CAT = { open: ['👋', 'เปิดอีเมล'], ask: ['🙏', 'ขอร้อง / สอบถาม'], follow: ['⏰', 'ติดตามงาน'], attach: ['📎', 'แนบไฟล์ / ส่งข้อมูล'], meet: ['🗓️', 'นัดประชุม'],
   opinion: ['💭', 'แสดงความเห็น'], sorry: ['🙇', 'แจ้งปัญหา / ขอโทษ'], thanks: ['💐', 'ขอบคุณ'], close: ['✍️', 'ปิดอีเมล'], chat: ['💬', 'แชตงาน'], call: ['☎️', 'โทรศัพท์ / ประชุมออนไลน์'] };
 let WORKPHR = null;
-const loadWorkPhr = () => loadData('data/workphr.js', 'WORKPHR').then((rows) => {
+const loadWorkPhr = () => loadData('data/work/workphr.js', 'WORKPHR').then((rows) => {
   if (!WORKPHR && rows.length) WORKPHR = rows.map(([cat, en, th, wrong, tip]) => ({ cat, en, th, wrong, tip, key: en.match(/\[([^\]]+)\]/)[1], plain: en.replace(/[[\]]/g, '') }));
   return WORKPHR || [];
 });
@@ -124,11 +124,11 @@ function renderWorkPhr() {
 }
 
 /* ---------- business collocations (1.200.0) ---------- */
-// data/bizcol.js rows: [group, collocation with the [partner], sentence with ___, answer as used, [3 wrong partners], Thai, Thai sentence].
-// Game `bizcol` (qBizcol in data/play.js, also on the 💼 TOEIC chip), page renderBizCol().
+// data/work/bizcol.js rows: [group, collocation with the [partner], sentence with ___, answer as used, [3 wrong partners], Thai, Thai sentence].
+// Game `bizcol` (qBizcol in data/app/play.js, also on the 💼 TOEIC chip), page renderBizCol().
 const BC_GROUP = { v: ['🔧', 'กริยา + คำนาม'], a: ['🎨', 'คุณศัพท์ + คำนาม'], n: ['🧱', 'คำนาม + คำนาม'], p: ['📍', 'บุพบท + คำนาม'] };
 let BIZCOL = null;
-const loadBizCol = () => loadData('data/bizcol.js', 'BIZCOL').then((rows) => {
+const loadBizCol = () => loadData('data/work/bizcol.js', 'BIZCOL').then((rows) => {
   if (!BIZCOL && rows.length) BIZCOL = rows.map(([g, col, sent, ans, wrong, th, sth]) => ({ g, col, sent, ans, wrong, th, sth, plain: col.replace(/[[\]]/g, ''), full: sent.replace('___', ans) }));
   return BIZCOL || [];
 });
@@ -163,11 +163,11 @@ function renderBizCol() {
 }
 
 /* ---------- formal ↔ casual (1.205.0) ---------- */
-// data/register.js rows: [formal, casual, too blunt, Thai, Thai tip]. Game `regi` (qRegi): two items per row (to a client = formal, to a teammate = casual),
+// data/work/register.js rows: [formal, casual, too blunt, Thai, Thai tip]. Game `regi` (qRegi): two items per row (to a client = formal, to a teammate = casual),
 // the three lines as options; the blunt one is never right. Page renderRegister().
 const RG_TO = { f: ['👔', 'อีเมลถึงลูกค้า / หัวหน้า', 'ทางการ'], c: ['💬', 'แชตกับเพื่อนร่วมทีม', 'เป็นกันเอง'] };
 let REGISTER = null;
-const loadRegister = () => loadData('data/register.js', 'REGISTER').then((rows) => {
+const loadRegister = () => loadData('data/work/register.js', 'REGISTER').then((rows) => {
   if (!REGISTER && rows.length) REGISTER = rows.map(([f, c, b, th, tip]) => ({ f, c, b, th, tip }));
   return REGISTER || [];
 });
@@ -189,41 +189,41 @@ function renderRegister() {
 }
 
 /* ---------- build an email (1.206.0) ---------- */
-// data/emails.js: [{id, to 'f'|'c', who, sit, p: [[slot, right, [2 wrong], Thai]]}]. Game `email` (qEmail): one item per part, the parts of an
+// data/work/emails.js: [{id, to 'f'|'c', who, sit, p: [[slot, right, [2 wrong], Thai]]}]. Game `email` (qEmail): one item per part, the parts of an
 // email stay together (SET_GAMES → setOrder), earlier parts show filled in, the last one shows the whole email.
 const EM_SLOT = { greet: 'คำขึ้นต้น', open: 'ประโยคเปิด', body: 'เนื้อหา', ask: 'สิ่งที่ขอ / แจ้ง', close: 'ปิดท้าย' };
 let EMAILS = null;
-const loadEmails = () => loadData('data/emails.js', 'EMAILS').then((rows) => { if (!EMAILS && rows.length) EMAILS = rows; return EMAILS || []; });
+const loadEmails = () => loadData('data/work/emails.js', 'EMAILS').then((rows) => { if (!EMAILS && rows.length) EMAILS = rows; return EMAILS || []; });
 const emItems = () => EMAILS.flatMap((d) => d.p.map(([slot, right, wrong, th], k) => ({ idx: -1, w: right, t: th, p: '', g: '', _em: { d, k, slot, right, wrong, th }, _set: { d, k }, _q: [`${d.sit} · ${EM_SLOT[slot]}`, right, '', th] })));
 const emText = (d) => d.p.map((x) => x[1]).join('\n');
 
 /* ---------- real-life texts (1.113) ---------- */
-// data/realtext.js rows: [kind, Thai situation, text with ___, answer, [3 wrong words], Thai translation, list word?]. Game `real` (qReal in data/play.js).
+// data/lexis/realtext.js rows: [kind, Thai situation, text with ___, answer, [3 wrong words], Thai translation, list word?]. Game `real` (qReal in data/app/play.js).
 let REALTEXT = null;
 const RT_KIND = {
   sign: { icon: '🚧', name: 'ป้าย' }, announce: { icon: '📢', name: 'ประกาศ' }, menu: { icon: '🍽️', name: 'เมนู' },
   bill: { icon: '🧾', name: 'ใบเสร็จ / ใบแจ้งหนี้' }, label: { icon: '🏷️', name: 'ฉลาก' }, notice: { icon: '📋', name: 'ข้อความแจ้ง' }, plan: { icon: '🕒', name: 'ตาราง / ตั๋ว' },
 };
-const loadRealText = () => loadData('data/realtext.js', 'REALTEXT').then((rows) => {
+const loadRealText = () => loadData('data/lexis/realtext.js', 'REALTEXT').then((rows) => {
   if (!REALTEXT) REALTEXT = rows.map(([kind, sit, text, right, wrong, th, lemma]) => ({ kind, sit, text, right, wrong, th, key: (lemma || right).toLowerCase() }));
   return REALTEXT;
 });
 const rtPlain = (r) => r.text.replace(/\n/g, ' ').replace('___', r.right);
 /* ---------- TOEIC Part 5 (1.183.0) ---------- */
-// data/toeicp5.js rows: [type, sentence with ___, answer, [3 wrong], Thai, tip]. Game `toeic5` (qP5 in data/play.js), own SRS in S.lex.
+// data/toeic/toeicp5.js rows: [type, sentence with ___, answer, [3 wrong], Thai, tip]. Game `toeic5` (qP5 in data/app/play.js), own SRS in S.lex.
 let TOEICP5 = null;
 const P5_TYPE = { form: ['🔤', 'รูปคำ'], vocab: ['💡', 'ความหมาย'], gram: ['📐', 'ไวยากรณ์'] };
-const loadP5 = () => loadData('data/toeicp5.js', 'TOEICP5').then((rows) => {
+const loadP5 = () => loadData('data/toeic/toeicp5.js', 'TOEICP5').then((rows) => {
   if (!TOEICP5) TOEICP5 = rows.map(([type, text, right, wrong, th, tip]) => ({ type, text, right, wrong, th, tip }));
   return TOEICP5;
 });
 /* ---------- TOEIC Part 7 (1.184.0) ---------- */
-// data/toeicp7.js: [{id, kind, title, text, th, q: [[question, [4 options], answer index, Thai]]}]. Game `toeic7` (qP7): one item per question,
+// data/toeic/toeicp7.js: [{id, kind, title, text, th, q: [[question, [4 options], answer index, Thai]]}]. Game `toeic7` (qP7): one item per question,
 // a round keeps the questions of one text together (p7Order); each question has its own SRS card in S.lex.
 let TOEICP7 = null;
 const P7_KIND = { email: ['📧', 'อีเมล'], notice: ['📌', 'ประกาศ'], ad: ['📣', 'โฆษณา'], memo: ['🗒️', 'บันทึกภายใน'], chat: ['💬', 'แชต'],
   invoice: ['🧾', 'ใบแจ้งหนี้'], schedule: ['🗓️', 'กำหนดการ'], article: ['📰', 'ข่าว'], review: ['⭐', 'รีวิว'] };
-const loadP7 = () => loadData('data/toeicp7.js', 'TOEICP7').then((rows) => { if (!TOEICP7) TOEICP7 = rows; return TOEICP7; });
+const loadP7 = () => loadData('data/toeic/toeicp7.js', 'TOEICP7').then((rows) => { if (!TOEICP7) TOEICP7 = rows; return TOEICP7; });
 const p7Items = () => TOEICP7.flatMap((d) => d.q.map(([q, opts, a, th], k) => ({ idx: -1, w: opts[a], t: q, p: '', g: '', _p7: { d, k, q, opts, a, th }, _set: { d, k }, _q: [q, opts[a], '', th] })));
 // A round = whole texts: the texts of the picked questions (due ones first, as lexPick chose them), each with all its questions
 // in order, until there are at least `n` questions (a text is never cut in half). Items carry `_set = {d, k}` (Parts 3, 4, 6, 7).
@@ -238,10 +238,10 @@ function setOrder(picked, src, n = 10) {
 const p7Order = setOrder;
 const SET_GAMES = ['toeic3', 'toeic4', 'toeic6', 'toeic7', 'email', 'rplay'];
 /* ---------- TOEIC Part 6 (1.185.0) ---------- */
-// data/toeicp6.js: [{id, kind, title, text with [1]–[4], th, q: [[[4 options], answer index, Thai]]}]. Game `toeic6` (qP6): one item per blank,
+// data/toeic/toeicp6.js: [{id, kind, title, text with [1]–[4], th, q: [[[4 options], answer index, Thai]]}]. Game `toeic6` (qP6): one item per blank,
 // earlier blanks are shown filled in, the questions of a text stay together (setOrder); own SRS in S.lex.
 let TOEICP6 = null;
-const loadP6 = () => loadData('data/toeicp6.js', 'TOEICP6').then((rows) => { if (!TOEICP6) TOEICP6 = rows; return TOEICP6; });
+const loadP6 = () => loadData('data/toeic/toeicp6.js', 'TOEICP6').then((rows) => { if (!TOEICP6) TOEICP6 = rows; return TOEICP6; });
 const p6Items = () => TOEICP6.flatMap((d) => d.q.map(([opts, a, th], k) => {
   const r = { d, k, opts, a, th };
   return { idx: -1, w: opts[a], t: d.id + ' ' + (k + 1), p: '', g: '', _p6: r, _set: r, _q: [d.title + ' [' + (k + 1) + ']', opts[a], '', th] };
@@ -268,27 +268,27 @@ function tvPlay(lines, o = {}) {
 }
 function tvStop() { tvTok++; if (window.speechSynthesis) speechSynthesis.cancel(); }
 /* ---------- TOEIC Part 1 (1.189.0) ---------- */
-// data/toeicp1.js rows: [emoji scene, Thai place, [4 statements], answer index, Thai, tip]. Game `toeic1` (qP1): the "photo" is an emoji scene,
+// data/toeic/toeicp1.js rows: [emoji scene, Thai place, [4 statements], answer index, Thai, tip]. Game `toeic1` (qP1): the "photo" is an emoji scene,
 // (A)–(D) are spoken, text hidden until 📝 or the answer; own SRS in S.lex.
 let TOEICP1 = null;
-const loadP1 = () => loadData('data/toeicp1.js', 'TOEICP1').then((rows) => {
+const loadP1 = () => loadData('data/toeic/toeicp1.js', 'TOEICP1').then((rows) => {
   if (!TOEICP1) TOEICP1 = rows.map(([scene, place, opts, a, th, tip]) => ({ scene, place, opts, a, right: opts[a], th, tip }));
   return TOEICP1;
 });
 const p1Items = () => TOEICP1.map((r) => ({ idx: -1, w: r.right, t: r.scene, p: '', g: '', _p1: r, _q: [r.scene + ' ' + r.place, r.right, '', r.th] }));
 /* ---------- TOEIC Part 2 (1.186.0) ---------- */
-// data/toeicp2.js rows: [type, question, right, [2 wrong], Thai, tip]. Game `toeic2` (qP2): question + (A) (B) (C) are spoken, text hidden
+// data/toeic/toeicp2.js rows: [type, question, right, [2 wrong], Thai, tip]. Game `toeic2` (qP2): question + (A) (B) (C) are spoken, text hidden
 // until 📝 or the answer; own SRS in S.lex.
 let TOEICP2 = null;
 const P2_TYPE = { wh: ['❓', 'คำถาม Wh-'], yn: ['✅', 'คำถาม Yes/No'], choice: ['🔀', 'คำถามให้เลือก'], request: ['🙏', 'ขอร้อง ชวน เสนอ'],
   statement: ['💬', 'ประโยคบอกเล่า'], neg: ['🔁', 'คำถามปฏิเสธ/หางคำถาม'] };
-const loadP2 = () => loadData('data/toeicp2.js', 'TOEICP2').then((rows) => {
+const loadP2 = () => loadData('data/toeic/toeicp2.js', 'TOEICP2').then((rows) => {
   if (!TOEICP2) TOEICP2 = rows.map(([type, q, right, wrong, th, tip]) => ({ type, q, right, wrong, th, tip }));
   return TOEICP2;
 });
 const p2Items = () => TOEICP2.map((r) => ({ idx: -1, w: r.right, t: r.q, p: '', g: '', _p2: r, _q: [r.q, r.right, '', r.th] }));
 /* ---------- TOEIC Parts 3 + 4 (1.187.0) ---------- */
-// data/toeicp3.js (conversations) / data/toeicp4.js (talks): [{id, kind, lines: [[speaker, text]], th, q: [[question, [4 options], answer, Thai]]}].
+// data/toeic/toeicp3.js (conversations) / data/toeic/toeicp4.js (talks): [{id, kind, lines: [[speaker, text]], th, q: [[question, [4 options], answer, Thai]]}].
 // Games `toeic3` / `toeic4` (qP34): the audio plays on a text's first question, the questions and options are read on screen like the test,
 // questions of one recording stay together (setOrder); own SRS in S.lex.
 const P34 = { 3: null, 4: null };
@@ -296,7 +296,7 @@ const P34_KIND = { office: ['🏢', 'ที่ทำงาน'], phone: ['📞',
   travel: ['✈️', 'การเดินทาง'], announce: ['📢', 'ประกาศ'], voicemail: ['📱', 'ข้อความเสียง'], tour: ['🧭', 'นำเที่ยว'], radio: ['📻', 'วิทยุ'],
   meeting: ['🎤', 'ประชุม / กล่าวในงาน'], ad: ['📣', 'โฆษณา'] };
 const P34_WHO = { M: ['👨', 'Man'], W: ['👩', 'Woman'], M2: ['🧔', 'Man 2'], W2: ['👱‍♀️', 'Woman 2'] };
-const loadP34 = (n) => loadData(`data/toeicp${n}.js`, 'TOEICP' + n).then((rows) => { if (!P34[n]) P34[n] = rows; return P34[n]; });
+const loadP34 = (n) => loadData(`data/toeic/toeicp${n}.js`, 'TOEICP' + n).then((rows) => { if (!P34[n]) P34[n] = rows; return P34[n]; });
 const p34Items = (n) => P34[n].flatMap((d) => d.q.map(([q, opts, a, th], k) => {
   const r = { d, k, q, opts, a, th, part: n };
   return { idx: -1, w: opts[a], t: q, p: '', g: '', _p34: r, _set: r, _q: [q, opts[a], '', th] };

@@ -1,6 +1,6 @@
 // TOEIC Part 4 style talks (1.187.0): original short announcements, messages and talks by one speaker, each with 3 questions, written for this app.
-// Same shape as data/toeicp3.js ({id, kind (P34_KIND), lines: [[speaker, text]], th, q}); all lines of a talk have one speaker.
-// Lazy-loaded by loadP34(4) in js/lexis2.js; game `toeic4` (qP34 in data/play.js). A test checks the shape.
+// Same shape as data/toeic/toeicp3.js ({id, kind (P34_KIND), lines: [[speaker, text]], th, q}); all lines of a talk have one speaker.
+// Lazy-loaded by loadP34(4) in js/lexis2.js; game `toeic4` (qP34 in data/app/play.js). A test checks the shape.
 window.TOEICP4 = [
   { id: 'storeclose', kind: 'announce',
     lines: [

@@ -1,6 +1,6 @@
 // TOEIC Part 2 style question–response (1.186.0): original workplace questions or statements, each with 3 spoken responses, written for this app.
 // [type (P2_TYPE in js/lexis2.js), question, right response, [2 wrong responses], Thai (question → answer), Thai tip about the trap]
-// Lazy-loaded by loadP2() in js/lexis2.js; game `toeic2` (qP2 in data/play.js): the question and (A) (B) (C) are spoken. A test checks the shape.
+// Lazy-loaded by loadP2() in js/lexis2.js; game `toeic2` (qP2 in data/app/play.js): the question and (A) (B) (C) are spoken. A test checks the shape.
 window.TOEICP2 = [
   ['wh', 'Where should I put these boxes?', 'In the storage room, please.', ['Yes, I put them there.', 'About twenty boxes.'], 'กล่องพวกนี้วางไว้ตรงไหนดี → ในห้องเก็บของค่ะ', 'Where ถามสถานที่ · ตัวเลือกที่ตอบ Yes ใช้กับคำถาม Wh- ไม่ได้'],
   ['wh', 'When does the training session start?', 'Right after lunch.', ['In the conference room.', 'It was very useful.'], 'การอบรมเริ่มเมื่อไร → หลังพักเที่ยงทันที', 'When ถามเวลา · "In the conference room" ตอบคำถาม Where'],

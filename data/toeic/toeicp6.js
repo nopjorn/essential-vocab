@@ -1,7 +1,7 @@
 // TOEIC Part 6 style text completion (1.185.0): original short workplace texts with 4 blanks [1]–[4], written for this app.
 // {id, kind (P7_KIND in js/lexis2.js), title, text ('\n' = new line, blanks [1] [2] [3] [4] in order), th: Thai summary,
 //  q: [[[4 options], index of the answer, Thai explanation]]} — one question per blank, at least one blank per text takes a whole sentence.
-// Lazy-loaded by loadP6() in js/lexis2.js; game `toeic6` (qP6 in data/play.js). A test checks the shape.
+// Lazy-loaded by loadP6() in js/lexis2.js; game `toeic6` (qP6 in data/app/play.js). A test checks the shape.
 window.TOEICP6 = [
   { id: 'parking', kind: 'memo', title: 'To: All staff — Parking garage repairs',
     text: 'Starting Monday, the north parking garage will be closed for [1]. The work is expected to last two weeks. [2] During this period, employees may park in the visitor lot on Elm Street. A free shuttle will run between the lot and the main entrance every ten minutes. We apologize for any [3] this may cause and thank you for your [4].',

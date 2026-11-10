@@ -1,4 +1,4 @@
-// Role play (1.232.0): scenes from data/roleplay.js as a game (`rplay`, steps of a scene stay together) and a reference page.
+// Role play (1.232.0): scenes from data/phrasebook/roleplay.js as a game (`rplay`, steps of a scene stay together) and a reference page.
 const { test, expect } = require('@playwright/test');
 const { openApp, readState } = require('./helpers');
 

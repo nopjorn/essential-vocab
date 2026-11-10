@@ -6,12 +6,12 @@ const base = { placedAt: '2026-01-01', settings: { levels: ['A1', 'A2'] } };
 
 test('offline: a data file that fails to load is announced and loads again on the next try', async ({ page }) => {
   const errors = await openApp(page, base);
-  await page.route('**/data/idioms.js*', (r) => r.abort());
-  const first = await page.evaluate(() => loadData('data/idioms.js', 'IDIOMS').then((x) => x.length));
+  await page.route('**/data/lexis/idioms.js*', (r) => r.abort());
+  const first = await page.evaluate(() => loadData('data/lexis/idioms.js', 'IDIOMS').then((x) => x.length));
   expect(first).toBe(0);
   await expect(page.locator('#toast')).toContainText('โหลดข้อมูลส่วนนี้ไม่สำเร็จ');
-  await page.unroute('**/data/idioms.js*');
-  const second = await page.evaluate(() => loadData('data/idioms.js', 'IDIOMS').then((x) => x.length));
+  await page.unroute('**/data/lexis/idioms.js*');
+  const second = await page.evaluate(() => loadData('data/lexis/idioms.js', 'IDIOMS').then((x) => x.length));
   expect(second).toBeGreaterThan(10);
   expect(errors).toEqual([]);
 });

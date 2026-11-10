@@ -13,8 +13,11 @@ function load(...files) {
   return window;
 }
 // All app code: app.js plus the js/*.js scripts it is split into.
-const appCode = () => ['app.js', ...fs.readdirSync(path.join(root, 'js')).map((f) => `js/${f}`), 'data/play.js', 'data/guide.js'].map(read).join('\n'); // + the lazy-loaded engine and manual (1.101)
+const appCode = () => ['app.js', ...fs.readdirSync(path.join(root, 'js')).map((f) => `js/${f}`), 'data/app/play.js', 'data/app/guide.js'].map(read).join('\n'); // + the lazy-loaded engine and manual (1.101)
 const WORD_FILES = ['a1', 'a2', 'b1', 'b2', 'b2plus', 'c1', 'toeic', 'nawl', 'bsl', 'it', 'health'].map((l) => `data/words/${l}.js`);
+// Every data file, e.g. 'data/lexis/phrasal.js' (data/ is grouped into folders; nothing sits loose in data/ itself).
+const dataFiles = () => fs.readdirSync(path.join(root, 'data'), { withFileTypes: true })
+  .flatMap((d) => (d.isDirectory() ? fs.readdirSync(path.join(root, 'data', d.name)).map((f) => `data/${d.name}/${f}`) : [`data/${d.name}`]));
 
 test('version is the same in app.js, sw.js and the README changelog', () => {
   const v = read('app.js').match(/const APP_VERSION = '([\d.]+)'/)[1];
@@ -23,7 +26,7 @@ test('version is the same in app.js, sw.js and the README changelog', () => {
 });
 
 test('changelog.js lists every README version, newest first', () => {
-  const { CHANGELOG } = load('data/changelog.js');
+  const { CHANGELOG } = load('data/app/changelog.js');
   const readme = [...read('README.md').matchAll(/^\| (\d+\.\d+\.\d+) \|/gm)].map((m) => m[1]);
   expect(CHANGELOG.map((r) => r[0])).toEqual(readme);
   CHANGELOG.forEach(([v, t, d]) => { expect(typeof t).toBe('string'); expect(t.length, v).toBeGreaterThan(5); expect(d, v).toMatch(/^\d{4}-\d{2}-\d{2}$/); });
@@ -113,7 +116,7 @@ test('health set (1.215): every row is marked H and adds a word no other list ha
 });
 
 test('word families are valid practice data', () => {
-  const { FAMILIES } = load('data/families.js');
+  const { FAMILIES } = load('data/lexis/families.js');
   expect(FAMILIES.length).toBeGreaterThan(200);
   const seen = new Set();
   for (const fam of FAMILIES) {
@@ -136,7 +139,7 @@ test('word families are valid practice data', () => {
 });
 
 test('confusable pairs and minimal pairs are valid', () => {
-  const { CONFUSE, MINPAIRS } = load('data/pairs.js');
+  const { CONFUSE, MINPAIRS } = load('data/lexis/pairs.js');
   for (const c of CONFUSE) {
     expect(c.tip.length).toBeGreaterThan(0);
     c.q.forEach(([s, right, wrong, th]) => {
@@ -149,7 +152,7 @@ test('confusable pairs and minimal pairs are valid', () => {
 });
 
 test('collocations belong to list words', () => {
-  const { COLLOC } = load('data/collocations.js');
+  const { COLLOC } = load('data/lexis/collocations.js');
   const { WORDS } = load(...WORD_FILES);
   const words = new Set(WORDS.map((r) => r[0]));
   for (const [k, list] of Object.entries(COLLOC)) {
@@ -184,7 +187,7 @@ test('index.html loads every js/ script, and the service worker caches it', () =
 });
 
 test('phrasal verbs are valid practice data', () => {
-  const { PHRASAL } = load('data/phrasal.js');
+  const { PHRASAL } = load('data/lexis/phrasal.js');
   expect(PHRASAL.length).toBeGreaterThan(120);
   const seen = new Set(), bad = [];
   for (const r of PHRASAL) {
@@ -204,7 +207,7 @@ test('phrasal verbs are valid practice data', () => {
 });
 
 test('synonym groups are valid', () => {
-  const { SYNONYMS } = load('data/synonyms.js');
+  const { SYNONYMS } = load('data/lexis/synonyms.js');
   expect(SYNONYMS.length).toBeGreaterThan(80);
   const bad = [];
   for (const g of SYNONYMS) {
@@ -217,7 +220,7 @@ test('synonym groups are valid', () => {
 });
 
 test('word parts (affixes) are valid', () => {
-  const { AFFIXES } = load('data/affixes.js');
+  const { AFFIXES } = load('data/lexis/affixes.js');
   expect(AFFIXES.filter((a) => a.k === 'p').length).toBeGreaterThan(12);
   expect(AFFIXES.filter((a) => a.k === 's').length).toBeGreaterThan(12);
   const seen = new Set(), bad = [];
@@ -235,7 +238,7 @@ test('word parts (affixes) are valid', () => {
 });
 
 test('word roots (1.104): every example is a list word that contains its root; meanings and groups make a fair game', () => {
-  const { ROOTS } = load('data/roots.js');
+  const { ROOTS } = load('data/lexis/roots.js');
   const { WORDS } = load(...WORD_FILES);
   const have = new Set(WORDS.map((r) => r[0]));
   expect(ROOTS.length).toBeGreaterThan(20);
@@ -256,7 +259,7 @@ test('word roots (1.104): every example is a list word that contains its root; m
 });
 
 test('UK ↔ US pairs (1.104): both spellings differ, Thai given, kinds valid, spelling pairs share most letters', () => {
-  const { UKUS } = load('data/ukus.js');
+  const { UKUS } = load('data/lexis/ukus.js');
   expect(UKUS.length).toBeGreaterThan(60);
   const bad = [], seen = new Set();
   for (const [uk, us, th, k] of UKUS) {
@@ -269,7 +272,7 @@ test('UK ↔ US pairs (1.104): both spellings differ, Thai given, kinds valid, s
 });
 
 test('emoji picture words: real list words, one word per emoji', () => {
-  const { EMOJI } = load('data/emoji.js');
+  const { EMOJI } = load('data/fun/emoji.js');
   const words = new Set();
   WORD_FILES.forEach((f) => { const w = { WORDS: [] }; vm.runInNewContext(read(f), { window: w }); w.WORDS.forEach((r) => words.add(r[0])); });
   const entries = Object.entries(EMOJI), bad = [];
@@ -284,7 +287,7 @@ test('emoji picture words: real list words, one word per emoji', () => {
 });
 
 test('idioms are valid practice data', () => {
-  const { IDIOMS } = load('data/idioms.js');
+  const { IDIOMS } = load('data/lexis/idioms.js');
   expect(IDIOMS.length).toBeGreaterThan(120);
   const seen = new Set(), th = new Set(), groups = {}, bad = [];
   for (const r of IDIOMS) {
@@ -304,7 +307,7 @@ test('idioms are valid practice data', () => {
 });
 
 test('situations: key phrases, dialogues and unique lines', () => {
-  const { SITUATIONS } = load('data/situations.js');
+  const { SITUATIONS } = load('data/lexis/situations.js');
   expect(SITUATIONS.length).toBeGreaterThanOrEqual(15);
   const ids = new Set(), lines = new Set(), bad = [];
   for (const s of SITUATIONS) {
@@ -324,7 +327,7 @@ test('situations: key phrases, dialogues and unique lines', () => {
 });
 
 test('goal tags only list words from the word list', () => {
-  const { TAGS } = load('data/tags.js');
+  const { TAGS } = load('data/sets/tags.js');
   const { WORDS } = load(...WORD_FILES);
   const words = new Set(WORDS.map((r) => r[0]));
   expect(TAGS.length).toBeGreaterThanOrEqual(5);
@@ -337,23 +340,33 @@ test('goal tags only list words from the word list', () => {
     t.w.forEach((w) => { if (!words.has(w)) bad.push(`${t.id}: ${w} is not a list word`); });
   }
   expect(bad).toEqual([]);
-  expect(read('index.html').indexOf('data/tags.js')).toBeLessThan(read('index.html').indexOf('app.js'));
+  expect(read('index.html').indexOf('data/sets/tags.js')).toBeLessThan(read('index.html').indexOf('app.js'));
 });
 
 test('service worker keeps word lists, stories and other content in the data cache', () => {
   const sw = read('sw.js'), data = sw.slice(sw.indexOf('const DATA = ['), sw.indexOf('];', sw.indexOf('const DATA = [')));
   const files = [...data.matchAll(/'([^']+)'/g)].map((m) => m[1]);
-  ['words', 'stories'].forEach((d) => fs.readdirSync(path.join(root, 'data', d)).forEach((f) => expect(files, f).toContain(`data/${d}/${f}`)));
-  ['app.js', 'index.html', 'data/changelog.js', 'config.js'].forEach((f) => expect(files, f).not.toContain(f)); // change every version
+  dataFiles().filter((f) => f !== 'data/app/changelog.js').forEach((f) => expect(files, f).toContain(f)); // every content file, in any folder
+  ['app.js', 'index.html', 'data/app/changelog.js', 'config.js'].forEach((f) => expect(files, f).not.toContain(f)); // change every version
+});
+
+test('data/ is grouped into folders: no loose files, no stale entries in the service worker', () => {
+  const entries = fs.readdirSync(path.join(root, 'data'), { withFileTypes: true });
+  expect(entries.filter((d) => !d.isDirectory()).map((d) => d.name), 'loose files in data/ (put them in a folder)').toEqual([]);
+  const sw = read('sw.js');
+  const listed = [...sw.slice(0, sw.indexOf('const NAV_TIMEOUT')).matchAll(/^\s+'(data\/[^']+)',?$/gm)].map((m) => m[1]);
+  const onDisk = new Set(dataFiles());
+  expect(listed.filter((f) => !onDisk.has(f)), 'sw.js lists files that do not exist').toEqual([]);
+  expect(listed.length, 'a file is listed twice in sw.js').toBe(new Set(listed).size);
 });
 
 test('offline (1.123): every data file the code loads lazily is cached by the service worker', () => {
   const sw = read('sw.js'), cached = new Set([...sw.matchAll(/^\s+'([^']+)',?$/gm)].map((m) => m[1]));
   const code = appCode();
   const used = new Set([...code.matchAll(/'(data\/[a-z0-9/]+\.js)/g)].map((m) => m[1]));
-  ['collocations', 'pairs', 'families', 'guide', 'play'].forEach((f) => used.add(`data/${f}.js`));
-  fs.readdirSync(path.join(root, 'data')).filter((f) => f.endsWith('.js')).forEach((f) => used.add(`data/${f}`)); // every data file, lazy or not
-  const missing = [...used].filter((f) => f !== 'data/changelog.js' && !cached.has(f) && fs.existsSync(path.join(root, f)));
+  ['lexis/collocations', 'lexis/pairs', 'lexis/families', 'app/guide', 'app/play'].forEach((f) => used.add(`data/${f}.js`));
+  dataFiles().filter((f) => f.endsWith('.js')).forEach((f) => used.add(f)); // every data file, lazy or not
+  const missing = [...used].filter((f) => f !== 'data/app/changelog.js' && !cached.has(f) && fs.existsSync(path.join(root, f)));
   expect(missing).toEqual([]);
 });
 
@@ -388,7 +401,7 @@ test('icons are valid PNGs and stay small (lossless recompression, tools/optimiz
 });
 
 test('irregular verbs are valid practice data', () => {
-  const { IRREGULAR } = load('data/irregular.js');
+  const { IRREGULAR } = load('data/grammar/irregular.js');
   expect(IRREGULAR.length).toBeGreaterThan(100);
   const seen = new Set(), bad = [];
   IRREGULAR.forEach(([v1, v2, v3, th]) => {
@@ -401,7 +414,7 @@ test('irregular verbs are valid practice data', () => {
 });
 
 test('dependent prepositions are valid practice data', () => {
-  const { DEPPREP } = load('data/depprep.js');
+  const { DEPPREP } = load('data/grammar/depprep.js');
   expect(DEPPREP.length).toBeGreaterThan(90);
   const seen = new Set(), bad = [];
   const fine = {}; // head → every preposition that is listed or marked fine for it
@@ -423,7 +436,7 @@ test('dependent prepositions are valid practice data', () => {
 });
 
 test('Thai-learner mistakes are valid practice data', () => {
-  const { MISTAKES } = load('data/mistakes.js');
+  const { MISTAKES } = load('data/grammar/mistakes.js');
   expect(MISTAKES.length).toBeGreaterThan(55);
   const cats = ['prep', 'noun', 'article', 'verb', 'be', 'word', 'order'], seen = new Set(), bad = [];
   MISTAKES.forEach(([cat, ok, no, tip, th]) => {
@@ -438,7 +451,7 @@ test('Thai-learner mistakes are valid practice data', () => {
 });
 
 test('grammar tied to words is valid practice data', () => {
-  const { GRAMPAT } = load('data/grampat.js');
+  const { GRAMPAT } = load('data/grammar/grampat.js');
   expect(GRAMPAT.length).toBeGreaterThan(70);
   const kinds = ['u', 'ing', 'to', 'bare', 'both'], seen = new Set(), bad = [];
   GRAMPAT.forEach(([kind, head, th, frame, right, wrong, exTh]) => {
@@ -458,7 +471,7 @@ test('grammar tied to words is valid practice data', () => {
 });
 
 test('ready-made word sets (presets) are valid', () => {
-  const { PRESETS } = load('data/presets.js');
+  const { PRESETS } = load('data/sets/presets.js');
   const { WORDS } = load(...WORD_FILES);
   const words = new Set(WORDS.map((r) => r[0]));
   const low = new Set(WORDS.map((r) => r[0].toLowerCase()));
@@ -483,7 +496,7 @@ test('ready-made word sets (presets) are valid', () => {
 });
 
 test('work email / chat phrases (1.199): known category, one [key], 3 distinct wrong keys, Thai and tip, no duplicates', () => {
-  const { WORKPHR } = load('data/workphr.js');
+  const { WORKPHR } = load('data/work/workphr.js');
   const cats = ['open', 'ask', 'follow', 'attach', 'meet', 'opinion', 'sorry', 'thanks', 'close', 'chat', 'call'];
   expect(WORKPHR.length).toBeGreaterThanOrEqual(60);
   const bad = [], seen = new Set(), n = {};
@@ -504,7 +517,7 @@ test('work email / chat phrases (1.199): known category, one [key], 3 distinct w
 });
 
 test('business collocations (1.200): known group, one [partner], one blank, the answer + 3 distinct wrong partners, Thai, no duplicates', () => {
-  const { BIZCOL } = load('data/bizcol.js');
+  const { BIZCOL } = load('data/work/bizcol.js');
   expect(BIZCOL.length).toBeGreaterThanOrEqual(70);
   const bad = [], seen = new Set(), n = {};
   BIZCOL.forEach(([g, col, sent, ans, wrong, th, sth], i) => {
@@ -523,7 +536,7 @@ test('business collocations (1.200): known group, one [partner], one blank, the 
 });
 
 test('formal / casual lines (1.205): three different lines, Thai meaning and tip, no duplicates', () => {
-  const { REGISTER } = load('data/register.js');
+  const { REGISTER } = load('data/work/register.js');
   expect(REGISTER.length).toBeGreaterThanOrEqual(30);
   const bad = [], seen = new Set();
   REGISTER.forEach(([f, c, b, th, tip], i) => {
@@ -536,7 +549,7 @@ test('formal / casual lines (1.205): three different lines, Thai meaning and tip
 });
 
 test('build-an-email data (1.206): 5 parts in slot order, 3 distinct options each, Thai, unique ids', () => {
-  const { EMAILS } = load('data/emails.js');
+  const { EMAILS } = load('data/work/emails.js');
   expect(EMAILS.length).toBeGreaterThanOrEqual(10);
   const bad = [], ids = new Set(), order = ['greet', 'open', 'body', 'ask', 'close'];
   EMAILS.forEach((d) => {
@@ -552,7 +565,7 @@ test('build-an-email data (1.206): 5 parts in slot order, 3 distinct options eac
 });
 
 test('real-life texts are valid practice data', () => {
-  const { REALTEXT } = load('data/realtext.js');
+  const { REALTEXT } = load('data/lexis/realtext.js');
   const { WORDS } = load(...WORD_FILES);
   const words = new Set(WORDS.map((r) => r[0]));
   expect(REALTEXT.length).toBeGreaterThanOrEqual(70);
@@ -576,7 +589,7 @@ test('real-life texts are valid practice data', () => {
 });
 
 test('TOEIC Part 5 questions (1.183): one blank, the answer + 3 different options, valid type, Thai and tip, no duplicates', () => {
-  const { TOEICP5 } = load('data/toeicp5.js');
+  const { TOEICP5 } = load('data/toeic/toeicp5.js');
   expect(TOEICP5.length).toBeGreaterThanOrEqual(60);
   const bad = [], seen = new Set(), types = {};
   TOEICP5.forEach(([type, text, right, wrong, th, tip], i) => {
@@ -596,7 +609,7 @@ test('TOEIC Part 5 questions (1.183): one blank, the answer + 3 different option
 });
 
 test('TOEIC Part 7 texts (1.184): known kind, Thai summary, 2–4 questions with 4 distinct options and a valid answer', () => {
-  const { TOEICP7 } = load('data/toeicp7.js');
+  const { TOEICP7 } = load('data/toeic/toeicp7.js');
   expect(TOEICP7.length).toBeGreaterThanOrEqual(15);
   const kinds = ['email', 'notice', 'ad', 'memo', 'chat', 'invoice', 'schedule', 'article', 'review'], ids = new Set(), bad = [];
   let n = 0;
@@ -619,7 +632,7 @@ test('TOEIC Part 7 texts (1.184): known kind, Thai summary, 2–4 questions with
 });
 
 test('TOEIC Part 1 scenes (1.189): emoji scene, 4 distinct statements, a valid answer, Thai and tip', () => {
-  const { TOEICP1 } = load('data/toeicp1.js');
+  const { TOEICP1 } = load('data/toeic/toeicp1.js');
   expect(TOEICP1.length).toBeGreaterThanOrEqual(25);
   const bad = [], seen = new Set();
   TOEICP1.forEach(([scene, place, opts, a, th, tip], i) => {
@@ -635,7 +648,7 @@ test('TOEIC Part 1 scenes (1.189): emoji scene, 4 distinct statements, a valid a
 });
 
 test('TOEIC Part 2 items (1.186): known type, question, 3 distinct responses, Thai and tip, every type used', () => {
-  const { TOEICP2 } = load('data/toeicp2.js');
+  const { TOEICP2 } = load('data/toeic/toeicp2.js');
   expect(TOEICP2.length).toBeGreaterThanOrEqual(50);
   const bad = [], seen = new Set(), types = {};
   TOEICP2.forEach(([type, q, right, wrong, th, tip], i) => {
@@ -655,7 +668,7 @@ test('TOEIC Part 2 items (1.186): known type, question, 3 distinct responses, Th
 
 for (const [part, min] of [[3, 2], [4, 1]]) {
   test(`TOEIC Part ${part} recordings (1.187): speakers, Thai summary, 3 questions with 4 distinct options and Thai`, () => {
-    const rows = load(`data/toeicp${part}.js`)['TOEICP' + part];
+    const rows = load(`data/toeic/toeicp${part}.js`)['TOEICP' + part];
     expect(rows.length).toBeGreaterThanOrEqual(10);
     const kinds = ['office', 'phone', 'shop', 'hotel', 'restaurant', 'travel', 'announce', 'voicemail', 'tour', 'radio', 'meeting', 'ad'], ids = new Set(), bad = [];
     rows.forEach((d) => {
@@ -681,7 +694,7 @@ for (const [part, min] of [[3, 2], [4, 1]]) {
 }
 
 test('TOEIC Part 6 texts (1.185): blanks [1]–[4] in order, 4 distinct options each, a sentence blank, Thai summary and explanations', () => {
-  const { TOEICP6 } = load('data/toeicp6.js');
+  const { TOEICP6 } = load('data/toeic/toeicp6.js');
   expect(TOEICP6.length).toBeGreaterThanOrEqual(10);
   const kinds = ['email', 'notice', 'ad', 'memo', 'chat', 'invoice', 'schedule', 'article', 'review'], ids = new Set(), bad = [];
   TOEICP6.forEach((d) => {
@@ -732,7 +745,7 @@ test('phrase books (1.212+): rows [cat, English, Thai, example, Thai example, no
 });
 
 test('role play (1.232): scenes of 5 steps, a reply and 2 different wrong ones, unique ids', () => {
-  const { ROLEPLAY } = load('data/roleplay.js');
+  const { ROLEPLAY } = load('data/phrasebook/roleplay.js');
   expect(ROLEPLAY.length).toBeGreaterThanOrEqual(8);
   const bad = [];
   expect(new Set(ROLEPLAY.map((d) => d.id)).size).toBe(ROLEPLAY.length);
@@ -747,7 +760,7 @@ test('the manual states the real number of games', () => {
   const games = read('js/games.js'), body = games.slice(games.indexOf('const GAMES = {'));
   const n = (body.slice(0, body.indexOf('\n};')).match(/^  [a-zA-Z0-9]+: \{/gm) || []).length;
   expect(n).toBeGreaterThan(30);
-  expect(read('data/guide.js')).toContain(`เกมทั้ง ${n} แบบ`);
+  expect(read('data/app/guide.js')).toContain(`เกมทั้ง ${n} แบบ`);
 });
 
 test('content security policy: the inline theme script is allowed by hash, and nothing else inline is', () => {
@@ -770,7 +783,7 @@ test('the reminder edge function only answers the cron job (service-role key)', 
 
 
 // 1.233.0: size budget for the files every app start loads (the word lists and lazy-loaded data are not counted). Growing past
-// a limit is a hint to move the new part into its own file (lazy-loaded where it can be, like data/play.js and data/guide.js).
+// a limit is a hint to move the new part into its own file (lazy-loaded where it can be, like data/app/play.js and data/app/guide.js).
 test('files loaded at every start stay within their size budget', () => {
   const size = (f) => fs.statSync(path.join(root, f)).size;
   const eager = [...read('index.html').matchAll(/<script src="([^"?]+)/g)].map((m) => m[1]).filter((f) => !f.startsWith('data/words/'));

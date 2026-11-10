@@ -1,11 +1,11 @@
 'use strict';
 // Detective cases (1.120, single player; route `cases`, `runCase(id)`): read the English clues (tap a word for its sheet, 🇹🇭 shows the
 // Thai), answer two reading questions, then name who did it. First solve: +30 coins (+10 when solved after a wrong guess) and +20 XP;
-// 3 cases solved → 🕵️ detective hat for the mascot. Data: data/cases.js (lazy, loadCases()).
+// 3 cases solved → 🕵️ detective hat for the mascot. Data: data/fun/cases.js (lazy, loadCases()).
 // State: S.cases = { id: { ok: solved, t: wrong guesses } } (cleanCases() / merge in app.js). Classic script sharing globals with app.js.
 
 let CASES = null;
-const loadCases = () => loadData('data/cases.js', 'CASES').then((c) => (CASES = c));
+const loadCases = () => loadData('data/fun/cases.js', 'CASES').then((c) => (CASES = c));
 const CASE_COINS = 30, CASE_RETRY = 10, CASE_XP = 20, CASE_HAT = 3;
 const casesSolved = () => Object.values(S.cases || {}).filter((c) => c && c.ok).length;
 

@@ -3,11 +3,11 @@
 // Classic script sharing globals with app.js (load order: index.html). Data files are lazy-loaded with loadData().
 
 /* ---------- irregular verbs ---------- */
-// data/irregular.js rows: [V1, V2, V3, thai]; V2 / V3 may hold two forms ("was / were").
+// data/grammar/irregular.js rows: [V1, V2, V3, thai]; V2 / V3 may hold two forms ("was / were").
 let IRREG = null, IRR_FORM = null, IRR_BY = null;
 // Forms that are also everyday words with another meaning (a wound, the ground): tapping them in a story keeps the plain word.
 const IRR_SKIP = new Set(['wound', 'ground', 'bound']);
-const loadIrregular = () => loadData('data/irregular.js', 'IRREGULAR').then((rows) => {
+const loadIrregular = () => loadData('data/grammar/irregular.js', 'IRREGULAR').then((rows) => {
   if (!IRREG) {
     IRREG = rows.map(([v1, v2, v3, th]) => ({ v1, v2, v3, th, a2: v2.split(' / '), a3: v3.split(' / '),
       pat: v1 === v2 && v2 === v3 ? 'same' : v2 === v3 ? 'v23' : v1 === v3 ? 'v13' : 'diff' }));
@@ -75,11 +75,11 @@ function irregOpts(r, k, right) {
 }
 
 /* ---------- dependent prepositions ---------- */
-// data/depprep.js rows: [head + preposition, level, thai, example with the preposition in [brackets], thai example, other prepositions that are also fine]
+// data/grammar/depprep.js rows: [head + preposition, level, thai, example with the preposition in [brackets], thai example, other prepositions that are also fine]
 let DEPPREP = null, DP_OF = null;
 // Prepositions offered as wrong options (never one that is listed, or marked as fine, for the same head).
 const DP_POOL = ['in', 'on', 'at', 'of', 'to', 'for', 'with', 'about', 'from', 'by', 'into'];
-const loadDepPrep = () => loadData('data/depprep.js', 'DEPPREP').then((rows) => {
+const loadDepPrep = () => loadData('data/grammar/depprep.js', 'DEPPREP').then((rows) => {
   if (!DEPPREP) {
     DEPPREP = rows.map(([ph, lv, th, ex, exTh, ok]) => {
       const [head, prep] = ph.split(' ');
@@ -136,10 +136,10 @@ function renderDepPrep() {
 const dpItems = () => DEPPREP.map((r) => ({ idx: -1, w: r.ph, t: r.th, p: '', g: '', _dp: r, _q: [r.ex.replace(/\[[^\]]+\]/, '___'), r.prep, '', r.th] }));
 
 /* ---------- mistakes Thai learners make ---------- */
-// data/mistakes.js rows: [category, correct sentence, wrong sentence, Thai tip, Thai meaning]
+// data/grammar/mistakes.js rows: [category, correct sentence, wrong sentence, Thai tip, Thai meaning]
 let MISTAKES = null;
 const MIS_CAT = { prep: 'บุพบทที่ไม่ต้องมีหรือผิด', noun: 'นามนับได้ นับไม่ได้ พหูพจน์', article: 'a / an / the', verb: 'รูปกริยาและรูปแบบหลังกริยา', be: 'ลืมกริยา be', word: 'เลือกคำผิด', order: 'ลำดับคำ' };
-const loadMistakes = () => loadData('data/mistakes.js', 'MISTAKES').then((rows) => {
+const loadMistakes = () => loadData('data/grammar/mistakes.js', 'MISTAKES').then((rows) => {
   if (!MISTAKES) MISTAKES = rows.map(([cat, ok, no, tip, th]) => ({ cat, ok, no, tip, th }));
   return MISTAKES;
 });
@@ -172,7 +172,7 @@ function renderMistakes() {
 const misItems = () => MISTAKES.map((r) => ({ idx: -1, w: r.ok, t: r.th, p: '', g: '', _mis: r, _q: [r.ok, '', '', r.th] }));
 
 /* ---------- grammar tied to words ---------- */
-// data/grampat.js rows: [kind, word, thai, frame with ___, right form, [2 wrong forms], thai sentence, how to count]; kind "both" rows are reference only.
+// data/grammar/grampat.js rows: [kind, word, thai, frame with ___, right form, [2 wrong forms], thai sentence, how to count]; kind "both" rows are reference only.
 let GRAMPAT = null, GP_OF = null;
 const GP_KIND = {
   u: { icon: '🧺', title: 'นามนับไม่ได้ [U]', note: 'ไม่เติม s · ไม่มี a / an · ใช้กับ much / some / a lot of และกริยาเอกพจน์ (is) · จะนับให้ใช้ “a piece of …” คนไทยมักเติม s ผิด' },
@@ -181,7 +181,7 @@ const GP_KIND = {
   bare: { icon: '✂️', title: 'ตามด้วยกริยาช่อง 1 (ไม่มี to)', note: 'let / make / can / should / must / would rather / had better + กริยาช่อง 1 ไม่มี to เช่น let me go' },
   both: { icon: '↔️', title: 'ได้ทั้ง -ing และ to แต่ความหมายต่างกัน', note: 'ความหมายเปลี่ยนตามรูปที่ตามหลัง ต้องดูบริบท (ไม่มีในเกม เพราะต้องรู้บริบทเต็มประโยค)' },
 };
-const loadGramPat = () => loadData('data/grampat.js', 'GRAMPAT').then((rows) => {
+const loadGramPat = () => loadData('data/grammar/grampat.js', 'GRAMPAT').then((rows) => {
   if (!GRAMPAT) {
     GRAMPAT = rows.map(([kind, head, th, frame, right, wrong, exTh, count]) => ({ kind, head, th, frame, right, wrong, exTh, count: count || '',
       sheetKey: (['be', "can't", 'had', 'would'].includes(head.split(' ')[0]) ? head.split(' ')[1] : head.split(' ')[0]).toLowerCase() }));

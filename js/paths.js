@@ -1,10 +1,10 @@
 'use strict';
 // Choose-your-path stories (1.122, single player; route `paths`, `runPath(id)`): read a short scene in easy English (tap words for their
 // sheet, 🇹🇭 shows the Thai, 🔊 reads it), pick what to do next, reach one of several endings. A new ending: +10 coins +5 XP.
-// Data: data/paths.js (lazy, loadPaths()). State: S.paths = { story id: [ending node ids found] } (cleanPaths() / union merge in app.js).
+// Data: data/fun/paths.js (lazy, loadPaths()). State: S.paths = { story id: [ending node ids found] } (cleanPaths() / union merge in app.js).
 
 let PATHS = null;
-const loadPaths = () => loadData('data/paths.js', 'PATHS').then((p) => (PATHS = p));
+const loadPaths = () => loadData('data/fun/paths.js', 'PATHS').then((p) => (PATHS = p));
 const PATH_COINS = 10;
 const pathEnds = (st) => Object.entries(st.nodes).filter(([, n]) => n.end).map(([id]) => id);
 const pathsFound = () => Object.values(S.paths || {}).reduce((n, a) => n + a.length, 0);

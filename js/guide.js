@@ -1,15 +1,15 @@
 'use strict';
-// In-app manual loader + changelog (the manual itself: data/guide.js, lazy-loaded).
+// In-app manual loader + changelog (the manual itself: data/app/guide.js, lazy-loaded).
 // Classic script sharing globals with app.js (load order: index.html).
 
 /* ---------- guide ---------- */
-// The manual itself lives in data/guide.js and is loaded the first time the guide page opens.
+// The manual itself lives in data/app/guide.js and is loaded the first time the guide page opens.
 let guideOn = false;
 function loadGuide() {
   if (guideOn) return Promise.resolve(true);
   return new Promise((res) => {
     const sc = document.createElement('script');
-    sc.src = 'data/guide.js?v=' + APP_VERSION;
+    sc.src = 'data/app/guide.js?v=' + APP_VERSION;
     sc.onload = () => { guideOn = true; res(true); };
     sc.onerror = () => { sc.remove(); res(false); };
     document.head.appendChild(sc);
@@ -29,7 +29,7 @@ function loadChangelog() {
   if (CHANGELOG) return Promise.resolve(CHANGELOG);
   return new Promise((res) => {
     const sc = document.createElement('script');
-    sc.src = 'data/changelog.js?v=' + APP_VERSION;
+    sc.src = 'data/app/changelog.js?v=' + APP_VERSION;
     const done = () => { CHANGELOG = window.CHANGELOG || []; res(CHANGELOG); };
     sc.onload = done; sc.onerror = done;
     document.head.appendChild(sc);

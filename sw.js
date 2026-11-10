@@ -1,5 +1,5 @@
 // Offline cache. Bump VERSION (keep it equal to APP_VERSION in app.js) on every push.
-const VERSION = 'o3k-1.235.1';
+const VERSION = 'o3k-1.235.2';
 // App shell: replaced as a whole with every version.
 const FILES = [
   './',
@@ -52,7 +52,7 @@ const FILES = [
   'js/tools.js',
   'js/boot.js',
   'config.js',
-  'data/changelog.js',
+  'data/app/changelog.js',
   'manifest.webmanifest',
   'fonts/anuphan-thai-700.woff2',
   'icons/apple-touch-icon.png',
@@ -68,11 +68,13 @@ const FILES = [
 // the server says has changed (conditional request), so a new version doesn't fetch ~2 MB of unchanged data.
 const DATA_CACHE = 'o3k-data';
 const DATA = [
-  'data/roots.js',
-  'data/ukus.js',
-  'data/stories/real.js',
-  'data/play.js',
-  'data/guide.js',
+  // app/: in-app manual and game engine (the changelog is in FILES: it changes every version)
+  'data/app/play.js',
+  'data/app/guide.js',
+  // sets/: ready-made word sets and goal tags
+  'data/sets/presets.js',
+  'data/sets/tags.js',
+  // words/: word lists
   'data/words/a1.js',
   'data/words/a2.js',
   'data/words/b1.js',
@@ -84,51 +86,59 @@ const DATA = [
   'data/words/bsl.js',
   'data/words/it.js',
   'data/words/health.js',
+  // stories/: short stories
+  'data/stories/real.js',
   'data/stories/a1.js',
   'data/stories/a2.js',
   'data/stories/b1.js',
   'data/stories/b2.js',
   'data/stories/c1.js',
   'data/stories/c2.js',
-  'data/collocations.js',
-  'data/pairs.js',
-  'data/families.js',
-  'data/phrasal.js',
-  'data/synonyms.js',
-  'data/affixes.js',
-  'data/idioms.js',
-  'data/irregular.js',
-  'data/depprep.js',
-  'data/mistakes.js',
-  'data/grampat.js',
-  'data/realtext.js',
-  'data/workphr.js',
-  'data/bizcol.js',
-  'data/register.js',
-  'data/emails.js',
-  'data/abbr.js',
-  'data/roleplay.js',
-  'data/meetingtalk.js',
-  'data/interview.js',
-  'data/devtalk.js',
-  'data/saywrong.js',
-  'data/itcol.js',
-  'data/doctor.js',
-  'data/thaitalk.js',
-  'data/chat.js',
-  'data/presets.js',
-  'data/toeicp1.js',
-  'data/toeicp2.js',
-  'data/toeicp3.js',
-  'data/toeicp4.js',
-  'data/toeicp5.js',
-  'data/toeicp6.js',
-  'data/toeicp7.js',
-  'data/emoji.js',
-  'data/cases.js',
-  'data/paths.js',
-  'data/situations.js',
-  'data/tags.js',
+  // lexis/: vocabulary: collocations, families, phrasal verbs, idioms, roots, real texts ...
+  'data/lexis/roots.js',
+  'data/lexis/ukus.js',
+  'data/lexis/collocations.js',
+  'data/lexis/pairs.js',
+  'data/lexis/families.js',
+  'data/lexis/phrasal.js',
+  'data/lexis/synonyms.js',
+  'data/lexis/affixes.js',
+  'data/lexis/idioms.js',
+  'data/lexis/realtext.js',
+  'data/lexis/situations.js',
+  // grammar/: grammar: irregular verbs, prepositions, patterns, common mistakes
+  'data/grammar/irregular.js',
+  'data/grammar/depprep.js',
+  'data/grammar/mistakes.js',
+  'data/grammar/grampat.js',
+  // toeic/: TOEIC Part 1-7 practice
+  'data/toeic/toeicp1.js',
+  'data/toeic/toeicp2.js',
+  'data/toeic/toeicp3.js',
+  'data/toeic/toeicp4.js',
+  'data/toeic/toeicp5.js',
+  'data/toeic/toeicp6.js',
+  'data/toeic/toeicp7.js',
+  // work/: English for work: phrases, collocations, register, emails
+  'data/work/workphr.js',
+  'data/work/bizcol.js',
+  'data/work/register.js',
+  'data/work/emails.js',
+  // phrasebook/: phrase books and role play
+  'data/phrasebook/abbr.js',
+  'data/phrasebook/roleplay.js',
+  'data/phrasebook/meetingtalk.js',
+  'data/phrasebook/interview.js',
+  'data/phrasebook/devtalk.js',
+  'data/phrasebook/saywrong.js',
+  'data/phrasebook/itcol.js',
+  'data/phrasebook/doctor.js',
+  'data/phrasebook/thaitalk.js',
+  'data/phrasebook/chat.js',
+  // fun/: fun zone: emoji, detective cases, choose-your-path stories
+  'data/fun/emoji.js',
+  'data/fun/cases.js',
+  'data/fun/paths.js',
 ];
 const NAV_TIMEOUT = 2500; // ms to wait for the network on app start before opening the cached copy
 const isData = (url) => DATA.includes(url.pathname.slice(new URL(self.registration.scope).pathname.length));
@@ -177,10 +187,18 @@ self.addEventListener('install', (e) => {
   ]).then(() => self.skipWaiting()));
 });
 
+// Delete copies of data files that are not in DATA any more (a file moved or was removed), so old paths do not pile up on the device.
+async function pruneData() {
+  try {
+    const cache = await caches.open(DATA_CACHE);
+    for (const req of await cache.keys()) if (!isData(new URL(req.url))) await cache.delete(req);
+  } catch (err) { /* keep the old copies; they are only wasted space */ }
+}
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== DATA_CACHE).map((k) => caches.delete(k))))
+      .then(pruneData)
       .then(() => self.clients.claim())
   );
 });

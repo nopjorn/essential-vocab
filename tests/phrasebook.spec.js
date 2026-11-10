@@ -1,4 +1,4 @@
-// Phrase books (1.212.0+, js/phrasebook.js): each book has a reference page and a game with its id (qBook in data/play.js).
+// Phrase books (1.212.0+, js/phrasebook.js): each book has a reference page and a game with its id (qBook in data/app/play.js).
 const { test, expect } = require('@playwright/test');
 const { openApp, readState } = require('./helpers');
 // an option whose whole text is t (options can contain each other, e.g. คิว / คิว-อี)

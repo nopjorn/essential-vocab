@@ -1,6 +1,6 @@
 // TOEIC Part 5 style questions (1.183.0): original workplace sentences with one blank, written for this app.
 // Row: [type ('form' word form | 'vocab' meaning | 'gram' grammar), sentence with ___, answer, [3 wrong options], Thai translation, Thai tip]
-// Only one option may fit (a test checks the shape). Lazy-loaded by loadP5() in js/lexis2.js; game `toeic5` (qP5 in data/play.js).
+// Only one option may fit (a test checks the shape). Lazy-loaded by loadP5() in js/lexis2.js; game `toeic5` (qP5 in data/app/play.js).
 window.TOEICP5 = [
   ['form', 'Please submit your ___ for travel expenses by Friday.', 'reimbursement', ['reimburse', 'reimbursed', 'reimbursable'], 'กรุณาส่งเรื่องเบิกค่าเดินทางภายในวันศุกร์', 'หลัง your ต้องเป็นคำนาม → reimbursement (-ment = คำนาม)'],
   ['form', 'The new software is fully ___ with our existing system.', 'compatible', ['compatibility', 'compatibly', 'compatibilities'], 'ซอฟต์แวร์ใหม่ใช้ร่วมกับระบบเดิมของเราได้ทั้งหมด', 'is fully ___ with = be + คำคุณศัพท์ → compatible'],

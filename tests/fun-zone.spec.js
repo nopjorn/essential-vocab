@@ -208,7 +208,7 @@ test('album: mastered words are cards with rarity, foil filter, opens the word s
 /* ---------- 1.120: detective cases, ร้านน้องคำ, ghost race ---------- */
 test('cases data: every case has 3 suspects with notes, Thai for every clue, 2 reading questions with valid answers', async () => {
   const fs = require('fs'), vm = require('vm'), ctx = { window: {} };
-  vm.runInNewContext(fs.readFileSync(require('path').join(__dirname, '..', 'data', 'cases.js'), 'utf8'), ctx);
+  vm.runInNewContext(fs.readFileSync(require('path').join(__dirname, '..', 'data', 'fun', 'cases.js'), 'utf8'), ctx);
   const C = ctx.window.CASES;
   expect(C.length).toBeGreaterThanOrEqual(8);
   expect(new Set(C.map((c) => c.id)).size).toBe(C.length);
@@ -387,7 +387,7 @@ test('card sets: a topic\'s picture words all mastered can be claimed once for c
 /* ---------- 1.122: room, paths, picture story, sentence builder, bedtime, new cases ---------- */
 test('paths data: every choice leads to a node of the same story, every node is reachable, 3+ endings each', async () => {
   const fs = require('fs'), vm = require('vm'), ctx = { window: {} };
-  vm.runInNewContext(fs.readFileSync(require('path').join(__dirname, '..', 'data', 'paths.js'), 'utf8'), ctx);
+  vm.runInNewContext(fs.readFileSync(require('path').join(__dirname, '..', 'data', 'fun', 'paths.js'), 'utf8'), ctx);
   for (const st of ctx.window.PATHS) {
     const seen = new Set([st.start]), q = [st.start];
     for (let k = 0; k < q.length; k++) for (const [en, th, next] of st.nodes[q[k]].ch || []) { expect(st.nodes[next], `${st.id}: ${next}`).toBeTruthy(); expect(en && /[฀-๿]/.test(th)).toBeTruthy(); if (!seen.has(next)) { seen.add(next); q.push(next); } }

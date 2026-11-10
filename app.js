@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.235.1';
+const APP_VERSION = '1.235.2';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -110,7 +110,7 @@ const ipaHtml = (i) => esc(i || '').replace(IPA_STRESS, 'ˈ<b class="ipa-str">$1
 const TOPIC_LABEL = Object.fromEntries([...TOPICS, ...TOPIC_GROUPS].map(([id, ic, th]) => [id, `${ic} ${th}`]));
 const W = window.WORDS.slice().sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
   .map(([w, p, l, i, t, e, et, tp, ...more], idx) => ({ idx, w, p, l, i, t, e, et, g: more.includes('T') ? 'TOE' : more.includes('A') ? 'AWL' : more.includes('B') ? 'BIZ' : more.includes('I') ? 'IT' : more.includes('H') ? 'MED' : more.includes(5) ? (l === 'B2' ? 'B2x' : 'C1') : l, tp: tp || '', xe: more.find(Array.isArray) || [] }));
-// Goal tags (data/tags.js): hand-picked words for travel, work, exams …; a word may have several.
+// Goal tags (data/sets/tags.js): hand-picked words for travel, work, exams …; a word may have several.
 const TAGS = window.TAGS || [];
 const TAG_LABEL = Object.fromEntries(TAGS.map((t) => [t.id, `${t.icon} ${t.th}`]));
 const TAGS_OF = new Map();

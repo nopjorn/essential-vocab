@@ -96,7 +96,7 @@ const GAMES = {
 Object.defineProperty(GAMES, 'stage', { value: { icon: '🗺️', name: 'แผนที่ด่าน', desc: '' }, enumerable: false });
 // Games whose data is lazy-loaded (stories / collocations) or built from sentences instead of the word pool.
 const STORY_GAMES = ['sCloze', 'sOrder'];
-// Games built from data/pairs.js (confusable words, minimal pairs): not tied to the word list or its schedule.
+// Games built from data/lexis/pairs.js (confusable words, minimal pairs): not tied to the word list or its schedule.
 const PAIR_GAMES = ['confuse', 'minpair'];
 // Skill games with their own items (idx -1): practice only, no flashcard scheduling.
 // Generated skill games: the questions are made up on the spot, so they are not scheduled (no S.lex keys).
@@ -698,14 +698,14 @@ function startGame(id) {
   playQuiz(id === 'review' ? pick(['en2th', 'th2en', 'listen']) : id === 'emojiRun' ? 'emoji' : id === 'survival' || id === 'timeAttack' ? 'en2th' : id, src, id, deckRun);
 }
 
-// The game engine (playQuiz / playMatch) lives in data/play.js. Until it has loaded these stubs load it and call the real
+// The game engine (playQuiz / playMatch) lives in data/app/play.js. Until it has loaded these stubs load it and call the real
 // functions, which replace them as globals (idle prefetch in boot.js makes that wait rare).
 let playOn = false;
 function loadPlay() {
   if (playOn) return Promise.resolve(true);
   return new Promise((res) => {
     const sc = document.createElement('script');
-    sc.src = 'data/play.js?v=' + APP_VERSION;
+    sc.src = 'data/app/play.js?v=' + APP_VERSION;
     sc.onload = () => { playOn = true; res(true); };
     sc.onerror = () => { sc.remove(); res(false); };
     document.head.appendChild(sc);
