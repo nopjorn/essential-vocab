@@ -12,7 +12,7 @@ test('IT set: own group, settings chip, badge colour, stats row, not on the CEFR
   }));
   expect(info.n).toBeGreaterThanOrEqual(200);
   delete info.n;
-  expect(info).toEqual({ label: 'IT', extra: ['TOE', 'AWL', 'BIZ', 'IT', 'MED'], cefr: true, ladder: false, tower: false });
+  expect(info).toEqual({ label: 'IT', extra: ['TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL'], cefr: true, ladder: false, tower: false });
 
   await page.evaluate(() => go('settings'));
   await page.evaluate(() => { document.querySelector('details[data-g="lv"]').open = true; });

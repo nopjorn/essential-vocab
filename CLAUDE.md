@@ -54,6 +54,7 @@ Study groups (`w.g`): `A1 A2 B1 B2` = Oxford 3000; `B2x` (shown "B2+") and `C1` 
 `BIZ` (shown "ธุรกิจ", 1.195) = `data/words/bsl.js`, 354 Business Service List words not in any other list (rows end with `'B'`, alphabetical; same rules; colour `--biz`; RARITY 📊; all 354 picks done in 1.195.3).
 `IT` (shown "IT", 1.210) = `data/words/it.js`, 229 software / IT words written for the app, not in any other list (rows end with `'I'`, alphabetical; same rules; colour `--it`; RARITY 💻; the dev/devops presets use them as list words).
 `MED` (shown "สุขภาพ", 1.215) = `data/words/health.js`, 158 health / doctor / medicine words written for the app, not in any other list (rows end with `'H'`, alphabetical; same rules; colour `--med`; RARITY 🩺; the clinic preset uses them as list words; phrases for the doctor are the `doctor` phrase book).
+`POL` (shown "การเมือง", 1.237) = `data/words/politics.js`, 246 politics / election / parliament / diplomacy words written for the app, not in any other list (rows end with `'P'`, alphabetical; same rules; colour `--pol`; RARITY 🗳️; examples stay neutral: no real living politicians or parties, royalty words use foreign / historical facts; data.spec also checks every example holds the word for fill-in-the-blank).
 
 
 ## State (localStorage key `oxford3000.v1` — never rename it, or users lose progress)

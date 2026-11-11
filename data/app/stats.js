@@ -198,7 +198,7 @@ function renderStats() {
   const lvOn = (l) => S.settings.levels.includes(l) || W.some((w) => w.g === l && S.prog[w.w]);
   const lvSet = (name, sub, ls, top) => { const on = ls.filter(lvOn); return on.length ? `<div class="small muted" style="margin-top:${top}px"><b>${name}</b> (${sub})</div>${on.map(lvRow).join('')}` : ''; };
   const lvRest = [...LEVELS_3000, ...LEVELS_5000, ...LEVELS_EXTRA].filter((l) => !lvOn(l));
-  const lvRows = lvSet('ชุด 3000 คำ', 'คำหลัก', LEVELS_3000, 8) + lvSet('ชุด 5000 คำ', 'คำเพิ่มเติม', LEVELS_5000, 12) + lvSet('ชุดเสริม', 'TOEIC · วิชาการ · ธุรกิจ · IT · สุขภาพ', LEVELS_EXTRA, 12)
+  const lvRows = lvSet('ชุด 3000 คำ', 'คำหลัก', LEVELS_3000, 8) + lvSet('ชุด 5000 คำ', 'คำเพิ่มเติม', LEVELS_5000, 12) + lvSet('ชุดเสริม', 'TOEIC · วิชาการ · ธุรกิจ · IT · สุขภาพ · การเมือง', LEVELS_EXTRA, 12)
     + (lvRest.length ? `<details class="lv-more"><summary>ระดับอื่นที่ยังไม่ได้เริ่ม (${lvRest.map((l) => LV_LABEL[l]).join(' · ')})</summary>${lvRest.map(lvRow).join('')}</details>` : '');
 
   view.innerHTML = `

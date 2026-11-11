@@ -21,7 +21,7 @@ const need = (k) => { const f = arg(k); if (!f || !fs.existsSync(f)) { console.e
 // App words
 const ctx = vm.createContext({ window: { WORDS: [] } });
 for (const f of fs.readdirSync(path.join(ROOT, 'data/words')).filter((f) => f.endsWith('.js'))) vm.runInContext(fs.readFileSync(path.join(ROOT, 'data/words', f), 'utf8'), ctx);
-const GROUP = (r) => (r[r.length - 1] === 'T' ? 'TOE' : r[r.length - 1] === 'A' ? 'AWL' : r[r.length - 1] === 'B' ? 'BIZ' : r[r.length - 1] === 'I' ? 'IT' : r[r.length - 1] === 'H' ? 'MED'
+const GROUP = (r) => (r[r.length - 1] === 'T' ? 'TOE' : r[r.length - 1] === 'A' ? 'AWL' : r[r.length - 1] === 'B' ? 'BIZ' : r[r.length - 1] === 'I' ? 'IT' : r[r.length - 1] === 'H' ? 'MED' : r[r.length - 1] === 'P' ? 'POL'
   : r.includes(5) ? (r[2] === 'C1' ? 'C1' : 'B2x') : r[2]);
 const rows = ctx.window.WORDS.map((r) => ({ w: r[0], lw: r[0].toLowerCase(), g: GROUP(r) }));
 const CORE = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1'];
@@ -124,7 +124,7 @@ ${byGroup.map((x) => `| ${x.g === 'B2x' ? 'B2+' : x.g} | ${x.total} | ${x.ngsl} 
 CMUdict มีคำอ่านของ **${cmuHit} จาก ${coreWords.length} คำ (${pct(cmuHit, coreWords.length)})** ในชุดหลัก (เป็นสำเนียงอเมริกันแบบ ARPAbet ต้องแปลงเป็น IPA) คำที่เหลือ (ส่วนใหญ่เป็นวลีหรือคำหายาก) ต้องเขียนเองหรือใช้ Wiktionary (CC BY-SA)
 
 ## 5. ชุดเสริมที่ไม่ต้องเปลี่ยน
-TOEIC ${rows.filter((r) => r.g === 'TOE').length} คำ · วิชาการ ${rows.filter((r) => r.g === 'AWL').length} คำ · ธุรกิจ ${rows.filter((r) => r.g === 'BIZ').length} คำ ใช้ TSL / NAWL / BSL (CC BY-SA 4.0) อยู่แล้ว · IT ${rows.filter((r) => r.g === 'IT').length} คำ และสุขภาพ ${rows.filter((r) => r.g === 'MED').length} คำ เขียนขึ้นเอง
+TOEIC ${rows.filter((r) => r.g === 'TOE').length} คำ · วิชาการ ${rows.filter((r) => r.g === 'AWL').length} คำ · ธุรกิจ ${rows.filter((r) => r.g === 'BIZ').length} คำ ใช้ TSL / NAWL / BSL (CC BY-SA 4.0) อยู่แล้ว · IT ${rows.filter((r) => r.g === 'IT').length} คำ สุขภาพ ${rows.filter((r) => r.g === 'MED').length} คำ และการเมือง ${rows.filter((r) => r.g === 'POL').length} คำ เขียนขึ้นเอง
 `;
 fs.writeFileSync(path.join(ROOT, 'docs/word-list-audit.md'), out);
 console.log(out);
