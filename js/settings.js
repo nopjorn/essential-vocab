@@ -42,7 +42,7 @@ function renderSettings() {
       <div class="chips grid" id="lvls">${LEVELS_3000.map(lvChip).join('')}</div>
       <div class="small muted" style="margin:14px 0 8px"><b>ชุด 5000 คำ</b> · คำเพิ่มเติมระดับสูง</div>
       <div class="chips grid" id="lvls5">${LEVELS_5000.map(lvChip).join('')}</div>
-      <div class="small muted" style="margin:14px 0 8px"><b>ชุดเสริม</b> · TOEIC = ศัพท์ที่ทำงาน การเดินทาง ธุรกิจ · วิชาการ = ศัพท์อ่านตำรา บทความ งานวิจัย (IELTS/TOEFL) · ธุรกิจ = ศัพท์การเงิน การลงทุน สัญญา ข่าวเศรษฐกิจ · IT = ศัพท์โปรแกรมเมอร์และงานไอที · สุขภาพ = อาการป่วย หาหมอ ซื้อยา · การเมือง = ข่าวการเมือง การเลือกตั้ง รัฐสภา การทูต</div>
+      <div class="small muted" style="margin:14px 0 8px"><b>ชุดเสริม</b> · TOEIC = ศัพท์ที่ทำงาน การเดินทาง ธุรกิจ · วิชาการ = ศัพท์อ่านตำรา บทความ งานวิจัย (IELTS/TOEFL) · ธุรกิจ = ศัพท์การเงิน การลงทุน สัญญา ข่าวเศรษฐกิจ · IT = ศัพท์โปรแกรมเมอร์และงานไอที · สุขภาพ = อาการป่วย หาหมอ ซื้อยา · การเมือง = ข่าวการเมือง การเลือกตั้ง รัฐสภา การทูต · ทำอาหาร = วิธีปรุง เครื่องครัว วัตถุดิบไทย รสชาติ</div>
       <div class="chips grid" id="lvlsX">${LEVELS_EXTRA.map(lvChip).join('')}</div>
       <p class="small muted">A1–A2 = พื้นฐาน, B1–B2 = ระดับกลาง, B2+ และ C1 = ระดับสูง, ชุดเสริมมีเฉพาะคำที่ไม่ซ้ำกับชุด 3000/5000 (เลือกได้หลายชุด)</p>
       <button class="set-row set-link" id="toPlace"><span>🎯 แบบทดสอบวัดระดับ<br><span class="small muted">ไม่แน่ใจว่าควรเริ่มระดับไหน? ทำแบบทดสอบแล้วแอปจะข้ามคำที่คุณรู้แล้วให้</span></span><span class="muted">›</span></button>

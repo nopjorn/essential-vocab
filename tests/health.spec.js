@@ -12,7 +12,7 @@ test('health set: own group, settings chip, badge colour, stats row, not on the 
   }));
   expect(info.n).toBeGreaterThanOrEqual(150);
   delete info.n;
-  expect(info).toEqual({ label: 'สุขภาพ', extra: ['TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL'], cefr: true, ladder: false, tower: false });
+  expect(info).toEqual({ label: 'สุขภาพ', extra: ['TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL', 'COOK'], cefr: true, ladder: false, tower: false });
 
   await page.evaluate(() => go('settings'));
   await page.evaluate(() => { document.querySelector('details[data-g="lv"]').open = true; });
