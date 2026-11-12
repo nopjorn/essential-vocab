@@ -18,11 +18,21 @@
 - [x] 💡 **📱 โซเชียล / ออนไลน์** (เสร็จ: 1.241.0 — กลุ่ม `SOC` 214 คำ `data/words/social.js` แถวลงท้าย `'S'`) (5/16) — ยังไม่มี: follower, meme, selfie, emoji, podcast, binge, unfollow, cringe, vibe · กลุ่มผู้ใช้วัยรุ่นน่าจะชอบ · ใส่แต่คำที่ใช้กันนาน สแลงที่มาไวไปไว และตัวย่อ ให้อยู่ในสมุดวลี `chat` / `abbr` ตามเดิม
 - [x] 💡 **🏋️ ออกกำลังกาย / กีฬา** (เสร็จ: 1.242.0 — กลุ่ม `FIT` 257 คำ `data/words/sports.js` แถวลงท้าย `'F'` · set ได้ประโยคตัวอย่างเสริม `xe` เรื่องเซต) (9/16) — ยังไม่มี: cardio, rep, treadmill, dumbbell, squat, warm-up, calorie · คนเล่นฟิตเนสกันเยอะ ได้ยินคำพวกนี้บ่อยทั้งในยิมและคลิปออกกำลังกาย · คำที่มีในคลังแล้วแต่ในยิมใช้คนละความหมาย (เช่น set) ให้เพิ่มเป็นตัวอย่างเสริม `xe` ของแถวเดิมแทนการเพิ่มแถวใหม่
 
+**รอบ 2 (คุยกันเมื่อ 2026-11-12 หลังออก 1.242.0 — เทียบกับคลัง 8,074 คำ รวม COOK FEEL ENV SOC FIT แล้ว):**
+- [x] 🔥 **👶 ครอบครัว / เลี้ยงลูก / โรงเรียน** (เสร็จ: 1.243.0 — กลุ่ม `FAM` 275 คำ `data/words/family.js` แถวลงท้าย `'C'` · มีคำแบบอังกฤษและอเมริกันทั้งคู่ เช่น nappy/diaper, cot/crib, pram/stroller) (4/15) — ยังไม่มี: diaper, nappy, stroller, pram, kindergarten, toddler, babysit, playground, cot, lullaby, pacifier · พ่อแม่ใช้คุยกับครู พี่เลี้ยง หรือเลี้ยงลูกสองภาษา
+- [ ] 🔥 **🐶 สัตว์เลี้ยง** (4/15) — ยังไม่มี: leash, kennel, vet, groom, puppy, kitten, neuter, paw, flea · คนเลี้ยงหมาแมวเยอะมาก ใช้ทั้งที่คลินิกสัตว์ ร้านอาบน้ำตัดขน และคลิปสัตว์เลี้ยง
+- [ ] ⭐ **💄 ความงาม / แฟชั่น / เสื้อผ้า** (6/16) — ยังไม่มี: moisturizer, lipstick, mascara, shampoo, perfume, zipper, hem, collar, hairdresser · สกินแคร์ เครื่องสำอาง ร้านทำผม ตัดเย็บ/แก้เสื้อผ้า
+- [ ] ⭐ **🚗 รถยนต์ / ขับรถ** (7/16) — ยังไม่มี: windshield, steering wheel, seatbelt, bumper, speedometer, pedal, honk, roundabout, flat tire · เช่ารถเที่ยวต่างประเทศ อู่ซ่อมรถ ประกันรถ
+- [ ] ⭐ **🏠 บ้าน / ซ่อมแซม / ทำความสะอาด** (8/16) — ยังไม่มี: faucet, screwdriver, hammer, mop, detergent, bleach, mould, fuse · เรียกช่าง แจ้งซ่อมกับเจ้าของห้อง ของใช้ทำความสะอาด
+- [ ] 💡 **🙏 วัฒนธรรมไทย / ศาสนา / เทศกาล** (9/16) — ยังไม่มี: alms, shrine, incense, ordination, lantern, amulet · ใช้อธิบายวัด ทำบุญ สงกรานต์ ลอยกระทงให้ชาวต่างชาติฟัง (คู่กับสมุดวลี `thaitalk`)
+
 ## 📦 ชุดสำเร็จรูป (คลังมีคำเกือบครบแล้ว เพิ่มใน `data/sets/presets.js` + คำของชุดเอง `own` ไม่กี่คำ)
 - [ ] ⭐ **🛎️ งานโรงแรม / ไกด์ (มุมพนักงาน)** (11/16) — `own`: housekeeping, turndown, bellboy, souvenir, upsell · ชุด `hotel` ที่มีตอนนี้เป็นมุมของแขก แต่งานบริการเป็นอาชีพใหญ่ของไทย ควรมีชุดที่พนักงานต้อนรับ / แม่บ้าน / ไกด์ / สปาใช้
 - [ ] ⭐ **🏭 โรงงาน / วิศวกรรม** (12/16) — `own`: forklift, conveyor, calibration, kaizen (+ QC, lean) · สำหรับคนทำงานโรงงานที่ใช้ภาษาอังกฤษ (โรงงานญี่ปุ่น, EEC)
 - [ ] 💡 **📊 ลงทุน / หุ้น / กองทุน** (15/16) — `own`: crypto · แทบไม่ต้องเพิ่มคำ แค่รวม dividend, portfolio, equity, yield, diversify… เป็นชุดเดียว (ไม่ซ้ำกับ `finance` ซึ่งเป็นการเงินองค์กร)
-- [ ] 💡 **⚖️ สัญญา / กฎหมายใกล้ตัว** (13/16) — `own`: notary, affidavit (liability มีเป็นคำของชุดอื่นแล้ว) · สัญญาเช่า สัญญาจ้าง ใบสั่ง แจ้งความ
+- [ ] 💡 **⚖️ สัญญา / กฎหมายใกล้ตัว** (13/16; รอบ 2 สุ่มใหม่ได้ 15/15: lawsuit, verdict, bail, tenant, landlord… มีครบ) — `own`: notary, affidavit (liability มีเป็นคำของชุดอื่นแล้ว) · สัญญาเช่า สัญญาจ้าง ใบสั่ง แจ้งความ
+- [ ] ⭐ **💰 การเงินส่วนตัว** (15/15, รอบ 2) — `own`: ไม่ต้องมี · ผ่อนสินค้า บิลค่าน้ำไฟ ภาษี ประกัน เงินออม (installment, refund, overdue, utility, deduction, premium, mortgage…) ไม่ซ้ำกับ `bank` / `finance`
+- [ ] 💡 **🧳 เที่ยว / แบ็กแพ็ก** (10/15, รอบ 2) — `own`: layover, hostel, souvenir, jet lag, snorkel · รวม itinerary, sightseeing, excursion, landmark, ferry ไม่ซ้ำกับ `airport` / `hotel` / `transport`
 - [ ] 💡 **🔬 วิทยาศาสตร์ ม.ปลาย** (14/16) — `own`: photosynthesis, orbit · ใช้คู่กับกลุ่มวิชาการ (AWL) ที่มีอยู่แล้ว
 
 ## ขั้นตอนทำกลุ่มคำใหม่ (ทำตามแบบ POL ใน 1.237.0)

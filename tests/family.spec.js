@@ -1,0 +1,32 @@
+// Family / parenting / school set (1.243.0+): relatives, baby care, toys, parenting and school words in their own group 'FAM', picked in settings next to TOEIC and academic,
+// kept out of the CEFR ladder (survival, tower, placement).
+const { test, expect } = require('@playwright/test');
+const { openApp } = require('./helpers');
+
+test('family set: own group, settings chip, badge colour, stats row, not on the CEFR ladder', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1'] } });
+  const info = await page.evaluate(() => ({
+    n: W.filter((w) => w.g === 'FAM').length, label: LV_LABEL.FAM, extra: LEVELS_EXTRA,
+    cefr: W.filter((w) => w.g === 'FAM').every((w) => ['A1', 'A2', 'B1', 'B2', 'C1'].includes(w.l)),
+    ladder: LEVELS_CEFR.includes('FAM'), tower: twPool(55).some((w) => w.g === 'FAM'),
+  }));
+  expect(info.n).toBeGreaterThanOrEqual(200);
+  delete info.n;
+  expect(info).toEqual({ label: 'ครอบครัว/โรงเรียน', extra: ['TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL', 'COOK', 'FEEL', 'ENV', 'SOC', 'FIT', 'FAM'], cefr: true, ladder: false, tower: false });
+
+  await page.evaluate(() => go('settings'));
+  await page.evaluate(() => { document.querySelector('details[data-g="lv"]').open = true; });
+  const chip = page.locator('#lvlsX .chip[data-v="FAM"]');
+  await expect(chip).toContainText(/ครอบครัว\/โรงเรียน · \d+ คำ/);
+  await chip.click();
+  await page.locator('#lvls .chip[data-v="A1"]').click();
+  expect(await page.evaluate(() => S.settings.levels)).toEqual(['FAM']);
+
+  await page.evaluate(() => go('cards'));
+  await expect(page.locator('.fc.lvc-FAM').first()).toBeVisible();
+  await page.evaluate(() => go('stats'));
+  await expect(page.locator('.lvl-row.lv-FAM')).toHaveCount(1);
+  await page.evaluate(() => go('list'));
+  await expect(page.locator('.chip.lv-FAM')).toHaveCount(1);
+  expect(errors).toEqual([]);
+});

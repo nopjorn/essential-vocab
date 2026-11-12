@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.242.0';
+const APP_VERSION = '1.243.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -45,7 +45,7 @@ document.addEventListener('focusout', () => setTimeout(syncKeyboard, 100));
 
 /* ---------- data ---------- */
 // WORDS rows (data/words/<level>.js): [word, pos, level, ipa, thai, example, thai example, topic id, 5 if Oxford 5000-only]
-// g = study group: A1–B2 are Oxford 3000; B2x and C1 are the extra Oxford 5000 words; TOE = the TOEIC set (data/words/toeic.js, rows end with 'T', 1.179); AWL = academic words (data/words/nawl.js, rows end with 'A', 1.180); BIZ = business words (data/words/bsl.js, rows end with 'B', 1.195); IT = software/IT words (data/words/it.js, rows end with 'I', 1.210); MED = health words (data/words/health.js, rows end with 'H', 1.215); POL = politics words (data/words/politics.js, rows end with 'P', 1.237); COOK = cooking words (data/words/cooking.js, rows end with 'K', 1.238); FEEL = feelings / personality words (data/words/feelings.js, rows end with 'E', 1.239); ENV = environment words (data/words/environment.js, rows end with 'G', 1.240); SOC = social media / online words (data/words/social.js, rows end with 'S', 1.241); FIT = exercise / sports words (data/words/sports.js, rows end with 'F', 1.242).
+// g = study group: A1–B2 are Oxford 3000; B2x and C1 are the extra Oxford 5000 words; TOE = the TOEIC set (data/words/toeic.js, rows end with 'T', 1.179); AWL = academic words (data/words/nawl.js, rows end with 'A', 1.180); BIZ = business words (data/words/bsl.js, rows end with 'B', 1.195); IT = software/IT words (data/words/it.js, rows end with 'I', 1.210); MED = health words (data/words/health.js, rows end with 'H', 1.215); POL = politics words (data/words/politics.js, rows end with 'P', 1.237); COOK = cooking words (data/words/cooking.js, rows end with 'K', 1.238); FEEL = feelings / personality words (data/words/feelings.js, rows end with 'E', 1.239); ENV = environment words (data/words/environment.js, rows end with 'G', 1.240); SOC = social media / online words (data/words/social.js, rows end with 'S', 1.241); FIT = exercise / sports words (data/words/sports.js, rows end with 'F', 1.242); FAM = family / parenting / school words (data/words/family.js, rows end with 'C', 1.243).
 // Topics (what a word row's topic id means). Pick lists show them grouped: a group id (TOPIC_GROUPS) selects every topic inside it.
 const TOPICS = [
   ['people', '👪', 'คนและครอบครัว'], ['anatomy', '🫀', 'ร่างกายและอวัยวะ'], ['health', '🏥', 'สุขภาพและการแพทย์'], ['food', '🍜', 'อาหารและเครื่องดื่ม'],
@@ -109,7 +109,7 @@ const IPA_STRESS = new RegExp(`ˈ([^${IPA_V}ˈˌ./\\s()]*[${IPA_V}][${IPA_V}ːˑ
 const ipaHtml = (i) => esc(i || '').replace(IPA_STRESS, 'ˈ<b class="ipa-str">$1</b>');
 const TOPIC_LABEL = Object.fromEntries([...TOPICS, ...TOPIC_GROUPS].map(([id, ic, th]) => [id, `${ic} ${th}`]));
 const W = window.WORDS.slice().sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
-  .map(([w, p, l, i, t, e, et, tp, ...more], idx) => ({ idx, w, p, l, i, t, e, et, g: more.includes('T') ? 'TOE' : more.includes('A') ? 'AWL' : more.includes('B') ? 'BIZ' : more.includes('I') ? 'IT' : more.includes('H') ? 'MED' : more.includes('P') ? 'POL' : more.includes('K') ? 'COOK' : more.includes('E') ? 'FEEL' : more.includes('G') ? 'ENV' : more.includes('S') ? 'SOC' : more.includes('F') ? 'FIT' : more.includes(5) ? (l === 'B2' ? 'B2x' : 'C1') : l, tp: tp || '', xe: more.find(Array.isArray) || [] }));
+  .map(([w, p, l, i, t, e, et, tp, ...more], idx) => ({ idx, w, p, l, i, t, e, et, g: more.includes('T') ? 'TOE' : more.includes('A') ? 'AWL' : more.includes('B') ? 'BIZ' : more.includes('I') ? 'IT' : more.includes('H') ? 'MED' : more.includes('P') ? 'POL' : more.includes('K') ? 'COOK' : more.includes('E') ? 'FEEL' : more.includes('G') ? 'ENV' : more.includes('S') ? 'SOC' : more.includes('F') ? 'FIT' : more.includes('C') ? 'FAM' : more.includes(5) ? (l === 'B2' ? 'B2x' : 'C1') : l, tp: tp || '', xe: more.find(Array.isArray) || [] }));
 // Goal tags (data/sets/tags.js): hand-picked words for travel, work, exams …; a word may have several.
 const TAGS = window.TAGS || [];
 const TAG_LABEL = Object.fromEntries(TAGS.map((t) => [t.id, `${t.icon} ${t.th}`]));
@@ -119,13 +119,13 @@ const tagsOf = (w) => TAGS_OF.get(w.w) || [];
 const hasTag = (w, id) => tagsOf(w).includes(id);
 // New words follow the chosen topic (settings.topic) and goal tag (settings.goal); empty = any.
 const inTopic = (w) => (!S.settings.topic || topicMatch(S.settings.topic, w.tp)) && (!S.settings.goal || hasTag(w, S.settings.goal));
-const LEVELS = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1', 'TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL', 'COOK', 'FEEL', 'ENV', 'SOC', 'FIT'];
+const LEVELS = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1', 'TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL', 'COOK', 'FEEL', 'ENV', 'SOC', 'FIT', 'FAM'];
 // CEFR-ordered groups only (easy → hard): survival, the tower and placement climb these; the extra sets (TOEIC, academic) sit outside the ladder.
 const LEVELS_CEFR = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1'];
 const LEVELS_3000 = ['A1', 'A2', 'B1', 'B2'];
 const LEVELS_5000 = ['B2x', 'C1'];
-const LEVELS_EXTRA = ['TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL', 'COOK', 'FEEL', 'ENV', 'SOC', 'FIT'];
-const LV_LABEL = { A1: 'A1', A2: 'A2', B1: 'B1', B2: 'B2', B2x: 'B2+', C1: 'C1', C2: 'C2', TOE: 'TOEIC', AWL: 'วิชาการ', BIZ: 'ธุรกิจ', IT: 'IT', MED: 'สุขภาพ', POL: 'การเมือง', COOK: 'ทำอาหาร', FEEL: 'อารมณ์/นิสัย', ENV: 'สิ่งแวดล้อม', SOC: 'โซเชียล/ออนไลน์', FIT: 'ออกกำลังกาย/กีฬา' };
+const LEVELS_EXTRA = ['TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL', 'COOK', 'FEEL', 'ENV', 'SOC', 'FIT', 'FAM'];
+const LV_LABEL = { A1: 'A1', A2: 'A2', B1: 'B1', B2: 'B2', B2x: 'B2+', C1: 'C1', C2: 'C2', TOE: 'TOEIC', AWL: 'วิชาการ', BIZ: 'ธุรกิจ', IT: 'IT', MED: 'สุขภาพ', POL: 'การเมือง', COOK: 'ทำอาหาร', FEEL: 'อารมณ์/นิสัย', ENV: 'สิ่งแวดล้อม', SOC: 'โซเชียล/ออนไลน์', FIT: 'ออกกำลังกาย/กีฬา', FAM: 'ครอบครัว/โรงเรียน' };
 const lvNames = (ls) => ls.map((l) => LV_LABEL[l]).join(', ');
 const DAY = 86400000;
 // Review intervals (days) for each box. Box >= MASTERED counts as "จำได้แล้ว".

@@ -12,7 +12,7 @@ test('academic set: own group, settings chip, badge colour, stats row, not on th
   }));
   expect(info.n).toBeGreaterThanOrEqual(80);
   delete info.n;
-  expect(info).toEqual({ label: 'วิชาการ', extra: ['TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL', 'COOK', 'FEEL', 'ENV', 'SOC', 'FIT'], cefr: true, ladder: false, tower: false });
+  expect(info).toEqual({ label: 'วิชาการ', extra: ['TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL', 'COOK', 'FEEL', 'ENV', 'SOC', 'FIT', 'FAM'], cefr: true, ladder: false, tower: false });
 
   await page.evaluate(() => go('settings'));
   await page.evaluate(() => { document.querySelector('details[data-g="lv"]').open = true; });

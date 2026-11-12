@@ -12,7 +12,7 @@ test('environment set: own group, settings chip, badge colour, stats row, not on
   }));
   expect(info.n).toBeGreaterThanOrEqual(200);
   delete info.n;
-  expect(info).toEqual({ label: 'สิ่งแวดล้อม', extra: ['TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL', 'COOK', 'FEEL', 'ENV', 'SOC', 'FIT'], cefr: true, ladder: false, tower: false });
+  expect(info).toEqual({ label: 'สิ่งแวดล้อม', extra: ['TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL', 'COOK', 'FEEL', 'ENV', 'SOC', 'FIT', 'FAM'], cefr: true, ladder: false, tower: false });
 
   await page.evaluate(() => go('settings'));
   await page.evaluate(() => { document.querySelector('details[data-g="lv"]').open = true; });
