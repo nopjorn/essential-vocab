@@ -20,7 +20,7 @@
 
 **รอบ 2 (คุยกันเมื่อ 2026-11-12 หลังออก 1.242.0 — เทียบกับคลัง 8,074 คำ รวม COOK FEEL ENV SOC FIT แล้ว):**
 - [x] 🔥 **👶 ครอบครัว / เลี้ยงลูก / โรงเรียน** (เสร็จ: 1.243.0 — กลุ่ม `FAM` 275 คำ `data/words/family.js` แถวลงท้าย `'C'` · มีคำแบบอังกฤษและอเมริกันทั้งคู่ เช่น nappy/diaper, cot/crib, pram/stroller) (4/15) — ยังไม่มี: diaper, nappy, stroller, pram, kindergarten, toddler, babysit, playground, cot, lullaby, pacifier · พ่อแม่ใช้คุยกับครู พี่เลี้ยง หรือเลี้ยงลูกสองภาษา
-- [ ] 🔥 **🐶 สัตว์เลี้ยง** (4/15) — ยังไม่มี: leash, kennel, vet, groom, puppy, kitten, neuter, paw, flea · คนเลี้ยงหมาแมวเยอะมาก ใช้ทั้งที่คลินิกสัตว์ ร้านอาบน้ำตัดขน และคลิปสัตว์เลี้ยง
+- [x] 🔥 **🐶 สัตว์เลี้ยง** (เสร็จ: 1.244.0 — กลุ่ม `PET` 172 คำ `data/words/pets.js` แถวลงท้าย `'D'`) (4/15) — ยังไม่มี: leash, kennel, vet, groom, puppy, kitten, neuter, paw, flea · คนเลี้ยงหมาแมวเยอะมาก ใช้ทั้งที่คลินิกสัตว์ ร้านอาบน้ำตัดขน และคลิปสัตว์เลี้ยง
 - [ ] ⭐ **💄 ความงาม / แฟชั่น / เสื้อผ้า** (6/16) — ยังไม่มี: moisturizer, lipstick, mascara, shampoo, perfume, zipper, hem, collar, hairdresser · สกินแคร์ เครื่องสำอาง ร้านทำผม ตัดเย็บ/แก้เสื้อผ้า
 - [ ] ⭐ **🚗 รถยนต์ / ขับรถ** (7/16) — ยังไม่มี: windshield, steering wheel, seatbelt, bumper, speedometer, pedal, honk, roundabout, flat tire · เช่ารถเที่ยวต่างประเทศ อู่ซ่อมรถ ประกันรถ
 - [ ] ⭐ **🏠 บ้าน / ซ่อมแซม / ทำความสะอาด** (8/16) — ยังไม่มี: faucet, screwdriver, hammer, mop, detergent, bleach, mould, fuse · เรียกช่าง แจ้งซ่อมกับเจ้าของห้อง ของใช้ทำความสะอาด
