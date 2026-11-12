@@ -552,7 +552,7 @@
   ["sensible","adj","B1","/ˈsensəbl/","มีเหตุผล","That's a sensible idea.","นั่นเป็นความคิดที่มีเหตุผล","char"],
   ["seriously","adv","B1","/ˈsɪriəsli/","อย่างจริงจัง","Take your studies seriously.","ตั้งใจเรียนอย่างจริงจัง","degree"],
   ["servant","n","B1","/ˈsɜːrvənt/","คนรับใช้","They have two servants.","พวกเขามีคนรับใช้สองคน","people"],
-  ["set","n/v","B1","/set/","ชุด; ตั้ง, วาง","I bought a new set of plates.","ฉันซื้อจานชุดใหม่","act",[["Set the table for dinner.","จัดโต๊ะสำหรับอาหารเย็น"],["Set your alarm for seven.","ตั้งนาฬิกาปลุกไว้เจ็ดโมง"]]],
+  ["set","n/v","B1","/set/","ชุด; ตั้ง, วาง","I bought a new set of plates.","ฉันซื้อจานชุดใหม่","act",[["Set the table for dinner.","จัดโต๊ะสำหรับอาหารเย็น"],["Set your alarm for seven.","ตั้งนาฬิกาปลุกไว้เจ็ดโมง"],["Do three sets of ten squats.","ทำสควอตสามเซต เซตละสิบครั้ง"]]],
   ["setting","n","B1","/ˈsetɪŋ/","ฉาก, การตั้งค่า","The story's setting is Bangkok.","ฉากของเรื่องคือกรุงเทพฯ","degree",[["Change the settings on your phone.","เปลี่ยนการตั้งค่าในโทรศัพท์ของคุณ"]]],
   ["sex","n","B1","/seks/","เพศ","Write your name, age and sex.","เขียนชื่อ อายุ และเพศ","health"],
   ["sexual","adj","B1","/ˈsekʃuəl/","ทางเพศ","Sexual harassment is not allowed.","การล่วงละเมิดทางเพศเป็นสิ่งต้องห้าม","health"],
