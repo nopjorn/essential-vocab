@@ -144,9 +144,9 @@ function renderHome() {
     prog: () => `<button class="card-box prog-card" id="statsBtn">
       <div class="row" style="justify-content:space-between"><b>📈 ความคืบหน้า</b><span class="small muted">ดูสถิติ ›</span></div>
       ${(() => { // one pass over the words (1.126: two filters per row with status() were ~50 ms of start-up at 4× CPU)
-        const c = { l3: 0, m3: 0, l: 0, m: 0 }, s3 = in3000();
-        for (const w of W) { if (!S.prog[w.w]) continue; const m = status(w) === 'mastered', t = s3.has(w.w); c.l++; if (m) c.m++; if (t) { c.l3++; if (m) c.m3++; } }
-        return [['ชุด 3000 คำ', s3.size, c.l3, c.m3], ['ทุกคำในแอป', W.length, c.l, c.m]];
+        const c = { l3: 0, m3: 0, l: 0, m: 0 }, s3 = in3000(), s5 = in5000();
+        for (const w of W) { if (!S.prog[w.w]) continue; if (!s5.has(w.w)) continue; const m = status(w) === 'mastered', t = s3.has(w.w); c.l++; if (m) c.m++; if (t) { c.l3++; if (m) c.m3++; } }
+        return [['ชุด 3000 คำ', s3.size, c.l3, c.m3], ['ชุด 5000 คำ', s5.size, c.l, c.m]];
       })().map(([name, n, l, m]) => { // 1.181.2: a small double ring per list (outer = learned, inner = remembered) instead of two thin bars
         const pc = (x) => { const v = x / n * 100; return v > 0 && v < 10 ? v.toFixed(1) : Math.round(v); };
         const arc = (r, x, cls) => `<circle class="pr-t" cx="22" cy="22" r="${r}"/><circle class="pr-a ${cls}" cx="22" cy="22" r="${r}" pathLength="100" style="stroke-dashoffset:${x ? Math.min(99, 100 - Math.max(1.5, x / n * 100)).toFixed(1) : 100}" transform="rotate(-90 22 22)"/>`;
