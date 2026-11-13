@@ -75,7 +75,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       <span class="small"><b>${score}</b> แต้ม</span></div>`;
   }
 
-  const quit = () => (ENDLESS && asked ? result() : leave());
+  const quit = () => { if (asked && !ENDLESS) gqLog(gameId, lastOk === false ? 'm' : 'q'); return ENDLESS && asked ? result() : leave(); };
   // น้องคำ in the corner of the question header (1.115, settings.qMascot): cheers a right answer, looks sad on a wrong one.
   let lastOk = null;
   const qmHtml = (anim = '') => (S.settings.qMascot !== false ? `<span class="q-m${anim}" aria-hidden="true">${mascotSvg({ mood: lastOk == null ? 'normal' : lastOk ? 'happy' : 'miss', size: 42, equip: festEquip().equip })}</span>` : '');
@@ -197,8 +197,8 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       <div class="reveal" id="reveal" aria-live="polite">${combo >= 2 ? `<span class="combo">🔥 คอมโบ x${combo}</span>` : ''}</div>`;
     $('#quit').onclick = quit;
     if ((m === 'en2th' || m === 'listen') && !TIMED) speak(w.w);
-    const say = view.querySelector('[data-say]'); if (say) say.onclick = () => speak(w.w);
-    const hb = $('#clozeHint'); if (hb) hb.onclick = () => { $('#clozeTh').hidden = false; hb.remove(); };
+    const say = view.querySelector('[data-say]'); if (say) say.onclick = () => { hintLog(w); speak(w.w); };
+    const hb = $('#clozeHint'); if (hb) hb.onclick = () => { hintLog(w); $('#clozeTh').hidden = false; hb.remove(); };
     let answered = false, tm = null;
     // b = the tapped option, or null when the time ran out
     const choose = (b) => {
@@ -263,6 +263,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     $('#sf').onsubmit = (e) => {
       e.preventDefault(); if (answered) return;
       if (norm(inp.value) === norm(w.w)) return done(tries === 0);
+      typoLog(w, norm(inp.value));
       tries++;
       inp.classList.remove('no'); void inp.offsetWidth; inp.classList.add('no');
       if (tries >= 2) return done(false);
@@ -357,6 +358,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     $('#sf').onsubmit = (e) => {
       e.preventDefault(); if (answered) return;
       if (norm(inp.value) === norm(w.w)) return done(tries === 0);
+      typoLog(w, norm(inp.value));
       tries++;
       inp.classList.remove('no'); void inp.offsetWidth; inp.classList.add('no');
       if (tries >= 2) return done(false);
@@ -509,6 +511,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
         const alts = Array.from(e.results[0]).map((a) => a.transcript);
         if (alts.some((a) => (sentence ? sentenceMatch(a, w.e) : spokenMatch(a, w.w)))) return done(true);
         tries++;
+        if (!sentence) heardLog(w, alts[0]);
         heard.innerHTML = `ได้ยินว่า "<b>${esc(alts[0] || '')}</b>" ลองอีกครั้งนะ 💪 (${tries}/3)`;
         mic.classList.remove('no'); void mic.offsetWidth; mic.classList.add('no');
         if (tries >= 3) done(false);
@@ -1863,6 +1866,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
     const spk = gameId === 'speak' || gameId === 'speakS';
     const soft = spk || gameId === 'order' || gameId === 'sOrder' || gameId === 'dictS' || gameId === 'compose';
     asked++;
+    if (w.idx >= 0) detLog(w, curMode || gameId, ok, qT0 ? Date.now() - qT0 : 0, !curMode || SLOW_MODES.includes(curMode)); // 1.256.0
     if (MOCK) { lexGrade(lexKey(w._part, w), ok); mockLog.push([w._part, ok]); }
     else if (w.idx < 0 && SKILL_GAMES.includes(gameId) && !GEN_GAMES.includes(gameId)) lexGrade(lexKey(gameId, w), ok);
     if (w.idx < 0 || (soft && !ok) || deckRun.practice || noSrs) markActive(!!ok); else gameResult(w, ok, deckRun.map);
@@ -1919,6 +1923,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
   }
 
   function result() {
+    gqLog(typeof gameId !== 'undefined' ? gameId : 'match', 'd'); // 1.256.0 rounds finished
     if (finished) return;
     finished = true;
     if (cleanup) { cleanup(); cleanup = null; }
@@ -2117,6 +2122,7 @@ function playMatch(src, deckRun = {}) {
   cleanup = () => clearInterval(timer);
 
   function result() {
+    gqLog(typeof gameId !== 'undefined' ? gameId : 'match', 'd'); // 1.256.0 rounds finished
     clearInterval(timer);
     const secs = (Date.now() - start) / 1000 + mistakes * 3;
     const score = Math.max(0, Math.round(1000 - secs * 10));

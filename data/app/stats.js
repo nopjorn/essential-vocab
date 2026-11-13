@@ -221,6 +221,7 @@ function renderStats() {
     ${levelCard()}
     <div id="todayHost">${todayCard()}</div>
     ${weekCmpCard()}
+    ${memNowCard()}
     <div class="h2">นิสัยการเล่น <span class="small muted">${h.span} วันล่าสุด</span></div>
     <div class="tiles">
       <div class="tile-s"><b>${h.active}<small>/${h.span}</small></b><span>วันที่เล่น</span></div>
@@ -239,8 +240,11 @@ function renderStats() {
     <div class="h2">ความคืบหน้าแต่ละระดับ</div>
     <div class="card-box">${lvRows}
       <div class="small muted" style="margin-top:8px"><span class="key bl"></span>เรียนแล้ว &nbsp; <span class="key bm"></span>จำได้แล้ว (ทบทวนผ่านหลายรอบ)</div></div>
+    <div class="h2">🌳 ป่าคำศัพท์ <span class="small muted">ชุด 5000</span></div>
+    <div class="card-box" data-lz="tree" style="min-height:220px"></div>
     <div class="h2">📅 การ์ดที่ต้องทบทวน 7 วันข้างหน้า</div>
     <div class="card-box">${forecastChart()}${forecast30()}</div>
+    ${loadCard()}
     ${retCard()}
     ${memCard()}
     ${lvAccCard()}
@@ -249,8 +253,18 @@ function renderStats() {
     ${confCard()}
     ${skillMixCard()}
     ${hardCard()}
+    ${leechWinCard()}
+    ${speedCard()}
+    ${dirCard()}
+    ${heardCard()}
+    ${typoCard()}
     ${skillCard()}
     ${toeicCard()}
+    ${readSpeedCard()}
+    ${quitCard()}
+    ${deviceCard()}
+    ${moodCard()}
+    ${smissCard()}
     <div class="h2">🗓️ ปฏิทินการเล่น 12 เดือน</div>
     <div class="card-box" data-lz="heat" style="min-height:200px"></div>
 
@@ -261,6 +275,8 @@ function renderStats() {
     <div class="h2">สรุปรายเดือน</div>
     <div class="card-box"><b>เดือนนี้</b>${monthBox(0)}</div>
     ${monthStats(1).total ? `<div class="card-box"><b>เดือนที่แล้ว</b>${monthBox(1)}</div>` : ''}
+    ${vsCard()}
+    ${journeyCard()}
 
     <div class="h2">📝 แบบทดสอบประจำเดือน</div>
     <div class="card-box">${mtestSummary()}<button class="btn primary block" data-go="mtest" style="margin-top:10px">${S.mtest[monthKey()] ? 'ทำอีกครั้ง' : 'ทำแบบทดสอบเดือนนี้'}</button></div>
@@ -297,6 +313,7 @@ function renderStats() {
   view.querySelectorAll('[data-lt]').forEach((b) => { b.onclick = () => go('ltest', b.dataset.lt); });
   startLazy({
     heat: [yearHeatmap, bindHeatmap],
+    tree: [treeBox, paintTree],
     trend: [(el) => { el.dataset.w = hostW(el); return trendChart(+el.dataset.w); }, bindTrend],
     stk: [stickerBook, bindStickers],
     ach: [() => ACH.map((a) => { const hid = a.secret && !S.ach[a.id], t = medalTier(a), fresh = typeof S.ach[a.id] === 'string' && dayDiff(today(), S.ach[a.id]) <= 3;
@@ -313,6 +330,7 @@ function renderStats() {
   sectionize(view, '[data-lz="stk"]');
   statLayout();
   bindStatX();
+  bindStatY();
   masonry([view], '.row, .st-nav, .st-sum, .m-sec:has([data-lz="heat"], #ach), [data-lz="stk"]');
   bindStatNav();
 }
@@ -320,7 +338,7 @@ function renderStats() {
 // Jump bar (1.165.0): the stats page runs to ~11 screens, so a sticky row of chips jumps to each part and lights the one in
 // view. Targets are found by their heading's text (the cards come from many functions), a missing one just hides its chip.
 const STAT_NAV = [['today', '☀️', 'วันนี้', '#todayHost'], ['habit', '📊', 'นิสัย', 'นิสัยการเล่น'], ['lv', '📈', 'ระดับ', 'ความคืบหน้าแต่ละระดับ'],
-  ['due', '📅', 'ทบทวน', '📅 การ์ดที่ต้องทบทวน'], ['weak', '🎯', 'จุดอ่อน', '🎯 ความแม่นแยกตามระดับ'], ['toeic', '💼', 'TOEIC', '💼 TOEIC'], ['cal', '🗓️', 'ปฏิทิน', '🗓️ ปฏิทินการเล่น'],
+  ['mem', '🧠', 'ความจำ', '🧠 ความจำตอนนี้'], ['due', '📅', 'ทบทวน', '📅 การ์ดที่ต้องทบทวน'], ['weak', '🎯', 'จุดอ่อน', '🎯 ความแม่นแยกตามระดับ'], ['deep', '🔬', 'เจาะลึก', '⏱️ ความเร็วและความคล่อง'], ['toeic', '💼', 'TOEIC', '💼 TOEIC'], ['cal', '🗓️', 'ปฏิทิน', '🗓️ ปฏิทินการเล่น'],
   ['sum', '🧾', 'สรุป', 'สรุปรายสัปดาห์'], ['test', '📝', 'ทดสอบ', '📝 แบบทดสอบประจำเดือน'], ['future', '🔮', 'คาดการณ์', 'แนวโน้มคำศัพท์'], ['award', '🏅', 'รางวัล', '🏅 เหรียญรางวัล']];
 const statNav = () => `<nav class="st-nav" aria-label="ไปยังหัวข้อในหน้าสถิติ">${STAT_NAV.map(([k, ic, t]) => `<button class="chip" data-sec="${k}"><span aria-hidden="true">${ic}</span> ${t}</button>`).join('')}<button class="chip" id="stLay" aria-expanded="false"><span aria-hidden="true">🧩</span> จัดหน้า</button></nav><div id="stLayBox" hidden></div>`;
 function statTargets() {
@@ -1210,4 +1228,292 @@ function layPanel() {
     [keys[i], keys[j]] = [keys[j], keys[i]]; S.settings.statOrder = keys.slice(); apply();
     const nb = box.querySelector(`[data-${up ? 'lu' : 'ld'}="${j}"]`); if (nb && !nb.disabled) nb.focus();
   };
+}
+
+/* ---------- deeper stats (1.256.0) ---------- */
+const nf = (n) => Math.round(n).toLocaleString();
+const shrBtn = (k) => `<button class="btn" data-shr="${k}">📸 แชร์เป็นรูป</button>`;
+// 🧠 Memory now (FSRS recall chance of every studied card today) and 🔮 what is left after a break of 3 / 7 / 14 / 30 days.
+const FORGET_DAYS = [3, 7, 14, 30];
+function memCurve(maxD = 30) {
+  const cards = [];
+  for (const [w, p] of Object.entries(S.prog)) { if (!p || !(p.s > 0) || !WORD_BY[w]) continue; const st = fsState(p); cards.push(st); }
+  const at = (d) => cards.reduce((a, st) => a + fsRetr(st.t + d, Math.max(0.1, st.s)), 0);
+  return { n: cards.length, pts: Array.from({ length: maxD + 1 }, (_, d) => at(d)) };
+}
+function memNowCard() {
+  const c = memCurve(), head = '<div class="h2">🧠 ความจำตอนนี้ <span class="small muted">คำนวณจากตัวจัดรอบ FSRS</span></div>';
+  if (c.n < 10) return `${head}<div class="card-box small muted" id="memNow">เรียนคำไปอีกสักหน่อย (ตอนนี้ ${c.n} คำ) แล้วแอปจะคำนวณว่าตอนนี้จำได้จริงกี่คำ และถ้าหยุดเล่นจะลืมไปเท่าไร</div>`;
+  const now = c.pts[0], Wd = 300, H = 110, top = Math.max(1, now);
+  const x = (d) => 6 + d / 30 * (Wd - 12), y = (v) => 8 + (1 - v / top) * (H - 30);
+  const path = c.pts.map((v, d) => `${d ? 'L' : 'M'}${x(d).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  const dots = FORGET_DAYS.map((d) => `<circle cx="${x(d)}" cy="${y(c.pts[d])}" r="3.5" class="mf-dot"/><text class="ax" x="${x(d)}" y="${H - 6}" text-anchor="middle">${d} วัน</text>`).join('');
+  const rows = FORGET_DAYS.map((d) => { const v = c.pts[d], lost = now - v;
+    return `<div class="mf-row"><span>หยุด ${d} วัน</span><b>${nf(v)} คำ</b><span class="cmp down">▼ ${nf(lost)} (${Math.round(lost / Math.max(1, now) * 100)}%)</span></div>`; }).join('');
+  return `${head}<div class="card-box" id="memNow">
+    <div class="mf-hero"><b>${nf(now)}</b><span>คำที่น่าจะนึกออกถ้าถูกถามตอนนี้ <span class="muted">จาก ${nf(c.n)} คำที่เคยทบทวน</span></span></div>
+    <div class="act-h">🔮 ถ้าหยุดเล่นไป…</div>
+    <svg class="mf-svg" viewBox="0 0 ${Wd} ${H}" width="100%" role="img" aria-label="ถ้าหยุดเล่น ความจำจะลดจาก ${nf(now)} เหลือ ${nf(c.pts[30])} คำใน 30 วัน"><path d="${path}" class="mf-line"/>${dots}</svg>
+    <div class="mf-rows">${rows}</div>
+    <div class="small muted" style="margin-top:8px">ยิ่งทบทวนตามกำหนด เส้นยิ่งลาดน้อยลง เพราะคำที่ผ่านหลายรอบจะลืมช้ามาก · เป็นค่าประมาณทางสถิติ</div>
+    <div class="wk-btns">${shrBtn('mem')}</div></div>`;
+}
+// 📜 My journey: first day, learned / mastered milestones (from S.snap), medals, level tests passed.
+const MILES_M = [10, 50, 100, 250, 500, 1000, 2000, 3000, 4000, 5000], MILES_L = [50, 100, 500, 1000, 2000, 3000, 5000];
+function journey() {
+  const ev = [], days = Object.keys(S.hist).filter((k) => S.hist[k] > 0).sort();
+  if (days[0]) ev.push([days[0], '🌱', 'เริ่มเรียนวันแรก']);
+  const snaps = Object.keys(S.snap).sort();
+  const first = (i, m) => snaps.find((k) => (S.snap[k] || [])[i] >= m);
+  MILES_L.forEach((m) => { const k = first(2, m); if (k) ev.push([k, '📚', `เรียนครบ ${nf(m)} คำ`]); });
+  MILES_M.forEach((m) => { const k = first(3, m); if (k) ev.push([k, '🟢', `จำได้ครบ ${nf(m)} คำ`]); });
+  for (const a of ACH) { const v = S.ach[a.id]; if (typeof v === 'string' && /^\d{4}-\d\d-\d\d$/.test(v)) ev.push([v, a.icon, `ได้เหรียญ “${a.name}”`]); }
+  for (const [lv, r] of Object.entries(S.ltest || {})) if (r && r.n && r.r / r.n * 100 >= LTEST_PASS && r.at) ev.push([ymd(new Date(r.at)), '🎓', `ผ่านทดสอบจบระดับ ${LV_LABEL[lv] || lv}`]);
+  return ev.sort((a, b) => (a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0));
+}
+function journeyCard() {
+  const ev = journey(), head = `<div class="h2">📜 เส้นทางของฉัน <span class="small muted">${ev.length} เหตุการณ์</span></div>`;
+  if (!ev.length) return `${head}<div class="card-box small muted" id="jrBox">เริ่มเล่นวันแรก แล้วเหตุการณ์สำคัญจะเรียงอยู่ตรงนี้</div>`;
+  const li = ([k, ic, t]) => `<li><span class="jr-ic" aria-hidden="true">${ic}</span><div><b>${esc(t)}</b><small>${thDate(Date.parse(k + 'T12:00:00'))}</small></div></li>`;
+  return `${head}<div class="card-box" id="jrBox"><ol class="jr">${ev.slice(0, 10).map(li).join('')}</ol>
+    ${ev.length > 10 ? `<details class="act-more"><summary>ดูอีก ${ev.length - 10} เหตุการณ์</summary><ol class="jr">${ev.slice(10).map(li).join('')}</ol></details>` : ''}</div>`;
+}
+// ⚖️ Review load for the next 14 days (main list): warns about a pile-up and offers to review ahead today.
+function loadDays(n = 14) {
+  const out = Array(n).fill(0), t0 = Date.parse(today() + 'T00:00:00');
+  for (const p of Object.values(S.prog)) { if (!p || !isNum(p.d)) continue; const k = Math.floor((p.d - t0) / DAY); out[Math.max(0, Math.min(n - 1, k))] += k < n ? 1 : 0; }
+  return out;
+}
+function loadCard() {
+  const d = loadDays(), avg = d.reduce((a, b) => a + b, 0) / d.length, wk = d.slice(1, 8), peak = Math.max(...wk), pi = wk.indexOf(peak) + 1;
+  const head = '<div class="h2">⚖️ งานทบทวน 14 วันข้างหน้า</div>';
+  if (!d.some((v) => v)) return `${head}<div class="card-box small muted" id="loadBox">ยังไม่มีการ์ดที่ต้องทบทวน</div>`;
+  const spike = peak >= 30 && peak >= avg * 1.6;
+  const labs = d.map((v, i) => (i === 0 ? 'วันนี้' : i === 1 ? 'พรุ่งนี้' : `+${i}`));
+  const tips = d.map((v, i) => `${i === 0 ? 'วันนี้ (รวมที่ค้าง)' : thDate(Date.now() + i * DAY)} · ${v} ใบ`);
+  return `${head}<div class="card-box" id="loadBox">${miniBars(d, labs, tips, 3)}
+    <div class="small" style="margin-top:8px">${spike ? `⚠️ อีก ${pi} วัน (${thDate(Date.now() + pi * DAY)}) จะมีการ์ดถึงกำหนด <b>${peak} ใบ</b> มากกว่าปกติ (เฉลี่ย ${Math.round(avg)} ใบ/วัน) ทวนล่วงหน้าวันนี้สักหน่อยจะเกลี่ยงานได้` : `✅ งานกระจายดี เฉลี่ยราว ${Math.round(avg)} ใบ/วัน`}</div>
+    ${spike ? '<div class="wk-btns"><button class="btn primary" id="loadAhead">🔮 ทวนล่วงหน้า 20 ใบ</button></div>' : ''}</div>`;
+}
+// 🐢→🏆 Stubborn words beaten: forgotten LEECH+ times, now remembered for 3+ weeks.
+function leechWins() { return W.filter((w) => { const p = S.prog[w.w]; return p && (p.x || 0) >= LEECH && ivlOf(p) >= 21; }); }
+function leechWinCard() {
+  const ws = leechWins();
+  if (!ws.length) return '';
+  return `<div class="h2">🏆 คำดื้อที่ชนะได้แล้ว <span class="small muted">${ws.length} คำ</span></div><div class="card-box" id="lwBox">
+    <div class="small" style="margin-bottom:8px">คำเหล่านี้เคยลืมตั้งแต่ ${LEECH} ครั้งขึ้นไป แต่ตอนนี้จำได้นานเกิน 3 สัปดาห์แล้ว เก่งมาก! 🎉</div>
+    <div class="chips">${ws.slice(0, 40).map((w) => `<button class="chip lw-chip" data-wsi="${w.idx}" lang="en">🏆 ${esc(w.w)} <small class="muted" lang="th">ลืม ${S.prog[w.w].x} ครั้ง</small></button>`).join('')}</div></div>`;
+}
+// ⏱️ Answer speed (S.wd): average seconds per one-tap answer, words answered right but slowly, words that needed hints.
+function speedInfo() {
+  let n = 0, ms = 0; const rows = [];
+  for (const [w, r] of Object.entries(S.wd || {})) { if (!WORD_BY[w] || !r[0]) continue; n += r[0]; ms += r[1]; rows.push([WORD_BY[w], r]); }
+  const avg = n ? ms / n : 0, p = (w) => S.prog[w.w] || {};
+  const acc = (w) => { const q = p(w), t = (q.c || 0) + (q.x || 0); return t ? (q.c || 0) / t : 0; };
+  const slow = rows.filter(([w, r]) => r[0] >= 3 && r[1] / r[0] > Math.max(4000, avg * 1.6) && acc(w) >= 0.7).sort((a, b) => b[1][1] / b[1][0] - a[1][1] / a[1][0]);
+  const hint = rows.filter(([, r]) => r[2] >= 3).sort((a, b) => b[1][2] - a[1][2]);
+  return { n, avg, slow, hint };
+}
+function speedCard() {
+  const s = speedInfo(), head = '<div class="h2">⏱️ ความเร็วและความคล่อง</div>';
+  if (s.n < 20) return `${head}<div class="card-box small muted" id="spdBox">ตอบเกมแบบเลือกคำตอบอีกสักหน่อย (ตอนนี้ ${s.n} ข้อ) แล้วแอปจะบอกได้ว่าคำไหนตอบถูกแต่ยังลังเล (เริ่มเก็บตั้งแต่เวอร์ชัน 1.256.0)</div>`;
+  const sec = (r) => (r[1] / r[0] / 1000).toFixed(1);
+  return `${head}<div class="card-box" id="spdBox">
+    <div class="mf-hero"><b>${(s.avg / 1000).toFixed(1)}<small> วิ</small></b><span>เวลาเฉลี่ยต่อข้อ <span class="muted">(${nf(s.n)} ข้อแบบแตะตอบ)</span></span></div>
+    ${s.slow.length ? `<div class="act-h">🐌 ตอบถูกแต่ยังช้า <span class="small muted">ยังไม่คล่องจริง</span></div><div class="chips">${s.slow.slice(0, 12).map(([w, r]) => `<button class="chip" data-wsi="${w.idx}" lang="en">${esc(w.w)} <small class="muted">${sec(r)} วิ</small></button>`).join('')}</div>
+      <div class="wk-btns"><button class="btn primary" data-xgo="slow">⚡ ฝึกให้ไวขึ้น (${Math.min(20, s.slow.length)} คำ)</button></div>` : '<div class="small" style="margin-top:6px">✅ ไม่มีคำที่ตอบถูกแต่ช้าผิดปกติ</div>'}
+    ${s.hint.length ? `<div class="act-h">💡 คำที่ต้องพึ่งตัวช่วย <span class="small muted">กดฟังซ้ำ / ดูคำแปลประโยค</span></div><div class="chips">${s.hint.slice(0, 12).map(([w, r]) => `<button class="chip" data-wsi="${w.idx}" lang="en">${esc(w.w)} <small class="muted">${r[2]} ครั้ง</small></button>`).join('')}</div>` : ''}</div>`;
+}
+// 🔁 Recognise vs recall (S.wd): misses when the English is shown / heard against when it has to come from the Thai.
+function dirInfo() {
+  let rn = 0, rm = 0, cn = 0, cm = 0; const gap = [];
+  for (const [w, r] of Object.entries(S.wd || {})) {
+    if (!WORD_BY[w]) continue; rn += r[3]; rm += r[4]; cn += r[5]; cm += r[6];
+    if (r[5] >= 2 && r[6] / r[5] >= 0.5 && (r[3] === 0 || r[4] / r[3] <= 0.2)) gap.push([WORD_BY[w], r]);
+  }
+  return { rn, rm, cn, cm, gap: gap.sort((a, b) => b[1][6] - a[1][6]) };
+}
+function dirCard() {
+  const d = dirInfo(), head = '<div class="h2">🔁 รู้จัก vs นึกออก</div>';
+  if (d.rn < 10 || d.cn < 10) return `${head}<div class="card-box small muted" id="dirBox">เล่นทั้งเกมที่เห็นคำอังกฤษ (ทายความหมาย ฟังแล้วตอบ) และเกมที่ต้องนึกคำอังกฤษเอง (ทายคำศัพท์ สะกดคำ) อย่างละ 10 ข้อขึ้นไป แล้วแอปจะเทียบให้ดู (เริ่มเก็บตั้งแต่เวอร์ชัน 1.256.0)</div>`;
+  const ra = 1 - d.rm / d.rn, ca = 1 - d.cm / d.cn, diff = Math.round((ra - ca) * 100);
+  const bar = (t, a, n) => `<div class="act-row"><span class="act-n">${t}</span><span class="act-bar"><i class="a-any" style="width:${Math.max(2, Math.round(a * 100))}%"></i></span><span class="act-v">${Math.round(a * 100)}%<small>${nf(n)} ข้อ</small></span></div>`;
+  return `${head}<div class="card-box" id="dirBox"><div class="act-rows">${bar('👀 เห็นคำแล้วรู้ความหมาย', ra, d.rn)}${bar('💭 เห็นคำไทยแล้วนึกคำอังกฤษ', ca, d.cn)}</div>
+    <div class="small" style="margin-top:8px">${diff >= 10 ? `💡 “รู้จัก” คำได้ดีกว่า “นึกออก” ${diff} จุด เป็นเรื่องปกติของคนเรียนภาษา ลองเล่นเกมทายคำศัพท์หรือสะกดคำเพิ่ม จะช่วยให้พูดและเขียนได้คล่องขึ้น` : diff <= -10 ? '👍 นึกคำอังกฤษได้ดีมาก ลองฟังให้มากขึ้นเพื่อจำความหมายได้ไวขึ้น' : '✅ รู้จักและนึกออกได้ใกล้เคียงกัน สมดุลดีมาก'}</div>
+    ${d.gap.length ? `<div class="act-h">คำที่รู้ความหมายแต่ยังนึกไม่ออก</div><div class="chips">${d.gap.slice(0, 12).map(([w]) => `<button class="chip" data-wsi="${w.idx}" lang="en">${esc(w.w)}</button>`).join('')}</div>
+      <div class="wk-btns"><button class="btn primary" data-xgo="recall">💭 ฝึกนึกคำ (${Math.min(20, d.gap.length)} คำ)</button></div>` : ''}</div>`;
+}
+// 🗣️ What the microphone heard instead (S.heard), with rough sound patterns.
+const SOUND_PAT = [
+  ['th', 'เสียง th', (w, h) => /th/.test(w) && !/th/.test(h) && /[tdsfz]/.test(h)],
+  ['rl', 'เสียง r / l', (w, h) => w.length === h.length && [...w].some((c, i) => (c === 'r' && h[i] === 'l') || (c === 'l' && h[i] === 'r'))],
+  ['end', 'เสียงท้ายคำ', (w, h) => h.length < w.length && w.startsWith(h.slice(0, Math.max(2, h.length - 1)))],
+  ['v', 'เสียง v / w / b', (w, h) => w.length === h.length && [...w].some((c, i) => c === 'v' && 'wbf'.includes(h[i]))],
+];
+function heardInfo() {
+  const rows = [], pat = {};
+  for (const [w, m] of Object.entries(S.heard || {})) for (const [h, n] of Object.entries(m)) {
+    if (!WORD_BY[w]) continue; rows.push([WORD_BY[w], h, n]);
+    for (const [id, , f] of SOUND_PAT) if (f(w.toLowerCase(), h)) pat[id] = (pat[id] || 0) + n;
+  }
+  return { rows: rows.sort((a, b) => b[2] - a[2]), pat: SOUND_PAT.filter(([id]) => pat[id]).map(([id, t]) => [t, pat[id]]).sort((a, b) => b[1] - a[1]) };
+}
+function heardCard() {
+  const h = heardInfo();
+  if (!h.rows.length) return '';
+  return `<div class="h2">🗣️ เสียงที่เครื่องฟังผิด</div><div class="card-box" id="hrdBox">
+    ${h.pat.length ? `<div class="small" style="margin-bottom:6px">🎯 เสียงที่ควรฝึก: ${h.pat.map(([t, n]) => `<b>${t}</b> <span class="muted">${n} ครั้ง</span>`).join(' · ')}</div>` : ''}
+    ${h.rows.slice(0, 8).map(([w, t, n]) => `<div class="cf-row"><button class="linkish" data-wsi="${w.idx}" lang="en">${esc(w.w)}</button> <span class="muted" aria-hidden="true">→</span> <span class="muted">ได้ยินเป็น</span> “<span lang="en">${esc(t)}</span>” <span class="muted small">· ${n} ครั้ง</span></div>`).join('')}
+    <div class="wk-btns">${GAMES.speak ? '<button class="btn primary" data-xgo="speak">🗣️ ฝึกพูดคำเหล่านี้</button>' : ''}</div>
+    <div class="small muted" style="margin-top:8px">เก็บแค่ข้อความที่เครื่องได้ยิน ไม่เก็บเสียง · การรู้จำเสียงของเครื่องอาจพลาดเองได้บ้าง</div></div>`;
+}
+// ✍️ Spelling slips (S.typo) and their patterns.
+const isVow = (c) => 'aeiou'.includes(c);
+function typoKind(w, t) {
+  if (w.replace(/(.)\1/g, '$1') === t.replace(/(.)\1/g, '$1') && w !== t) return 'dbl';
+  if (w.length === t.length) {
+    const d = [...w].map((c, i) => (c !== t[i] ? i : -1)).filter((i) => i >= 0);
+    if (d.length === 2 && d[1] === d[0] + 1 && w[d[0]] === t[d[1]] && w[d[1]] === t[d[0]]) return 'swap';
+    if (d.length === 1 && isVow(w[d[0]]) && isVow(t[d[0]])) return 'vow';
+  }
+  if (t.length === w.length - 1) { for (let i = 0; i < w.length; i++) if (w.slice(0, i) + w.slice(i + 1) === t) return 'miss'; }
+  if (t.length === w.length + 1) { for (let i = 0; i < t.length; i++) if (t.slice(0, i) + t.slice(i + 1) === w) return 'extra'; }
+  return 'other';
+}
+const TYPO_NAME = { dbl: 'ตัวอักษรซ้ำ (เช่น ll, ss)', swap: 'สลับตัวอักษรที่ติดกัน', vow: 'สระผิด', miss: 'ตกตัวอักษร', extra: 'เกินมาหนึ่งตัว', other: 'อื่นๆ' };
+function typoInfo() {
+  const rows = [], kind = {};
+  for (const [w, m] of Object.entries(S.typo || {})) for (const [t, n] of Object.entries(m)) {
+    if (!WORD_BY[w]) continue; const k = typoKind(w.toLowerCase(), t); rows.push([WORD_BY[w], t, n, k]); kind[k] = (kind[k] || 0) + n;
+  }
+  return { rows: rows.sort((a, b) => b[2] - a[2]), kind: Object.entries(kind).sort((a, b) => b[1] - a[1]) };
+}
+function typoCard() {
+  const t = typoInfo();
+  if (!t.rows.length) return '';
+  const tot = t.kind.reduce((a, [, n]) => a + n, 0);
+  return `<div class="h2">✍️ สะกดผิดบ่อย</div><div class="card-box" id="typoBox">
+    <div class="small" style="margin-bottom:6px">แบบที่พลาดบ่อย: ${t.kind.slice(0, 3).map(([k, n]) => `<b>${TYPO_NAME[k]}</b> <span class="muted">${aPct(n, tot)}%</span>`).join(' · ')}</div>
+    ${t.rows.slice(0, 8).map(([w, x, n]) => `<div class="cf-row"><button class="linkish" data-wsi="${w.idx}" lang="en">${esc(w.w)}</button> <span class="muted">พิมพ์เป็น</span> <s lang="en">${esc(x)}</s> <span class="muted small">· ${n} ครั้ง</span></div>`).join('')}
+    <div class="wk-btns"><button class="btn primary" data-xgo="spell">✍️ ฝึกสะกดคำเหล่านี้</button></div></div>`;
+}
+// 📖 Reading speed (S.rspd): words per minute of each first read, trend, words looked up per 100.
+function readSpeedCard() {
+  const r = (S.rspd || []).filter((x) => x[2] > 0);
+  if (!r.length) return '';
+  const wpm = (x) => x[1] / (x[2] / 60), last = r.slice(-5), first = r.slice(0, 5);
+  const avg = (a) => a.reduce((t, x) => t + wpm(x), 0) / a.length, look = r.reduce((t, x) => t + x[3], 0) / r.reduce((t, x) => t + x[1], 0) * 100;
+  const up = r.length >= 6 ? Math.round(avg(last) - avg(first)) : null;
+  const bars = r.slice(-14).map(wpm);
+  return `<div class="h2">📖 ความเร็วอ่าน <span class="small muted">${r.length} เรื่อง</span></div><div class="card-box" id="rspdBox">
+    <div class="mf-hero"><b>${Math.round(avg(last))}<small> คำ/นาที</small></b><span>เฉลี่ย 5 เรื่องล่าสุด${up != null ? ` · <span class="cmp ${up >= 0 ? 'up' : 'down'}">${up >= 0 ? '▲' : '▼'} ${Math.abs(up)}</span> เทียบช่วงแรก` : ''}</span></div>
+    ${miniBars(bars, bars.map((_, i) => String(i + 1)), r.slice(-14).map((x) => `${thDate(Date.parse(x[0] + 'T12:00:00'))} · ${Math.round(wpm(x))} คำ/นาที · แตะดูคำ ${x[3]} คำ`), 1)}
+    <div class="small muted" style="margin-top:8px">แตะดูความหมายเฉลี่ย ${look.toFixed(1)} คำ ต่อ 100 คำ · นับเวลาตั้งแต่เปิดเรื่องจนตอบคำถามครบ (เฉพาะครั้งแรกที่อ่าน)</div></div>`;
+}
+// 🚪 Games left before the end (S.gq).
+function quitCard() {
+  const rows = Object.entries(S.gq || {}).filter(([g, r]) => GAMES[g] && r[0] + r[1] >= 5).map(([g, r]) => [g, r[1] / (r[0] + r[1]), r]).filter((x) => x[1] >= 0.3).sort((a, b) => b[1] - a[1]);
+  if (!rows.length) return '';
+  return `<div class="h2">🚪 เกมที่มักออกก่อนจบ</div><div class="card-box" id="quitBox">
+    ${rows.slice(0, 5).map(([g, q, r]) => `<div class="act-row"><span class="act-n">${GAMES[g].icon} ${esc(GAMES[g].name)}</span><span class="act-bar"><i class="a-any" style="width:${Math.round(q * 100)}%"></i></span><span class="act-v">${Math.round(q * 100)}%<small>ออก ${r[1]} จาก ${r[0] + r[1]} รอบ${r[2] ? ` · หลังตอบผิด ${r[2]}` : ''}</small></span></div>`).join('')}
+    <div class="small muted" style="margin-top:8px">ถ้าออกเพราะยากไป ลองลดความยากในหน้าเมนูเกม หรือเลือกคำจากระดับที่ง่ายลง</div></div>`;
+}
+// 📱 Device and orientation (x.dv) + what the day starts with (x.f), last 90 / 28 days.
+const DV_NAME = { phone: '📱 มือถือ', tablet: '📲 แท็บเล็ต', desk: '💻 คอมพิวเตอร์' };
+function deviceCard() {
+  const dv = {}, first = {};
+  for (let k = 0; k < 90; k++) {
+    const x = (S.act[dayKey(k)] || {}).x; if (!x) continue;
+    for (const [id, v] of Object.entries(x.dv || {})) { const t = dv[id] || (dv[id] = [0, 0, 0, 0]); v.forEach((y, i) => { t[i] += y; }); }
+    if (x.f && k < 28) first[x.f] = (first[x.f] || 0) + 1;
+  }
+  const rows = Object.entries(dv).sort((a, b) => b[1][0] - a[1][0]), fl = Object.entries(first).sort((a, b) => b[1] - a[1]);
+  if (!rows.length && !fl.length) return '';
+  const top = Math.max(1, ...rows.map(([, v]) => v[0]));
+  const name = (id) => { const [d, o] = id.split('-'); return `${DV_NAME[d] || d} ${o === 'l' ? 'แนวนอน' : 'แนวตั้ง'}`; };
+  return `<div class="h2">📱 เล่นที่ไหน เริ่มด้วยอะไร</div><div class="card-box" id="dvBox">
+    ${rows.length ? `<div class="act-h">อุปกรณ์และท่าถือ <span class="small muted">90 วัน</span></div><div class="act-rows">${rows.map(([id, v]) => `<div class="act-row"><span class="act-n">${name(id)}</span><span class="act-bar"><i class="a-any" style="width:${Math.max(2, Math.round(v[0] / top * 100))}%"></i></span><span class="act-v">${nf(v[0])} ข้อ<small>${v[2] ? `ถูก ${aPct(v[3], v[2])}%` : ''}</small></span></div>`).join('')}</div>` : ''}
+    ${fl.length ? `<div class="act-h">เปิดแอปแล้วเริ่มด้วย <span class="small muted">28 วัน</span></div><div class="small">${fl.slice(0, 4).map(([id, n]) => `${esc(actName(id))} <span class="muted">${n} วัน</span>`).join(' · ')}</div>` : ''}</div>`;
+}
+// 🔍 Searches with no result (S.smiss): ideas for words to add.
+function smissCard() {
+  const r = Object.entries(S.smiss || {}).sort((a, b) => b[1] - a[1]);
+  if (!r.length) return '';
+  return `<div class="h2">🔍 ค้นแล้วไม่เจอ</div><div class="card-box" id="smBox"><div class="chips">${r.slice(0, 20).map(([t, n]) => `<span class="chip">${esc(t)} <small class="muted">${n}</small></span>`).join('')}</div>
+    <div class="small muted" style="margin-top:8px">คำเหล่านี้ยังไม่มีในแอป บอกผู้พัฒนาได้ว่าอยากให้เพิ่มคำไหน · เพิ่มเองได้ที่ “เก็บคำจากบทความ” หรือชุดของฉัน</div></div>`;
+}
+// 😊 Mood (S.mood): today's pick and accuracy by mood.
+const MOODS = [['😴', 'เหนื่อย'], ['😐', 'เฉยๆ'], ['😄', 'สดใส']];
+function moodCard() {
+  const m = S.mood || {}, cur = m[today()], acc = MOODS.map(() => [0, 0, 0]);
+  for (const [k, v] of Object.entries(m)) { const a = actDay(k); if (a && a.jd) { acc[v][0] += a.jd; acc[v][1] += a.ok; acc[v][2]++; } }
+  const used = acc.filter((a) => a[2] >= 2).length;
+  return `<div class="h2">😊 อารมณ์ตอนเล่น</div><div class="card-box" id="moodBox">
+    <div class="small" style="margin-bottom:6px">วันนี้รู้สึกอย่างไร</div>
+    <div class="chips" role="group" aria-label="อารมณ์วันนี้">${MOODS.map(([ic, t], i) => `<button class="chip${cur === i ? ' on' : ''}" data-mood="${i}" aria-pressed="${cur === i}"><span aria-hidden="true">${ic}</span> ${t}</button>`).join('')}</div>
+    ${used >= 2 ? `<div class="act-rows" style="margin-top:10px">${MOODS.map(([ic, t], i) => acc[i][2] ? `<div class="act-row"><span class="act-n">${ic} ${t}</span><span class="act-bar"><i class="a-any" style="width:${aPct(acc[i][1], acc[i][0])}%"></i></span><span class="act-v">ถูก ${aPct(acc[i][1], acc[i][0])}%<small>${acc[i][2]} วัน</small></span></div>` : '').join('')}</div>`
+      : '<div class="small muted" style="margin-top:8px">เลือกอารมณ์ในวันที่เล่นสักหลายวัน แล้วแอปจะเทียบว่าอารมณ์มีผลกับ % ตอบถูกไหม</div>'}</div>`;
+}
+// 🆚 This month against last month, row by row, a 🏆 for the winner.
+function vsCard() {
+  const a = monthStats(0), b = monthStats(1);
+  if (!b.total) return '';
+  const rows = [['📅 วันที่เล่น', a.active, b.active], ['✏️ ข้อที่ทำ', a.total, b.total], ['📚 คำใหม่', a.learned, b.learned], ['🟢 จำได้เพิ่ม', a.mastered, b.mastered], ['🔥 เล่นติดกันนานสุด', a.streak, b.streak]].filter((r) => r[1] != null && r[2] != null);
+  const win = rows.filter((r) => r[1] > r[2]).length, lose = rows.filter((r) => r[1] < r[2]).length;
+  return `<div class="h2">🆚 เดือนนี้ vs เดือนที่แล้ว</div><div class="card-box" id="vsBox">
+    <div class="mf-hero"><b>${win} : ${lose}</b><span>${win > lose ? '🏆 เดือนนี้กำลังชนะ!' : win < lose ? 'เดือนที่แล้วยังนำอยู่ สู้ๆ 💪' : 'สูสีกันมาก'}${a.days < 28 ? ` <span class="muted">(ผ่านมา ${a.days} วัน)</span>` : ''}</span></div>
+    <table class="g-table vs-t"><tr><th></th><th>เดือนนี้</th><th>เดือนที่แล้ว</th></tr>${rows.map(([t, x, y]) => `<tr><td>${t}</td><td>${x > y ? '🏆 ' : ''}<b>${nf(x)}</b></td><td>${y > x ? '🏆 ' : ''}${nf(y)}</td></tr>`).join('')}</table>
+    <div class="wk-btns">${shrBtn('vs')}</div></div>`;
+}
+// 🌳 Word forest: one dot per word of the 5000 list, coloured by status, a row block per level (canvas, lazy).
+function treeBox() {
+  const lv = [...LEVELS_3000, ...LEVELS_5000], cnt = { n: 0, l: 0, m: 0 };
+  lv.forEach((l) => W.forEach((w) => { if (w.g !== l) return; const s = status(w); cnt[s === 'mastered' ? 'm' : S.prog[w.w] ? 'l' : 'n']++; }));
+  return `<div class="small muted" style="margin-bottom:6px">1 จุด = 1 คำ · <span class="key bm"></span>จำได้แล้ว ${nf(cnt.m)} · <span class="key bl"></span>กำลังเรียน ${nf(cnt.l)} · ยังไม่เริ่ม ${nf(cnt.n)}</div>
+    <canvas class="tree-c" role="img" aria-label="คำศัพท์ชุด 5000: จำได้แล้ว ${cnt.m} กำลังเรียน ${cnt.l} ยังไม่เริ่ม ${cnt.n} คำ"></canvas>`;
+}
+function paintTree(el) {
+  const cv = el.querySelector('canvas'); if (!cv) return;
+  const cs = getComputedStyle(document.documentElement), col = (k, d) => cs.getPropertyValue(k).trim() || d;
+  const cM = col('--good', '#22a06b'), cL = col('--warn', '#f0a020'), cN = col('--border', '#ccc'), ink = col('--muted', '#777');
+  const Wd = Math.max(240, el.clientWidth - 4), dot = Wd >= 600 ? 6 : 5, gap = 1, per = Math.floor(Wd / (dot + gap)), lv = [...LEVELS_3000, ...LEVELS_5000];
+  const groups = lv.map((l) => [l, W.filter((w) => w.g === l)]).filter(([, ws]) => ws.length);
+  const H = groups.reduce((h, [, ws]) => h + 16 + Math.ceil(ws.length / per) * (dot + gap) + 6, 0);
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = Wd * dpr; cv.height = H * dpr; cv.style.width = Wd + 'px'; cv.style.height = H + 'px';
+  const g = cv.getContext('2d'); g.scale(dpr, dpr);
+  let y = 0;
+  for (const [l, ws] of groups) {
+    g.fillStyle = ink; g.font = '600 11px system-ui, sans-serif'; g.fillText(LV_LABEL[l] || l, 0, y + 11); y += 16;
+    ws.forEach((w, i) => { const s = status(w); g.fillStyle = s === 'mastered' ? cM : S.prog[w.w] ? cL : cN; g.fillRect((i % per) * (dot + gap), y + Math.floor(i / per) * (dot + gap), dot, dot); });
+    y += Math.ceil(ws.length / per) * (dot + gap) + 6;
+  }
+}
+// 📸 Share a stats card as a picture (drawCard in js/share.js).
+const SHR = {
+  mem: () => { const c = memCurve(); return { title: '🧠 ความจำของฉัน', sub: thDate(Date.now()), hero: nf(c.pts[0]), heroLabel: 'คำที่นึกออกตอนนี้', tiles: [[nf(c.n), 'คำที่เคยทบทวน'], [nf(snap5(S.snap[today()])[1]), 'จำได้แล้ว (ชุด 5000)'], [nf(c.pts[30]), 'ถ้าหยุด 30 วัน'], ['🔥 ' + streakNow(), 'วันติดต่อกัน']] }; },
+  vs: () => { const a = monthStats(0), b = monthStats(1); return { title: '🆚 เดือนนี้ vs เดือนที่แล้ว', sub: thDate(Date.now()), hero: `${nf(a.total)}`, heroLabel: `ข้อที่ทำเดือนนี้ (เดือนก่อน ${nf(b.total)})`, tiles: [[a.active, 'วันที่เล่น'], [nf(a.learned || 0), 'คำใหม่'], [nf(a.mastered || 0), 'จำได้เพิ่ม'], [a.streak, 'ติดกันนานสุด']] }; },
+};
+function xGo(k) {
+  let list = [], game = 'en2th';
+  if (k === 'slow') { list = speedInfo().slow.map(([w]) => w); game = 'en2th'; }
+  if (k === 'recall') { list = dirInfo().gap.map(([w]) => w); game = 'th2en'; }
+  if (k === 'speak') { list = heardInfo().rows.map(([w]) => w); game = 'speak'; }
+  if (k === 'spell') { list = typoInfo().rows.map(([w]) => w); game = 'spell'; }
+  customWords = [...new Set(list)].slice(0, 20);
+  if (customWords.length < 4) customWords = [...new Set(customWords.concat(pool().slice(0, 6)))];
+  gameSource = 'custom';
+  startGame(game);
+}
+function bindStatY() {
+  const sheet = (e) => { const b = e.target.closest('[data-wsi]'); if (b && W[+b.dataset.wsi]) openSheet(W[+b.dataset.wsi]); };
+  ['#lwBox', '#spdBox', '#dirBox', '#hrdBox', '#typoBox'].forEach((id) => { const el = $(id); if (el) el.addEventListener('click', sheet); });
+  view.querySelectorAll('[data-xgo]').forEach((b) => { b.onclick = () => xGo(b.dataset.xgo); });
+  view.querySelectorAll('[data-shr]').forEach((b) => { b.onclick = () => shareWithPicker((tpl, art) => drawCard(SHR[b.dataset.shr](), tpl, art), `essential-vocab-${b.dataset.shr}-${today()}.png`, 'สถิติของฉัน', () => toast('บันทึกภาพแล้ว ✅')); });
+  const la = $('#loadAhead'); if (la) la.onclick = () => go('cards', 'ahead');
+  bindMood();
+}
+function bindMood() {
+  const mb = $('#moodBox'); if (!mb) return;
+  mb.onclick = (e) => { const b = e.target.closest('[data-mood]'); if (!b) return; S.mood[today()] = +b.dataset.mood; save(); mb.outerHTML = moodCard(); bindMood(); toast('บันทึกอารมณ์วันนี้แล้ว'); const nb = $(`#moodBox [data-mood="${b.dataset.mood}"]`); if (nb) nb.focus(); };
 }

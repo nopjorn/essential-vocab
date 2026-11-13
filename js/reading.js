@@ -169,7 +169,7 @@ function renderRead(id) {
   $('#title').textContent = 'อ่านเรื่องสั้น';
   const inf = storyInfo(st);
   let showTh = false, playing = -1, token = 0, slow = false;
-  const answers = [];
+  const answers = [], rdT0 = Date.now(); let rdLook = 0; // 1.256.0 reading speed (rspdLog)
   const font = () => FONT_SIZES[S.settings.rFont != null ? S.settings.rFont : 1];
   view.innerHTML = `<div class="read-bar"><div class="read-prog" id="rProg"></div></div>
     <div class="row" style="margin:4px 0 12px"><button class="btn ghost" id="rBack">‹ ห้องสมุด</button></div>
@@ -273,7 +273,7 @@ function renderRead(id) {
     if (tb) { const th = tb.closest('.st-para').querySelector('.st-th'); th.hidden = !th.hidden; tb.textContent = th.hidden ? 'แปลย่อหน้านี้' : 'ซ่อนคำแปล'; return; }
     const rw = e.target.closest('.rw[data-i], [data-wi]');
     if (rw) {
-      const w = W[+(rw.dataset.i || rw.dataset.wi)]; speak(w.w);
+      const w = W[+(rw.dataset.i || rw.dataset.wi)]; speak(w.w); rdLook++;
       return openSheet(w, () => { view.querySelectorAll(`.rw[data-i="${w.idx}"]`).forEach((x) => (x.className = 'rw ' + status(w))); });
     }
     const fb = e.target.closest('[data-find]'); if (fb) return findInStory(+fb.dataset.find);
@@ -295,6 +295,7 @@ function renderRead(id) {
     if (answers.filter((x) => x != null).length === st.q.length) {
       const right = answers.filter(Boolean).length, all = st.q.length;
       const first = !S.read[st.id];
+      if (first) rspdLog(st.en.join(' ').split(/\s+/).length, (Date.now() - rdT0) / 1000, rdLook);
       S.read[st.id] = today();
       const prev = S.readScore[st.id];
       if (storyBetter(prev, [right, all])) S.readScore[st.id] = [right, all];

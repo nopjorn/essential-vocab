@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.255.0';
+const APP_VERSION = '1.256.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -276,6 +276,7 @@ const defaults = () => ({
   missY: {},           // 'YYYY' -> device id -> { word: times wrong that year } (this year and last; 1.155.2, year in review)
   missYFrom: '',       // first day missY was kept: a year counts only if its whole year was logged (otherwise all-time `x` is shown)
   conf: {},            // 1.255.0: word asked -> { word picked instead -> times } (quiz / match mix-ups, confLog, ≤ CONF_MAX words)
+  wd: {}, heard: {}, typo: {}, rspd: [], gq: {}, smiss: {}, mood: {}, // 1.256.0 learning details (detLog …, see "learning details")
   mday: {},            // 1.255.0: word -> 'YYYY-MM-DD' it became "จำได้แล้ว" (masteredMoment), shown as "คำที่จำได้เดือนนี้"
   weekSeen: '',        // Monday key of the last weekly summary the user dismissed
   monthSeen: '',       // 'YYYY-MM' of the month whose summary card was dismissed
@@ -322,6 +323,7 @@ function load() {
       if (!r.mascot || typeof r.mascot !== 'object' || !r.mascot.equip || typeof r.mascot.equip !== 'object') r.mascot = d.mascot;
       if (!Array.isArray(r.ret) || r.ret.length !== 4 || r.ret.some((x) => !Array.isArray(x) || !isNum(x[0]) || !isNum(x[1]))) r.ret = d.ret;
       r.rev = cleanRev(r.rev); r.missY = cleanMissY(r.missY); r.act = cleanAct(r.act); r.conf = cleanConf(r.conf); r.mday = cleanMday(r.mday);
+      r.wd = cleanArrMap(r.wd, 7); r.heard = cleanConf(r.heard); r.typo = cleanConf(r.typo); r.rspd = cleanRspd(r.rspd); r.gq = cleanArrMap(r.gq, 3); r.smiss = cleanNumMap(r.smiss); r.mood = cleanMood(r.mood);
       if (!Array.isArray(r.owned)) r.owned = [];
       if (!r.evt || typeof r.evt !== 'object' || Array.isArray(r.evt)) r.evt = {};
       r.adv = cleanAdv(r.adv);
@@ -619,6 +621,7 @@ function mergeBackup(d) {
   }
   if (typeof d.missYFrom === 'string' && /^\d{4}-\d\d-\d\d$/.test(d.missYFrom) && (!S.missYFrom || d.missYFrom < S.missYFrom)) S.missYFrom = d.missYFrom;
   for (const [w, m] of Object.entries(cleanConf(d.conf))) { const mine = S.conf[w] || (S.conf[w] = {}); for (const [o, n] of Object.entries(m)) mine[o] = Math.max(mine[o] || 0, n); }
+  mergeDetails(d);
   for (const [w, k] of Object.entries(cleanMday(d.mday))) if (!S.mday[w] || k > S.mday[w]) S.mday[w] = k;
   if (Array.isArray(d.ret) && d.ret.length === 4) d.ret.forEach((x, b) => { if (Array.isArray(x) && isNum(x[0]) && isNum(x[1]) && x[0] > S.ret[b][0]) S.ret[b] = [x[0], Math.min(x[0], x[1])]; });
   for (const [w, at] of Object.entries(d.starAt || {})) if (isNum(at) && at > (S.starAt[w] || 0)) { S.starAt[w] = at; if (d.star && d.star[w]) S.star[w] = 1; else delete S.star[w]; }
@@ -1769,6 +1772,8 @@ function actLog(t, ok) {
   const x = actX(t), gid = String(current === 'games' && actGame ? actGame : current || 'other').slice(0, 24);
   x.g = x.g || {}; actAdd(x.g[gid] || (x.g[gid] = [0, 0, 0, 0]), sec, ok);
   x.h = x.h || Array(24).fill(0); x.h[new Date(now).getHours()]++;
+  if (!x.f) x.f = gid; // 1.256.0: the first thing answered that day
+  try { const dk = devKey(); x.dv = x.dv || {}; actAdd(x.dv[dk] || (x.dv[dk] = [0, 0, 0, 0]), sec, ok); } catch (e) { /* no screen info */ }
   if (ok !== undefined) { // 1.255.0: judged / right per hour → "ช่วงเวลาที่ตอบแม่นที่สุด"
     const hr = new Date(now).getHours(); x.hj = x.hj || Array(24).fill(0); x.hr = x.hr || Array(24).fill(0); x.hj[hr]++; if (ok) x.hr[hr]++;
   }
@@ -1821,6 +1826,8 @@ function cleanActX(x) {
   if (x.e && typeof x.e === 'object') for (const [id, v] of Object.entries(x.e)) if (isNum(v) && v > 0 && ACT_EVENTS.some((a) => a[0] === id)) (out.e || (out.e = {}))[id] = Math.round(v);
   if (Array.isArray(x.ss) && x.ss.length === 2 && x.ss.every((v) => isNum(v) && v >= 0)) out.ss = x.ss.map(Math.round);
   if (isNum(x.on) && x.on > 0) out.on = Math.round(x.on);
+  if (typeof x.f === 'string' && /^[A-Za-z0-9_-]{1,24}$/.test(x.f)) out.f = x.f;
+  if (x.dv && typeof x.dv === 'object') for (const [id, v] of Object.entries(x.dv)) { const r = actRow(v); if (r && /^(phone|tablet|desk)-[pl]$/.test(id)) (out.dv || (out.dv = {}))[id] = r; }
   return out;
 }
 function cleanAct(a) {
@@ -1849,6 +1856,8 @@ function mergeAct(theirs) {
     if (tx.e) { mx.e = mx.e || {}; for (const [id, v] of Object.entries(tx.e)) mx.e[id] = Math.max(mx.e[id] || 0, v); }
     if (tx.ss) mx.ss = maxArr(mx.ss, tx.ss);
     if (tx.on) mx.on = Math.max(mx.on || 0, tx.on);
+    if (tx.f && !mx.f) mx.f = tx.f;
+    if (tx.dv) { mx.dv = mx.dv || {}; for (const [id, v] of Object.entries(tx.dv)) mx.dv[id] = maxArr(mx.dv[id], v); }
   }
   const keys = Object.keys(S.act).sort();
   for (const k of keys.slice(0, Math.max(0, keys.length - ACT_DAYS))) delete S.act[k];
@@ -1976,6 +1985,88 @@ function cleanMday(o) {
   if (!o || typeof o !== 'object' || Array.isArray(o)) return out;
   for (const [w, k] of Object.entries(o)) if (typeof k === 'string' && /^\d{4}-\d\d-\d\d$/.test(k)) out[w] = k;
   return out;
+}
+// ---------- learning details (1.256.0) ----------
+// How answers were given, not only right / wrong. All device-local tallies, merged with max per number (like hist).
+// S.wd: word -> [timed answers, ms total, hints used, recognise asked, recognise missed, recall asked, recall missed]
+//   recognise = the English is shown or heard (pick the meaning); recall = the Thai is shown (produce the English).
+// S.heard / S.typo: word -> { what the mic heard / what was typed: times } (same shape as S.conf, cleanConf).
+// S.rspd: stories read [[day, words, seconds, words looked up]], last RSPD_MAX. S.gq: game -> [rounds finished, quit, quit right after a miss].
+// S.smiss: search text with no result -> times. S.mood: day -> 0 😴 / 1 😐 / 2 😄.
+const WD_REC = ['en2th', 'listen', 'guess', 'ipa', 'emoji', 'match', 'syn'];
+const WD_CAL = ['th2en', 'spell', 'dict', 'dictW', 'hangman', 'anagram', 'speak', 'cloze', 'hand', 'sCloze'];
+const WD_MAX = 4000, NEST_MAX = 300, RSPD_MAX = 60, SMISS_MAX = 100;
+const wdRow = (w) => S.wd[w] || (S.wd[w] = [0, 0, 0, 0, 0, 0, 0]);
+function capKeys(o, max, keep) {
+  const ks = Object.keys(o); if (ks.length <= max) return;
+  const size = (v) => (Array.isArray(v) ? v[0] + v[3] + v[5] : typeof v === 'object' ? Object.values(v).reduce((a, b) => a + b, 0) : v);
+  ks.filter((k) => k !== keep).sort((a, b) => size(o[a]) - size(o[b])).slice(0, ks.length - max).forEach((k) => delete o[k]);
+}
+function detLog(w, mode, ok, ms, slow) {
+  try {
+    if (!w || !w.w) return;
+    const r = wdRow(w.w);
+    if (!slow && ms > 300 && ms < 30000) { r[0]++; r[1] += Math.round(ms); }
+    if (WD_REC.includes(mode)) { r[3]++; if (!ok) r[4]++; } else if (WD_CAL.includes(mode)) { r[5]++; if (!ok) r[6]++; }
+    capKeys(S.wd, WD_MAX, w.w);
+  } catch (e) { /* never break a game */ }
+}
+function hintLog(w) { try { if (w && w.w) { wdRow(w.w)[2]++; saveDirty = true; } } catch (e) { /* ignore */ } }
+function nestLog(tab, w, what) {
+  try {
+    const t = String(what || '').trim().toLowerCase().slice(0, 40); if (!w || !w.w || !t || t === w.w.toLowerCase()) return;
+    const m = tab[w.w] || (tab[w.w] = {}); m[t] = (m[t] || 0) + 1;
+    capKeys(tab, NEST_MAX, w.w); saveDirty = true;
+  } catch (e) { /* ignore */ }
+}
+const heardLog = (w, t) => nestLog(S.heard, w, t);
+const typoLog = (w, t) => nestLog(S.typo, w, t);
+function rspdLog(words, sec, looked) {
+  if (!(words > 20) || !(sec >= 20) || sec > 3600) return;
+  S.rspd.push([today(), words, Math.round(sec), looked | 0]); S.rspd = S.rspd.slice(-RSPD_MAX); save();
+}
+function gqLog(g, how) { // how: 'd' finished, 'q' quit, 'm' quit right after a wrong answer
+  if (!g) return; const r = S.gq[g] || (S.gq[g] = [0, 0, 0]);
+  if (how === 'd') r[0]++; else { r[1]++; if (how === 'm') r[2]++; } save();
+}
+let smissT = 0;
+function smissLog(q) {
+  clearTimeout(smissT);
+  smissT = setTimeout(() => { const t = String(q).trim().toLowerCase().slice(0, 40); if (t.length < 3) return; S.smiss[t] = (S.smiss[t] || 0) + 1; capKeys(S.smiss, SMISS_MAX, t); save(); }, 1500);
+}
+const devKey = () => { const m = Math.min(screen.width || innerWidth, screen.height || innerHeight); return (m < 600 ? 'phone' : m < 1000 ? 'tablet' : 'desk') + (innerWidth > innerHeight ? '-l' : '-p'); };
+// Function declarations on purpose: load() runs before these lines.
+function cleanArrMap(o, len) {
+  const out = {};
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return out;
+  for (const [k, v] of Object.entries(o)) if (Array.isArray(v) && v.length === len && v.every((x) => isNum(x) && x >= 0)) out[k] = v.map(Math.round);
+  return out;
+}
+function cleanNumMap(o) {
+  const out = {};
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return out;
+  for (const [k, v] of Object.entries(o)) if (isNum(v) && v > 0) out[k] = Math.round(v);
+  return out;
+}
+function cleanMood(o) {
+  const out = {};
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return out;
+  for (const [k, v] of Object.entries(o)) if (/^\d{4}-\d\d-\d\d$/.test(k) && [0, 1, 2].includes(v)) out[k] = v;
+  return out;
+}
+function cleanRspd(a) {
+  if (!Array.isArray(a)) return [];
+  return a.filter((r) => Array.isArray(r) && r.length === 4 && typeof r[0] === 'string' && /^\d{4}-\d\d-\d\d$/.test(r[0]) && r.slice(1).every((x) => isNum(x) && x >= 0)).slice(-60); // 60 = RSPD_MAX (a literal: load() runs before that const)
+}
+function mergeDetails(d) {
+  const nest = (mine, theirs) => { for (const [w, m] of Object.entries(cleanConf(theirs))) { const t = mine[w] || (mine[w] = {}); for (const [k, n] of Object.entries(m)) t[k] = Math.max(t[k] || 0, n); } };
+  nest(S.heard, d.heard); nest(S.typo, d.typo);
+  for (const [w, v] of Object.entries(cleanArrMap(d.wd, 7))) S.wd[w] = S.wd[w] ? S.wd[w].map((x, i) => Math.max(x, v[i])) : v;
+  for (const [g, v] of Object.entries(cleanArrMap(d.gq, 3))) S.gq[g] = S.gq[g] ? S.gq[g].map((x, i) => Math.max(x, v[i])) : v;
+  for (const [k, n] of Object.entries(cleanNumMap(d.smiss))) S.smiss[k] = Math.max(S.smiss[k] || 0, n);
+  for (const [k, v] of Object.entries(cleanMood(d.mood))) if (!(k in S.mood)) S.mood[k] = v;
+  const seen = new Set(S.rspd.map((r) => r.join('|')));
+  S.rspd = S.rspd.concat(cleanRspd(d.rspd).filter((r) => !seen.has(r.join('|')))).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)).slice(-RSPD_MAX);
 }
 // Real retention (1.107): every review of a card that was due counts in a bucket by the gap it had (1–2, 3–6, 7–20, 21+ days):
 // [reviewed, remembered]. Cards pressed "forgot" are not remembered. Halved at 400 so it follows recent weeks.

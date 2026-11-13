@@ -1143,7 +1143,7 @@ test('flashcard queue spreads word families (1.70): decide / decision / decisive
 test('stats page draws heavy blocks lazily (1.72): not in the first paint, all there shortly after, still interactive', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01' });
   const first = await page.evaluate(() => { go('stats'); return { hm: !!document.querySelector('#hm'), stk: !!document.querySelector('#stk'), ach: document.querySelectorAll('#ach .ach').length, hosts: document.querySelectorAll('[data-lz]').length }; });
-  expect(first).toEqual({ hm: false, stk: false, ach: 0, hosts: 4 });
+  expect(first).toEqual({ hm: false, stk: false, ach: 0, hosts: 5 }); // + 🌳 word forest (1.256.0)
   await expect(page.locator('#hm')).toBeAttached();
   await expect(page.locator('#stk .stk').first()).toBeAttached();
   await expect(page.locator('#ach .ach').first()).toBeAttached();

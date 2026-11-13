@@ -87,6 +87,7 @@ function openSearch() {
     if (r.words.length > 8) h += `<div class="small muted gs-more">ยังมีอีก ${r.words.length - 8} คำ พิมพ์ให้เจาะจงขึ้นอีกนิดนะ</div>`;
     sec('🎮 เกม', r.games.slice(0, 5).map((x) => { items.push({ kind: 'game', id: x.id }); return row(items.length - 1, x.g.icon, esc(x.g.name), esc(x.g.desc)); }));
     sec(q ? '🧭 หน้าในแอป' : '🧭 ไปที่', r.pages.slice(0, q ? 6 : 8).map((x) => { items.push(x); return row(items.length - 1, x.ic, esc(x.t), ''); }));
+    if (q && !items.length && typeof smissLog === 'function') smissLog(q); // 1.256.0
     if (q && !items.length) h = `<div class="gs-empty">${emptyArt({ kind: 'search', title: `ไม่เจอ “${esc(q)}”`, sub: 'ลองสะกดอีกแบบ หรือค้นเป็นภาษาไทยดูนะ', sm: true })}</div>`;
     res.innerHTML = h;
   };
