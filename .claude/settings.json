@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -oE \"\\\\{ id: '[a-z0-9_-]+', icon: '[^']+', name: '[^']+'\" data/sets/presets.js)",
+      "Bash(grep -oE \"^\\\\s*[a-z0-9_]+: *\\\\[|id: *'[a-z0-9_]+'[^}]{0,60}\" data/sets/tags.js)"
+    ]
+  }
+}

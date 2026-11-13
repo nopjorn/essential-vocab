@@ -2055,7 +2055,7 @@ test('1.134: stats starter card + folded levels, goal ring party once a day, edg
   await expect(page.locator('.starter-card .sc-dot.on')).toHaveCount(0);
   await expect(page.locator('.lvl-row.lv-A1')).toBeVisible();
   await expect(page.locator('.lv-more .lvl-row.lv-B1')).toBeHidden();
-  await page.locator('.lv-more:has(.lvl-row) > summary').click();
+  await page.locator('.lv-more:not(.lv-extra):has(.lvl-row) > summary').click();
   await expect(page.locator('.lv-more .lvl-row.lv-B1')).toBeVisible();
   await expect(page.locator('#readyHost .ready-box')).toBeVisible();
   await page.evaluate(() => { for (let k = 0; k < 3; k++) S.hist[dayKey(k)] = 5; go('stats'); });

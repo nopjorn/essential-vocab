@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.245.0';
+const APP_VERSION = '1.246.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -260,7 +260,7 @@ const defaults = () => ({
   remind: '2000',      // daily reminder time for the calendar file (HHMM)
   xp: null,            // experience points; null = not yet seeded from existing progress
   chist: {},           // 'YYYY-MM-DD' -> flashcards graded that day (hist minus this = game/feed answers)
-  snap: {},            // 'YYYY-MM-DD' -> [learned 3000, mastered 3000, learned all, mastered all]
+  snap: {},            // 'YYYY-MM-DD' -> [learned 3000, mastered 3000, learned all, mastered all, learned 5000, mastered 5000 (1.246)]
   chistFrom: '',       // first day chist was recorded; earlier hist can't be split into cards/games
   act: {},             // 1.158.0: 'YYYY-MM-DD' -> { category (ACT_CATS id) -> [answers, seconds] }, last ACT_DAYS days (actLog in markActive)
   note: {},            // word -> the user's own memory hook
@@ -660,7 +660,7 @@ function mergeBackup(d) {
   { const seen = new Set(S.mock.map((x) => x.t)); S.mock = cleanMock(S.mock.concat(cleanMock(d.mock).filter((x) => !seen.has(x.t)))); }
   maxIn(S.chist, d.chist);
   mergeAct(cleanAct(d.act));
-  for (const [k, v] of Object.entries(d.snap || {})) if (Array.isArray(v)) S.snap[k] = (S.snap[k] || [0, 0, 0, 0]).map((x, i) => Math.max(x, isNum(v[i]) ? v[i] : 0));
+  for (const [k, v] of Object.entries(d.snap || {})) if (Array.isArray(v)) { const a = S.snap[k] || []; S.snap[k] = Array.from({ length: Math.max(4, a.length, Math.min(6, v.length)) }, (_, i) => Math.max(isNum(a[i]) ? a[i] : 0, isNum(v[i]) ? v[i] : 0)); }
   mergeDecks(d);
   topicMigrate(S);
   save();

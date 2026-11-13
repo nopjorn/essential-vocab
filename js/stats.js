@@ -7,14 +7,20 @@
 // Function (not a const) so save() can call takeSnap() at any point during startup.
 function in3000() { return in3000.set || (in3000.set = new Set(W.filter((w) => LEVELS_3000.includes(w.g)).map((w) => w.w))); }
 // Daily snapshot of how many words are learned/mastered, for the trend chart.
+// Oxford 3000 + 5000-only rows (the main lists; the extra word groups are left out), 1.246.
+function in5000() { return in5000.set || (in5000.set = new Set(W.filter((w) => LEVELS_3000.includes(w.g) || LEVELS_5000.includes(w.g)).map((w) => w.w))); }
 function takeSnap() {
-  let l3 = 0, m3 = 0, la = 0, ma = 0;
+  let l3 = 0, m3 = 0, la = 0, ma = 0, l5 = 0, m5 = 0;
   for (const [w, p] of Object.entries(S.prog)) {
     const m = p.b >= MASTERED;
     la++; if (m) ma++;
     if (in3000().has(w)) { l3++; if (m) m3++; }
+    if (in5000().has(w)) { l5++; if (m) m5++; }
   }
-  S.snap[today()] = [l3, m3, la, ma];
+  S.snap[today()] = [l3, m3, la, ma, l5, m5];
+}
+// [learned, mastered] of the 5000 list from a snapshot; snapshots before 1.246 have only 4 numbers: use the all-words pair.
+function snap5(v) { return v.length > 5 ? [v[4], v[5]] : [v[2], v[3]];
 }
 const dayKey = (k) => ymd(new Date(Date.now() - k * DAY)); // k days ago
 // Thai dates by hand (1.126), same text as toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) ("11 ธ.ค. 69"):

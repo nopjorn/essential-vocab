@@ -160,10 +160,13 @@ function renderStats() {
   const { rate, measured } = learnRate(h);
   const snap = S.snap[today()];
   const W_ = Math.max(280, (viewW || view.clientWidth) - 68); // first draw only: paintChart() redraws at the real width (1.155.1: no forced layout here)
+  // The main lists first (1.246): 3000 and 5000 (= 3000 + the 5000-only words); the extra word groups get one small card below.
+  const s5 = snap5(snap), n5 = in5000().size;
   const sets = [
     { name: 'ชุด 3000 คำ', total: in3000().size, l: snap[0], m: snap[1] },
-    { name: 'ครบทุกคำในแอป', total: W.length, l: snap[2], m: snap[3] },
+    { name: 'ชุด 5000 คำ', sub: 'รวม 3000 คำ', total: n5, l: s5[0], m: s5[1] },
   ];
+  const ext = { total: W.length - n5, l: Math.max(0, snap[2] - s5[0]), m: Math.max(0, snap[3] - s5[1]) };
   const etaCard = (st) => {
     const d = etaDays(st.total, st.l, rate, h);
     const pl = st.l / st.total * 100, pm = st.m / st.total * 100;
@@ -171,7 +174,7 @@ function renderStats() {
       : d == null ? 'เริ่มเล่นสักสองสามวัน แล้วแอปจะคาดการณ์ให้'
       : `คาดว่าจำได้ครบราว <b>${thDate(Date.now() + d * DAY)}</b> <span class="muted">(อีก ~${durTxt(d)})</span>`;
     return `<div class="card-box">
-      <div class="row" style="justify-content:space-between"><b>${st.name}</b><span class="small muted">${st.total.toLocaleString()} คำ</span></div>
+      <div class="row" style="justify-content:space-between"><b>${st.name}</b><span class="small muted">${st.sub ? st.sub + ' · ' : ''}${st.total.toLocaleString()} คำ</span></div>
       <div class="bar eta-bar" style="margin:10px 0 6px"><div class="l" style="width:${pl}%"></div><div class="m" style="width:${pm}%"></div></div>
       <div class="small muted"><span class="key m"></span>จำได้แล้ว ${st.m.toLocaleString()} (${pm.toFixed(0)}%) &nbsp; <span class="key l"></span>เรียนแล้ว ${st.l.toLocaleString()} (${pl.toFixed(0)}%)</div>
       <div style="margin-top:10px">${when}</div></div>`;
@@ -181,9 +184,9 @@ function renderStats() {
   const ratio = h.ratio || 1;
   const whatIf = opts.map((n) => {
     const r = n === newGoal() && rate > 0 ? rate : n * ratio; // current setting: same rate as the cards above
-    const e3 = etaDays(in3000().size, snap[0], r, { ...h, ratio }), e5 = etaDays(W.length, snap[2], r, { ...h, ratio });
+    const e3 = etaDays(in3000().size, snap[0], r, { ...h, ratio }), e5 = etaDays(n5, s5[0], r, { ...h, ratio });
     const cell = (e, m, t) => (m >= t ? '✓ ครบแล้ว' : `${durTxt(e)}`);
-    return `<tr class="${n === newGoal() ? 'cur' : ''}"><td>${n}${n === newGoal() ? ' (ตอนนี้)' : ''}</td><td>${cell(e3, snap[1], in3000().size)}</td><td>${cell(e5, snap[3], W.length)}</td><td>~${n * 5}</td></tr>`;
+    return `<tr class="${n === newGoal() ? 'cur' : ''}"><td>${n}${n === newGoal() ? ' (ตอนนี้)' : ''}</td><td>${cell(e3, snap[1], in3000().size)}</td><td>${cell(e5, s5[1], n5)}</td><td>~${n * 5}</td></tr>`;
   }).join('');
 
   const lvRow = (l) => {
@@ -197,9 +200,12 @@ function renderStats() {
   // Levels being studied (or with progress) show; the rest fold away so a new learner doesn't face a wall of empty bars (1.134).
   const lvOn = (l) => S.settings.levels.includes(l) || W.some((w) => w.g === l && S.prog[w.w]);
   const lvSet = (name, sub, ls, top) => { const on = ls.filter(lvOn); return on.length ? `<div class="small muted" style="margin-top:${top}px"><b>${name}</b> (${sub})</div>${on.map(lvRow).join('')}` : ''; };
-  const lvRest = [...LEVELS_3000, ...LEVELS_5000, ...LEVELS_EXTRA].filter((l) => !lvOn(l));
-  const lvRows = lvSet('ชุด 3000 คำ', 'คำหลัก', LEVELS_3000, 8) + lvSet('ชุด 5000 คำ', 'คำเพิ่มเติม', LEVELS_5000, 12) + lvSet('ชุดเสริม', 'TOEIC · วิชาการ · ธุรกิจ · IT · สุขภาพ · การเมือง · ทำอาหาร · อารมณ์/นิสัย · สิ่งแวดล้อม · โซเชียล/ออนไลน์ · ออกกำลังกาย/กีฬา · ครอบครัว/โรงเรียน · สัตว์เลี้ยง · ความงาม/แฟชั่น', LEVELS_EXTRA, 12)
-    + (lvRest.length ? `<details class="lv-more"><summary>ระดับอื่นที่ยังไม่ได้เริ่ม (${lvRest.map((l) => LV_LABEL[l]).join(' · ')})</summary>${lvRest.map(lvRow).join('')}</details>` : '');
+  // 1.246: only the 3000 / 5000 levels show open; the extra groups fold into one row (started ones first).
+  const lvRest = [...LEVELS_3000, ...LEVELS_5000].filter((l) => !lvOn(l));
+  const exOn = LEVELS_EXTRA.filter(lvOn), exOff = LEVELS_EXTRA.filter((l) => !lvOn(l));
+  const lvRows = lvSet('ชุด 3000 คำ', 'คำหลัก', LEVELS_3000, 8) + lvSet('ชุด 5000 คำ', 'คำเพิ่มเติม', LEVELS_5000, 12)
+    + (lvRest.length ? `<details class="lv-more"><summary>ระดับอื่นที่ยังไม่ได้เริ่ม (${lvRest.map((l) => LV_LABEL[l]).join(' · ')})</summary>${lvRest.map(lvRow).join('')}</details>` : '')
+    + `<details class="lv-more lv-extra"><summary>📚 ชุดเสริม ${LEVELS_EXTRA.length} หมวด · เรียนแล้ว ${ext.l.toLocaleString()} · จำได้ ${ext.m.toLocaleString()} / ${ext.total.toLocaleString()}</summary>${exOn.map(lvRow).join('')}${exOff.length && exOn.length ? '<div class="small muted" style="margin-top:8px">ยังไม่ได้เริ่ม</div>' : ''}${exOff.map(lvRow).join('')}</details>`;
 
   view.innerHTML = `
     ${starterCard()}
@@ -251,16 +257,18 @@ function renderStats() {
     <div class="h2">🎓 ทดสอบจบระดับ</div>
     ${levelTestBox()}
 
-    <div class="h2">แนวโน้มคำศัพท์</div>
+    <div class="h2">แนวโน้มคำศัพท์ <span class="small muted">ชุด 5000</span></div>
     <div class="card-box chart-host" data-lz="trend" data-chart="trend" style="min-height:260px"></div>
 
     <div class="h2">คาดการณ์ว่าจะจำได้ครบเมื่อไร</div>
     ${rate > 0 ? `<p class="small muted" style="margin:-4px 4px 10px">คิดจากที่เรียนคำใหม่ได้ราว <b>${rate.toFixed(1)} คำ/วัน</b>${measured ? ' (วัดจากความคืบหน้าจริง)' : ` (ประมาณจากเป้า ${newGoal()} คำ × เล่น ${h.active}/${h.span} วัน)`} และความแม่นยำ ${Math.round(h.acc * 100)}%</p>` : ''}
     ${sets.map(etaCard).join('')}
+    <div class="card-box ext-box"><div class="row" style="justify-content:space-between"><b>📚 ชุดเสริม</b><span class="small muted">${LEVELS_EXTRA.length} หมวด · ${ext.total.toLocaleString()} คำ</span></div>
+      <div class="small muted" style="margin-top:6px">TOEIC วิชาการ ธุรกิจ IT ฯลฯ ไม่นับรวมใน 3000/5000 · เรียนแล้ว ${ext.l.toLocaleString()} · จำได้แล้ว ${ext.m.toLocaleString()} คำ</div></div>
 
     <div class="h2">ถ้าปรับจำนวนคำใหม่ต่อวัน</div>
     <div class="card-box">
-      <table class="g-table whatif"><tr><th>คำใหม่/วัน</th><th>ครบ 3000</th><th>ครบทุกคำ</th><th>ทบทวน/วัน</th></tr>${whatIf}</table>
+      <table class="g-table whatif"><tr><th>คำใหม่/วัน</th><th>ครบ 3000</th><th>ครบ 5000</th><th>ทบทวน/วัน</th></tr>${whatIf}</table>
       <div class="small muted" style="margin-top:8px">คิดจากความถี่ที่เล่นตอนนี้ (${h.active}/${h.span} วัน)${h.ratio < 1 && h.since ? ' ถ้าเล่นทุกวันจะเร็วขึ้นอีก' : ''} · การ์ดทบทวนต่อวันเป็นค่าประมาณเมื่อเรียนไปได้สักระยะ</div>
     </div>
     <p class="small muted center">เป็นการคาดการณ์คร่าวๆ จะแม่นขึ้นเรื่อยๆ เมื่อเล่นไปนานขึ้น</p>
@@ -353,7 +361,7 @@ function statSum(snap, rate, h) {
   const due = dueList().length, d = etaDays(in3000().size, snap[0], rate, h);
   const eta = snap[1] >= in3000().size ? '🎉 ครบแล้ว' : d == null ? '–' : `~${durTxt(d)}`;
   return `<div class="st-sum">
-      <div><b>${snap[3].toLocaleString()}</b><span>🟢 จำได้แล้ว</span></div>
+      <div><b>${snap5(snap)[1].toLocaleString()}</b><span>🟢 จำได้ (ชุด 5000)</span></div>
       <div><b>${due.toLocaleString()}</b><span>📅 ต้องทวนวันนี้</span></div>
       <div><b>${eta}</b><span>🏁 ครบ 3000 คำ</span></div>
     </div>`;
@@ -790,9 +798,10 @@ const TREND_DAYS = [7, 14, 30, 90, 180, 365]; // a range button shows only while
 const niceStep = (range, n) => { const raw = Math.max(1, range) / n, p = 10 ** Math.floor(Math.log10(raw)), f = raw / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; };
 function trendChart(Wd) {
   const all = Object.keys(S.snap).sort();
+  const SN = {}; for (const k of all) { const p = snap5(S.snap[k]); SN[k] = [0, 0, p[0], p[1]]; } // 1.246: the 5000 list, extra groups left out
   if (all.length < 2) {
     return `<div class="small muted">📊 แอปเริ่มเก็บข้อมูลแนวโน้มตั้งแต่วันนี้ เล่นต่ออีกวันสองวันแล้วกราฟเส้นจะขึ้นตรงนี้</div>
-      <div style="margin-top:8px">ตอนนี้: เรียนแล้ว <b>${S.snap[today()][2]}</b> คำ · จำได้แล้ว <b>${S.snap[today()][3]}</b> คำ</div>`;
+      <div style="margin-top:8px">ตอนนี้ (ชุด 5000): เรียนแล้ว <b>${SN[today()][2]}</b> คำ · จำได้แล้ว <b>${SN[today()][3]}</b> คำ</div>`;
   }
   const days = (Date.parse(all[all.length - 1] + 'T12:00:00') - Date.parse(all[0] + 'T12:00:00')) / DAY;
   const rangeIds = TREND_DAYS.filter((d) => days > d + 1);
@@ -804,7 +813,7 @@ function trendChart(Wd) {
   const H = big ? 240 : 170, top = 14, bot = big ? 28 : 24, left = big ? 48 : 40, right = 14;
   const t0 = Date.parse(keys[0] + 'T12:00:00'), t1 = Date.parse(keys[keys.length - 1] + 'T12:00:00');
   const span = Math.max(DAY, t1 - t0);
-  const hi0 = Math.max(10, ...keys.map((k) => S.snap[k][2])), lo0 = range === 'all' ? 0 : Math.min(...keys.map((k) => S.snap[k][3]));
+  const hi0 = Math.max(10, ...keys.map((k) => SN[k][2])), lo0 = range === 'all' ? 0 : Math.min(...keys.map((k) => SN[k][3]));
   const step = niceStep(hi0 - lo0, big ? 4 : 3);
   const lo = Math.floor(lo0 / step) * step;
   let hi = Math.ceil(hi0 / step) * step; if (hi <= lo) hi = lo + step;
@@ -812,12 +821,12 @@ function trendChart(Wd) {
   const py = (v) => H - bot - (H - bot - top) * (v - lo) / (hi - lo);
   const grid = [];
   for (let v = lo; v <= hi; v += step) grid.push(`<line class="${v === lo ? 'base' : 'grid'}" x1="${left}" x2="${Wd - right}" y1="${py(v)}" y2="${py(v)}"/><text class="ax" x="${left - 8}" y="${py(v) + 4}" text-anchor="end">${v.toLocaleString()}</text>`);
-  const line = (i, cls) => `<polyline class="${cls}" points="${keys.map((k) => `${px(k).toFixed(1)},${py(S.snap[k][i]).toFixed(1)}`).join(' ')}"/>`;
-  const last = keys[keys.length - 1], F = S.snap[keys[0]], L = S.snap[last];
+  const line = (i, cls) => `<polyline class="${cls}" points="${keys.map((k) => `${px(k).toFixed(1)},${py(SN[k][i]).toFixed(1)}`).join(' ')}"/>`;
+  const last = keys[keys.length - 1], F = SN[keys[0]], L = SN[last];
   const dot = (v, cls) => `<circle class="${cls}" cx="${px(last)}" cy="${py(v)}" r="${big ? 5 : 4}"/>`;
   const hits = keys.map((k, i) => {
     const x0 = i ? (px(keys[i - 1]) + px(k)) / 2 : 0, x1 = i < keys.length - 1 ? (px(k) + px(keys[i + 1])) / 2 : Wd;
-    return `<rect class="hit" data-x="${px(k)}" data-tip="${thDate(Date.parse(k + 'T12:00:00'))}: เรียนแล้ว ${S.snap[k][2]} · จำได้ ${S.snap[k][3]}" x="${x0}" y="0" width="${x1 - x0}" height="${H}"/>`;
+    return `<rect class="hit" data-x="${px(k)}" data-tip="${thDate(Date.parse(k + 'T12:00:00'))}: เรียนแล้ว ${SN[k][2]} · จำได้ ${SN[k][3]}" x="${x0}" y="0" width="${x1 - x0}" height="${H}"/>`;
   }).join('');
   const gain = (i) => { const d = L[i] - F[i]; return d > 0 ? ` <small class="up">+${d.toLocaleString()}</small>` : ''; };
   const seg = canRange ? `<div class="chips trend-range" role="group" aria-label="ช่วงเวลาของกราฟ">${[...rangeIds.map((d) => [String(d), `${d} วัน`]), ['all', 'ทั้งหมด']].map(([id, t]) => `<button class="chip${range === id ? ' on' : ''}" data-range="${id}" aria-pressed="${range === id}">${t}</button>`).join('')}</div>` : '';

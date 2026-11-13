@@ -10,6 +10,7 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
   Tell the user the new version number.
 - Patch (x.y.Z) for small fixes, minor (x.Y.0) for new features.
 - Push directly to `master` (no PRs unless asked).
+- Tag every release: annotated tag `v<version>` on the release commit (message = commit subject), then `git push origin v<version>`. If a version gets a follow-up commit with the same number, move the tag (`git tag -f -a` + `git push -f origin v<version>`).
 - When adding or changing a feature, add/update its row in the matching `docs/notes/*.md` file (see the Files section).
 - The in-app manual (`GUIDE` / `renderGuideBody()` in `data/app/guide.js`, lazy-loaded by `loadGuide()`/`renderGuide()` in `js/guide.js`, route `guide`) describes every feature
   in Thai: update it whenever a feature is added or changed.
