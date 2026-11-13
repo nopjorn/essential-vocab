@@ -114,6 +114,7 @@
 
 | เวอร์ชัน | สิ่งที่เปลี่ยน |
 |---|---|
+| 1.250.0 | ภายในแอป: รวมข้อมูลชุดเสริมทั้ง 17 ชุดไว้ในตารางเดียว (GROUPS_X) เตรียมรองรับชุดเสริมที่จะเพิ่มขึ้น ผู้ใช้ไม่เห็นความเปลี่ยนแปลง |
 | 1.249.2 | หน้าแรก การ์ด 📈 ความคืบหน้า โฟกัสที่ชุด 3000 คำ กับชุด 5000 คำ (รวม 3000) แทน 3000 กับทุกคำในแอป |
 | 1.249.1 | หน้า 📖 คำศัพท์ แถวชิประดับโล่งขึ้น: แสดงแค่ A1–C1 ส่วนชุดเสริม 17 ชุดย่อไว้ในปุ่ม 📚 ชุดเสริม แตะเพื่อกางรายการ เลือกแล้วปุ่มจะเปลี่ยนเป็นชื่อชุดนั้น |
 | 1.249.0 | ชุดเสริมใหม่ 🚨 ภัยใกล้ตัว/ตำรวจ 216 คำ ไว้แจ้งความตอนอยู่ต่างประเทศ ช่วยนักท่องเที่ยว อ่านข่าวอาชญากรรม และรู้ทันมิจฉาชีพ ไม่ซ้ำกับชุดอื่น: ขโมยและโจร (pickpocket, burglar, break-in, bag snatcher, mugging, shoplifting, armed robbery) มิจฉาชีพ (scam, scam call, call center gang, mule account, fake police, romance scammer, investment scam, ponzi scheme, loan shark, skimmer, remote access) แจ้งความ (police station, police report, tourist police, emergency number, case number, missing person) สืบสวน (alibi, eyewitness, fingerprint, cctv, dashcam, forensic, search warrant, undercover, lineup) ศาลและบทลงโทษ (accomplice, guilty plea, suspended sentence, parole, life sentence, legal aid) จราจร (drunk driving, speeding ticket, checkpoint, hit-and-run) และป้องกันตัว (self-defense, pepper spray, burglar alarm, neighborhood watch) · เปิดได้ที่ ⚙️ ตั้งค่า → ระดับคำศัพท์ → ชิป ภัยใกล้ตัว/ตำรวจ |

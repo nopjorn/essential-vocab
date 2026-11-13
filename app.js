@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.249.2';
+const APP_VERSION = '1.250.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -108,8 +108,22 @@ const IPA_V = 'aeiouæɑɒɔəɜɪʊʌɛɐ';
 const IPA_STRESS = new RegExp(`ˈ([^${IPA_V}ˈˌ./\\s()]*[${IPA_V}][${IPA_V}ːˑ̃]*(?:[^${IPA_V}ˈˌ./\\s()ː](?![${IPA_V}ː]))*)`);
 const ipaHtml = (i) => esc(i || '').replace(IPA_STRESS, 'ˈ<b class="ipa-str">$1</b>');
 const TOPIC_LABEL = Object.fromEntries([...TOPICS, ...TOPIC_GROUPS].map(([id, ic, th]) => [id, `${ic} ${th}`]));
+// Extra word groups (1.250): one row per group = [id, row mark, label, icon, rarity name, file in data/words/, category].
+// Everything else (LEVELS_EXTRA, LV_LABEL, the row-mark lookup, RARITY in collect.js) is built from this table.
+const GROUPS_X = [
+  ['TOE', 'T', 'TOEIC', '💼', 'ชุด TOEIC', 'toeic', 'work'], ['AWL', 'A', 'วิชาการ', '🎓', 'ชุดวิชาการ', 'nawl', 'work'],
+  ['BIZ', 'B', 'ธุรกิจ', '📊', 'ชุดธุรกิจ', 'bsl', 'work'], ['IT', 'I', 'IT', '💻', 'ชุด IT', 'it', 'work'],
+  ['MED', 'H', 'สุขภาพ', '🩺', 'ชุดสุขภาพ', 'health', 'life'], ['POL', 'P', 'การเมือง', '🗳️', 'ชุดการเมือง', 'politics', 'world'],
+  ['COOK', 'K', 'ทำอาหาร', '🍳', 'ชุดทำอาหาร', 'cooking', 'life'], ['FEEL', 'E', 'อารมณ์/นิสัย', '💗', 'ชุดอารมณ์และนิสัย', 'feelings', 'life'],
+  ['ENV', 'G', 'สิ่งแวดล้อม', '🌏', 'ชุดสิ่งแวดล้อม', 'environment', 'world'], ['SOC', 'S', 'โซเชียล/ออนไลน์', '📱', 'ชุดโซเชียลและออนไลน์', 'social', 'world'],
+  ['FIT', 'F', 'ออกกำลังกาย/กีฬา', '🏋️', 'ชุดออกกำลังกายและกีฬา', 'sports', 'fun'], ['FAM', 'C', 'ครอบครัว/โรงเรียน', '👶', 'ชุดครอบครัว เลี้ยงลูก และโรงเรียน', 'family', 'life'],
+  ['PET', 'D', 'สัตว์เลี้ยง', '🐶', 'ชุดสัตว์เลี้ยง', 'pets', 'life'], ['STY', 'L', 'ความงาม/แฟชั่น', '💄', 'ชุดความงามและแฟชั่น', 'beauty', 'life'],
+  ['SPC', 'O', 'อวกาศ/ดาราศาสตร์', '🔭', 'ชุดอวกาศและดาราศาสตร์', 'space', 'fun'], ['ENT', 'M', 'หนัง/เพลง/บันเทิง', '🎬', 'ชุดหนัง เพลง และบันเทิง', 'entertainment', 'fun'],
+  ['CRM', 'R', 'ภัยใกล้ตัว/ตำรวจ', '🚨', 'ชุดภัยใกล้ตัว มิจฉาชีพ และตำรวจ', 'crime', 'world'],
+].map(([g, mark, name, icon, rare, file, cat]) => ({ g, mark, name, icon, rare, file, cat }));
+const GX_MARK = new Map(GROUPS_X.map((x) => [x.mark, x.g]));
 const W = window.WORDS.slice().sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
-  .map(([w, p, l, i, t, e, et, tp, ...more], idx) => ({ idx, w, p, l, i, t, e, et, g: more.includes('T') ? 'TOE' : more.includes('A') ? 'AWL' : more.includes('B') ? 'BIZ' : more.includes('I') ? 'IT' : more.includes('H') ? 'MED' : more.includes('P') ? 'POL' : more.includes('K') ? 'COOK' : more.includes('E') ? 'FEEL' : more.includes('G') ? 'ENV' : more.includes('S') ? 'SOC' : more.includes('F') ? 'FIT' : more.includes('C') ? 'FAM' : more.includes('D') ? 'PET' : more.includes('L') ? 'STY' : more.includes('O') ? 'SPC' : more.includes('M') ? 'ENT' : more.includes('R') ? 'CRM' : more.includes(5) ? (l === 'B2' ? 'B2x' : 'C1') : l, tp: tp || '', xe: more.find(Array.isArray) || [] }));
+  .map(([w, p, l, i, t, e, et, tp, ...more], idx) => ({ idx, w, p, l, i, t, e, et, g: GX_MARK.get(more.find((m) => typeof m === 'string')) || (more.includes(5) ? (l === 'B2' ? 'B2x' : 'C1') : l), tp: tp || '', xe: more.find(Array.isArray) || [] }));
 // Goal tags (data/sets/tags.js): hand-picked words for travel, work, exams …; a word may have several.
 const TAGS = window.TAGS || [];
 const TAG_LABEL = Object.fromEntries(TAGS.map((t) => [t.id, `${t.icon} ${t.th}`]));
@@ -119,13 +133,13 @@ const tagsOf = (w) => TAGS_OF.get(w.w) || [];
 const hasTag = (w, id) => tagsOf(w).includes(id);
 // New words follow the chosen topic (settings.topic) and goal tag (settings.goal); empty = any.
 const inTopic = (w) => (!S.settings.topic || topicMatch(S.settings.topic, w.tp)) && (!S.settings.goal || hasTag(w, S.settings.goal));
-const LEVELS = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1', 'TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL', 'COOK', 'FEEL', 'ENV', 'SOC', 'FIT', 'FAM', 'PET', 'STY', 'SPC', 'ENT', 'CRM'];
+const LEVELS = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1', ...GROUPS_X.map((x) => x.g)];
 // CEFR-ordered groups only (easy → hard): survival, the tower and placement climb these; the extra sets (TOEIC, academic) sit outside the ladder.
 const LEVELS_CEFR = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1'];
 const LEVELS_3000 = ['A1', 'A2', 'B1', 'B2'];
 const LEVELS_5000 = ['B2x', 'C1'];
-const LEVELS_EXTRA = ['TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL', 'COOK', 'FEEL', 'ENV', 'SOC', 'FIT', 'FAM', 'PET', 'STY', 'SPC', 'ENT', 'CRM'];
-const LV_LABEL = { A1: 'A1', A2: 'A2', B1: 'B1', B2: 'B2', B2x: 'B2+', C1: 'C1', C2: 'C2', TOE: 'TOEIC', AWL: 'วิชาการ', BIZ: 'ธุรกิจ', IT: 'IT', MED: 'สุขภาพ', POL: 'การเมือง', COOK: 'ทำอาหาร', FEEL: 'อารมณ์/นิสัย', ENV: 'สิ่งแวดล้อม', SOC: 'โซเชียล/ออนไลน์', FIT: 'ออกกำลังกาย/กีฬา', FAM: 'ครอบครัว/โรงเรียน', PET: 'สัตว์เลี้ยง', STY: 'ความงาม/แฟชั่น', SPC: 'อวกาศ/ดาราศาสตร์', ENT: 'หนัง/เพลง/บันเทิง', CRM: 'ภัยใกล้ตัว/ตำรวจ' };
+const LEVELS_EXTRA = GROUPS_X.map((x) => x.g);
+const LV_LABEL = { A1: 'A1', A2: 'A2', B1: 'B1', B2: 'B2', B2x: 'B2+', C1: 'C1', C2: 'C2', ...Object.fromEntries(GROUPS_X.map((x) => [x.g, x.name])) };
 const lvNames = (ls) => ls.map((l) => LV_LABEL[l]).join(', ');
 const DAY = 86400000;
 // Review intervals (days) for each box. Box >= MASTERED counts as "จำได้แล้ว".
