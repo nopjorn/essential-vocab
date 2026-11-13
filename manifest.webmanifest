@@ -9,6 +9,12 @@
   "background_color": "#f5f3ff",
   "theme_color": "#6c5ce7",
   "lang": "th",
+  "shortcuts": [
+    { "name": "ทบทวนแฟลชการ์ด", "short_name": "ทบทวน", "url": "./?go=cards", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "เล่นเกม", "short_name": "เกม", "url": "./?go=games", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "ค้นหาคำ", "short_name": "ค้นหา", "url": "./?go=search", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "สถิติ", "short_name": "สถิติ", "url": "./?go=stats", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
+  ],
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },

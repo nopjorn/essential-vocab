@@ -2249,3 +2249,18 @@ test('1.249.1 word list: extra word groups fold under one chip', async ({ page }
   await expect(page.locator('#lvXBtn')).not.toHaveClass(/on/);
   expect(errors).toEqual([]);
 });
+
+test('icon shortcuts (1.257): manifest lists them, ?go= opens the page and cleans the URL', async ({ page }) => {
+  const m = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', 'manifest.webmanifest'), 'utf8'));
+  expect(m.shortcuts.map((x) => x.url)).toEqual(['./?go=cards', './?go=games', './?go=search', './?go=stats']);
+  const errors = await openApp(page, { settings: { levels: ['A1'] } });
+  for (const r of ['games', 'stats', 'cards']) {
+    await page.goto('index.html?go=' + r); await page.waitForFunction(() => typeof current !== 'undefined' && document.querySelector('#view').dataset.route);
+    expect(await page.evaluate(() => current)).toBe(r);
+    expect(await page.evaluate(() => location.search)).toBe('');
+  }
+  await page.goto('index.html?go=search'); await expect(page.locator('.gs')).toHaveCount(1);
+  await page.goto('index.html?go=nope'); await page.waitForFunction(() => typeof current !== 'undefined');
+  expect(await page.evaluate(() => current)).toBe('home');
+  expect(errors).toEqual([]);
+});

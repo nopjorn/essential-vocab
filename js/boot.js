@@ -5,7 +5,12 @@
 /* ---------- boot ---------- */
 if (!S.chistFrom) S.chistFrom = today();
 actEvent('open');
-go(['home', 'feed', 'cards'].includes(S.settings.start) ? S.settings.start : 'home');
+// Home-screen icon shortcuts (manifest `shortcuts`, 1.257): ./?go=<route> opens that page once, then the URL is cleaned
+const goParam = (() => { try { return new URLSearchParams(location.search).get('go') || ''; } catch (e) { return ''; } })();
+if (goParam) try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}
+const GO_SHORT = ['cards', 'games', 'list', 'stats'];
+go(GO_SHORT.includes(goParam) ? goParam : ['home', 'feed', 'cards'].includes(S.settings.start) ? S.settings.start : 'home');
+if (goParam === 'search' && typeof openSearch === 'function') setTimeout(openSearch, 0);
 // Ask the browser not to evict our localStorage under storage pressure / inactivity.
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 // New-version banner: sw.js skips waiting, so when a new worker takes over a page that already had one,

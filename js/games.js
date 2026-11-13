@@ -700,16 +700,17 @@ function startGame(id) {
 
 // The game engine (playQuiz / playMatch) lives in data/app/play.js. Until it has loaded these stubs load it and call the real
 // functions, which replace them as globals (idle prefetch in boot.js makes that wait rare).
-let playOn = false;
+let playOn = false, playLoading = null;
 function loadPlay() {
   if (playOn) return Promise.resolve(true);
-  return new Promise((res) => {
+  if (playLoading) return playLoading; // a second call while the file is still loading must not add it twice (1.257)
+  return (playLoading = new Promise((res) => {
     const sc = document.createElement('script');
     sc.src = 'data/app/play.js?v=' + APP_VERSION;
-    sc.onload = () => { playOn = true; res(true); };
-    sc.onerror = () => { sc.remove(); res(false); };
+    sc.onload = () => { playOn = true; playLoading = null; res(true); };
+    sc.onerror = () => { sc.remove(); playLoading = null; res(false); };
     document.head.appendChild(sc);
-  });
+  }));
 }
 function playStub(fn, args) {
   withLoading(loadPlay()).then((ok) => {

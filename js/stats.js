@@ -82,16 +82,17 @@ function toeicPlanHtml(days) {
 /* ---------- lazy stats page (1.236) ---------- */
 // The stats page lives in data/app/stats.js and loads the first time one of its routes opens (idle prefetch in boot.js makes that
 // wait rare). The stubs below load it and call the real functions, which replace them as globals.
-let statsOn = false;
+let statsOn = false, statsLoading = null;
 function loadStats() {
   if (statsOn) return Promise.resolve(true);
-  return new Promise((res) => {
+  if (statsLoading) return statsLoading; // a second call while the file is still loading (idle prefetch + opening stats) must not add it twice (1.257)
+  return (statsLoading = new Promise((res) => {
     const sc = document.createElement('script');
     sc.src = 'data/app/stats.js?v=' + APP_VERSION;
-    sc.onload = () => { statsOn = true; res(true); };
-    sc.onerror = () => { sc.remove(); res(false); };
+    sc.onload = () => { statsOn = true; statsLoading = null; res(true); };
+    sc.onerror = () => { sc.remove(); statsLoading = null; res(false); };
     document.head.appendChild(sc);
-  });
+  }));
 }
 function statsStub(fn, route, args) {
   withLoading(loadStats()).then((ok) => {
