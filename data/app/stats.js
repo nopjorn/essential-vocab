@@ -166,7 +166,8 @@ function renderStats() {
     { name: 'ชุด 3000 คำ', total: in3000().size, l: snap[0], m: snap[1] },
     { name: 'ชุด 5000 คำ', sub: 'รวม 3000 คำ', total: n5, l: s5[0], m: s5[1] },
   ];
-  const ext = { total: W.length - n5, l: Math.max(0, snap[2] - s5[0]), m: Math.max(0, snap[3] - s5[1]) };
+  const ext = { total: GROUPS_X.reduce((t, x) => t + x.n, 0), // every extra group, loaded this start or not (1.253)
+    l: Math.max(0, snap[2] - s5[0]), m: Math.max(0, snap[3] - s5[1]) };
   const etaCard = (st) => {
     const d = etaDays(st.total, st.l, rate, h);
     const pl = st.l / st.total * 100, pm = st.m / st.total * 100;
@@ -203,9 +204,15 @@ function renderStats() {
   // 1.246: only the 3000 / 5000 levels show open; the extra groups fold into one row (started ones first).
   const lvRest = [...LEVELS_3000, ...LEVELS_5000].filter((l) => !lvOn(l));
   const exOn = LEVELS_EXTRA.filter(lvOn), exOff = LEVELS_EXTRA.filter((l) => !lvOn(l));
+  // 1.253: extra groups being studied show open under their own heading; the rest fold into one row, the ones whose words are
+  // not loaded this start (js/groups.js) as name chips that open settings.
+  const exIdle = GROUPS_X.filter((x) => !GX_ON.has(x.g));
+  const exRows = (exOn.length ? `<div class="small muted" style="margin-top:12px"><b>📚 ชุดเสริมที่เรียนอยู่</b> (${exOn.length} หมวด)</div>${exOn.map(lvRow).join('')}` : '')
+    + `<details class="lv-more lv-extra"><summary>📚 ชุดเสริม${exOn.length ? 'อื่น' : ''} ${exOff.length + exIdle.length} หมวด · เรียนแล้ว ${ext.l.toLocaleString()} · จำได้ ${ext.m.toLocaleString()} / ${ext.total.toLocaleString()}</summary>`
+    + `${exOff.map(lvRow).join('')}${exIdle.length ? `<div class="small muted" style="margin-top:8px">ยังไม่ได้เปิดใช้ · เลือกได้ใน ⚙️ ตั้งค่า</div><div class="chips" style="margin-top:6px">${exIdle.map((x) => `<button class="chip ex-idle" data-go="settings">${x.icon} ${x.name} · ${x.n}</button>`).join('')}</div>` : ''}</details>`;
   const lvRows = lvSet('ชุด 3000 คำ', 'คำหลัก', LEVELS_3000, 8) + lvSet('ชุด 5000 คำ', 'คำเพิ่มเติม', LEVELS_5000, 12)
     + (lvRest.length ? `<details class="lv-more"><summary>ระดับอื่นที่ยังไม่ได้เริ่ม (${lvRest.map((l) => LV_LABEL[l]).join(' · ')})</summary>${lvRest.map(lvRow).join('')}</details>` : '')
-    + `<details class="lv-more lv-extra"><summary>📚 ชุดเสริม ${LEVELS_EXTRA.length} หมวด · เรียนแล้ว ${ext.l.toLocaleString()} · จำได้ ${ext.m.toLocaleString()} / ${ext.total.toLocaleString()}</summary>${exOn.map(lvRow).join('')}${exOff.length && exOn.length ? '<div class="small muted" style="margin-top:8px">ยังไม่ได้เริ่ม</div>' : ''}${exOff.map(lvRow).join('')}</details>`;
+    + exRows;
 
   view.innerHTML = `
     ${starterCard()}
@@ -263,7 +270,7 @@ function renderStats() {
     <div class="h2">คาดการณ์ว่าจะจำได้ครบเมื่อไร</div>
     ${rate > 0 ? `<p class="small muted" style="margin:-4px 4px 10px">คิดจากที่เรียนคำใหม่ได้ราว <b>${rate.toFixed(1)} คำ/วัน</b>${measured ? ' (วัดจากความคืบหน้าจริง)' : ` (ประมาณจากเป้า ${newGoal()} คำ × เล่น ${h.active}/${h.span} วัน)`} และความแม่นยำ ${Math.round(h.acc * 100)}%</p>` : ''}
     ${sets.map(etaCard).join('')}
-    <div class="card-box ext-box"><div class="row" style="justify-content:space-between"><b>📚 ชุดเสริม</b><span class="small muted">${LEVELS_EXTRA.length} หมวด · ${ext.total.toLocaleString()} คำ</span></div>
+    <div class="card-box ext-box"><div class="row" style="justify-content:space-between"><b>📚 ชุดเสริม</b><span class="small muted">${GROUPS_X.length} หมวด · ${ext.total.toLocaleString()} คำ</span></div>
       <div class="small muted" style="margin-top:6px">TOEIC วิชาการ ธุรกิจ IT ฯลฯ ไม่นับรวมใน 3000/5000 · เรียนแล้ว ${ext.l.toLocaleString()} · จำได้แล้ว ${ext.m.toLocaleString()} คำ</div></div>
 
     <div class="h2">ถ้าปรับจำนวนคำใหม่ต่อวัน</div>

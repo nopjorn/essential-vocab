@@ -51,3 +51,23 @@ test('settings lists the extra groups by category, one button turns a whole cate
   expect(await page.evaluate(() => S.settings.levels)).toEqual(['A1']);
   expect(errors).toEqual([]);
 });
+
+test('stats: extra groups being studied show open, the others fold, unloaded ones are name chips (1.253)', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('o3k.gx', '["PET"]'));
+  const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1', 'PET'] } });
+  const r = await page.evaluate(async () => {
+    go('stats'); await new Promise((res) => setTimeout(res, 600));
+    const d = view.querySelector('details.lv-extra');
+    return { loaded: LEVELS_EXTRA, head: [...view.querySelectorAll('.small.muted b')].map((b) => b.textContent).filter((t) => t.includes('ชุดเสริม')),
+      sum: d.querySelector('summary').textContent, idle: d.querySelectorAll('.ex-idle').length, box: view.querySelector('.ext-box').textContent };
+  });
+  expect(r.loaded).toEqual(['PET']);
+  expect(r.head).toEqual(['📚 ชุดเสริมที่เรียนอยู่']);
+  expect(r.sum).toContain('ชุดเสริมอื่น 16 หมวด');
+  expect(r.idle).toBe(16);
+  expect(r.box).toContain('17 หมวด');
+  await page.locator('details.lv-extra summary').click();
+  await page.locator('.ex-idle').first().click();
+  await expect(page.locator('#lvlsX')).toBeAttached();
+  expect(errors).toEqual([]);
+});
