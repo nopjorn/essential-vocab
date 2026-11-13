@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.250.0';
+const APP_VERSION = '1.251.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -108,19 +108,6 @@ const IPA_V = 'aeiouæɑɒɔəɜɪʊʌɛɐ';
 const IPA_STRESS = new RegExp(`ˈ([^${IPA_V}ˈˌ./\\s()]*[${IPA_V}][${IPA_V}ːˑ̃]*(?:[^${IPA_V}ˈˌ./\\s()ː](?![${IPA_V}ː]))*)`);
 const ipaHtml = (i) => esc(i || '').replace(IPA_STRESS, 'ˈ<b class="ipa-str">$1</b>');
 const TOPIC_LABEL = Object.fromEntries([...TOPICS, ...TOPIC_GROUPS].map(([id, ic, th]) => [id, `${ic} ${th}`]));
-// Extra word groups (1.250): one row per group = [id, row mark, label, icon, rarity name, file in data/words/, category].
-// Everything else (LEVELS_EXTRA, LV_LABEL, the row-mark lookup, RARITY in collect.js) is built from this table.
-const GROUPS_X = [
-  ['TOE', 'T', 'TOEIC', '💼', 'ชุด TOEIC', 'toeic', 'work'], ['AWL', 'A', 'วิชาการ', '🎓', 'ชุดวิชาการ', 'nawl', 'work'],
-  ['BIZ', 'B', 'ธุรกิจ', '📊', 'ชุดธุรกิจ', 'bsl', 'work'], ['IT', 'I', 'IT', '💻', 'ชุด IT', 'it', 'work'],
-  ['MED', 'H', 'สุขภาพ', '🩺', 'ชุดสุขภาพ', 'health', 'life'], ['POL', 'P', 'การเมือง', '🗳️', 'ชุดการเมือง', 'politics', 'world'],
-  ['COOK', 'K', 'ทำอาหาร', '🍳', 'ชุดทำอาหาร', 'cooking', 'life'], ['FEEL', 'E', 'อารมณ์/นิสัย', '💗', 'ชุดอารมณ์และนิสัย', 'feelings', 'life'],
-  ['ENV', 'G', 'สิ่งแวดล้อม', '🌏', 'ชุดสิ่งแวดล้อม', 'environment', 'world'], ['SOC', 'S', 'โซเชียล/ออนไลน์', '📱', 'ชุดโซเชียลและออนไลน์', 'social', 'world'],
-  ['FIT', 'F', 'ออกกำลังกาย/กีฬา', '🏋️', 'ชุดออกกำลังกายและกีฬา', 'sports', 'fun'], ['FAM', 'C', 'ครอบครัว/โรงเรียน', '👶', 'ชุดครอบครัว เลี้ยงลูก และโรงเรียน', 'family', 'life'],
-  ['PET', 'D', 'สัตว์เลี้ยง', '🐶', 'ชุดสัตว์เลี้ยง', 'pets', 'life'], ['STY', 'L', 'ความงาม/แฟชั่น', '💄', 'ชุดความงามและแฟชั่น', 'beauty', 'life'],
-  ['SPC', 'O', 'อวกาศ/ดาราศาสตร์', '🔭', 'ชุดอวกาศและดาราศาสตร์', 'space', 'fun'], ['ENT', 'M', 'หนัง/เพลง/บันเทิง', '🎬', 'ชุดหนัง เพลง และบันเทิง', 'entertainment', 'fun'],
-  ['CRM', 'R', 'ภัยใกล้ตัว/ตำรวจ', '🚨', 'ชุดภัยใกล้ตัว มิจฉาชีพ และตำรวจ', 'crime', 'world'],
-].map(([g, mark, name, icon, rare, file, cat]) => ({ g, mark, name, icon, rare, file, cat }));
 const GX_MARK = new Map(GROUPS_X.map((x) => [x.mark, x.g]));
 const W = window.WORDS.slice().sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
   .map(([w, p, l, i, t, e, et, tp, ...more], idx) => ({ idx, w, p, l, i, t, e, et, g: GX_MARK.get(more.find((m) => typeof m === 'string')) || (more.includes(5) ? (l === 'B2' ? 'B2x' : 'C1') : l), tp: tp || '', xe: more.find(Array.isArray) || [] }));
@@ -133,12 +120,13 @@ const tagsOf = (w) => TAGS_OF.get(w.w) || [];
 const hasTag = (w, id) => tagsOf(w).includes(id);
 // New words follow the chosen topic (settings.topic) and goal tag (settings.goal); empty = any.
 const inTopic = (w) => (!S.settings.topic || topicMatch(S.settings.topic, w.tp)) && (!S.settings.goal || hasTag(w, S.settings.goal));
-const LEVELS = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1', ...GROUPS_X.map((x) => x.g)];
+const LEVELS = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1', ...GROUPS_X.filter((x) => GX_ON.has(x.g)).map((x) => x.g)];
 // CEFR-ordered groups only (easy → hard): survival, the tower and placement climb these; the extra sets (TOEIC, academic) sit outside the ladder.
 const LEVELS_CEFR = ['A1', 'A2', 'B1', 'B2', 'B2x', 'C1'];
 const LEVELS_3000 = ['A1', 'A2', 'B1', 'B2'];
 const LEVELS_5000 = ['B2x', 'C1'];
-const LEVELS_EXTRA = GROUPS_X.map((x) => x.g);
+// Only the extra groups whose word file was loaded this start (js/groups.js, 1.251); the others are opened with gxOpen().
+const LEVELS_EXTRA = GROUPS_X.filter((x) => GX_ON.has(x.g)).map((x) => x.g);
 const LV_LABEL = { A1: 'A1', A2: 'A2', B1: 'B1', B2: 'B2', B2x: 'B2+', C1: 'C1', C2: 'C2', ...Object.fromEntries(GROUPS_X.map((x) => [x.g, x.name])) };
 const lvNames = (ls) => ls.map((l) => LV_LABEL[l]).join(', ');
 const DAY = 86400000;
@@ -385,6 +373,33 @@ function flushSave() {
   let ok = storeWrite(json);
   if (!ok && storeTrim()) ok = storeWrite(json = JSON.stringify(S));
   idbNote(json, ok);
+  gxNote();
+}
+// Which extra word files the next start loads (1.251, device-local `o3k.gx`, read by js/groups.js): the groups already loaded
+// plus every group the settings or progress use. A word in progress or a set that is not in W (it belongs to a file not loaded,
+// e.g. after a cloud sync) drops the key, so the next start loads every file and works the list out again.
+let gxLast = null;
+function gxNote() {
+  const need = new Set(GX_ON.all ? [] : GX_ON), st = S.settings, xs = new Set(GROUPS_X.map((x) => x.g));
+  [...st.levels, ...((st.wotd && st.wotd.lv) || []), ...(st.riddleLv || []), st.cardPick && st.cardPick.lv].forEach((g) => { if (xs.has(g)) need.add(g); });
+  if (!gxNote.map) gxNote.map = new Map(W.map((w) => [w.w, w.g]));
+  let miss = false;
+  const chk = (w) => { const g = gxNote.map.get(w); if (g === undefined) miss = true; else if (xs.has(g)) need.add(g); };
+  for (const w in S.prog) chk(w);
+  for (const d of S.decks || []) if (!d.del) d.words.forEach(chk);
+  const v = miss ? '' : JSON.stringify(GROUPS_X.map((x) => x.g).filter((g) => need.has(g)));
+  if (v === gxLast) return;
+  gxLast = v;
+  try { if (v) localStorage.setItem(GX_KEY, v); else localStorage.removeItem(GX_KEY); } catch (e) { /* storage off: every file loads */ }
+}
+// Opens an extra group whose words are not loaded yet: remember it and restart the app with its file.
+function gxOpen(g) {
+  if (GX_ON.has(g)) return false;
+  flushSave();
+  try { const a = JSON.parse(localStorage.getItem(GX_KEY) || 'null'); if (Array.isArray(a)) localStorage.setItem(GX_KEY, JSON.stringify([...new Set([...a, g])])); } catch (e) { /* off */ }
+  if (typeof toast === 'function') toast(`กำลังโหลดชุด ${LV_LABEL[g]} …`);
+  location.reload();
+  return true;
 }
 function storeWrite(json) {
   try { localStorage.setItem(KEY, json); saveFailed = false; saveLen = json.length; storeCheck(json.length); try { localStorage.setItem('o3k.lsAt', String(Date.now())); } catch (e2) { /* full */ } return true; } catch (e) {

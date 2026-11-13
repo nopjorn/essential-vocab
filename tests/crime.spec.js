@@ -16,7 +16,7 @@ test('crime set: own group, settings chip, badge colour, stats row, not on the C
 
   await page.evaluate(() => go('settings'));
   await page.evaluate(() => { document.querySelector('details[data-g="lv"]').open = true; });
-  const chip = page.locator('#lvlsX .chip[data-v="STY"]');
+  const chip = page.locator('#lvlsX .chip[data-v="CRM"]');
   await expect(chip).toContainText(/ภัยใกล้ตัว\/ตำรวจ · \d+ คำ/);
   await chip.click();
   await page.locator('#lvls .chip[data-v="A1"]').click();

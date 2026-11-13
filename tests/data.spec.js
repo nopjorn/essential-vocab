@@ -978,18 +978,20 @@ test('files loaded at every start stay within their size budget', () => {
 
 // 1.250: the extra word groups are one table (GROUPS_X in app.js); every row needs its word file, colour token and rows with its mark.
 test('GROUPS_X table matches the word files and styles', () => {
-  const src = read('app.js'), m = /const GROUPS_X = (\[[\s\S]*?\])\.map/.exec(src);
+  const src = read('js/groups.js'), m = /const GROUPS_X = (\[[\s\S]*?\])\.map/.exec(src);
   const rows = vm.runInNewContext(m[1]), css = read('style.css'), sw = read('sw.js'), html = read('index.html');
   expect(new Set(rows.map((r) => r[0])).size).toBe(rows.length);
   expect(new Set(rows.map((r) => r[1])).size).toBe(rows.length);
-  for (const [g, mark, , , , file] of rows) {
+  expect(html.indexOf('js/groups.js')).toBeGreaterThan(html.indexOf('data/words/c1.js'));
+  expect(html.indexOf('js/groups.js')).toBeLessThan(html.indexOf('"app.js"'));
+  for (const [g, mark, , , , file, , n] of rows) {
     const f = `data/words/${file}.js`;
     expect(fs.existsSync(path.join(root, f)), f).toBe(true);
     expect(sw).toContain(`'${f}'`);
     expect(css, g).toContain(`--${g.toLowerCase()}:`);
     const w = load(f).WORDS;
-    expect(w.length, f).toBeGreaterThan(50);
+    expect(w.length, f).toBe(n);
     expect(w.every((r) => r.slice(8).includes(mark)), f).toBe(true);
-    expect(html.includes(f) || /GROUPS_X/.test(read('js/boot.js')), f).toBe(true);
+    expect(html, f).not.toContain(f); // loaded by js/groups.js (1.251)
   }
 });

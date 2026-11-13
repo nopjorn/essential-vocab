@@ -33,7 +33,7 @@ function nextGamesSummary(list) {
 }
 function renderSettings() {
   const st = S.settings;
-  const lvChip = (l) => `<button class="chip" data-v="${l}">${LV_LABEL[l]} · ${W.filter((w) => w.g === l).length} คำ</button>`;
+  const lvChip = (l) => `<button class="chip" data-v="${l}">${LV_LABEL[l]} · ${(GROUPS_X.find((x) => x.g === l) || { n: W.filter((w) => w.g === l).length }).n} คำ</button>`;
   view.innerHTML = `
     <div class="set-search" role="search"><input type="search" id="setQ" class="sel" placeholder="🔎 ค้นหาการตั้งค่า เช่น เสียง ธีม สำรอง" aria-label="ค้นหาการตั้งค่า" autocomplete="off" enterkeyhint="search">
       <div class="small muted" id="setQNone" hidden>ไม่เจอการตั้งค่าที่ตรงกับคำนี้ ลองคำอื่น เช่น “เสียง” “สี” “เตือน” “ตัวอักษร”</div></div>
@@ -43,7 +43,7 @@ function renderSettings() {
       <div class="small muted" style="margin:14px 0 8px"><b>ชุด 5000 คำ</b> · คำเพิ่มเติมระดับสูง</div>
       <div class="chips grid" id="lvls5">${LEVELS_5000.map(lvChip).join('')}</div>
       <div class="small muted" style="margin:14px 0 8px"><b>ชุดเสริม</b> · TOEIC = ศัพท์ที่ทำงาน การเดินทาง ธุรกิจ · วิชาการ = ศัพท์อ่านตำรา บทความ งานวิจัย (IELTS/TOEFL) · ธุรกิจ = ศัพท์การเงิน การลงทุน สัญญา ข่าวเศรษฐกิจ · IT = ศัพท์โปรแกรมเมอร์และงานไอที · สุขภาพ = อาการป่วย หาหมอ ซื้อยา · การเมือง = ข่าวการเมือง การเลือกตั้ง รัฐสภา การทูต · ทำอาหาร = วิธีปรุง เครื่องครัว วัตถุดิบไทย รสชาติ · อารมณ์/นิสัย = ความรู้สึก อารมณ์ ปฏิกิริยา และบุคลิกนิสัย · สิ่งแวดล้อม = ฝุ่น PM2.5 โลกร้อน ขยะ พลังงาน สัตว์ป่า · โซเชียล/ออนไลน์ = โซเชียลมีเดีย แชต คลิปและไลฟ์ ช้อปออนไลน์ ภัยออนไลน์ · ออกกำลังกาย/กีฬา = ยิม ท่าออกกำลังกาย งานวิ่ง กล้ามเนื้อ และกติกากีฬา · ครอบครัว/โรงเรียน = ญาติ เลี้ยงลูก ของใช้เด็กอ่อน ของเล่น และชีวิตในโรงเรียน · สัตว์เลี้ยง = หมา แมว ปลา นก อาหารและอุปกรณ์ อาบน้ำตัดขน หาหมอ ฝึกสัตว์ · ความงาม/แฟชั่น = สกินแคร์ เครื่องสำอาง ร้านทำผม ทำเล็บ เสื้อผ้า รองเท้า และแก้ทรงเสื้อผ้า · อวกาศ/ดาราศาสตร์ = ดูดาว ดวงจันทร์ ระบบสุริยะ กาแล็กซี จรวด นักบินอวกาศ และภารกิจอวกาศ · หนัง/เพลง/บันเทิง = หนังและซีรีส์ เครื่องดนตรี วงและนักร้อง คอนเสิร์ต แฟนคลับเคป็อป ละครเวที และงานประกาศรางวัล · ภัยใกล้ตัว/ตำรวจ = ขโมย ล้วงกระเป๋า แก๊งคอลเซ็นเตอร์ บัญชีม้า แชร์ลูกโซ่ แจ้งความ สถานีตำรวจ ศาลและบทลงโทษ</div>
-      <div class="chips grid" id="lvlsX">${LEVELS_EXTRA.map(lvChip).join('')}</div>
+      <div class="chips grid" id="lvlsX">${GROUPS_X.map((x) => lvChip(x.g)).join('')}</div>
       <p class="small muted">A1–A2 = พื้นฐาน, B1–B2 = ระดับกลาง, B2+ และ C1 = ระดับสูง, ชุดเสริมมีเฉพาะคำที่ไม่ซ้ำกับชุด 3000/5000 (เลือกได้หลายชุด)</p>
       <button class="set-row set-link" id="toPlace"><span>🎯 แบบทดสอบวัดระดับ<br><span class="small muted">ไม่แน่ใจว่าควรเริ่มระดับไหน? ทำแบบทดสอบแล้วแอปจะข้ามคำที่คุณรู้แล้วให้</span></span><span class="muted">›</span></button>
       <div class="set-row stack" style="border-top:1px solid var(--border);padding-top:12px"><span>คำใหม่จากหมวด</span>
@@ -233,8 +233,9 @@ function renderSettings() {
     const c = e.target.closest('.chip'); if (!c) return;
     const v = c.dataset.v;
     if (st.levels.includes(v)) { if (st.levels.length > 1) st.levels = st.levels.filter((x) => x !== v); else toast('ต้องเลือกอย่างน้อย 1 ระดับ'); }
-    else st.levels = LEVELS.filter((l) => l === v || st.levels.includes(l));
+    else st.levels = [...LEVELS, ...GROUPS_X.map((x) => x.g)].filter((l, i, a) => a.indexOf(l) === i && (l === v || st.levels.includes(l)));
     save(); paint();
+    if (st.levels.includes(v)) gxOpen(v); // an extra group not loaded yet: restart with its words (1.251)
   };
   $('#wotdSetBtn').onclick = () => go('wotdset');
   $('#nextGames').onclick = (e) => {

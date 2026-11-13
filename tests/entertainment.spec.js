@@ -16,7 +16,7 @@ test('entertainment set: own group, settings chip, badge colour, stats row, not 
 
   await page.evaluate(() => go('settings'));
   await page.evaluate(() => { document.querySelector('details[data-g="lv"]').open = true; });
-  const chip = page.locator('#lvlsX .chip[data-v="STY"]');
+  const chip = page.locator('#lvlsX .chip[data-v="ENT"]');
   await expect(chip).toContainText(/หนัง\/เพลง\/บันเทิง · \d+ คำ/);
   await chip.click();
   await page.locator('#lvls .chip[data-v="A1"]').click();

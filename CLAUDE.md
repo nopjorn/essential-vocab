@@ -30,6 +30,7 @@ Core files below. Feature-by-feature notes (names, ids, state fields, tests) liv
 | File / feature | Notes |
 |---|---|
 | `index.html` | Shell: top bar, `#view`, tab bar |
+| `js/groups.js` | Extra word groups table `GROUPS_X` + lazy loader of their word files (1.251, loads before app.js) |
 | `app.js` | Core: `APP_VERSION`, data, storage/backup, quests, XP, achievements, helpers, speech, SRS, router (`go()`) |
 | `js/*.js` | The rest of the logic, one classic script per area (`home cards games feed reading words placement stats sync guide settings boot`), sections marked `/* ---------- name ---------- */`. They share globals (no modules, no build); `index.html` loads them after `app.js` and `boot.js` must stay last; `js/errlog.js` (1.224, device error log `o3k.errs`) is the exception: it loads first, before `config.js`. A new file goes in `index.html` **and** `sw.js` (a test checks) |
 | `style.css` | Mobile-first styles; colour tokens on `:root` with dark mode |

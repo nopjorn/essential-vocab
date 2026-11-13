@@ -12,7 +12,7 @@ function renderList() {
       <button class="chip lv-xbtn" id="lvXBtn" aria-expanded="false"></button>
     </div>
     <div class="chips scroll" id="lvX" style="margin-bottom:8px" hidden>
-      ${LEVELS_EXTRA.map((l) => `<button class="chip lv-${l}" data-v="${l}"><i class="lc-dot"></i>${LV_LABEL[l]}</button>`).join('')}
+      ${GROUPS_X.map(({ g: l }) => `<button class="chip lv-${l}" data-v="${l}"><i class="lc-dot"></i>${LV_LABEL[l]}</button>`).join('')}
     </div>
     <div class="chips scroll" id="st" style="margin-bottom:8px">
       ${[['all', 'ทั้งหมด'], ['new', 'ยังไม่เรียน'], ['learning', '🟡 กำลังเรียน'], ['mastered', '🟢 จำได้แล้ว'], ['star', '⭐ ติดดาว'], ['leech', '🐢 คำดื้อ'], ['note', '💡 มีวิธีจำ']].map(([v, t]) => `<button class="chip" data-v="${v}">${t} <small class="cn"></small></button>`).join('')}
@@ -31,7 +31,7 @@ function renderList() {
     view.querySelectorAll('#lv .chip[data-v], #lvX .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === listFilter.lv));
     const xb = $('#lvXBtn'), xOn = LEVELS_EXTRA.includes(listFilter.lv), xOpen = !$('#lvX').hidden;
     xb.classList.toggle('on', xOn); xb.setAttribute('aria-expanded', xOpen);
-    xb.innerHTML = `${xOn ? `<i class="lc-dot"></i>${LV_LABEL[listFilter.lv]}` : `📚 ชุดเสริม <small class="cn">${LEVELS_EXTRA.length}</small>`} <span aria-hidden="true">${xOpen ? '▴' : '▾'}</span>`;
+    xb.innerHTML = `${xOn ? `<i class="lc-dot"></i>${LV_LABEL[listFilter.lv]}` : `📚 ชุดเสริม <small class="cn">${GROUPS_X.length}</small>`} <span aria-hidden="true">${xOpen ? '▴' : '▾'}</span>`;
     xb.className = 'chip lv-xbtn' + (xOn ? ' on lv-' + listFilter.lv : '');
     view.querySelectorAll('#st .chip').forEach((c) => {
       c.classList.toggle('on', c.dataset.v === listFilter.st);
@@ -111,7 +111,7 @@ function renderList() {
     if (c.id === 'lvXBtn') { $('#lvX').hidden = !$('#lvX').hidden; paint(); return; }
     listFilter.lv = c.dataset.v; $('#lvX').hidden = true; apply();
   };
-  $('#lvX').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { listFilter.lv = c.dataset.v; $('#lvX').hidden = true; apply(); } };
+  $('#lvX').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { if (gxOpen(c.dataset.v)) return; listFilter.lv = c.dataset.v; $('#lvX').hidden = true; apply(); } };
   $('#st').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { listFilter.st = c.dataset.v; apply(); } };
   rows.onclick = (e) => {
     const r = e.target.closest('.wrow'); if (!r) return;
