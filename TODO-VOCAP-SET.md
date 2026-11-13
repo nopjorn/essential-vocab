@@ -28,7 +28,7 @@
 
 **รอบ 3 (คุยกันเมื่อ 2026-11-13 หลังออก 1.246.1 — เทียบกับคลัง 8,798 คำ รวม FAM PET STY แล้ว):**
 - [x] 🔥 **🔭 อวกาศ / ดาราศาสตร์** (เสร็จ: 1.247.0 — กลุ่ม `SPC` 210 คำ `data/words/space.js` แถวลงท้าย `'O'`) (4/15) — ยังไม่มี: orbit, galaxy, asteroid, comet, telescope, astronaut, eclipse, meteor, constellation, nebula, lunar · ขาดเยอะที่สุดในรอบนี้ เด็กๆ ชอบ ใช้ในวิชาวิทย์ได้ด้วย และเอาไปใช้กับชุดสำเร็จรูป "วิทยาศาสตร์ ม.ปลาย" ได้
-- [ ] ⭐ **🎬 หนัง / เพลง / บันเทิง** (~16/30) — ยังไม่มี: sequel, spoiler, soundtrack, encore, lyrics, subtitle, premiere, chorus, box office, chord, tempo, flute, saxophone, ukulele, karaoke · ใช้ตอนดูซีรีส์ ฟังเพลง หรือเล่นดนตรี
+- [x] ⭐ **🎬 หนัง / เพลง / บันเทิง** (เสร็จ: 1.248.0 — กลุ่ม `ENT` 212 คำ `data/words/entertainment.js` แถวลงท้าย `'M'`) (~16/30) — ยังไม่มี: sequel, spoiler, soundtrack, encore, lyrics, subtitle, premiere, chorus, box office, chord, tempo, flute, saxophone, ukulele, karaoke · ใช้ตอนดูซีรีส์ ฟังเพลง หรือเล่นดนตรี
 - [ ] ⭐ **🌱 สวน / เกษตร** (~17/30) — ยังไม่มี: prune, rake, hose, shovel, bloom, shrub, trowel, tractor, orchard, plough, livestock, barn · คนไทยปลูกต้นไม้กันเยอะ และงานเกษตรก็เป็นอาชีพใหญ่ของประเทศ
 - [ ] ⭐ **🚨 ภัยใกล้ตัว / มิจฉาชีพ / ตำรวจ** (9/15) — ยังไม่มี: scam, pickpocket, burglar, alibi, handcuffs, police station · ใช้แจ้งความตอนอยู่ต่างประเทศหรือตอนช่วยนักท่องเที่ยว และเรื่องแก๊งหลอกลวงก็ใกล้ตัวคนไทยมาก · ระวังซ้ำกับชุดสำเร็จรูป "สัญญา / กฎหมายใกล้ตัว" (ข้างล่าง)
 - [ ] 💡 **🎮 เกม / อีสปอร์ต** (9/15) — ยังไม่มี: respawn, loot, multiplayer, joystick, glitch, spawn · วัยรุ่นน่าจะชอบ · ใส่แต่คำที่ใช้กันนาน สแลงในเกมให้อยู่ในสมุดวลี `chat`

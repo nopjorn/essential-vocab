@@ -46,7 +46,7 @@ test('word rows are well formed', () => {
   for (const r of WORDS) {
     const [w, p, lv, ipa, th, ex, exTh, tp] = r;
     const more = r.slice(8), xe = more.find(Array.isArray);
-    if (more.length > 2 || more.some((x) => x !== 5 && x !== 'T' && x !== 'A' && x !== 'B' && x !== 'I' && x !== 'H' && x !== 'P' && x !== 'K' && x !== 'E' && x !== 'G' && x !== 'S' && x !== 'F' && x !== 'C' && x !== 'D' && x !== 'L' && x !== 'O' && x !== xe) || (more.length === 2 && ![5, 'T', 'A', 'B', 'I', 'H', 'P', 'K', 'E', 'G', 'S', 'F', 'C', 'D', 'L', 'O'].includes(more[0])) || more.filter((x) => !Array.isArray(x)).length > 1) bad.push(`${w}: ${r.length} fields`);
+    if (more.length > 2 || more.some((x) => x !== 5 && x !== 'T' && x !== 'A' && x !== 'B' && x !== 'I' && x !== 'H' && x !== 'P' && x !== 'K' && x !== 'E' && x !== 'G' && x !== 'S' && x !== 'F' && x !== 'C' && x !== 'D' && x !== 'L' && x !== 'O' && x !== 'M' && x !== xe) || (more.length === 2 && ![5, 'T', 'A', 'B', 'I', 'H', 'P', 'K', 'E', 'G', 'S', 'F', 'C', 'D', 'L', 'O', 'M'].includes(more[0])) || more.filter((x) => !Array.isArray(x)).length > 1) bad.push(`${w}: ${r.length} fields`);
     if (xe) xe.forEach((x) => { if (!Array.isArray(x) || x.length !== 2 || !/^[A-Z0-9].*[.?!]$/.test(x[0]) || !x[1] || x[0] === ex) bad.push(`${w}: extra example ${JSON.stringify(x)}`); });
     if (!['A1', 'A2', 'B1', 'B2', 'C1'].includes(lv)) bad.push(`${w}: level ${lv}`);
     Object.entries({ w, p, ipa, th, ex, exTh, tp }).forEach(([n, x]) => { if (typeof x !== 'string' || !x) bad.push(`${w}: empty ${n}`); });
@@ -256,6 +256,21 @@ test('space set (1.247): every row is marked O, adds a word no other list has, a
   expect(t.WORDS.length).toBeGreaterThanOrEqual(200);
   const rest = new Set(load(...WORD_FILES.filter((f) => !f.endsWith('/space.js'))).WORDS.map((r) => r[0].toLowerCase()));
   const bad = t.WORDS.filter((r) => r[8] !== 'O' || r.length !== 9 || rest.has(r[0].toLowerCase()) || !/^[a-z][a-z -]*$/.test(r[0])).map((r) => r[0]);
+  expect(bad).toEqual([]);
+  expect(t.WORDS.map((r) => r[0])).toEqual(t.WORDS.map((r) => r[0]).sort());
+  // fill-in-the-blank games blank the word out of its example, so each sentence needs the word or a regular -s/-ed/-ing form
+  const noWord = t.WORDS.filter(([w, , , , , ex]) => !new RegExp(`(^|[^a-z])${w}(s|es|d|ed|${w.slice(-1)}ed|ing|${w.slice(-1)}ing)?(?![a-z])`, 'i').test(ex)
+    && !(/y$/.test(w) && new RegExp(`(^|[^a-z])${w.slice(0, -1)}ie(s|d)(?![a-z])`, 'i').test(ex))
+    && !(/e$/.test(w) && new RegExp(`(^|[^a-z])${w.slice(0, -1)}ing(?![a-z])`, 'i').test(ex))).map((r) => r[0]);
+  expect(noWord).toEqual([]);
+});
+
+test('entertainment set (1.248): every row is marked M, adds a word no other list has, and its example uses the word', () => {
+  const t = { WORDS: [] };
+  vm.runInNewContext(read('data/words/entertainment.js'), { window: t });
+  expect(t.WORDS.length).toBeGreaterThanOrEqual(200);
+  const rest = new Set(load(...WORD_FILES.filter((f) => !f.endsWith('/entertainment.js'))).WORDS.map((r) => r[0].toLowerCase()));
+  const bad = t.WORDS.filter((r) => r[8] !== 'M' || r.length !== 9 || rest.has(r[0].toLowerCase()) || !/^[a-z][a-z -]*$/.test(r[0])).map((r) => r[0]);
   expect(bad).toEqual([]);
   expect(t.WORDS.map((r) => r[0])).toEqual(t.WORDS.map((r) => r[0]).sort());
   // fill-in-the-blank games blank the word out of its example, so each sentence needs the word or a regular -s/-ed/-ing form

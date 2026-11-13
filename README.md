@@ -60,6 +60,7 @@
 | สัตว์เลี้ยง | คัดและเขียนเองสำหรับแอปนี้ (ชุดเสริม เฉพาะคำที่ไม่อยู่ในรายการอื่น) | 172 คำ |
 | ความงาม/แฟชั่น | คัดและเขียนเองสำหรับแอปนี้ (ชุดเสริม เฉพาะคำที่ไม่อยู่ในรายการอื่น) | 277 คำ |
 | อวกาศ/ดาราศาสตร์ | คัดและเขียนเองสำหรับแอปนี้ (ชุดเสริม เฉพาะคำที่ไม่อยู่ในรายการอื่น) | 210 คำ |
+| หนัง/เพลง/บันเทิง | คัดและเขียนเองสำหรับแอปนี้ (ชุดเสริม เฉพาะคำที่ไม่อยู่ในรายการอื่น) | 212 คำ |
 
 เลือกระดับที่ต้องการได้ในหน้า **ตั้งค่า** (เลือกได้หลายระดับพร้อมกัน)
 มี 19 คำที่อยู่ในทั้งสองลิสต์แต่มีความหมายใหม่ใน 5000 (เช่น *minute* = เล็กมาก) ซึ่งเพิ่มความหมายนั้นไว้ในการ์ดเดิมแล้ว
@@ -112,6 +113,7 @@
 
 | เวอร์ชัน | สิ่งที่เปลี่ยน |
 |---|---|
+| 1.248.0 | ชุดเสริมใหม่ 🎬 หนัง/เพลง/บันเทิง 212 คำ ไว้ดูหนังและซีรีส์ ฟังเพลง ไปคอนเสิร์ต เล่นดนตรี และคุยเรื่องศิลปินที่ชอบ ไม่ซ้ำกับชุดอื่น: หนังและซีรีส์ (sequel, prequel, spin-off, trilogy, blockbuster, thriller, sitcom, rom-com, cliffhanger, plot twist, finale, subtitle, dubbing) ตัวละครและการถ่ายทำ (protagonist, villain, cameo, stunt double, screenplay, close-up, flashback, special effects, blooper) เพลงและเครื่องดนตรี (lyrics, chorus, chord, tempo, soundtrack, duet, flute, saxophone, ukulele, cello, harmonica) วงและคอนเสิร์ต (lead singer, drummer, encore, setlist, soundcheck, headliner, mosh pit, world tour) แฟนคลับ (fan meeting, lightstick, merch, k-pop, boy band, girl group) เวทีและรายการ (karaoke, talent show, stand-up comedy, intermission, standing ovation) และงานรางวัล (red carpet, premiere, award show, acceptance speech) · เปิดได้ที่ ⚙️ ตั้งค่า → ระดับคำศัพท์ → ชิป หนัง/เพลง/บันเทิง |
 | 1.247.0 | ชุดเสริมใหม่ 🔭 อวกาศ/ดาราศาสตร์ 210 คำ ไว้ดูดาว ดูสารคดีอวกาศ อ่านข่าวภารกิจอวกาศ และใช้ในวิชาวิทยาศาสตร์ ไม่ซ้ำกับชุดอื่น: ท้องฟ้ายามค่ำคืน (constellation, milky way, shooting star, meteor shower, stargazing, light pollution) ดวงจันทร์ (full moon, crescent moon, waxing, waning, lunar eclipse, supermoon, blood moon) ระบบสุริยะ (orbit, asteroid, comet, dwarf planet, jupiter, saturn, venus, mars) ดาวและกาแล็กซี (galaxy, nebula, black hole, supernova, red giant, white dwarf, light-year) กล้องและหอดูดาว (telescope, binoculars, observatory, planetarium, eyepiece) จรวดและยานอวกาศ (launch pad, countdown, blast off, booster, spacecraft, rover, space station) และชีวิตนักบินอวกาศ (astronaut, spacewalk, space suit, weightless, zero gravity, re-entry) · เปิดได้ที่ ⚙️ ตั้งค่า → ระดับคำศัพท์ → ชิป อวกาศ/ดาราศาสตร์ |
 | 1.246.1 | หัวข้อ 🎓 ทดสอบจบระดับ ในหน้าสถิติ: ชุดเสริม 14 หมวดพับรวมไว้แถวเดียว 📚 ชุดเสริม (บอกจำนวนหมวดที่ทดสอบได้/ผ่านแล้ว) แตะเพื่อกาง หน้าสั้นลง ส่วน A1–C1 แสดงเหมือนเดิม |
 | 1.246.0 | หน้าสถิติเน้นชุดหลัก 3000/5000 คำ: คาดการณ์ว่าจะจำได้ครบเปลี่ยนเป็น ชุด 3000 และ ชุด 5000 (เดิมเป็นครบทุกคำในแอป) ตารางถ้าปรับคำใหม่ต่อวันเป็น ครบ 3000 / ครบ 5000 · ตัวเลขบนสุด 🟢 จำได้ และกราฟแนวโน้มนับเฉพาะชุด 5000 · ชุดเสริม (TOEIC วิชาการ ธุรกิจ ฯลฯ) แยกเป็นการ์ดสรุปเล็กๆ และพับรวมไว้ในหัวข้อความคืบหน้าแต่ละระดับ แตะเพื่อกางดูทีละหมวด |

@@ -12,7 +12,7 @@ test('pets set: own group, settings chip, badge colour, stats row, not on the CE
   }));
   expect(info.n).toBeGreaterThanOrEqual(150);
   delete info.n;
-  expect(info).toEqual({ label: 'สัตว์เลี้ยง', extra: ['TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL', 'COOK', 'FEEL', 'ENV', 'SOC', 'FIT', 'FAM', 'PET', 'STY', 'SPC'], cefr: true, ladder: false, tower: false });
+  expect(info).toEqual({ label: 'สัตว์เลี้ยง', extra: ['TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL', 'COOK', 'FEEL', 'ENV', 'SOC', 'FIT', 'FAM', 'PET', 'STY', 'SPC', 'ENT'], cefr: true, ladder: false, tower: false });
 
   await page.evaluate(() => go('settings'));
   await page.evaluate(() => { document.querySelector('details[data-g="lv"]').open = true; });
