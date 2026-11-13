@@ -984,11 +984,12 @@ test('GROUPS_X table matches the word files and styles', () => {
   expect(new Set(rows.map((r) => r[1])).size).toBe(rows.length);
   expect(html.indexOf('js/groups.js')).toBeGreaterThan(html.indexOf('data/words/c1.js'));
   expect(html.indexOf('js/groups.js')).toBeLessThan(html.indexOf('"app.js"'));
-  for (const [g, mark, , , , file, , n] of rows) {
+  for (const cat of new Set(rows.map((r) => r[6]))) expect(css, cat).toMatch(new RegExp(`--gx-${cat}: #[0-9a-f]{6};`));
+  for (const [g, mark, , , , file, cat, n] of rows) {
     const f = `data/words/${file}.js`;
     expect(fs.existsSync(path.join(root, f)), f).toBe(true);
     expect(sw).toContain(`'${f}'`);
-    expect(css, g).toContain(`--${g.toLowerCase()}:`);
+    expect(css, g).toContain(`--${g.toLowerCase()}: var(--gx-${cat});`); // one colour per category (1.254)
     const w = load(f).WORDS;
     expect(w.length, f).toBe(n);
     expect(w.every((r) => r.slice(8).includes(mark)), f).toBe(true);
