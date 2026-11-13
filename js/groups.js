@@ -12,6 +12,8 @@ const GROUPS_X = [
   ['SPC', 'O', 'อวกาศ/ดาราศาสตร์', '🔭', 'ชุดอวกาศและดาราศาสตร์', 'space', 'fun', 210], ['ENT', 'M', 'หนัง/เพลง/บันเทิง', '🎬', 'ชุดหนัง เพลง และบันเทิง', 'entertainment', 'fun', 212],
   ['CRM', 'R', 'ภัยใกล้ตัว/ตำรวจ', '🚨', 'ชุดภัยใกล้ตัว มิจฉาชีพ และตำรวจ', 'crime', 'world', 216],
 ].map(([g, mark, name, icon, rare, file, cat, n]) => ({ g, mark, name, icon, rare, file, cat, n }));
+// Categories of the extra groups (1.252): settings shows the chips under these headings, with a button that turns on the whole category.
+const GX_CATS = [['work', '💼 งานและการเรียน'], ['life', '🏠 ชีวิตประจำวัน'], ['world', '🌍 สังคมและข่าว'], ['fun', '🎉 งานอดิเรก']];
 const GX_KEY = 'o3k.gx';
 // The groups whose word file loads this start: the list app.js saved last time (gxNote), or every group when there is none
 // (first start, storage blocked, or a word from an unknown file turned up). document.write keeps them in order before app.js.

@@ -34,3 +34,20 @@ test('extra word files load on demand and stay loaded once used', async ({ page 
   expect(JSON.parse(await page.evaluate(() => localStorage.getItem('o3k.gx')))).toEqual(['PET', 'STY', 'SPC']);
   expect(errors).toEqual([]);
 });
+
+test('settings lists the extra groups by category, one button turns a whole category on and off (1.252)', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1'] } });
+  await page.evaluate(() => go('settings'));
+  await page.evaluate(() => { document.querySelector('details[data-g="lv"]').open = true; });
+  expect(await page.locator('#lvlsX .lvx-cat').count()).toBe(4);
+  expect(await page.locator('#lvlsX .lvx-cat .chip').count()).toBe(17);
+  const fun = page.locator('.lvx-all[data-cat="fun"]');
+  await expect(fun).toHaveText('เลือกทั้งหมวด');
+  await fun.click();
+  expect(await page.evaluate(() => S.settings.levels)).toEqual(['A1', 'FIT', 'SPC', 'ENT']);
+  await expect(fun).toHaveText('เอาออกทั้งหมวด');
+  await expect(page.locator('#lvlsX .chip[data-v="SPC"]')).toHaveClass(/\bon\b/);
+  await fun.click();
+  expect(await page.evaluate(() => S.settings.levels)).toEqual(['A1']);
+  expect(errors).toEqual([]);
+});

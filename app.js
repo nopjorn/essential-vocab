@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.251.0';
+const APP_VERSION = '1.252.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -392,12 +392,13 @@ function gxNote() {
   gxLast = v;
   try { if (v) localStorage.setItem(GX_KEY, v); else localStorage.removeItem(GX_KEY); } catch (e) { /* storage off: every file loads */ }
 }
-// Opens an extra group whose words are not loaded yet: remember it and restart the app with its file.
+// Opens one extra group or a list of them (a whole category, 1.252) whose words are not loaded yet: remember it and restart the app with its file.
 function gxOpen(g) {
-  if (GX_ON.has(g)) return false;
+  const gs = [].concat(g).filter((x) => !GX_ON.has(x));
+  if (!gs.length) return false;
   flushSave();
-  try { const a = JSON.parse(localStorage.getItem(GX_KEY) || 'null'); if (Array.isArray(a)) localStorage.setItem(GX_KEY, JSON.stringify([...new Set([...a, g])])); } catch (e) { /* off */ }
-  if (typeof toast === 'function') toast(`กำลังโหลดชุด ${LV_LABEL[g]} …`);
+  try { const a = JSON.parse(localStorage.getItem(GX_KEY) || 'null'); if (Array.isArray(a)) localStorage.setItem(GX_KEY, JSON.stringify([...new Set([...a, ...gs])])); } catch (e) { /* off */ }
+  if (typeof toast === 'function') toast(`กำลังโหลดชุด ${gs.map((x) => LV_LABEL[x]).join(', ')} …`);
   location.reload();
   return true;
 }

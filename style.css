@@ -3242,3 +3242,8 @@ html.opt-left .f-body:has(> .options) > .options { grid-column: 1; }
 /* in the game the chat scrolls inside the question card (newest line kept in view by qRplay) */
 #rpLog { max-height: min(38vh, 320px); overflow-y: auto; overscroll-behavior: contain; padding: 2px; }
 >>>>>>> 43fe9a2 (1.232.0: role-play conversations game and page)
+
+/* 1.252: extra word groups in settings, one block per category */
+.lvx-cat { margin: 10px 0 4px; }
+.lvx-h { justify-content: space-between; margin-bottom: 6px; }
+.lvx-all { background: none; border: 0; padding: 4px 2px; text-decoration: underline; cursor: pointer; }
