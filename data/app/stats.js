@@ -1011,12 +1011,16 @@ function levelProgress(lv) {
   const ws = W.filter((w) => w.g === lv), l = ws.filter((w) => S.prog[w.w]).length;
   return { n: ws.length, l, f: ws.length ? l / ws.length : 0 };
 }
+// 1.246.1: the 3000 / 5000 levels show open, the extra groups fold into one <details class="lt-extra"> (closed by default).
 function levelTestBox() {
-  return `<div class="card-box">${LEVELS.map((lv) => {
+  const row = (lv) => {
     const p = levelProgress(lv), t = S.ltest[lv], ok = p.f >= LTEST_NEED;
     return `<div class="wrow lt-row"><div class="grow"><b>${LV_LABEL[lv]}</b> <span class="small muted">· เรียนแล้ว ${Math.round(p.f * 100)}%${t ? ` · ดีที่สุด ${pct(t)}%${pct(t) >= LTEST_PASS ? ' 🎓 ผ่านแล้ว' : ''}` : ''}</span></div>
       <button class="chip" data-lt="${lv}" ${ok ? '' : 'disabled'} aria-label="ทดสอบจบ ${LV_LABEL[lv]}">${ok ? (t ? 'ทำอีกครั้ง' : 'ทดสอบ') : `ต้องเรียน ${Math.round(LTEST_NEED * 100)}%`}</button></div>`;
-  }).join('')}<div class="small muted" style="margin-top:8px">เรียนครบ 80% ของระดับไหนก็ทดสอบจบระดับนั้นได้ ผ่านเมื่อได้ ${LTEST_PASS}% ขึ้นไป</div></div>`;
+  };
+  const ex = LEVELS.filter((l) => LEVELS_EXTRA.includes(l));
+  const ready = ex.filter((l) => levelProgress(l).f >= LTEST_NEED).length, passed = ex.filter((l) => S.ltest[l] && pct(S.ltest[l]) >= LTEST_PASS).length;
+  return `<div class="card-box">${LEVELS.filter((l) => !ex.includes(l)).map(row).join('')}${ex.length ? `<details class="lv-more lt-extra"><summary>📚 ชุดเสริม ${ex.length} หมวด${ready ? ` · ทดสอบได้ ${ready}` : ''}${passed ? ` · ผ่านแล้ว ${passed}` : ''}</summary>${ex.map(row).join('')}</details>` : ''}<div class="small muted" style="margin-top:8px">เรียนครบ 80% ของระดับไหนก็ทดสอบจบระดับนั้นได้ ผ่านเมื่อได้ ${LTEST_PASS}% ขึ้นไป</div></div>`;
 }
 function renderLevelTest(lv) {
   if (!LEVELS.includes(lv)) return go('stats');

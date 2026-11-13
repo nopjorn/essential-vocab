@@ -30,7 +30,7 @@ Full notes on stored fields, sync/merge and scheduling. CLAUDE.md keeps only the
 - XP: `addXP()`; level L starts at 25·L·(L−1) XP. Flashcard 2 (ลืม 1), right answer `comboXP(combo)`.
 - Feed (`renderFeed`, route `feed`, no tab since 1.31.1: reached from home `#qFeed`, the flashcard done screen and `settings.start`): due → new (learn card, quiz 3 cards later, counts toward
   `daily.fresh`) → practice. Uses `gameResult()`. Start screen: `settings.start`.
-- 1.246 stats focus on the main lists: `snap` rows now `[l3, m3, la, ma, l5, m5]` (5000 = `in5000()` = LEVELS_3000+LEVELS_5000, js/stats.js; `snap5(v)` falls back to the all-words pair for 4-number rows; `mergeBackup` keeps up to 6). ETA cards / what-if table = 3000 and 5000, `statSum` 🟢 and `trendChart` use the 5000 pair; the extra groups = one `.ext-box` card + `<details class="lv-extra">` in the level progress.
+- 1.246 stats focus on the main lists: `snap` rows now `[l3, m3, la, ma, l5, m5]` (5000 = `in5000()` = LEVELS_3000+LEVELS_5000, js/stats.js; `snap5(v)` falls back to the all-words pair for 4-number rows; `mergeBackup` keeps up to 6). ETA cards / what-if table = 3000 and 5000, `statSum` 🟢 and `trendChart` use the 5000 pair; the extra groups = one `.ext-box` card + `<details class="lv-extra">` in the level progress; 1.246.1: `levelTestBox()` folds the extra groups into `<details class="lv-more lt-extra">` (closed).
 - Stats page (`renderStats`, route `stats`; a main tab, so no back button since 1.211.1): 28-day habits, learn rate from `snap` (≥7 days) else
   newPerDay × active-day ratio; ETA = remaining/rate + 11 days/accuracy/active-ratio. Chart colours are
   `--c-card/--c-game/--c-master` (validated with the dataviz palette checker in light and dark).

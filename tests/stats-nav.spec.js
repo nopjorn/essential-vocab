@@ -57,3 +57,16 @@ test('stats focus on 3000/5000: ETA cards, what-if columns, 5000 snapshot, extra
   expect(r.merged).toEqual([1, 1, 2, 2, 9, 3]);
   expect(errors).toEqual([]);
 });
+
+test('level tests: extra groups folded by default (1.246.1)', async ({ page }) => {
+  const errors = await openApp(page, { placedAt: '2026-01-01' });
+  await page.evaluate(() => go('stats'));
+  const d = page.locator('details.lt-extra');
+  await expect(d).toHaveCount(1);
+  expect(await d.evaluate((e) => e.open)).toBe(false);
+  await expect(page.locator('[data-lt="A1"]')).toBeVisible();
+  await expect(d.locator('[data-lt="TOE"]')).toBeHidden();
+  await d.locator('summary').click();
+  await expect(d.locator('[data-lt="TOE"]')).toBeVisible();
+  expect(errors).toEqual([]);
+});
