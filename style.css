@@ -3274,3 +3274,6 @@ html.opt-left .f-body:has(> .options) > .options { grid-column: 1; }
 .jr li small { color: var(--muted); }
 .tree-c { display: block; max-width: 100%; }
 .vs-t td:nth-child(n+2), .vs-t th:nth-child(n+2) { text-align: right; }
+.mf-ax { position: relative; height: 1.4em; margin: -2px 0 8px; font-size: var(--fs-xs, .75rem); color: var(--muted); }
+.mf-ax span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.mf-ax span:last-child { transform: translateX(-100%); }

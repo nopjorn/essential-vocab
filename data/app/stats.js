@@ -1244,16 +1244,17 @@ function memCurve(maxD = 30) {
 function memNowCard() {
   const c = memCurve(), head = '<div class="h2">🧠 ความจำตอนนี้ <span class="small muted">คำนวณจากตัวจัดรอบ FSRS</span></div>';
   if (c.n < 10) return `${head}<div class="card-box small muted" id="memNow">เรียนคำไปอีกสักหน่อย (ตอนนี้ ${c.n} คำ) แล้วแอปจะคำนวณว่าตอนนี้จำได้จริงกี่คำ และถ้าหยุดเล่นจะลืมไปเท่าไร</div>`;
-  const now = c.pts[0], Wd = 300, H = 110, top = Math.max(1, now);
-  const x = (d) => 6 + d / 30 * (Wd - 12), y = (v) => 8 + (1 - v / top) * (H - 30);
+  const now = c.pts[0], Wd = 300, H = 90, top = Math.max(1, now), low = Math.max(0, c.pts[30] - (now - c.pts[30]) * 0.5); // the y axis starts under the 30-day value so the slope shows
+  const x = (d) => 6 + d / 30 * (Wd - 12), y = (v) => 8 + (1 - (v - low) / Math.max(1, top - low)) * (H - 16);
   const path = c.pts.map((v, d) => `${d ? 'L' : 'M'}${x(d).toFixed(1)},${y(v).toFixed(1)}`).join('');
-  const dots = FORGET_DAYS.map((d) => `<circle cx="${x(d)}" cy="${y(c.pts[d])}" r="3.5" class="mf-dot"/><text class="ax" x="${x(d)}" y="${H - 6}" text-anchor="middle">${d} วัน</text>`).join('');
+  const dots = FORGET_DAYS.map((d) => `<circle cx="${x(d)}" cy="${y(c.pts[d])}" r="3.5" class="mf-dot" vector-effect="non-scaling-stroke"/>`).join('');
+  const labs = FORGET_DAYS.map((d) => `<span style="left:${(x(d) / Wd * 100).toFixed(1)}%">${d} วัน</span>`).join('');
   const rows = FORGET_DAYS.map((d) => { const v = c.pts[d], lost = now - v;
     return `<div class="mf-row"><span>หยุด ${d} วัน</span><b>${nf(v)} คำ</b><span class="cmp down">▼ ${nf(lost)} (${Math.round(lost / Math.max(1, now) * 100)}%)</span></div>`; }).join('');
   return `${head}<div class="card-box" id="memNow">
     <div class="mf-hero"><b>${nf(now)}</b><span>คำที่น่าจะนึกออกถ้าถูกถามตอนนี้ <span class="muted">จาก ${nf(c.n)} คำที่เคยทบทวน</span></span></div>
     <div class="act-h">🔮 ถ้าหยุดเล่นไป…</div>
-    <svg class="mf-svg" viewBox="0 0 ${Wd} ${H}" width="100%" role="img" aria-label="ถ้าหยุดเล่น ความจำจะลดจาก ${nf(now)} เหลือ ${nf(c.pts[30])} คำใน 30 วัน"><path d="${path}" class="mf-line"/>${dots}</svg>
+    <svg class="mf-svg" viewBox="0 0 ${Wd} ${H}" width="100%" role="img" aria-label="ถ้าหยุดเล่น ความจำจะลดจาก ${nf(now)} เหลือ ${nf(c.pts[30])} คำใน 30 วัน"><path d="${path}" class="mf-line" vector-effect="non-scaling-stroke"/>${dots}</svg><div class="mf-ax" aria-hidden="true">${labs}</div>
     <div class="mf-rows">${rows}</div>
     <div class="small muted" style="margin-top:8px">ยิ่งทบทวนตามกำหนด เส้นยิ่งลาดน้อยลง เพราะคำที่ผ่านหลายรอบจะลืมช้ามาก · เป็นค่าประมาณทางสถิติ</div>
     <div class="wk-btns">${shrBtn('mem')}</div></div>`;
