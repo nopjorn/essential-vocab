@@ -248,18 +248,19 @@ function renderCardHub() {
   if (!t.total && !cardResume()) return renderCards(); // nothing today: the "done" page with its what-next menu
   const stat = (n, label, cls = '') => `<div class="ch-st${cls}"><b>${n}</b><span>${label}</span></div>`;
   const b = (id, ic, title, sub) => `<button class="quick-btn" data-hub="${id}"><span>${ic}</span><b>${title}</b><small>${sub}</small></button>`;
-  view.innerHTML = `${hubResumeBox()}<div class="card-box ch-top">
+  // .ch-grid / .ch-side: plain blocks on phones; on a wide landscape screen today's card on the left, the quick modes + 🎯 on the right (1.257.1)
+  view.innerHTML = `${hubResumeBox()}<div class="ch-grid"><div class="card-box ch-top">
       <div class="ch-h">🗂️ การ์ดวันนี้ <span class="small muted">· ระดับ ${lvNames(S.settings.levels)}</span></div>
       <div class="ch-stats">${stat(t.due, 'ทบทวน')}${stat(t.nw, 'คำใหม่')}${t.leech ? stat(t.leech, '🐢 คำดื้อ') : ''}${stat('~' + t.mins, 'นาที')}</div>
       ${plan.on ? '<p class="small muted ch-note">🧹 การ์ดค้างเยอะ วันนี้พักคำใหม่ไว้ก่อน ทวนทีละ 50 ใบที่ค้างนานสุด</p>' : ''}
       <div class="ch-front"><span class="small muted" id="hubFrontL">ด้านหน้าการ์ด</span><div class="seg" id="hubFront" role="group" aria-labelledby="hubFrontL">${[['en', 'อังกฤษ → ไทย'], ['th', 'ไทย → อังกฤษ'], ['mix', 'สลับกัน']].map(([v, t]) => `<button data-front="${v}" class="${(S.settings.front || 'en') === v ? 'on' : ''}" aria-pressed="${(S.settings.front || 'en') === v}">${t}</button>`).join('')}</div></div>
       <button class="btn primary block ch-go" id="hubStart" ${t.total ? '' : 'disabled'}>${t.total ? `▶︎ เริ่มเลย (${t.total} ใบ)` : '🎉 การ์ดวันนี้ครบแล้ว'}</button></div>
-    <div class="quick next-steps ch-modes">
+    <div class="ch-side"><div class="quick next-steps ch-modes">
       ${b('short', '⏱️', '3 นาที', SHORT_N + ' ใบ ค้างนานสุดก่อน')}
       ${t.due && t.nw ? b('rev', '🔁', 'เฉพาะทบทวน', t.due + ' ใบที่ถึงกำหนด') : ''}
       ${t.due && t.nw ? b('new', '✨', 'เฉพาะคำใหม่', t.nw + ' คำของวันนี้') : ''}
-    </div>
-    ${hubPickBox()}<h2 class="ns-more">อยากฝึกแบบอื่น</h2>${nextSteps(W.filter((w) => S.prog[w.w]).length, true)}`;
+    </div>${hubPickBox()}</div></div>
+    <h2 class="ns-more">อยากฝึกแบบอื่น</h2>${nextSteps(W.filter((w) => S.prog[w.w]).length, true)}`;
   $('#hubStart').onclick = () => { cardsFromHub = true; renderCards(); };
   if ($('#hubResume')) {
     $('#hubResume').onclick = () => { cardsFromHub = true; renderCards('resume'); };
@@ -296,10 +297,11 @@ function renderCards(extra) {
   if (deck && !total) { view.innerHTML = deckEmptyHtml(deck); bindDeckSteps(deck); return; }
   if (!total) {
     const learned = W.filter((w) => S.prog[w.w]).length;
-    view.innerHTML = `<div class="card-box center pop" style="margin-top:20px">
+    // same two columns as the start screen on a wide screen; .ch-side stays empty (one column) when there is nothing for it
+    view.innerHTML = `<div class="ch-grid ch-done"><div class="ch-main"><div class="card-box center pop ch-done-card">
       <div class="result-emoji">${mascotSvg({ mood: 'happy', size: 110 })}</div><div class="h2">วันนี้ทำครบแล้ว!</div>
       <p class="muted">ไม่มีการ์ดค้างสำหรับระดับ ${lvNames(S.settings.levels)} · อยากทำอะไรต่อดี?</p></div>
-      ${goalCheer()}${tomorrowBox()}${hubPickBox()}${nextSteps(learned)}`;
+      ${goalCheer()}</div><div class="ch-side">${tomorrowBox()}${hubPickBox()}</div></div>${nextSteps(learned)}`;
     bindNextSteps(); bindHubPick();
     return;
   }

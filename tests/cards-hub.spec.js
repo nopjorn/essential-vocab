@@ -35,6 +35,33 @@ test('1.169: the flashcard tab opens a start screen with today\'s numbers and st
   expect(errors).toEqual([]);
 });
 
+test('wide screen (1.257.1): start screen and done page use the width in two columns that end on one line; phones stay one column', async ({ page }) => {
+  const box = (sel) => page.locator(sel).first().evaluate((e) => { const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom }; });
+  await page.setViewportSize({ width: 1600, height: 765 });
+  const errors = await openApp(page, state());
+  await page.click('#tabbar > button[data-tab="cards"]');
+  await expect(page.locator('.ch-pick')).toBeVisible();
+  let top = await box('.ch-top'), side = await box('.ch-side'), pick = await box('.ch-pick'), title = await box('#title');
+  expect(side.l).toBeGreaterThan(top.r); // today's card left, modes + 🎯 right
+  expect(Math.abs(side.t - top.t)).toBeLessThan(2);
+  expect(Math.abs(pick.b - top.b)).toBeLessThan(2); // both columns end on one line
+  expect(side.r - top.l).toBeGreaterThan(1050); // as wide as home (1100), not 760
+  expect(Math.abs(title.l - top.l)).toBeLessThan(4); // the title bar lines up with the content
+  // done page: the same two columns
+  await page.evaluate(() => { for (const w of Object.keys(S.prog)) S.prog[w].d = Date.now() + 9e8; S.settings.newPerDay = 0; go('cards', 'hub'); });
+  await expect(page.locator('.ch-done')).toBeVisible();
+  const main = await box('.ch-done .ch-main'); side = await box('.ch-done .ch-side');
+  expect(side.l).toBeGreaterThan(main.r);
+  expect(side.r - main.l).toBeGreaterThan(1050);
+  // phone: one column, the same order as before
+  await page.setViewportSize({ width: 440, height: 956 });
+  await page.evaluate(() => { S.settings.newPerDay = 5; go('cards', 'hub'); });
+  await expect(page.locator('#hubStart')).toBeVisible();
+  top = await box('.ch-top'); side = await box('.ch-side');
+  expect(side.t).toBeGreaterThan(top.b);
+  expect(errors).toEqual([]);
+});
+
 test('1.169: with nothing left today the tab shows the done page', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1'], newPerDay: 0 }, prog: { apple: { ...due(0), d: Date.now() + 3 * DAY } } });
   await page.click('#tabbar > button[data-tab="cards"]');

@@ -1102,6 +1102,7 @@ input.sel { color: var(--text); font: inherit; }
 .ch-go { font-size: 18px; padding: 14px; }
 .quick.ch-modes { margin-top: 12px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
 @media (min-width: 900px) { .quick.ch-modes { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); } }
+.ch-done-card { margin-top: 20px; }
 /* "what next?" menu in groups, one button marked แนะนำ */
 .ns-wrap { margin-top: 6px; }
 .ns-grp { margin-top: 16px; }
@@ -2701,10 +2702,34 @@ html[data-theme="dark"]:not(.no-pbg) body, html[data-theme="black"]:not(.no-pbg)
   .view[data-route="decks"]:has(> #dkNew):has(> .chips) > :nth-child(4) { grid-column: 2; grid-row: 2; margin-top: 0; }
   .view[data-route="decks"]:has(> #dkNew):has(> .chips) > :nth-child(5) { grid-column: 2; grid-row: 3; }
   .view[data-route="decks"]:has(> #dkNew):has(> .chips) > :nth-child(6) { grid-column: 2; grid-row: 4; }
+  /* 1.257.1 แฟลชการ์ด start screen / done page: as wide as home; today's card | quick modes + 🎯 pick, both columns end on one line */
+  .view:has(> .ch-grid) { --maxw: 1100px; }
+  .ch-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); column-gap: 16px; align-items: stretch; }
+  .ch-grid:has(> .ch-side:empty) { grid-template-columns: minmax(0, 1fr); }
+  .ch-grid:has(> .ch-side:empty) > .ch-side { display: none; }
+  .ch-grid > .ch-top { justify-content: space-between; }
+  .ch-side { display: flex; flex-direction: column; }
+  .ch-side > :first-child { margin-top: 0; }
+  .ch-side > .quick.ch-modes { margin-bottom: 0; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+  .ch-side > .ch-pick { flex: 1; justify-content: space-between; }
+  .ch-side > * + .ch-pick { margin-top: 16px; }
+  .ch-done .ch-side > .ch-pick { justify-content: center; }
+  .ch-done .ch-main { display: flex; flex-direction: column; }
+  .ch-done .ch-main > .ch-done-card { margin-top: 0; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .ch-done .ch-main > .ch-done-card:not(:last-child), .ch-done .ch-side > .tomorrow:not(:last-child) { margin-bottom: 12px; }
+  .ch-done .ch-main > .goal-cheer { margin-top: 0; }
+  .ch-done .ch-side > .tomorrow { display: flex; flex-direction: column; justify-content: center; }
+  .ch-done .ch-side > .tomorrow:last-child { flex: 1; }
+  .ch-done .ch-side > .tomorrow + .ch-pick { margin-top: 0; }
+}
+@media (min-width: 1000px) and (max-width: 1179.98px) and (min-height: 600px) and (orientation: landscape) { /* iPad mini landscape: the right column is narrow, keep "เฉพาะคำใหม่" on one line */
+  .ch-side > .ch-modes .quick-btn { padding: 12px; }
+  .ch-side > .ch-modes .quick-btn b { font-size: 15px; }
 }
 /* 1.133: the title bar lines up with the wider layouts above */
 @media (min-width: 1000px) and (min-height: 600px) and (orientation: landscape) {
   .topbar:has(~ .view[data-route="ear"] > #earGo), .topbar:has(~ .view[data-route="mtest"] > .mt-sum), .topbar:has(~ .view[data-route="decks"] > .chips) { --maxw: 1060px; }
+  .topbar:has(~ .view > .ch-grid) { --maxw: 1100px; }
 }
 @media (min-width: 1100px) and (min-height: 700px) and (orientation: landscape) {
   .topbar:has(~ .view > #sideStats) { --maxw: 1100px; }
