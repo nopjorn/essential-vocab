@@ -44,6 +44,7 @@ Core files below. Feature-by-feature notes (names, ids, state fields, tests) liv
 | `config.js` | `window.SYNC_CONFIG = {url, anonKey, requireLogin, leaderboard, vapidPublicKey}` for Supabase sync (empty = off); see `SYNC-SETUP.md` |
 | `reminders/HHMM.ics` | Static daily-reminder calendar files (app URL hardcoded inside) |
 | `icons/`, `manifest.webmanifest` | PWA install assets |
+| `tools/new-group.js` | Starts a new extra word group (1.254.1): row in `GROUPS_X`, `data/words/<file>.js` with header + sample row, `sw.js` entry, colour token + per-group CSS rules; usage in its header |
 | `tools/make-icons.js` | Playwright script that renders the icon SVG to all `icons/*.png` sizes |
 | `tools/make-splash.js` | iOS launch images `icons/splash/<device>-<light|dark>-<portrait|landscape>.png` + the `<link rel="apple-touch-startup-image">` tags it prints; devices (1.146): iPhone 17 Pro Max, iPad Pro 11/13, iPad mini 744×1133, iPad Air 11 (820×1180) / 13 (1024×1366); data.spec checks 24 links |
 | `fonts/anuphan-thai-700.woff2` | Heading font (1.117, Thai glyphs only, OFL in `fonts/OFL-Anuphan.txt`), `--head` in style.css, off with `settings.headFont = false` (`html.no-hf`) |

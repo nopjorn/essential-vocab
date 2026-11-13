@@ -990,6 +990,7 @@ test('GROUPS_X table matches the word files and styles', () => {
     expect(fs.existsSync(path.join(root, f)), f).toBe(true);
     expect(sw).toContain(`'${f}'`);
     expect(css, g).toContain(`--${g.toLowerCase()}: var(--gx-${cat});`); // one colour per category (1.254)
+    for (const rule of [`.lv.${g} {`, `.lv-${g} {`, `.fc.lvc-${g} {`, `.sh-hero.lvc-${g} {`]) expect(css, rule).toContain(rule); // tools/new-group.js copies these
     const w = load(f).WORDS;
     expect(w.length, f).toBe(n);
     expect(w.every((r) => r.slice(8).includes(mark)), f).toBe(true);
