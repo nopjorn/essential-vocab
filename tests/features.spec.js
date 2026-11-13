@@ -2232,3 +2232,20 @@ test('simple mode (1.232): home and games menu show only the core, "show all" op
   expect((await readState(page)).settings.simple).toBe(false);
   expect(errors).toEqual([]);
 });
+
+test('1.249.1 word list: extra word groups fold under one chip', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.evaluate(() => go('list'));
+  await expect(page.locator('#lvX')).toBeHidden();
+  await expect(page.locator('#lv .chip[data-v="TOE"]')).toHaveCount(0);
+  await page.click('#lvXBtn');
+  await expect(page.locator('#lvX')).toBeVisible();
+  await expect(page.locator('#lvXBtn')).toHaveAttribute('aria-expanded', 'true');
+  await page.click('#lvX .chip[data-v="SPC"]');
+  await expect(page.locator('#lvX')).toBeHidden();
+  await expect(page.locator('#lvXBtn')).toHaveClass(/on/);
+  await expect(page.locator('#lvXBtn')).toContainText('อวกาศ');
+  await page.click('#lv .chip[data-v="A1"]');
+  await expect(page.locator('#lvXBtn')).not.toHaveClass(/on/);
+  expect(errors).toEqual([]);
+});

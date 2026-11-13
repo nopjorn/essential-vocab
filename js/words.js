@@ -8,7 +8,11 @@ function renderList() {
   view.innerHTML = `
     <div class="list-head" id="listHead">${libSwitch('list')}<input class="search" id="q" type="search" placeholder="🔍 ค้นหาคำอังกฤษหรือคำแปลไทย" value="${esc(listFilter.q)}" autocapitalize="none" autocorrect="off"></div>
     <div class="chips scroll" id="lv" style="margin-bottom:8px">
-      ${['all', ...LEVELS].map((l) => `<button class="chip${l === 'all' ? '' : ' lv-' + l}" data-v="${l}">${l === 'all' ? 'ทุกระดับ' : `<i class="lc-dot"></i>${LV_LABEL[l]}`}</button>`).join('')}
+      ${['all', ...LEVELS_CEFR].map((l) => `<button class="chip${l === 'all' ? '' : ' lv-' + l}" data-v="${l}">${l === 'all' ? 'ทุกระดับ' : `<i class="lc-dot"></i>${LV_LABEL[l]}`}</button>`).join('')}
+      <button class="chip lv-xbtn" id="lvXBtn" aria-expanded="false"></button>
+    </div>
+    <div class="chips scroll" id="lvX" style="margin-bottom:8px" hidden>
+      ${LEVELS_EXTRA.map((l) => `<button class="chip lv-${l}" data-v="${l}"><i class="lc-dot"></i>${LV_LABEL[l]}</button>`).join('')}
     </div>
     <div class="chips scroll" id="st" style="margin-bottom:8px">
       ${[['all', 'ทั้งหมด'], ['new', 'ยังไม่เรียน'], ['learning', '🟡 กำลังเรียน'], ['mastered', '🟢 จำได้แล้ว'], ['star', '⭐ ติดดาว'], ['leech', '🐢 คำดื้อ'], ['note', '💡 มีวิธีจำ']].map(([v, t]) => `<button class="chip" data-v="${v}">${t} <small class="cn"></small></button>`).join('')}
@@ -24,7 +28,11 @@ function renderList() {
   let base = [];
   const ST_TEST = { all: () => true, star: isStar, leech: isLeech, note: (w) => !!S.note[w.w], new: (w) => status(w) === 'new', learning: (w) => status(w) === 'learning', mastered: (w) => status(w) === 'mastered' };
   const paint = () => {
-    view.querySelectorAll('#lv .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === listFilter.lv));
+    view.querySelectorAll('#lv .chip[data-v], #lvX .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === listFilter.lv));
+    const xb = $('#lvXBtn'), xOn = LEVELS_EXTRA.includes(listFilter.lv), xOpen = !$('#lvX').hidden;
+    xb.classList.toggle('on', xOn); xb.setAttribute('aria-expanded', xOpen);
+    xb.innerHTML = `${xOn ? `<i class="lc-dot"></i>${LV_LABEL[listFilter.lv]}` : `📚 ชุดเสริม <small class="cn">${LEVELS_EXTRA.length}</small>`} <span aria-hidden="true">${xOpen ? '▴' : '▾'}</span>`;
+    xb.className = 'chip lv-xbtn' + (xOn ? ' on lv-' + listFilter.lv : '');
     view.querySelectorAll('#st .chip').forEach((c) => {
       c.classList.toggle('on', c.dataset.v === listFilter.st);
       const n = c.dataset.v === 'all' ? base.length : base.filter(ST_TEST[c.dataset.v]).length;
@@ -98,7 +106,12 @@ function renderList() {
   $('#q').oninput = (e) => { listFilter.q = e.target.value; apply(); };
   $('#tpSel').onchange = (e) => { listFilter.tp = e.target.value; apply(); };
   $('#glSel').onchange = (e) => { listFilter.gl = e.target.value; apply(); };
-  $('#lv').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { listFilter.lv = c.dataset.v; apply(); } };
+  $('#lv').onclick = (e) => {
+    const c = e.target.closest('.chip'); if (!c) return;
+    if (c.id === 'lvXBtn') { $('#lvX').hidden = !$('#lvX').hidden; paint(); return; }
+    listFilter.lv = c.dataset.v; $('#lvX').hidden = true; apply();
+  };
+  $('#lvX').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { listFilter.lv = c.dataset.v; $('#lvX').hidden = true; apply(); } };
   $('#st').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { listFilter.st = c.dataset.v; apply(); } };
   rows.onclick = (e) => {
     const r = e.target.closest('.wrow'); if (!r) return;
@@ -116,7 +129,7 @@ function renderList() {
   // letter headings stick just under the sticky search box
   const lhRo = new ResizeObserver(() => { const lh = $('#listHead'); if (lh) view.style.setProperty('--lhh', lh.offsetHeight + 'px'); });
   lhRo.observe($('#listHead'));
-  edgeFade($('#lv')); edgeFade($('#st'));
+  edgeFade($('#lv')); edgeFade($('#lvX')); edgeFade($('#st'));
   // the rail shows once the filters have scrolled away (it would sit over them at the top)
   let railRaf = 0;
   const railShow = () => { railRaf = 0; const lh = $('#listHead'); if (lh) rail.classList.toggle('show', rows.getBoundingClientRect().top < lh.getBoundingClientRect().bottom + 24); };
