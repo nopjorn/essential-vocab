@@ -1,7 +1,7 @@
 'use strict';
 
 // App version shown in the UI. Bump it (and VERSION in sw.js) on every push.
-const APP_VERSION = '1.254.1';
+const APP_VERSION = '1.255.0';
 
 // iOS home-screen apps (black-translucent status bar) often launch with innerHeight/100dvh
 // short by the status-bar height, so the tab bar floats above the bottom edge until the
@@ -222,7 +222,7 @@ function sanitizeDecks(r) {
 }
 const defaults = () => ({
   prog: {},            // word -> { b: box, d: due ms, s: seen, c: correct, x: wrong }
-  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, fsk: 1, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, pageBg: true, exam: { date: '', name: '' }, fest: true, season: true, sfxPack: 'chime', qMascot: true, headFont: true, glassBar: true, fsz: 'md', appKbd: 'auto', thumbs: 'auto', optSide: 'right', feedSide: 'right', penMode: 'auto', winGap: 'auto', shareTpl: 'classic', palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, timeGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], gameView: 'list', gameFold: [], riddleLv: ['A1', 'A2'], cardPick: { lv: '', tp: '' }, swipeUD: true, simple: false },
+  settings: { levels: ['A1'], topic: '', goal: '', newPerDay: 20, minutes: 0, scheduler: 'fsrs', retention: 0.9, fsk: 1, autoSpeak: true, rate: 0.9, slowRepeat: true, accent: 'en-US', front: 'en', order: 'shuffle', sfx: true, haptic: true, topicTint: true, heroBg: 'theme', heroArt: true, pageBg: true, exam: { date: '', name: '' }, fest: true, season: true, sfxPack: 'chime', qMascot: true, headFont: true, glassBar: true, fsz: 'md', appKbd: 'auto', thumbs: 'auto', optSide: 'right', feedSide: 'right', penMode: 'auto', winGap: 'auto', shareTpl: 'classic', palAuto: false, animPage: true, animAnswer: true, confetti: true, badge: true, start: 'home', rFont: 1, voice: '', theme: 'auto', palette: 'violet', icon: 'purple', wotd: { lv: [], st: [], tp: [] }, gentle: true, weekGoal: 0, timeGoal: 0, frame: '', nextGames: [], gamePin: [], gameHide: [], gameView: 'list', gameFold: [], riddleLv: ['A1', 'A2'], cardPick: { lv: '', tp: '' }, swipeUD: true, simple: false, statHide: [], statOrder: [] },
   daily: { date: '', fresh: 0, reviews: 0 },
   streak: { last: '', count: 0 },
   best: {},            // game -> best score
@@ -275,6 +275,8 @@ const defaults = () => ({
   miss: {},            // 'YYYY-MM-DD' -> { word: times wrong that day } (last 21 days)
   missY: {},           // 'YYYY' -> device id -> { word: times wrong that year } (this year and last; 1.155.2, year in review)
   missYFrom: '',       // first day missY was kept: a year counts only if its whole year was logged (otherwise all-time `x` is shown)
+  conf: {},            // 1.255.0: word asked -> { word picked instead -> times } (quiz / match mix-ups, confLog, ≤ CONF_MAX words)
+  mday: {},            // 1.255.0: word -> 'YYYY-MM-DD' it became "จำได้แล้ว" (masteredMoment), shown as "คำที่จำได้เดือนนี้"
   weekSeen: '',        // Monday key of the last weekly summary the user dismissed
   monthSeen: '',       // 'YYYY-MM' of the month whose summary card was dismissed
   read: {},            // story id -> date finished
@@ -319,7 +321,7 @@ function load() {
       // A missing/odd riddle record (older backup, sync from another device) must never break the home screen.
       if (!r.mascot || typeof r.mascot !== 'object' || !r.mascot.equip || typeof r.mascot.equip !== 'object') r.mascot = d.mascot;
       if (!Array.isArray(r.ret) || r.ret.length !== 4 || r.ret.some((x) => !Array.isArray(x) || !isNum(x[0]) || !isNum(x[1]))) r.ret = d.ret;
-      r.rev = cleanRev(r.rev); r.missY = cleanMissY(r.missY); r.act = cleanAct(r.act);
+      r.rev = cleanRev(r.rev); r.missY = cleanMissY(r.missY); r.act = cleanAct(r.act); r.conf = cleanConf(r.conf); r.mday = cleanMday(r.mday);
       if (!Array.isArray(r.owned)) r.owned = [];
       if (!r.evt || typeof r.evt !== 'object' || Array.isArray(r.evt)) r.evt = {};
       r.adv = cleanAdv(r.adv);
@@ -616,6 +618,8 @@ function mergeBackup(d) {
     for (const [w, n] of Object.entries(m)) mine[w] = Math.max(mine[w] || 0, n); // each device counts its own: max, never a sum twice
   }
   if (typeof d.missYFrom === 'string' && /^\d{4}-\d\d-\d\d$/.test(d.missYFrom) && (!S.missYFrom || d.missYFrom < S.missYFrom)) S.missYFrom = d.missYFrom;
+  for (const [w, m] of Object.entries(cleanConf(d.conf))) { const mine = S.conf[w] || (S.conf[w] = {}); for (const [o, n] of Object.entries(m)) mine[o] = Math.max(mine[o] || 0, n); }
+  for (const [w, k] of Object.entries(cleanMday(d.mday))) if (!S.mday[w] || k > S.mday[w]) S.mday[w] = k;
   if (Array.isArray(d.ret) && d.ret.length === 4) d.ret.forEach((x, b) => { if (Array.isArray(x) && isNum(x[0]) && isNum(x[1]) && x[0] > S.ret[b][0]) S.ret[b] = [x[0], Math.min(x[0], x[1])]; });
   for (const [w, at] of Object.entries(d.starAt || {})) if (isNum(at) && at > (S.starAt[w] || 0)) { S.starAt[w] = at; if (d.star && d.star[w]) S.star[w] = 1; else delete S.star[w]; }
   for (const w of Object.keys(d.star || {})) if (!(w in (d.starAt || {})) && !(w in S.starAt)) S.star[w] = 1;
@@ -1420,6 +1424,7 @@ function levelUpScreen(L, before = L - 1) {
 // "จำได้แล้ว!" (1.128): a golden pill at the top with a shine, never blocks taps. Several in a row are counted in one pill.
 let mstTimer = null, mstN = 0;
 function masteredMoment(w) {
+  S.mday[w.w] = today(); // 1.255.0: the day it became mastered (stats "คำที่จำได้เดือนนี้")
   let el = document.querySelector('.mst-pop');
   mstN = el ? mstN + 1 : 1;
   if (!el) { el = document.createElement('div'); el.className = 'mst-pop'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
@@ -1764,6 +1769,9 @@ function actLog(t, ok) {
   const x = actX(t), gid = String(current === 'games' && actGame ? actGame : current || 'other').slice(0, 24);
   x.g = x.g || {}; actAdd(x.g[gid] || (x.g[gid] = [0, 0, 0, 0]), sec, ok);
   x.h = x.h || Array(24).fill(0); x.h[new Date(now).getHours()]++;
+  if (ok !== undefined) { // 1.255.0: judged / right per hour → "ช่วงเวลาที่ตอบแม่นที่สุด"
+    const hr = new Date(now).getHours(); x.hj = x.hj || Array(24).fill(0); x.hr = x.hr || Array(24).fill(0); x.hj[hr]++; if (ok) x.hr[hr]++;
+  }
   x.ss = x.ss || [0, 0];
   if (actSess === now) x.ss[0]++;
   x.ss[1] = Math.max(x.ss[1], Math.round((now - actSess) / 1000) + ACT_FIRST);
@@ -1808,7 +1816,8 @@ function cleanActX(x) {
   const out = {};
   if (!x || typeof x !== 'object' || Array.isArray(x)) return out;
   if (x.g && typeof x.g === 'object') for (const [id, v] of Object.entries(x.g)) { const r = actRow(v); if (r && /^[A-Za-z0-9_-]{1,24}$/.test(id)) (out.g || (out.g = {}))[id] = r; }
-  if (Array.isArray(x.h) && x.h.length === 24 && x.h.every((v) => isNum(v) && v >= 0)) out.h = x.h.map(Math.round);
+  for (const k of ['h', 'hj', 'hr']) if (Array.isArray(x[k]) && x[k].length === 24 && x[k].every((v) => isNum(v) && v >= 0)) out[k] = x[k].map(Math.round);
+  if (out.hr && out.hj) out.hr = out.hr.map((v, i) => Math.min(v, out.hj[i])); else delete out.hr;
   if (x.e && typeof x.e === 'object') for (const [id, v] of Object.entries(x.e)) if (isNum(v) && v > 0 && ACT_EVENTS.some((a) => a[0] === id)) (out.e || (out.e = {}))[id] = Math.round(v);
   if (Array.isArray(x.ss) && x.ss.length === 2 && x.ss.every((v) => isNum(v) && v >= 0)) out.ss = x.ss.map(Math.round);
   if (isNum(x.on) && x.on > 0) out.on = Math.round(x.on);
@@ -1836,7 +1845,7 @@ function mergeAct(theirs) {
     if (!d.x) continue;
     const mx = mine.x || (mine.x = {}), tx = d.x;
     if (tx.g) { mx.g = mx.g || {}; for (const [id, v] of Object.entries(tx.g)) mx.g[id] = maxArr(mx.g[id], v); }
-    if (tx.h) mx.h = maxArr(mx.h, tx.h);
+    for (const k of ['h', 'hj', 'hr']) if (tx[k]) mx[k] = maxArr(mx[k], tx[k]);
     if (tx.e) { mx.e = mx.e || {}; for (const [id, v] of Object.entries(tx.e)) mx.e[id] = Math.max(mx.e[id] || 0, v); }
     if (tx.ss) mx.ss = maxArr(mx.ss, tx.ss);
     if (tx.on) mx.on = Math.max(mx.on || 0, tx.on);
@@ -1938,6 +1947,34 @@ function cleanMissY(o) {
       if (ok.length) (out[y] = out[y] || {})[dev] = Object.fromEntries(ok);
     }
   }
+  return out;
+}
+// Mix-ups (1.255.0): in a quiz or the match game, which word was picked for which. { asked word: { picked word: times } }.
+const CONF_MAX = 300;
+function confLog(w, o) {
+  if (!w || !o || w.w === o.w) return;
+  const m = S.conf[w.w] || (S.conf[w.w] = {}); m[o.w] = (m[o.w] || 0) + 1;
+  const ks = Object.keys(S.conf);
+  if (ks.length > CONF_MAX) { // drop the words with the fewest mix-ups
+    const sum = (k) => Object.values(S.conf[k]).reduce((a, b) => a + b, 0);
+    ks.sort((a, b) => sum(a) - sum(b)).slice(0, ks.length - CONF_MAX).forEach((k) => { if (k !== w.w) delete S.conf[k]; });
+  }
+}
+// Function declarations on purpose: load() runs before these lines.
+function cleanConf(o) {
+  const out = {};
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return out;
+  for (const [w, m] of Object.entries(o)) {
+    if (!m || typeof m !== 'object' || Array.isArray(m)) continue;
+    const ok = Object.entries(m).filter(([k, n]) => k !== w && isNum(n) && n > 0).map(([k, n]) => [k, Math.round(n)]);
+    if (ok.length) out[w] = Object.fromEntries(ok);
+  }
+  return out;
+}
+function cleanMday(o) {
+  const out = {};
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return out;
+  for (const [w, k] of Object.entries(o)) if (typeof k === 'string' && /^\d{4}-\d\d-\d\d$/.test(k)) out[w] = k;
   return out;
 }
 // Real retention (1.107): every review of a card that was due counts in a bucket by the gap it had (1–2, 3–6, 7–20, 21+ days):

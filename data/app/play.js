@@ -206,7 +206,7 @@ function playQuiz(mode, src, gameId, deckRun = {}, stage = null) {
       answered = true; clearTimeout(tm);
       const ok = !!b && +b.dataset.i === w.idx;
       view.querySelectorAll('.opt').forEach((o) => { if (+o.dataset.i === w.idx) o.classList.add('correct'); });
-      if (b && !ok) b.classList.add('wrong');
+      if (b && !ok) { b.classList.add('wrong'); confLog(w, W[+b.dataset.i]); }
       gameAcc(ok);
       mark(w, ok);
       if (ENDLESS) $('#runStat').innerHTML = runStat();
@@ -2105,6 +2105,7 @@ function playMatch(src, deckRun = {}) {
         mistakes++; sfx('bad');
         [a, b].forEach((x) => { x.classList.remove('no'); void x.offsetWidth; x.classList.add('no'); });
         const enTile = a.dataset.k === 'en' ? a : b;
+        confLog(W[+enTile.dataset.i], W[+(enTile === a ? b : a).dataset.i]);
         if (deckRun.practice) markActive(); else gameResult(W[+enTile.dataset.i], false, deckRun.map);
       }
     };

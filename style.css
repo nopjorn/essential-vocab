@@ -3247,3 +3247,12 @@ html.opt-left .f-body:has(> .options) > .options { grid-column: 1; }
 .lvx-cat { margin: 10px 0 4px; }
 .lvx-h { justify-content: space-between; margin-bottom: 6px; }
 .lvx-all { background: none; border: 0; padding: 4px 2px; text-decoration: underline; cursor: pointer; }
+
+/* stats extras (1.255.0): layout panel, mix-up pairs */
+#view .m-sec[hidden], #view [data-lz][hidden], #stLayBox[hidden] { display: none; }
+.st-lay .lay-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-top: 1px solid var(--border); }
+.st-lay .lay-row label { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+.st-lay .lay-mv { display: flex; gap: 6px; flex: none; }
+.st-lay .lay-mv .btn { min-width: 44px; min-height: 40px; padding: 4px 10px; }
+.cf-row { padding: 6px 0; line-height: 1.6; overflow-wrap: anywhere; }
+.cf-row + .cf-row { border-top: 1px solid var(--border); }

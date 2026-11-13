@@ -232,7 +232,9 @@ function renderStats() {
     <div class="h2">⏱️ ใช้เวลากับอะไรบ้าง</div>
     <div class="card-box" id="actBox">${actBreakdown()}</div>
     ${recordsCard()}
+    ${hourAccCard()}
     ${growthCard()}
+    ${monthMastCard()}
     <div id="readyHost"></div>
     <div class="h2">ความคืบหน้าแต่ละระดับ</div>
     <div class="card-box">${lvRows}
@@ -243,6 +245,9 @@ function renderStats() {
     ${memCard()}
     ${lvAccCard()}
     ${weakCard()}
+    ${topicAccCard()}
+    ${confCard()}
+    ${skillMixCard()}
     ${hardCard()}
     ${skillCard()}
     ${toeicCard()}
@@ -306,6 +311,8 @@ function renderStats() {
   bindAct();
   watchCharts();
   sectionize(view, '[data-lz="stk"]');
+  statLayout();
+  bindStatX();
   masonry([view], '.row, .st-nav, .st-sum, .m-sec:has([data-lz="heat"], #ach), [data-lz="stk"]');
   bindStatNav();
 }
@@ -315,12 +322,13 @@ function renderStats() {
 const STAT_NAV = [['today', '☀️', 'วันนี้', '#todayHost'], ['habit', '📊', 'นิสัย', 'นิสัยการเล่น'], ['lv', '📈', 'ระดับ', 'ความคืบหน้าแต่ละระดับ'],
   ['due', '📅', 'ทบทวน', '📅 การ์ดที่ต้องทบทวน'], ['weak', '🎯', 'จุดอ่อน', '🎯 ความแม่นแยกตามระดับ'], ['toeic', '💼', 'TOEIC', '💼 TOEIC'], ['cal', '🗓️', 'ปฏิทิน', '🗓️ ปฏิทินการเล่น'],
   ['sum', '🧾', 'สรุป', 'สรุปรายสัปดาห์'], ['test', '📝', 'ทดสอบ', '📝 แบบทดสอบประจำเดือน'], ['future', '🔮', 'คาดการณ์', 'แนวโน้มคำศัพท์'], ['award', '🏅', 'รางวัล', '🏅 เหรียญรางวัล']];
-const statNav = () => `<nav class="st-nav" aria-label="ไปยังหัวข้อในหน้าสถิติ">${STAT_NAV.map(([k, ic, t]) => `<button class="chip" data-sec="${k}"><span aria-hidden="true">${ic}</span> ${t}</button>`).join('')}</nav>`;
+const statNav = () => `<nav class="st-nav" aria-label="ไปยังหัวข้อในหน้าสถิติ">${STAT_NAV.map(([k, ic, t]) => `<button class="chip" data-sec="${k}"><span aria-hidden="true">${ic}</span> ${t}</button>`).join('')}<button class="chip" id="stLay" aria-expanded="false"><span aria-hidden="true">🧩</span> จัดหน้า</button></nav><div id="stLayBox" hidden></div>`;
 function statTargets() {
   const heads = [...view.querySelectorAll('.h2')];
   return STAT_NAV.map(([k, , , f]) => {
     const el = f.startsWith('#') ? view.querySelector(f) : heads.find((h) => h.textContent.trim().startsWith(f));
-    return [k, el && (el.closest('.m-sec') || el)];
+    const sec = el && (el.closest('.m-sec') || el);
+    return [k, sec && !sec.hidden ? sec : null];
   });
 }
 let jumpSeq = 0;
@@ -613,7 +621,7 @@ function bindToday() {
 
 // Stacked bars per kind of activity (1.158.0, S.act; ACT_CATS order bottom → top). Days logged before 1.158.0 keep what is known:
 // flashcards from chist (since 1.9.0) and the rest in grey. actMetric 'n' = answers, 'sec' = minutes (logged days only).
-let actMetric = 'n', actSpan = 7;
+let actMetric = 'n', actSpan = 7, actDays = 28; // actDays (1.255.0): bars in the activity chart, ACT_DAYS_OPT
 const ACT_SHORT = { card: 'การ์ด', feed: 'ไถ', game: 'เกม', skill: 'ทักษะ', read: 'อ่าน/ฟัง', fun: 'สนุก', other: 'อื่นๆ', unk: 'ไม่แยก' };
 const minTxt = (sec) => (sec < 60 ? '<1 นาที' : sec < 3600 ? `${Math.round(sec / 60)} นาที` : `${Math.floor(sec / 3600)} ชม. ${Math.round((sec % 3600) / 60)} นาที`);
 function actSplit(key) {
@@ -625,7 +633,7 @@ function actSplit(key) {
   return { seg, a, all };
 }
 function activityChart(Wd) {
-  const big = Wd >= 520, H = big ? 180 : 130, top = 8, bot = big ? 26 : 22, n = 28, gap = big ? 4 : 3;
+  const n = actDays, big = Wd >= 520, H = big ? 180 : 130, top = 8, bot = big ? 26 : 22, gap = n > 40 ? 1 : big ? 4 : 3;
   const bw = (Wd - gap * (n - 1)) / n, sec = actMetric === 'sec';
   const days = Array.from({ length: n }, (_, i) => { const key = dayKey(n - 1 - i), d = actSplit(key); d.key = key; d.sum = Object.values(d.seg).reduce((x, v) => x + v, 0); return d; });
   const max = Math.max(sec ? 5 : 10, ...days.map((d) => d.sum));
@@ -645,10 +653,11 @@ function activityChart(Wd) {
       : `${date}: ${sec ? `≈ ${minTxt(d.a.sec)}` : `${d.sum} ข้อ${d.a ? ` · ≈ ${minTxt(d.a.sec)}` : ''}`}${d.a && d.a.jd ? ` · ถูก ${Math.round(d.a.ok / d.a.jd * 100)}%` : ''}&#10;${parts.join(' · ')}`;
     return `${out}<rect class="hit" data-day="${d.key}" data-tip="${lab}" x="${x - gap / 2}" y="0" width="${bw + gap}" height="${H}"/>`;
   }).join('');
-  const ticks = [0, 7, 14, 21, 27].map((i) => `<text class="ax" x="${i * (bw + gap) + bw / 2}" y="${H - 7}" text-anchor="middle">${i === 27 ? 'วันนี้' : `${27 - i} วันก่อน`}</text>`).join('');
-  const sw = `<div class="chips trend-range" role="group" aria-label="แสดงเป็น">${[['n', 'จำนวนข้อ'], ['sec', 'เวลา (นาที)']].map(([id, t]) => `<button class="chip${actMetric === id ? ' on' : ''}" data-am="${id}" aria-pressed="${actMetric === id}">${t}</button>`).join('')}</div>`;
+  const ticks = [0, 1, 2, 3, 4].map((q) => Math.round((n - 1) * q / 4)).map((i, q) => `<text class="ax" x="${i * (bw + gap) + bw / 2}" y="${H - 7}" text-anchor="${q === 0 ? 'start' : q === 4 ? 'end' : 'middle'}">${i === n - 1 ? 'วันนี้' : `${n - 1 - i} วันก่อน`}</text>`).join('');
+  const sw = `<div class="chips trend-range" role="group" aria-label="แสดงเป็น">${[['n', 'จำนวนข้อ'], ['sec', 'เวลา (นาที)']].map(([id, t]) => `<button class="chip${actMetric === id ? ' on' : ''}" data-am="${id}" aria-pressed="${actMetric === id}">${t}</button>`).join('')}</div>`
+    + `<div class="chips trend-range" role="group" aria-label="จำนวนวันในกราฟ">${ACT_DAYS_OPT.map((d) => `<button class="chip${actDays === d ? ' on' : ''}" data-ad="${d}" aria-pressed="${actDays === d}">${d} วัน</button>`).join('')}</div>`;
   const leg = [...ACT_CATS, ['unk', 'ยังไม่แยกประเภท']].filter(([id]) => used.has(id)).map(([id, t]) => `<span><i class="a-${id}"></i>${t}</span>`).join('');
-  return `${sw}<div class="chart${big ? ' big' : ''}"><svg viewBox="0 0 ${Wd} ${H}" width="100%" role="img" aria-label="กิจกรรมต่อวัน 28 วัน แยกตามประเภท${sec ? ' (นาที)' : ''}">
+  return `${sw}<div class="chart${big ? ' big' : ''}"><svg viewBox="0 0 ${Wd} ${H}" width="100%" role="img" aria-label="กิจกรรมต่อวัน ${n} วัน แยกตามประเภท${sec ? ' (นาที)' : ''}">
     <line class="base" x1="0" x2="${Wd}" y1="${H - bot}" y2="${H - bot}"/>${bars}${ticks}</svg><div class="tip" hidden></div></div>
     <div class="legend">${leg || '<span>ยังไม่มีข้อมูล</span>'}</div>`;
 }
@@ -726,6 +735,7 @@ function actBreakdown() {
 function bindAct(root = view) {
   const host = root.querySelector('[data-chart="act"]');
   if (host) host.querySelectorAll('[data-am]').forEach((b) => { b.onclick = () => { actMetric = b.dataset.am; delete host.dataset.w; paintChart(host); }; });
+  if (host) host.querySelectorAll('[data-ad]').forEach((b) => { b.onclick = () => { actDays = +b.dataset.ad; delete host.dataset.w; paintChart(host); }; });
   const svg = host && host.querySelector('svg'); // 1.216.0: a tap on a day's bar opens that day's page
   if (svg) svg.onclick = (e) => { const r = e.target.closest('.hit[data-day]'); if (r) go('day', r.dataset.day); };
   const box = root.querySelector('#actBox');
@@ -1043,4 +1053,161 @@ function renderLevelTest(lv) {
     <div class="tiles mo-tiles" style="margin:12px 0"><div class="tile-s"><b>${t ? pct(t) + '%' : '–'}</b><span>ดีที่สุด</span></div><div class="tile-s"><b>${n}</b><span>ข้อ</span></div></div>
     <button class="btn primary block" id="mtGo">เริ่มทดสอบ</button></div>`;
   $('#mtGo').onclick = () => runMonthTest(shuffle(pool).slice(0, n), lv);
+}
+
+/* ---------- statistics extras (1.255.0) ---------- */
+const ACT_DAYS_OPT = [14, 28, 60];
+// 🕐 Accuracy by time of day: S.act x.hj / x.hr (judged / right per hour), last 28 days, in 3-hour slots.
+const HOUR_SLOTS = [[0, 6, 'ดึก 00–06'], [6, 9, 'เช้า 06–09'], [9, 12, 'สาย 09–12'], [12, 15, 'บ่าย 12–15'], [15, 18, 'เย็น 15–18'], [18, 21, 'ค่ำ 18–21'], [21, 24, 'กลางคืน 21–24']];
+const HOUR_MIN = 20; // answers in a slot before its % shows
+function hourAcc(days = 28) {
+  const jd = Array(24).fill(0), ok = Array(24).fill(0);
+  for (let k = 0; k < days; k++) { const x = (S.act[dayKey(k)] || {}).x; if (x && x.hj && x.hr) x.hj.forEach((v, i) => { jd[i] += v; ok[i] += x.hr[i] || 0; }); }
+  return HOUR_SLOTS.map(([a, b, t]) => { let j = 0, r = 0; for (let i = a; i < b; i++) { j += jd[i]; r += ok[i]; } return { t, j, r, acc: j ? r / j : null }; });
+}
+function hourAccCard() {
+  const sl = hourAcc(), used = sl.filter((x) => x.j >= HOUR_MIN);
+  const head = '<div class="h2">🕐 ช่วงเวลาที่ตอบแม่นที่สุด <span class="small muted">28 วันล่าสุด</span></div>';
+  if (used.length < 2) return `${head}<div class="card-box small muted" id="hourBox">ตอบอย่างน้อย ${HOUR_MIN} ข้อในสองช่วงเวลาขึ้นไป แล้วแอปจะบอกได้ว่าช่วงไหนตอบแม่นที่สุด (เริ่มเก็บตั้งแต่เวอร์ชัน 1.255.0)</div>`;
+  const best = used.reduce((a, b) => (b.acc > a.acc ? b : a)), worst = used.reduce((a, b) => (b.acc < a.acc ? b : a));
+  const rows = sl.map((x) => `<div class="act-row"><span class="act-n">${x.t}</span><span class="act-bar"><i class="a-any" style="width:${x.j >= HOUR_MIN ? Math.max(2, Math.round(x.acc * 100)) : 0}%"></i></span><span class="act-v">${x.j >= HOUR_MIN ? Math.round(x.acc * 100) + '%' : '–'}<small>${x.j.toLocaleString()} ข้อ</small></span></div>`).join('');
+  const gap = Math.round((best.acc - worst.acc) * 100);
+  return `${head}<div class="card-box" id="hourBox">
+    <div class="small">${gap >= 5 ? `⭐ ช่วง<b>${best.t}</b> ตอบถูก ${Math.round(best.acc * 100)}% แม่นกว่าช่วง${worst.t} ${gap} จุด ลองตั้งเวลาเตือนช่วงนี้ดูนะ` : '✅ ตอบแม่นพอๆ กันทุกช่วงที่เล่น เล่นเวลาไหนก็ได้ที่สะดวก'}</div>
+    <div class="act-rows" style="margin-top:8px">${rows}</div>
+    ${gap >= 5 ? '<button class="btn" data-go="settings" style="margin-top:8px">⏰ ไปตั้งเวลาเตือน</button>' : ''}</div>`;
+}
+// ✨ Words that became "จำได้แล้ว" this month (S.mday, kept since 1.255.0), newest first. Tap a word to open it.
+function monthMast(mk = monthKey()) {
+  return Object.entries(S.mday || {}).filter(([w, k]) => k.startsWith(mk) && WORD_BY[w]).sort((a, b) => (a[1] < b[1] ? 1 : a[1] > b[1] ? -1 : 0)).map(([w]) => WORD_BY[w]);
+}
+function monthMastCard() {
+  const ws = monthMast(), head = `<div class="h2">✨ คำที่จำได้เดือนนี้ <span class="small muted">${ws.length} คำ</span></div>`;
+  if (!ws.length) return `${head}<div class="card-box small muted" id="mastBox">ยังไม่มีคำที่เพิ่งจำได้เดือนนี้ ทบทวนแฟลชการ์ดตามกำหนดไปเรื่อยๆ คำที่ผ่านหลายรอบจะขึ้นมาตรงนี้ (เริ่มเก็บตั้งแต่เวอร์ชัน 1.255.0)</div>`;
+  const chip = (w) => `<button class="chip" data-wsi="${w.idx}" lang="en">${esc(w.w)}</button>`;
+  return `${head}<div class="card-box" id="mastBox"><div class="chips">${ws.slice(0, 40).map(chip).join('')}</div>
+    ${ws.length > 40 ? `<details class="act-more"><summary>ดูอีก ${ws.length - 40} คำ</summary><div class="chips">${ws.slice(40).map(chip).join('')}</div></details>` : ''}
+    <div class="small muted" style="margin-top:8px">แตะคำเพื่อเปิดดู · นับคำที่ทบทวนผ่านจนได้สถานะ “จำได้แล้ว” ในเดือนนี้</div></div>`;
+}
+// 📂 Accuracy by topic and part of speech over all answers so far (S.prog c right / x wrong), weakest first.
+const ACC_MIN = 15;
+function accBy(key) {
+  const t = {};
+  for (const w of W) { const p = S.prog[w.w]; if (!p) continue; const k = key(w); if (!k) continue; const r = t[k] || (t[k] = [0, 0]); r[0] += (p.c || 0) + (p.x || 0); r[1] += p.c || 0; }
+  return Object.entries(t).filter(([, [n]]) => n >= ACC_MIN).map(([k, [n, c]]) => [k, c / n, n]).sort((a, b) => a[1] - b[1]);
+}
+function topicAccCard() {
+  const tp = accBy((w) => w.tp), pos = accBy((w) => String(w.p || '').split('/')[0].trim());
+  const head = '<div class="h2">📂 ความแม่นตามหมวดและชนิดคำ <span class="small muted">ทุกคำที่เคยตอบ</span></div>';
+  if (tp.length < 2 && pos.length < 2) return `${head}<div class="card-box small muted" id="tpAcc">เรียนคำจากหลายหมวดอีกสักหน่อย (หมวดละ ${ACC_MIN} ข้อขึ้นไป) แล้วแอปจะเทียบให้ว่าหมวดไหนแม่น หมวดไหนยังพลาดบ่อย</div>`;
+  const row = (name, [, acc, n]) => `<div class="act-row"><span class="act-n">${name}</span><span class="act-bar"><i class="a-any" style="width:${Math.max(2, Math.round(acc * 100))}%"></i></span><span class="act-v">${Math.round(acc * 100)}%<small>${n.toLocaleString()} ข้อ</small></span></div>`;
+  const tl = (k) => esc(TOPIC_LABEL[k] || k);
+  return `${head}<div class="card-box" id="tpAcc">
+    ${tp.length ? `<div class="act-h">หมวดที่ยังพลาดบ่อย</div><div class="act-rows">${tp.slice(0, 5).map((r) => row(tl(r[0]), r)).join('')}</div>
+      ${tp.length > 5 ? `<details class="act-more"><summary>ดูหมวดอื่นอีก ${tp.length - 5} หมวด</summary><div class="act-rows">${tp.slice(5).map((r) => row(tl(r[0]), r)).join('')}</div></details>` : ''}` : ''}
+    ${pos.length ? `<div class="act-h">ชนิดคำ</div><div class="act-rows">${pos.map((r) => row(esc(POS_TH[r[0]] || r[0]), r)).join('')}</div>` : ''}
+    ${tp.length ? `<div class="wk-btns"><button class="btn primary" data-weak="tp:${tp[0][0]}">📂 ฝึกหมวด${esc((TOPIC_LABEL[tp[0][0]] || '').replace(/^\S+ /, ''))}</button></div>` : ''}</div>`;
+}
+// 🔀 Word pairs mixed up most (S.conf from quiz and match answers), both directions added together.
+function confPairs() {
+  const t = {};
+  for (const [a, m] of Object.entries(S.conf || {})) for (const [b, n] of Object.entries(m)) {
+    if (!WORD_BY[a] || !WORD_BY[b]) continue;
+    const k = a < b ? a + '\u0001' + b : b + '\u0001' + a; t[k] = (t[k] || 0) + n;
+  }
+  return Object.entries(t).sort((x, y) => y[1] - x[1]).map(([k, n]) => [...k.split('\u0001').map((w) => WORD_BY[w]), n]);
+}
+function confCard() {
+  const ps = confPairs(), head = '<div class="h2">🔀 คู่คำที่ชอบสับสน</div>';
+  if (!ps.length) return `${head}<div class="card-box small muted" id="confBox">ยังไม่มีคู่คำที่ตอบสลับกัน · เวลาเลือกคำตอบผิดในเกมทายคำหรือเกมจับคู่ แอปจะจำว่าสับสนคำไหนกับคำไหน แล้วรวมไว้ที่นี่ (เริ่มเก็บตั้งแต่เวอร์ชัน 1.255.0)</div>`;
+  const word = (w) => `<button class="linkish" data-wsi="${w.idx}" lang="en">${esc(w.w)}</button> <span class="muted small">${esc(w.t)}</span>`;
+  const row = ([a, b, n]) => `<div class="cf-row">${word(a)}<span aria-hidden="true"> ⇄ </span>${word(b)} <span class="muted small">· ${n} ครั้ง</span></div>`;
+  return `${head}<div class="card-box" id="confBox">${ps.slice(0, 6).map(row).join('')}
+    ${ps.length > 6 ? `<details class="act-more"><summary>ดูอีก ${Math.min(24, ps.length - 6)} คู่</summary>${ps.slice(6, 30).map(row).join('')}</details>` : ''}
+    <div class="wk-btns"><button class="btn primary" id="confGo">🔀 ฝึกคู่ที่สับสน (${Math.min(20, ps.length * 2)} คำ)</button></div></div>`;
+}
+function confGo() {
+  customWords = [...new Set(confPairs().slice(0, 10).flatMap(([a, b]) => [a, b]))].slice(0, 20);
+  if (customWords.length < 4) customWords = [...new Set(customWords.concat(pool().slice(0, 6)))];
+  gameSource = 'custom';
+  startGame(pick(['en2th', 'th2en', 'match']));
+}
+// 🎧 Skills: answers and accuracy by the games menu's skill groups (GAME_SKILLS / SKILL_OF in js/games.js), from S.act x.g.
+// Flashcards, the feed and stories count as "ความหมาย"; listening review (ear) as listening.
+const MIX_EXTRA = { cards: 'mean', feed: 'mean', read: 'mean', ear: 'hear' };
+const MIX_TRY = ['hear', 'say', 'write', 'gram', 'phrase']; // groups worth a nudge when they get under 10 %
+const mixOf = (id) => SKILL_OF[id] || MIX_EXTRA[id] || '';
+function skillMix(days = 90) {
+  const t = Object.fromEntries(GAME_SKILLS.map(([k]) => [k, [0, 0, 0, 0]]));
+  for (let k = 0; k < days; k++) {
+    const x = (S.act[dayKey(k)] || {}).x; if (!x || !x.g) continue;
+    for (const [id, v] of Object.entries(x.g)) { const r = t[mixOf(id)]; if (r) v.forEach((y, i) => { r[i] += y; }); }
+  }
+  return t;
+}
+function skillMixCard() {
+  const t = skillMix(), all = Object.values(t).reduce((a, r) => a + r[0], 0);
+  const head = '<div class="h2">🎧 ฝึกทักษะไหนไปเท่าไร <span class="small muted">90 วันล่าสุด</span></div>';
+  if (all < 20) return `${head}<div class="card-box small muted" id="skillBox">เล่นอีกสักหน่อย แล้วแอปจะแยกให้ดูว่าฝึกฟัง พูด สะกด ความหมาย และไวยากรณ์ไปเท่าไร</div>`;
+  const rows = GAME_SKILLS.filter(([k]) => t[k][0] || MIX_TRY.includes(k)).map(([k, ic, name]) => { const r = t[k];
+    return `<div class="act-row"><span class="act-n"><span aria-hidden="true">${ic}</span> ${name}</span><span class="act-bar"><i class="a-any" style="width:${r[0] ? Math.max(2, Math.round(r[0] / all * 100)) : 0}%"></i></span><span class="act-v">${aPct(r[0], all)}%<small>${r[0].toLocaleString()} ข้อ${okTxt(r[3], r[2])}</small></span></div>`; }).join('');
+  const low = GAME_SKILLS.filter(([k, , , ids]) => MIX_TRY.includes(k) && t[k][0] / all < 0.1 && GAMES[ids[0]]).slice(0, 3);
+  return `${head}<div class="card-box" id="skillBox"><div class="act-rows">${rows}</div>
+    ${low.length ? `<div class="small" style="margin-top:8px">💡 ยังฝึก${low.map(([, , n]) => n).join(' / ')}น้อย (ไม่ถึง 10%) ลองสลับเล่นบ้างนะ</div><div class="wk-btns">${low.map(([, , , ids]) => `<button class="btn" data-weak="g:${ids[0]}">${GAMES[ids[0]].icon} ${esc(GAMES[ids[0]].name)}</button>`).join('')}</div>` : ''}
+    <div class="small muted" style="margin-top:8px">แบ่งกลุ่มเหมือนหน้าเมนูเกม · แฟลชการ์ด ไถศัพท์ และเรื่องสั้นนับเป็น “ความหมาย”</div></div>`;
+}
+function bindStatX() {
+  const sheet = (e) => { const b = e.target.closest('[data-wsi]'); if (b && W[+b.dataset.wsi]) openSheet(W[+b.dataset.wsi]); };
+  ['#mastBox', '#confBox'].forEach((id) => { const el = $(id); if (el) el.addEventListener('click', sheet); });
+  const cg = $('#confGo'); if (cg) cg.onclick = confGo;
+  ['#tpAcc', '#skillBox'].forEach((id) => { const el = $(id); if (el) el.onclick = (e) => { const b = e.target.closest('[data-weak]'); if (b) weakGo(b.dataset.weak); }; });
+  const lb = $('#stLay');
+  if (lb) lb.onclick = () => { const box = $('#stLayBox'), open = box.hidden; box.hidden = !open; lb.setAttribute('aria-expanded', String(open)); lb.classList.toggle('on', open); if (open) layPanel(); };
+}
+// 🧩 Page layout: hide or move the stats parts (each .m-sec, keyed by its heading text). settings.statHide = [keys],
+// settings.statOrder = [keys] (empty = the built-in order; parts not listed keep their built-in place after the listed ones).
+// A block between sections without a heading of its own (the sticker book) moves with the section before it.
+const secKey = (sec) => { const h = sec.querySelector(':scope > .h2'); return h ? (h.firstChild ? h.firstChild.textContent : h.textContent).trim() : ''; };
+function statUnits() {
+  const out = [];
+  for (const el of [...view.children]) {
+    if (el.classList.contains('m-sec')) out.push({ key: secKey(el), els: [el] });
+    else if (out.length) out[out.length - 1].els.push(el);
+  }
+  return out.filter((u) => u.key);
+}
+function statLayout() {
+  const us = statUnits(); if (!us.length) return;
+  const hide = new Set(S.settings.statHide || []), ord = S.settings.statOrder || [];
+  const byKey = new Map(us.map((u) => [u.key, u]));
+  const list = ord.length ? [...ord.filter((k) => byKey.has(k)).map((k) => byKey.get(k)), ...us.filter((u) => !ord.includes(u.key))] : us;
+  const anchor = document.createComment('st'); us[0].els[0].before(anchor);
+  let at = anchor;
+  for (const u of list) for (const el of u.els) { at.after(el); at = el; el.hidden = hide.has(u.key); }
+  anchor.remove();
+}
+function layPanel() {
+  const box = $('#stLayBox'); if (!box) return;
+  const us = statUnits(), hide = new Set(S.settings.statHide || []), keys = us.map((u) => u.key);
+  box.className = 'card-box st-lay';
+  box.innerHTML = `<div class="row" style="justify-content:space-between"><b>🧩 จัดหน้าสถิติ</b><button class="btn" id="layReset">คืนค่าเดิม</button></div>
+    <div class="small muted" style="margin:4px 0 8px">ติ๊กออกเพื่อซ่อน · ใช้ ↑ ↓ เลื่อนลำดับ (ซิงก์ไปเครื่องอื่นด้วย)</div>
+    ${us.map((u, i) => `<div class="lay-row"><label><input type="checkbox" data-lk="${i}"${hide.has(u.key) ? '' : ' checked'}> ${esc(u.key)}</label>
+      <span class="lay-mv"><button class="btn" data-lu="${i}" aria-label="เลื่อน ${esc(u.key)} ขึ้น"${i ? '' : ' disabled'}>↑</button><button class="btn" data-ld="${i}" aria-label="เลื่อน ${esc(u.key)} ลง"${i < us.length - 1 ? '' : ' disabled'}>↓</button></span></div>`).join('')}`;
+  const apply = () => { save(); statLayout(); layPanel(); };
+  box.onchange = (e) => {
+    const c = e.target.closest('[data-lk]'); if (!c) return;
+    const k = keys[+c.dataset.lk], h = new Set(S.settings.statHide || []);
+    if (c.checked) h.delete(k); else h.add(k);
+    S.settings.statHide = [...h]; apply();
+    const nc = box.querySelector(`[data-lk="${c.dataset.lk}"]`); if (nc) nc.focus();
+  };
+  box.onclick = (e) => {
+    if (e.target.closest('#layReset')) { S.settings.statHide = []; S.settings.statOrder = []; save(); return go('stats'); } // redraw in the built-in order
+    const b = e.target.closest('[data-lu], [data-ld]'); if (!b) return;
+    const up = b.dataset.lu != null, i = +(up ? b.dataset.lu : b.dataset.ld), j = up ? i - 1 : i + 1;
+    if (j < 0 || j >= keys.length) return;
+    [keys[i], keys[j]] = [keys[j], keys[i]]; S.settings.statOrder = keys.slice(); apply();
+    const nb = box.querySelector(`[data-${up ? 'lu' : 'ld'}="${j}"]`); if (nb && !nb.disabled) nb.focus();
+  };
 }
