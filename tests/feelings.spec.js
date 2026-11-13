@@ -12,7 +12,7 @@ test('feelings set: own group, settings chip, badge colour, stats row, not on th
   }));
   expect(info.n).toBeGreaterThanOrEqual(200);
   delete info.n;
-  expect(info).toEqual({ label: 'อารมณ์/นิสัย', extra: ['TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL', 'COOK', 'FEEL', 'ENV', 'SOC', 'FIT', 'FAM', 'PET', 'STY'], cefr: true, ladder: false, tower: false });
+  expect(info).toEqual({ label: 'อารมณ์/นิสัย', extra: ['TOE', 'AWL', 'BIZ', 'IT', 'MED', 'POL', 'COOK', 'FEEL', 'ENV', 'SOC', 'FIT', 'FAM', 'PET', 'STY', 'SPC'], cefr: true, ladder: false, tower: false });
 
   await page.evaluate(() => go('settings'));
   await page.evaluate(() => { document.querySelector('details[data-g="lv"]').open = true; });

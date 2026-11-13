@@ -26,6 +26,13 @@
 - [ ] ⭐ **🏠 บ้าน / ซ่อมแซม / ทำความสะอาด** (8/16) — ยังไม่มี: faucet, screwdriver, hammer, mop, detergent, bleach, mould, fuse · เรียกช่าง แจ้งซ่อมกับเจ้าของห้อง ของใช้ทำความสะอาด
 - [ ] 💡 **🙏 วัฒนธรรมไทย / ศาสนา / เทศกาล** (9/16) — ยังไม่มี: alms, shrine, incense, ordination, lantern, amulet · ใช้อธิบายวัด ทำบุญ สงกรานต์ ลอยกระทงให้ชาวต่างชาติฟัง (คู่กับสมุดวลี `thaitalk`)
 
+**รอบ 3 (คุยกันเมื่อ 2026-11-13 หลังออก 1.246.1 — เทียบกับคลัง 8,798 คำ รวม FAM PET STY แล้ว):**
+- [x] 🔥 **🔭 อวกาศ / ดาราศาสตร์** (เสร็จ: 1.247.0 — กลุ่ม `SPC` 210 คำ `data/words/space.js` แถวลงท้าย `'O'`) (4/15) — ยังไม่มี: orbit, galaxy, asteroid, comet, telescope, astronaut, eclipse, meteor, constellation, nebula, lunar · ขาดเยอะที่สุดในรอบนี้ เด็กๆ ชอบ ใช้ในวิชาวิทย์ได้ด้วย และเอาไปใช้กับชุดสำเร็จรูป "วิทยาศาสตร์ ม.ปลาย" ได้
+- [ ] ⭐ **🎬 หนัง / เพลง / บันเทิง** (~16/30) — ยังไม่มี: sequel, spoiler, soundtrack, encore, lyrics, subtitle, premiere, chorus, box office, chord, tempo, flute, saxophone, ukulele, karaoke · ใช้ตอนดูซีรีส์ ฟังเพลง หรือเล่นดนตรี
+- [ ] ⭐ **🌱 สวน / เกษตร** (~17/30) — ยังไม่มี: prune, rake, hose, shovel, bloom, shrub, trowel, tractor, orchard, plough, livestock, barn · คนไทยปลูกต้นไม้กันเยอะ และงานเกษตรก็เป็นอาชีพใหญ่ของประเทศ
+- [ ] ⭐ **🚨 ภัยใกล้ตัว / มิจฉาชีพ / ตำรวจ** (9/15) — ยังไม่มี: scam, pickpocket, burglar, alibi, handcuffs, police station · ใช้แจ้งความตอนอยู่ต่างประเทศหรือตอนช่วยนักท่องเที่ยว และเรื่องแก๊งหลอกลวงก็ใกล้ตัวคนไทยมาก · ระวังซ้ำกับชุดสำเร็จรูป "สัญญา / กฎหมายใกล้ตัว" (ข้างล่าง)
+- [ ] 💡 **🎮 เกม / อีสปอร์ต** (9/15) — ยังไม่มี: respawn, loot, multiplayer, joystick, glitch, spawn · วัยรุ่นน่าจะชอบ · ใส่แต่คำที่ใช้กันนาน สแลงในเกมให้อยู่ในสมุดวลี `chat`
+
 ## 📦 ชุดสำเร็จรูป (คลังมีคำเกือบครบแล้ว เพิ่มใน `data/sets/presets.js` + คำของชุดเอง `own` ไม่กี่คำ)
 - [ ] ⭐ **🛎️ งานโรงแรม / ไกด์ (มุมพนักงาน)** (11/16) — `own`: housekeeping, turndown, bellboy, souvenir, upsell · ชุด `hotel` ที่มีตอนนี้เป็นมุมของแขก แต่งานบริการเป็นอาชีพใหญ่ของไทย ควรมีชุดที่พนักงานต้อนรับ / แม่บ้าน / ไกด์ / สปาใช้
 - [ ] ⭐ **🏭 โรงงาน / วิศวกรรม** (12/16) — `own`: forklift, conveyor, calibration, kaizen (+ QC, lean) · สำหรับคนทำงานโรงงานที่ใช้ภาษาอังกฤษ (โรงงานญี่ปุ่น, EEC)
@@ -34,6 +41,13 @@
 - [ ] ⭐ **💰 การเงินส่วนตัว** (15/15, รอบ 2) — `own`: ไม่ต้องมี · ผ่อนสินค้า บิลค่าน้ำไฟ ภาษี ประกัน เงินออม (installment, refund, overdue, utility, deduction, premium, mortgage…) ไม่ซ้ำกับ `bank` / `finance`
 - [ ] 💡 **🧳 เที่ยว / แบ็กแพ็ก** (10/15, รอบ 2) — `own`: layover, hostel, souvenir, jet lag, snorkel · รวม itinerary, sightseeing, excursion, landmark, ferry ไม่ซ้ำกับ `airport` / `hotel` / `transport`
 - [ ] 💡 **🔬 วิทยาศาสตร์ ม.ปลาย** (14/16) — `own`: photosynthesis, orbit · ใช้คู่กับกลุ่มวิชาการ (AWL) ที่มีอยู่แล้ว
+
+**รอบ 3 (2026-11-13):**
+- [ ] ⭐ **🎓 มหาลัย / เรียนต่อนอก** (12/15) — `own`: dorm, GPA, plagiarism · ค่าเทอม ทุน หอพัก ลงทะเบียนเรียน วิทยานิพนธ์
+- [ ] ⭐ **💼 ชีวิตคนทำงาน / HR** (13/15) — `own`: payslip, probation · ลา OT เลื่อนตำแหน่ง ประเมินผล ลาออก (ไม่ซ้ำกับ `interview` / `meeting`)
+- [ ] 💡 **💒 งานแต่ง / งานศพ / พิธีสำคัญ** (11/15) — `own`: bridesmaid, dowry (สินสอด), coffin, cremation
+- [ ] 💡 **🆘 เหตุฉุกเฉิน / ปฐมพยาบาล** (10/14) — `own`: first aid, CPR, fire extinguisher, siren · น้ำท่วม แผ่นดินไหว อพยพ เรียกรถพยาบาล
+- [ ] 💡 **🏗️ ซื้อคอนโด / สร้างบ้าน** (10/15) — `own`: condo, down payment, plumbing, cement, scaffold · ไม่ซ้ำกับ `rent` (เช่า)
 
 ## ขั้นตอนทำกลุ่มคำใหม่ (ทำตามแบบ POL ใน 1.237.0)
 ดูไฟล์ที่เวอร์ชันนั้นแก้ทั้งหมดได้ด้วย `git show --stat abcbb81` (20 ไฟล์) สรุปคร่าวๆ:
