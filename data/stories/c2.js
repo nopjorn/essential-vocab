@@ -380,5 +380,380 @@
         "a": 0
       }
     ]
+  },
+  {
+    "id": 121,
+    "level": "C2",
+    "emoji": "🗺️",
+    "title": "Mapping a Vanishing Shore",
+    "titleTh": "แผนที่ของชายฝั่งที่กำลังหายไป",
+    "en": [
+      "Pim had been hired to update the official maps of a coastal district in Samut Prakan, a task her supervisor described as routine. The previous survey was only twelve years old, and he assumed she would merely be adding a few new roads. Instead, on her first morning she stood on what the old map called a rice field and watched fishermen moor their boats over it. In places the shoreline had retreated more than a kilometre, swallowing farms, a school and the foundations of a temple whose roof now rose out of the sea like a capsized ship.",
+      "The technical problem was easy enough to solve; satellite images and a drone could locate the new coastline within centimetres. What unsettled Pim was a question her training had never addressed: what exactly should a map show when the land itself is in dispute with the sea? The villagers had their own geography, layered and full of absences. An old man pointed to open water and said, without irony, that this was where he had been born. The land registry, meanwhile, still recorded titles to plots that no longer existed, and some owners continued to pay tax on them, reluctant to concede that their inheritance had been erased.",
+      "She began, almost against her will, to add a second layer to her work. Alongside the precise new coastline, she traced the old one, and then the ones before it, drawn from aerial photographs going back to the 1960s, so that the map became less a picture than a record of loss. Her supervisor objected that this was not what the department had asked for; maps, he said, should describe the present, not mourn the past. Pim replied that a map which showed only the present would make the disappearance look natural and complete, when in fact it was neither: the mangroves that had once protected the coast had been cut down within living memory, and some were now being replanted.",
+      "In the end the department published the standard map, as required. But Pim's layered version circulated informally among teachers, local officials and the volunteers replanting the mangroves, who used it to decide where their efforts might matter most. Years later, when a new embankment was finally approved, the engineers asked for a copy. She had not expected her map to change anything. She had simply refused to pretend that the line between land and sea was a fact rather than a history, and one that people were still, slowly, able to rewrite."
+    ],
+    "th": [
+      "พิมได้รับการจ้างให้ปรับปรุงแผนที่ทางการของอำเภอริมทะเลแห่งหนึ่งในสมุทรปราการ งานที่หัวหน้าเรียกว่าเป็นงานประจำธรรมดา การสำรวจครั้งก่อนเพิ่งผ่านมาแค่สิบสองปี และเขาคิดว่าเธอคงแค่เพิ่มถนนใหม่ไม่กี่เส้น แต่ในเช้าวันแรก เธอยืนอยู่บนที่ที่แผนที่เก่าเรียกว่านาข้าว และมองชาวประมงผูกเรือไว้เหนือมัน บางแห่งชายฝั่งถอยร่นไปกว่าหนึ่งกิโลเมตร กลืนไร่นา โรงเรียน และฐานรากของวัดแห่งหนึ่งซึ่งบัดนี้หลังคาโผล่พ้นน้ำทะเลราวกับเรือที่คว่ำ",
+      "ปัญหาทางเทคนิคแก้ได้ไม่ยาก ภาพถ่ายดาวเทียมและโดรนระบุแนวชายฝั่งใหม่ได้แม่นยำถึงระดับเซนติเมตร สิ่งที่ทำให้พิมกระวนกระวายคือคำถามที่การฝึกฝนของเธอไม่เคยพูดถึง แผนที่ควรแสดงอะไรกันแน่ เมื่อแผ่นดินเองกำลังพิพาทกับทะเล ชาวบ้านมีภูมิศาสตร์ของตัวเอง ซ้อนกันหลายชั้นและเต็มไปด้วยสิ่งที่หายไป ชายชราคนหนึ่งชี้ไปที่ผืนน้ำโล่งแล้วบอกอย่างไม่ได้ประชดเลยว่าตรงนี้คือที่ที่เขาเกิด ขณะที่สำนักงานที่ดินยังบันทึกโฉนดของแปลงที่ไม่มีอยู่แล้ว และเจ้าของบางคนยังจ่ายภาษีที่ดินเหล่านั้นอยู่ ไม่ยอมรับว่ามรดกของตนถูกลบหายไปแล้ว",
+      "เธอเริ่มเพิ่มชั้นที่สองลงในงานแทบจะโดยไม่ตั้งใจ ข้างแนวชายฝั่งใหม่ที่แม่นยำ เธอลากเส้นชายฝั่งเดิม แล้วก็เส้นก่อนหน้านั้นอีก โดยอ้างอิงจากภาพถ่ายทางอากาศย้อนไปถึงทศวรรษ 1960 จนแผนที่กลายเป็นบันทึกของการสูญเสียมากกว่าเป็นภาพ หัวหน้าแย้งว่านี่ไม่ใช่สิ่งที่กรมสั่ง แผนที่ เขาบอก ควรบรรยายปัจจุบัน ไม่ใช่ไว้อาลัยอดีต พิมตอบว่าแผนที่ที่แสดงแต่ปัจจุบันจะทำให้การหายไปดูเป็นธรรมชาติและจบสิ้นแล้ว ทั้งที่ความจริงไม่ใช่ทั้งสองอย่าง ป่าชายเลนที่เคยปกป้องชายฝั่งถูกตัดไปในช่วงที่คนยังมีชีวิตอยู่จำได้ และบางส่วนกำลังถูกปลูกคืน",
+      "ท้ายที่สุดกรมก็ตีพิมพ์แผนที่มาตรฐานตามที่กำหนด แต่ฉบับหลายชั้นของพิมถูกส่งต่อกันอย่างไม่เป็นทางการในหมู่ครู เจ้าหน้าที่ท้องถิ่น และอาสาสมัครที่ปลูกป่าชายเลน ซึ่งใช้มันตัดสินใจว่าควรทุ่มแรงตรงไหนจึงจะได้ผลที่สุด หลายปีต่อมา เมื่อแนวคันกั้นน้ำใหม่ได้รับอนุมัติในที่สุด วิศวกรก็ขอสำเนาไป เธอไม่เคยคาดว่าแผนที่ของเธอจะเปลี่ยนอะไรได้ เธอเพียงแต่ไม่ยอมแสร้งทำว่าเส้นแบ่งระหว่างแผ่นดินกับทะเลเป็นข้อเท็จจริง แทนที่จะเป็นประวัติศาสตร์ ประวัติศาสตร์ที่ผู้คนยังค่อยๆ เขียนใหม่ได้"
+    ],
+    "q": [
+      {
+        "q": "What did Pim's supervisor expect the job to involve?",
+        "o": [
+          "Adding a few new roads to a recent map",
+          "Designing a new embankment",
+          "Counting the villagers"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What question troubled Pim more than the technical work?",
+        "o": [
+          "Which drone to buy",
+          "What a map should show when land is being lost to the sea",
+          "How to reach the temple by boat"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Why did some landowners keep paying tax on vanished plots?",
+        "o": [
+          "They were forced to by law",
+          "They hoped to sell them",
+          "They were unwilling to accept their inheritance was gone"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What was Pim's argument for showing the old coastlines?",
+        "o": [
+          "It made the map look more attractive",
+          "Showing only the present would make the loss seem natural and final",
+          "The department had requested it"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Who found the layered map useful?",
+        "o": [
+          "Tourists visiting the temple",
+          "Mangrove volunteers deciding where to work",
+          "Fishermen looking for fish"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What does the final sentence suggest about the coastline?",
+        "o": [
+          "It is a history people can still partly change",
+          "It will never change again",
+          "It is a fixed scientific fact"
+        ],
+        "a": 0
+      }
+    ]
+  },
+  {
+    "id": 122,
+    "level": "C2",
+    "emoji": "🎻",
+    "title": "The Restorer's Verdict",
+    "titleTh": "คำตัดสินของช่างซ่อม",
+    "en": [
+      "For thirty years Lert had repaired violins in a narrow shop off Charoen Krung Road, and in that time he had learned to distrust stories. Almost every instrument brought to him came wrapped in one: a grandfather who had bought it from a departing Italian diplomat, a label glimpsed inside that bore a famous name, a price paid long ago that had seemed absurdly low. Most of these stories were sincere, and nearly all were wrong. Lert regarded it as part of his job to separate the instrument from the legend gently, without humiliating the person who had believed it.",
+      "So when a young music teacher named Ann arrived with a violin she believed to be a nineteenth-century French instrument of some value, he prepared himself for the familiar conversation. He opened the case expecting disappointment and found instead a genuinely remarkable piece of work: the varnish, the arching, the scroll all suggested a maker of real skill. Yet something about the corner blocks inside the body bothered him. After a week of examination, he concluded that the violin was indeed old and beautifully made, but that it had been made in the 1920s by a craftsman who had copied the French style so faithfully that he had even reproduced its flaws.",
+      "Here Lert faced a dilemma that no amount of technical knowledge could resolve. The label inside was false, but there was no evidence that the maker himself had put it there; it might have been added decades later by a dealer. Ann's violin was worth perhaps a tenth of what she had hoped, which meant that she could not afford the conservatory course she had planned to pay for by selling it. Yet it was also, by any honest standard, a finer instrument than many authentic French violins of that period that Lert had handled. Its value in the market and its value as a thing to be played had come apart, and he was being asked to pronounce on only one of them.",
+      "He told her the truth, all of it, including what he thought of the craftsmanship. Ann was silent for a long time, then asked him to play it. He did, badly, as he always insisted, and she laughed. She did not sell the violin. Instead she used it to teach, and over the next few years several of her students went on to the conservatory she had once hoped to attend. Lert sometimes wondered whether he had cost her a future or saved her from a bargain she would have regretted. He concluded, eventually, that it had not been his decision to make; his task had only been to make sure she made it knowing what she held."
+    ],
+    "th": [
+      "ตลอดสามสิบปี เลิศซ่อมไวโอลินอยู่ในร้านแคบๆ ริมซอยแยกถนนเจริญกรุง และตลอดเวลานั้นเขาเรียนรู้ที่จะไม่เชื่อเรื่องเล่า เครื่องดนตรีแทบทุกชิ้นที่ถูกนำมาให้เขามักห่อมาด้วยเรื่องเล่าเสมอ คุณปู่ที่ซื้อมาจากนักการทูตชาวอิตาลีซึ่งกำลังจะกลับประเทศ ฉลากด้านในที่แวบเห็นว่ามีชื่อช่างดัง ราคาที่จ่ายไปนานแล้วซึ่งดูถูกจนน่าขัน เรื่องส่วนใหญ่เล่าด้วยความจริงใจ แต่แทบทั้งหมดผิด เลิศถือว่าส่วนหนึ่งของงานเขาคือการแยกเครื่องดนตรีออกจากตำนานอย่างนุ่มนวล โดยไม่ทำให้คนที่เคยเชื่อต้องอับอาย",
+      "ดังนั้นเมื่อครูสอนดนตรีสาวชื่อแอนมาพร้อมไวโอลินที่เธอเชื่อว่าเป็นของฝรั่งเศสศตวรรษที่สิบเก้าซึ่งมีมูลค่าอยู่บ้าง เขาก็เตรียมใจรับบทสนทนาแบบที่คุ้นเคย เขาเปิดกล่องโดยคาดว่าจะผิดหวัง แต่กลับพบงานฝีมือที่ยอดเยี่ยมจริงๆ น้ำมันเคลือบ ความโค้ง และหัวม้วนล้วนบ่งบอกถึงช่างที่มีฝีมือแท้ แต่มีบางอย่างเกี่ยวกับไม้เสริมมุมด้านในตัวไวโอลินที่ทำให้เขาติดใจ หลังตรวจอยู่หนึ่งสัปดาห์ เขาสรุปว่าไวโอลินนี้เก่าจริงและทำอย่างงดงาม แต่สร้างขึ้นในทศวรรษ 1920 โดยช่างที่ลอกแบบฝรั่งเศสอย่างซื่อตรงจนถึงขั้นทำตำหนิของมันซ้ำด้วย",
+      "ตรงนี้เลิศเผชิญกับภาวะกลืนไม่เข้าคายไม่ออกที่ความรู้ทางเทคนิคเท่าไรก็แก้ไม่ได้ ฉลากด้านในเป็นของปลอม แต่ไม่มีหลักฐานว่าช่างผู้สร้างเป็นคนติดเอง อาจเป็นพ่อค้าที่เติมเข้าไปหลายสิบปีให้หลังก็ได้ ไวโอลินของแอนมีค่าราวหนึ่งในสิบของที่เธอหวัง หมายความว่าเธอจะไม่มีเงินเรียนหลักสูตรในวิทยาลัยดนตรีที่ตั้งใจจะขายมันเพื่อจ่าย แต่ถ้าวัดอย่างซื่อตรง มันก็เป็นเครื่องดนตรีที่ดีกว่าไวโอลินฝรั่งเศสแท้ในยุคเดียวกันหลายตัวที่เลิศเคยจับ มูลค่าในตลาดกับคุณค่าในฐานะสิ่งที่ใช้เล่นได้แยกขาดจากกัน และเขาถูกขอให้ตัดสินเพียงด้านเดียว",
+      "เขาบอกความจริงกับเธอทั้งหมด รวมทั้งความเห็นของเขาต่องานฝีมือ แอนเงียบไปนาน แล้วขอให้เขาเล่นให้ฟัง เขาเล่น แย่ๆ อย่างที่เขายืนยันเสมอ และเธอก็หัวเราะ เธอไม่ได้ขายไวโอลิน แต่ใช้มันสอนแทน และตลอดหลายปีต่อมา ลูกศิษย์ของเธอหลายคนได้เข้าวิทยาลัยดนตรีที่เธอเคยหวังจะได้เรียน บางครั้งเลิศสงสัยว่าเขาทำให้เธอเสียอนาคต หรือช่วยให้เธอพ้นจากการซื้อขายที่เธอคงเสียใจภายหลัง ในที่สุดเขาก็สรุปว่ามันไม่ใช่การตัดสินใจของเขา หน้าที่ของเขามีเพียงทำให้แน่ใจว่าเธอตัดสินใจโดยรู้ว่าสิ่งที่ถืออยู่คืออะไร"
+    ],
+    "q": [
+      {
+        "q": "How did Lert usually regard the stories attached to instruments?",
+        "o": [
+          "As usually sincere but mistaken",
+          "As deliberate lies",
+          "As the best guide to an instrument's value"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What did Lert conclude about Ann's violin?",
+        "o": [
+          "It was a genuine 19th-century French violin",
+          "It was a fine 1920s copy of the French style",
+          "It was cheap and badly made"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Why could Lert not be sure who was to blame for the false label?",
+        "o": [
+          "The label was too faded to read",
+          "Ann had removed it",
+          "A dealer might have added it long after the violin was made"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What does \"its value in the market and its value as a thing to be played had come apart\" mean?",
+        "o": [
+          "The violin was broken into pieces",
+          "It was worth little to sell but excellent to play",
+          "It was expensive but sounded poor"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did Ann do with the violin?",
+        "o": [
+          "Sold it to pay for her course",
+          "Gave it back to Lert",
+          "Kept it and used it to teach"
+        ],
+        "a": 2
+      },
+      {
+        "q": "How did Lert finally view his role?",
+        "o": [
+          "To make sure she decided with full knowledge",
+          "To decide for her what was best",
+          "To protect the reputation of his shop"
+        ],
+        "a": 0
+      }
+    ]
+  },
+  {
+    "id": 123,
+    "level": "C2",
+    "emoji": "🌾",
+    "title": "The Seed Keeper",
+    "titleTh": "ผู้เก็บเมล็ดพันธุ์",
+    "en": [
+      "In the cool storeroom beneath her house in Surin, Mae Kham keeps more than two hundred varieties of rice in glass jars, each labelled in her careful, old-fashioned handwriting. Some have names that describe their colour or scent; others are named after the villages or the women who first gave them to her. Most of these varieties are no longer grown anywhere else. Over the past four decades, as farmers across the region switched to a handful of high-yielding strains promoted by agricultural agencies, the older rices quietly disappeared from the fields, surviving only in places like this.",
+      "When a team of geneticists from a university in Bangkok first visited her, they were frankly astonished. They had come to collect samples for a national seed bank, which they explained would preserve the varieties at minus eighteen degrees for centuries. Mae Kham listened politely, then asked a question they had not anticipated: who would grow them? A seed, she pointed out, is not like a book that can be shelved and read again unchanged. Each year in the field it adapts a little to the soil, the rain, the pests; a rice frozen for fifty years would wake into a world it no longer recognised, and might fail in it.",
+      "The scientists were not entirely persuaded, and in truth both approaches had merits. The frozen collection offered insurance against catastrophe, a flood or a fire that could destroy her storeroom in a single night. Her method, by contrast, depended on the continued willingness of a few ageing farmers to plant varieties that yielded less and sold, for the most part, for no more. Neither could fully replace the other. What emerged from their conversations, over several years, was an arrangement that neither side had initially imagined: duplicates of her seeds went to the seed bank, while the university paid a network of young farmers to grow a portion of them each season and record how they performed.",
+      "Some of those records have since attracted attention far beyond Surin. One variety, dismissed decades ago as too low-yielding, has proved unusually tolerant of the salty soil that increasingly afflicts the region during droughts. Mae Kham is unimpressed by the excitement. She never kept the seeds because she expected them to be useful, she says, but because losing them felt like forgetting a name. If they turn out to be useful as well, so much the better. Still, she now spends her afternoons teaching the young farmers to label the jars, and she insists that they write in their own handwriting."
+    ],
+    "th": [
+      "ในห้องเก็บของเย็นๆ ใต้บ้านของเธอที่สุรินทร์ แม่คำเก็บข้าวกว่าสองร้อยพันธุ์ไว้ในโหลแก้ว แต่ละโหลติดป้ายด้วยลายมือแบบโบราณที่บรรจง บางพันธุ์มีชื่อที่บอกสีหรือกลิ่น บางพันธุ์ตั้งตามชื่อหมู่บ้านหรือผู้หญิงที่มอบมันให้เธอเป็นคนแรก พันธุ์ส่วนใหญ่เหล่านี้ไม่มีใครปลูกที่อื่นแล้ว ตลอดสี่ทศวรรษที่ผ่านมา เมื่อชาวนาทั่วภูมิภาคหันไปปลูกพันธุ์ให้ผลผลิตสูงไม่กี่พันธุ์ที่หน่วยงานเกษตรส่งเสริม ข้าวพันธุ์เก่าก็ค่อยๆ หายไปจากท้องนาอย่างเงียบๆ เหลือรอดอยู่เพียงในที่อย่างที่นี่",
+      "เมื่อทีมนักพันธุศาสตร์จากมหาวิทยาลัยแห่งหนึ่งในกรุงเทพฯ มาเยี่ยมเธอครั้งแรก พวกเขาตะลึงอย่างไม่ปิดบัง พวกเขามาเก็บตัวอย่างไปเข้าธนาคารเมล็ดพันธุ์แห่งชาติ ซึ่งอธิบายว่าจะเก็บรักษาพันธุ์ข้าวไว้ที่ลบสิบแปดองศาได้หลายร้อยปี แม่คำฟังอย่างสุภาพ แล้วถามคำถามที่พวกเขาไม่ได้คาดไว้ ใครจะเป็นคนปลูก เมล็ดพันธุ์ เธอชี้ ไม่เหมือนหนังสือที่วางไว้บนชั้นแล้วหยิบมาอ่านใหม่ได้โดยไม่เปลี่ยนแปลง ทุกปีในท้องนามันปรับตัวเล็กน้อยตามดิน ฝน และแมลง ข้าวที่ถูกแช่แข็งไว้ห้าสิบปีจะตื่นขึ้นมาในโลกที่มันไม่รู้จักแล้ว และอาจอยู่ไม่รอดในโลกนั้น",
+      "นักวิทยาศาสตร์ไม่ได้เห็นด้วยไปเสียทั้งหมด และที่จริงทั้งสองวิธีต่างก็มีข้อดี คลังแช่แข็งเป็นหลักประกันยามเกิดภัยพิบัติ น้ำท่วมหรือไฟไหม้ที่อาจทำลายห้องเก็บของเธอได้ในคืนเดียว ส่วนวิธีของเธอขึ้นอยู่กับความเต็มใจของชาวนาสูงวัยไม่กี่คนที่จะปลูกพันธุ์ที่ให้ผลผลิตน้อยกว่า และส่วนใหญ่ขายได้ราคาไม่ได้ดีกว่า ไม่มีวิธีไหนแทนอีกวิธีได้ทั้งหมด สิ่งที่เกิดขึ้นจากการพูดคุยกันหลายปีคือข้อตกลงที่ไม่มีฝ่ายไหนนึกถึงในตอนแรก เมล็ดสำรองของเธอถูกส่งไปธนาคารเมล็ดพันธุ์ ขณะที่มหาวิทยาลัยจ่ายเงินให้เครือข่ายชาวนารุ่นใหม่ปลูกบางส่วนในแต่ละฤดู และบันทึกว่าแต่ละพันธุ์เติบโตอย่างไร",
+      "บันทึกบางส่วนนั้นได้รับความสนใจไปไกลเกินสุรินทร์ พันธุ์หนึ่งซึ่งเคยถูกมองข้ามเมื่อหลายสิบปีก่อนว่าให้ผลผลิตต่ำเกินไป กลับพิสูจน์ว่าทนดินเค็มได้ดีผิดปกติ ซึ่งเป็นปัญหาที่รุมเร้าภูมิภาคนี้มากขึ้นในช่วงแล้ง แม่คำไม่ได้ตื่นเต้นไปด้วย เธอบอกว่าไม่เคยเก็บเมล็ดไว้เพราะคาดว่ามันจะมีประโยชน์ แต่เพราะการสูญเสียมันรู้สึกเหมือนลืมชื่อใครสักคน ถ้ามันมีประโยชน์ด้วยก็ยิ่งดี ถึงอย่างนั้น ทุกวันนี้เธอใช้เวลาช่วงบ่ายสอนชาวนารุ่นใหม่ติดป้ายโหล และยืนยันให้พวกเขาเขียนด้วยลายมือของตัวเอง"
+    ],
+    "q": [
+      {
+        "q": "Why have most of Mae Kham's rice varieties disappeared elsewhere?",
+        "o": [
+          "They were destroyed by floods",
+          "Farmers switched to a few high-yielding strains",
+          "They were banned by the government"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What was Mae Kham's main concern about the frozen seed bank?",
+        "o": [
+          "Seeds not grown for decades might no longer suit the conditions",
+          "It was too expensive",
+          "The seeds would be stolen"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What advantage did the seed bank have over her storeroom?",
+        "o": [
+          "It made the rice taste better",
+          "It paid farmers more",
+          "It protected the seeds from a single local disaster"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What arrangement did the two sides finally reach?",
+        "o": [
+          "The university took all her seeds",
+          "Seeds were both stored in the bank and grown by young farmers",
+          "She stopped keeping seeds at home"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Why did one old variety attract attention?",
+        "o": [
+          "It grew well in salty soil",
+          "It had an unusual colour",
+          "It was the most expensive rice"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why does Mae Kham say she kept the seeds?",
+        "o": [
+          "To sell them to scientists",
+          "She expected them to be useful one day",
+          "Losing them felt like forgetting a name"
+        ],
+        "a": 2
+      }
+    ]
+  },
+  {
+    "id": 124,
+    "level": "C2",
+    "emoji": "🏙️",
+    "title": "The Pavement Plan",
+    "titleTh": "แผนทางเท้า",
+    "en": [
+      "Nattapong had spent five years in Rotterdam studying urban design, and he returned to Bangkok with a portfolio full of elegant proposals for wide, uncluttered pavements lined with trees. His first assignment at the city planning office seemed perfectly suited to them: redesign a one-kilometre stretch of road near a busy market, where pedestrians were routinely forced into the traffic. He studied the area from satellite images and produced a plan that would clear the pavements, plant shade trees and add proper crossings. His colleagues praised it. Then, at the suggestion of an older planner, he went to stand on the street for a week.",
+      "What he saw dismantled most of his assumptions. The obstacles on the pavement, which the images had shown as clutter, turned out to be an intricate economy. A woman sold rice and curry from six in the morning until ten, after which the same spot became a phone-repair stall, and in the evening a fruit seller. Motorcycle taxi drivers waited in the shade of an awning, and residents of the nearby flats, who had no kitchens, ate most of their meals there. The pavement was crowded, certainly, and at times dangerous, but it was also, he realised, the most intensively used public space in the district. His plan would have made it safer by making it empty.",
+      "The difficulty was that both of his first impressions were true. People in wheelchairs genuinely could not use the street, and parents with pushchairs really were stepping into the road. Simply leaving things as they were was not a neutral choice; it favoured the vendors over those who could not walk around them. Over the following months, Nattapong tried a different method. He mapped not the objects on the pavement but the hours at which each was there, and found that most of the stalls occupied space only at certain times. He held meetings at the market itself, late in the evening, because that was when the vendors could attend.",
+      "The final design was less beautiful than his original drawings and considerably more complicated. A continuous strip next to the buildings was kept clear at all times, wide enough for a wheelchair, while marked zones by the kerb were assigned to vendors in shifts, with water points and drains built in. Not everyone was satisfied; a few vendors lost their places, and some residents complained that the street was still too busy. Yet when Nattapong later presented the project at a conference, he showed no photographs of the finished pavement at all, only a chart of who used it, hour by hour. Good design, he told the audience, begins by asking not what a space looks like, but whose day it holds."
+    ],
+    "th": [
+      "ณัฐพงศ์ใช้เวลาห้าปีที่รอตเทอร์ดัมเรียนการออกแบบเมือง และกลับมากรุงเทพฯ พร้อมแฟ้มผลงานที่เต็มไปด้วยข้อเสนอสวยงามของทางเท้ากว้างโล่ง มีต้นไม้เรียงราย งานชิ้นแรกที่สำนักผังเมืองดูเหมาะกับแนวคิดนั้นพอดี ออกแบบถนนยาวหนึ่งกิโลเมตรใกล้ตลาดที่พลุกพล่านใหม่ ซึ่งคนเดินเท้าต้องลงไปเดินบนถนนท่ามกลางรถอยู่เป็นประจำ เขาศึกษาพื้นที่จากภาพดาวเทียม แล้วทำแผนที่จะเคลียร์ทางเท้าให้โล่ง ปลูกต้นไม้ให้ร่มเงา และเพิ่มทางข้ามที่ถูกต้อง เพื่อนร่วมงานชื่นชม จากนั้นนักผังเมืองรุ่นพี่คนหนึ่งแนะนำให้เขาไปยืนอยู่บนถนนนั้นหนึ่งสัปดาห์",
+      "สิ่งที่เขาเห็นรื้อสมมติฐานส่วนใหญ่ของเขาลง สิ่งกีดขวางบนทางเท้าที่ภาพดาวเทียมแสดงว่าเป็นของเกะกะ กลับเป็นระบบเศรษฐกิจที่ซับซ้อน ผู้หญิงคนหนึ่งขายข้าวแกงตั้งแต่หกโมงเช้าถึงสิบโมง หลังจากนั้นที่เดิมกลายเป็นร้านซ่อมโทรศัพท์ และตอนเย็นเป็นร้านขายผลไม้ คนขับวินมอเตอร์ไซค์รออยู่ใต้ร่มกันสาด และผู้อยู่อาศัยในแฟลตใกล้ๆ ซึ่งไม่มีครัว กินข้าวเกือบทุกมื้อที่นั่น ทางเท้าแออัดแน่นอน และบางเวลาก็อันตราย แต่เขาตระหนักว่ามันยังเป็นพื้นที่สาธารณะที่ถูกใช้หนาแน่นที่สุดในย่านนี้ด้วย แผนของเขาจะทำให้มันปลอดภัยขึ้นด้วยการทำให้มันว่างเปล่า",
+      "ความยากอยู่ตรงที่ความประทับใจแรกทั้งสองอย่างของเขาเป็นจริง คนนั่งรถเข็นใช้ถนนนี้ไม่ได้จริงๆ และพ่อแม่ที่เข็นรถเด็กก็ต้องลงไปเดินบนถนนจริงๆ การปล่อยไว้อย่างเดิมไม่ใช่ทางเลือกที่เป็นกลาง มันเอื้อพ่อค้าแม่ค้ามากกว่าคนที่เดินอ้อมพวกเขาไม่ได้ ตลอดหลายเดือนต่อมา ณัฐพงศ์ลองวิธีใหม่ เขาไม่ได้ทำแผนที่สิ่งของบนทางเท้า แต่ทำแผนที่ช่วงเวลาที่แต่ละอย่างอยู่ตรงนั้น และพบว่าแผงส่วนใหญ่ใช้พื้นที่เพียงบางช่วงเวลา เขาจัดประชุมที่ตลาดเองตอนดึก เพราะเป็นเวลาที่พ่อค้าแม่ค้ามาได้",
+      "แบบสุดท้ายสวยน้อยกว่าภาพวาดเดิมของเขา และซับซ้อนกว่ามาก แนวทางยาวต่อเนื่องติดกับอาคารถูกเว้นโล่งตลอดเวลา กว้างพอให้รถเข็นผ่าน ขณะที่โซนที่ตีเส้นไว้ริมขอบทางถูกแบ่งให้พ่อค้าแม่ค้าเป็นกะ พร้อมจุดน้ำและท่อระบายน้ำในตัว ไม่ใช่ทุกคนจะพอใจ พ่อค้าแม่ค้าบางคนเสียที่ขาย และผู้อยู่อาศัยบางคนบ่นว่าถนนยังวุ่นวายเกินไป แต่เมื่อณัฐพงศ์นำเสนอโครงการในงานสัมมนาภายหลัง เขาไม่ได้โชว์รูปทางเท้าที่เสร็จแล้วเลยสักรูป มีเพียงแผนภูมิว่าใครใช้มันในแต่ละชั่วโมง การออกแบบที่ดี เขาบอกผู้ฟัง เริ่มจากการถามว่าพื้นที่นี้รองรับวันของใครบ้าง ไม่ใช่ถามว่ามันดูเป็นอย่างไร"
+    ],
+    "q": [
+      {
+        "q": "How did Nattapong prepare his first plan?",
+        "o": [
+          "By interviewing the vendors",
+          "By studying satellite images",
+          "By copying a plan from Rotterdam exactly"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did he discover about the \"clutter\" on the pavement?",
+        "o": [
+          "It was rubbish that should be removed",
+          "It belonged to the city",
+          "It was a complex economy that changed through the day"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What does \"his plan would have made it safer by making it empty\" imply?",
+        "o": [
+          "Safety would come at the cost of the street's life and uses",
+          "The plan was perfect",
+          "Nobody walked on the street anyway"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why was leaving the street unchanged not a neutral choice?",
+        "o": [
+          "It cost the city too much money",
+          "It favoured vendors over people who could not get around them",
+          "The vendors wanted change"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Why did he hold meetings late in the evening at the market?",
+        "o": [
+          "It was cooler then",
+          "His office was closed in the day",
+          "That was when the vendors could attend"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What did his conference presentation emphasise?",
+        "o": [
+          "Who used the space at each hour",
+          "Photographs of the beautiful new pavement",
+          "The cost of the project"
+        ],
+        "a": 0
+      }
+    ]
+  },
+  {
+    "id": 125,
+    "level": "C2",
+    "emoji": "🌌",
+    "title": "A Darker Sky",
+    "titleTh": "ท้องฟ้าที่มืดกว่า",
+    "en": [
+      "The resort owners in the mountains of Chiang Mai had expected the astronomer to be grateful. They had offered Dr Wanida the use of their land for a small public observatory, and in return, they assumed, she would help them market the area as a destination for stargazing tourists. What they had not anticipated was that her first request would be for them to switch off most of their lights. The floodlit gardens, the illuminated signs visible from the valley, the strings of decorative bulbs along the road: all of it, she explained patiently, was washing out precisely the sky they hoped to sell.",
+      "To the owners, this seemed perverse. Light meant safety, hospitality, prosperity; a dark resort looked closed, or worse, abandoned. Several of them argued that guests would never accept stumbling about in the dark, and one remarked, not quite joking, that she seemed to want them to go back to living like their grandparents. Wanida did not dispute that light had real value. Her point was narrower and harder to dismiss: that most of the light was being thrown upwards and sideways, where it lit nothing anyone needed, and that the same paths could be made safe with lamps that pointed down and dimmed after midnight.",
+      "Persuasion, she discovered, worked less well than demonstration. One clear night in January, she arranged for a single resort to switch off its outdoor lights for an hour and invited the guests outside. Most of them, city dwellers from Bangkok, Shanghai and Seoul, had never seen the Milky Way. Some fell silent; a few began to cry. The owner of that resort, a sceptic until that evening, watched his guests lying on the grass and calculated, as he later admitted, how many more nights they might stay. Within two years, eleven resorts had replaced their lighting, and the district had applied for recognition as a protected dark-sky area.",
+      "Wanida is cautious about calling this a victory. The economic argument won the owners over, and she knows that economic arguments can reverse themselves; if dark skies stop attracting tourists, the floodlights may return. She is also uneasy that something which was once simply there, above every village, has become an attraction that must be paid for. Yet when the local school brings its pupils to the observatory, she notices that the children no longer ask whether the stars are real. Their grandparents, she says, would have found the question absurd. That it had ever needed asking is, to her, the measure of what was nearly lost."
+    ],
+    "th": [
+      "เจ้าของรีสอร์ตบนภูเขาในเชียงใหม่คาดว่านักดาราศาสตร์จะรู้สึกขอบคุณ พวกเขาเสนอให้ ดร.วนิดาใช้ที่ดินสร้างหอดูดาวสาธารณะเล็กๆ และคิดว่าเธอจะช่วยโปรโมตพื้นที่เป็นจุดหมายของนักท่องเที่ยวดูดาวเป็นการตอบแทน สิ่งที่พวกเขาไม่คาดคิดคือคำขอแรกของเธอ ให้ปิดไฟส่วนใหญ่ สวนที่เปิดไฟสปอตไลต์ ป้ายเรืองแสงที่มองเห็นได้จากหุบเขา สายไฟประดับตามถนน ทั้งหมดนั้น เธออธิบายอย่างอดทน กำลังกลบท้องฟ้าที่พวกเขาหวังจะขายพอดี",
+      "สำหรับเจ้าของรีสอร์ต เรื่องนี้ดูขัดกับสามัญสำนึก แสงไฟหมายถึงความปลอดภัย การต้อนรับ และความรุ่งเรือง รีสอร์ตที่มืดดูเหมือนปิดกิจการ หรือแย่กว่านั้นคือถูกทิ้งร้าง หลายคนแย้งว่าแขกไม่มีวันยอมเดินคลำทางในความมืด และคนหนึ่งพูดแบบกึ่งล้อเล่นว่าเธอดูเหมือนอยากให้พวกเขากลับไปใช้ชีวิตแบบรุ่นปู่ย่า วนิดาไม่ได้เถียงว่าแสงไม่มีค่า ประเด็นของเธอแคบกว่านั้นและปัดตกยากกว่า แสงส่วนใหญ่ถูกสาดขึ้นฟ้าและออกด้านข้าง ซึ่งไม่ได้ส่องอะไรที่ใครต้องการ และทางเดินเดิมก็ทำให้ปลอดภัยได้ด้วยโคมที่ส่องลงพื้นและหรี่ลงหลังเที่ยงคืน",
+      "เธอพบว่าการโน้มน้าวได้ผลน้อยกว่าการสาธิต คืนฟ้าใสคืนหนึ่งในเดือนมกราคม เธอขอให้รีสอร์ตแห่งเดียวปิดไฟภายนอกหนึ่งชั่วโมง และเชิญแขกออกมาข้างนอก แขกส่วนใหญ่เป็นคนเมืองจากกรุงเทพฯ เซี่ยงไฮ้ และโซล ไม่เคยเห็นทางช้างเผือกมาก่อน บางคนเงียบไป บางคนเริ่มร้องไห้ เจ้าของรีสอร์ตแห่งนั้นซึ่งไม่เชื่อมาจนถึงคืนนั้น มองแขกที่นอนอยู่บนสนามหญ้า แล้วคำนวณ อย่างที่เขายอมรับภายหลัง ว่าพวกเขาอาจจะอยู่ต่ออีกกี่คืน ภายในสองปี รีสอร์ตสิบเอ็ดแห่งเปลี่ยนระบบไฟ และอำเภอยื่นขอเป็นเขตอนุรักษ์ท้องฟ้ามืด",
+      "วนิดาระวังที่จะเรียกเรื่องนี้ว่าชัยชนะ เหตุผลทางเศรษฐกิจคือสิ่งที่ชนะใจเจ้าของรีสอร์ต และเธอรู้ว่าเหตุผลทางเศรษฐกิจกลับทิศได้ ถ้าท้องฟ้ามืดเลิกดึงดูดนักท่องเที่ยว สปอตไลต์อาจกลับมา เธอยังไม่สบายใจที่สิ่งซึ่งเคยมีอยู่เฉยๆ เหนือทุกหมู่บ้าน กลายเป็นสิ่งดึงดูดที่ต้องจ่ายเงินดู แต่เมื่อโรงเรียนในพื้นที่พานักเรียนมาที่หอดูดาว เธอสังเกตว่าเด็กๆ ไม่ถามแล้วว่าดาวพวกนั้นเป็นของจริงหรือเปล่า ปู่ย่าตายายของพวกเขา เธอบอก คงเห็นว่าคำถามนั้นไร้สาระ การที่มันเคยต้องถูกถามเลย สำหรับเธอ คือเครื่องวัดว่าเราเกือบสูญเสียอะไรไป"
+    ],
+    "q": [
+      {
+        "q": "What did the resort owners expect from Dr Wanida?",
+        "o": [
+          "That she would pay rent for the land",
+          "That she would help market the area to stargazers",
+          "That she would build them a hotel"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Why did her first request surprise them?",
+        "o": [
+          "She asked them to switch off most of their lights",
+          "She asked for more lights",
+          "She refused to work with tourists"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What was Wanida's actual argument about lighting?",
+        "o": [
+          "All lighting is harmful and should be banned",
+          "Light has no value at all",
+          "Much light was wasted upwards and sideways, and safer lamps could point down"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What finally convinced the sceptical owner?",
+        "o": [
+          "A government order",
+          "Seeing his guests' reaction and the business it could bring",
+          "A scientific report"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Why is Wanida cautious about calling it a victory?",
+        "o": [
+          "Economic reasons could later reverse the change",
+          "Only one resort changed its lights",
+          "The observatory was never built"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What does the children's no longer asking if the stars are real show her?",
+        "o": [
+          "The children are not interested in astronomy",
+          "The school teaches astronomy badly",
+          "How close people came to losing an ordinary experience"
+        ],
+        "a": 2
+      }
+    ]
   }
 );

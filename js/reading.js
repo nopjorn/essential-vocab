@@ -8,7 +8,7 @@
 const STORY_FILES = ['a1', 'a2', 'b1', 'b2', 'c1', 'c2', 'real']; // 'real' (1.103) = dialogues and emails, `kind` on each story
 const KIND_LABEL = { dialogue: '💬 บทสนทนา', email: '✉️ อีเมล' };
 let STORIES = null, storyFail = false;
-const STORY_COUNT = 115;
+const STORY_COUNT = 125;
 function loadStories() {
   if (STORIES) return Promise.resolve(STORIES);
   window.STORIES = [];

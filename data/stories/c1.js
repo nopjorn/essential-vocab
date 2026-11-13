@@ -650,5 +650,325 @@
         "a": 1
       }
     ]
+  },
+  {
+    "id": 116,
+    "level": "C1",
+    "emoji": "🌊",
+    "title": "When the Water Came",
+    "titleTh": "เมื่อน้ำมา",
+    "en": [
+      "Kanya had volunteered for flood relief before, but never in her own hometown. When the river rose above the old embankment outside Ayutthaya, she drove north with a car full of drinking water and a vague sense that she ought to be useful. Within an hour she discovered that enthusiasm was not the same as competence. The shelter at the temple was already crowded with volunteers who wanted to hand out food and take photographs, while nobody had thought to keep a list of who had arrived and who was still missing.",
+      "So she sat down at a folding table with a notebook and began to record names. It was tedious, unglamorous work, and several people asked her, half joking, why she had come all this way to do paperwork. By the second night, however, her list had become the most valuable object in the shelter. When an elderly man came looking for his sister, Kanya could tell him that she had been taken to the district hospital that afternoon. When the boats went out, the rescuers checked her notebook first, so that they no longer searched the same streets twice.",
+      "The water stayed for almost three weeks. Afterwards, the district office asked Kanya to help design a proper registration system for future emergencies, one that would work even when the electricity failed. She agreed, though she insisted that it be built around paper as well as phones. What she had learned, she told the officials, was that in a crisis the most heroic-looking jobs are rarely the ones that save the most time, or the most lives."
+    ],
+    "th": [
+      "กัญญาเคยไปเป็นอาสาช่วยน้ำท่วมมาก่อน แต่ไม่เคยในบ้านเกิดของตัวเองเลย เมื่อแม่น้ำสูงเกินคันดินเก่านอกเมืองอยุธยา เธอขับรถขึ้นเหนือไปพร้อมน้ำดื่มเต็มคันรถ และความรู้สึกเลือนรางว่าตัวเองควรจะช่วยอะไรได้บ้าง ภายในชั่วโมงเดียวเธอก็พบว่าความกระตือรือร้นไม่ใช่สิ่งเดียวกับความสามารถ ศูนย์พักพิงที่วัดแน่นไปด้วยอาสาสมัครที่อยากแจกอาหารและถ่ายรูป แต่ไม่มีใครคิดจะจดรายชื่อว่าใครมาถึงแล้ว และใครยังหายอยู่",
+      "เธอจึงนั่งลงที่โต๊ะพับพร้อมสมุดหนึ่งเล่ม แล้วเริ่มจดชื่อ มันเป็นงานน่าเบื่อและไม่มีใครเห็นค่า หลายคนถามเธอกึ่งล้อเล่นว่ามาไกลขนาดนี้เพื่อมาทำงานเอกสารหรือ แต่พอถึงคืนที่สอง รายชื่อของเธอกลายเป็นสิ่งที่มีค่าที่สุดในศูนย์พักพิง เมื่อชายชราคนหนึ่งมาตามหาน้องสาว กัญญาบอกเขาได้ว่าเธอถูกส่งไปโรงพยาบาลอำเภอเมื่อบ่ายวันนั้น เมื่อเรือออกไป ทีมกู้ภัยก็เปิดสมุดของเธอดูก่อน จะได้ไม่ต้องค้นถนนเดิมซ้ำสองรอบ",
+      "น้ำท่วมอยู่เกือบสามสัปดาห์ หลังจากนั้นที่ว่าการอำเภอขอให้กัญญาช่วยออกแบบระบบลงทะเบียนอย่างจริงจังสำหรับเหตุฉุกเฉินครั้งต่อไป ระบบที่ใช้ได้แม้ไฟฟ้าดับ เธอตกลง แต่ยืนยันว่าต้องใช้กระดาษควบคู่กับโทรศัพท์ด้วย สิ่งที่เธอได้เรียนรู้ เธอบอกเจ้าหน้าที่ คือในยามวิกฤต งานที่ดูเป็นวีรกรรมที่สุดมักไม่ใช่งานที่ประหยัดเวลาหรือช่วยชีวิตคนได้มากที่สุด"
+    ],
+    "q": [
+      {
+        "q": "What did Kanya realise soon after arriving at the shelter?",
+        "o": [
+          "There was too little drinking water",
+          "Being eager did not automatically make her helpful",
+          "The temple was the wrong place for a shelter"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What was missing at the shelter when she arrived?",
+        "o": [
+          "A record of who had arrived or was missing",
+          "Enough volunteers",
+          "Food for the evacuees"
+        ],
+        "a": 0
+      },
+      {
+        "q": "How did other people first react to her work?",
+        "o": [
+          "They thanked her warmly",
+          "They ignored her completely",
+          "They teased her about doing paperwork"
+        ],
+        "a": 2
+      },
+      {
+        "q": "How did the rescuers use her notebook?",
+        "o": [
+          "To avoid searching the same streets twice",
+          "To count the boats",
+          "To write reports for the newspaper"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why did Kanya insist the new system use paper too?",
+        "o": [
+          "Paper is cheaper than phones",
+          "It must still work when the electricity fails",
+          "The officials could not use phones"
+        ],
+        "a": 1
+      }
+    ]
+  },
+  {
+    "id": 117,
+    "level": "C1",
+    "emoji": "🎙️",
+    "title": "The Correction",
+    "titleTh": "คำแก้ข่าว",
+    "en": [
+      "For two years, Tee's podcast about everyday science had grown slowly and steadily, mostly through word of mouth. Then an episode about a supposed link between a popular energy drink and kidney damage was shared by a celebrity, and overnight his audience tripled. Messages poured in from listeners who said they had thrown away their drinks. Tee was thrilled, until a nephrologist emailed him politely to point out that the study he had quoted involved only twelve rats, and had never been repeated.",
+      "His first instinct was to delete the episode quietly and hope nobody noticed. His co-host, Mint, disagreed. Deleting it, she argued, would leave thousands of people believing something false, with no way of finding out they had been misled. Instead, they recorded a new episode explaining exactly what they had got wrong, how they had misread the research, and what the evidence actually showed. Tee found it one of the most uncomfortable hours of his life. He kept wanting to soften the language, to blame the original article, to make the mistake sound smaller than it was.",
+      "The correction did not go viral. It reached perhaps a fifth of the people who had heard the original claim. Yet something unexpected happened: the listeners who did hear it began to trust the show more, not less. Several wrote to say that they now recommended it precisely because it admitted its errors. Tee changed his process afterwards, sending every health episode to an expert before release. It made the show slower to produce, but he no longer lay awake wondering what he might have got wrong."
+    ],
+    "th": [
+      "ตลอดสองปี พอดแคสต์เรื่องวิทยาศาสตร์ในชีวิตประจำวันของตี๋เติบโตช้าๆ อย่างสม่ำเสมอ ส่วนใหญ่มาจากการบอกต่อ แล้วตอนหนึ่งที่พูดถึงความเชื่อมโยงที่อ้างกันระหว่างเครื่องดื่มชูกำลังยี่ห้อดังกับโรคไต ถูกดาราคนหนึ่งแชร์ ข้ามคืนเดียวผู้ฟังของเขาเพิ่มเป็นสามเท่า ข้อความหลั่งไหลมาจากผู้ฟังที่บอกว่าทิ้งเครื่องดื่มไปแล้ว ตี๋ตื่นเต้นมาก จนกระทั่งแพทย์โรคไตคนหนึ่งอีเมลมาอย่างสุภาพ ชี้ว่างานวิจัยที่เขาอ้างนั้นทดลองกับหนูแค่สิบสองตัว และไม่เคยมีใครทำซ้ำเลย",
+      "สัญชาตญาณแรกของเขาคือลบตอนนั้นเงียบๆ แล้วหวังว่าจะไม่มีใครสังเกต มิ้นท์ผู้ดำเนินรายการร่วมไม่เห็นด้วย เธอแย้งว่าการลบจะทำให้คนหลายพันคนยังเชื่อเรื่องที่ไม่จริงต่อไป โดยไม่มีทางรู้เลยว่าถูกทำให้เข้าใจผิด พวกเขาจึงอัดตอนใหม่ อธิบายว่าพลาดตรงไหน อ่านงานวิจัยผิดอย่างไร และหลักฐานจริงๆ บอกอะไร ตี๋รู้สึกว่ามันเป็นหนึ่งชั่วโมงที่อึดอัดที่สุดในชีวิต เขาอยากจะใช้คำให้นุ่มลง โทษบทความต้นทาง หรือทำให้ความผิดพลาดดูเล็กกว่าที่เป็นอยู่ตลอดเวลา",
+      "ตอนแก้ข่าวไม่ได้ดังเป็นไวรัล มันไปถึงคนแค่ราวหนึ่งในห้าของคนที่ได้ยินข้ออ้างเดิม แต่มีสิ่งที่ไม่คาดคิดเกิดขึ้น ผู้ฟังที่ได้ฟังกลับเชื่อถือรายการมากขึ้น ไม่ใช่น้อยลง หลายคนเขียนมาบอกว่าตอนนี้แนะนำรายการให้คนอื่นก็เพราะรายการยอมรับความผิดพลาดนี่แหละ หลังจากนั้นตี๋เปลี่ยนวิธีทำงาน ส่งทุกตอนที่เกี่ยวกับสุขภาพให้ผู้เชี่ยวชาญตรวจก่อนเผยแพร่ ทำให้ผลิตรายการช้าลง แต่เขาไม่ต้องนอนไม่หลับคิดว่าตัวเองอาจพลาดอะไรไปอีกแล้ว"
+    ],
+    "q": [
+      {
+        "q": "What was wrong with the study Tee quoted?",
+        "o": [
+          "It was very small and never repeated",
+          "It was paid for by the drink company",
+          "It was about a different drink"
+        ],
+        "a": 0
+      },
+      {
+        "q": "Why did Mint oppose deleting the episode?",
+        "o": [
+          "It had earned them a lot of money",
+          "People would keep believing the false claim without knowing",
+          "The celebrity would be angry"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did Tee find hard while recording the correction?",
+        "o": [
+          "Remembering the research details",
+          "Speaking in front of Mint",
+          "Resisting the urge to downplay the mistake"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What was the surprising result of the correction?",
+        "o": [
+          "It became more popular than the original",
+          "Listeners who heard it trusted the show more",
+          "The nephrologist joined the show"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How did Tee change the way he made the show?",
+        "o": [
+          "He stopped covering health topics",
+          "He asked experts to check health episodes first",
+          "He let Mint host alone"
+        ],
+        "a": 1
+      }
+    ]
+  },
+  {
+    "id": 118,
+    "level": "C1",
+    "emoji": "🧵",
+    "title": "Threads from Nan",
+    "titleTh": "เส้นด้ายจากน่าน",
+    "en": [
+      "When a design company in Copenhagen offered to buy every scarf the weaving group in her village could make, Bua's first reaction was suspicion. The women had woven for tourists and local markets for decades, and they had heard stories of foreign buyers who ordered huge quantities, then cancelled at the last minute or demanded impossible discounts. Yet the contract was generous, and the company's representative, a quiet Danish woman called Freja, had spent a week in the village learning how the looms worked before she said a word about money.",
+      "The real difficulty turned out to be consistency. The Danish customers expected every scarf of a given colour to look identical, whereas the weavers had always taken pride in the small variations that made each piece unique. The natural dyes they made from bark and leaves never produced exactly the same shade twice. For a while it seemed the deal might collapse. Then Freja suggested something that surprised everyone: instead of hiding the differences, the company would sell each scarf with a card naming the woman who had woven it and the plants used for its colour.",
+      "The scarves sold out within a month. Customers wrote to the company asking for scarves by particular weavers, and Bua's aunt, who was seventy-four, received a letter from a student in Berlin thanking her for her patience. The group used part of the income to teach weaving to teenagers, many of whom had planned to leave for jobs in the city. Bua still checks every contract carefully, but she has stopped assuming that outsiders always want to change the village into something it is not."
+    ],
+    "th": [
+      "เมื่อบริษัทออกแบบแห่งหนึ่งในโคเปนเฮเกนเสนอซื้อผ้าพันคอทุกผืนที่กลุ่มทอผ้าในหมู่บ้านทำได้ ปฏิกิริยาแรกของบัวคือความระแวง ผู้หญิงในกลุ่มทอผ้าขายนักท่องเที่ยวและตลาดท้องถิ่นมาหลายสิบปี และเคยได้ยินเรื่องผู้ซื้อต่างชาติที่สั่งของจำนวนมหาศาลแล้วยกเลิกนาทีสุดท้าย หรือขอลดราคาจนเป็นไปไม่ได้ แต่สัญญาครั้งนี้ให้ราคาดี และตัวแทนบริษัท หญิงชาวเดนมาร์กท่าทางเงียบๆ ชื่อเฟรยา ใช้เวลาหนึ่งสัปดาห์ในหมู่บ้านเรียนรู้ว่ากี่ทอผ้าทำงานอย่างไร ก่อนจะพูดถึงเรื่องเงินแม้แต่คำเดียว",
+      "ปัญหาจริงกลับเป็นเรื่องความสม่ำเสมอ ลูกค้าชาวเดนมาร์กคาดหวังว่าผ้าพันคอสีเดียวกันต้องหน้าตาเหมือนกันทุกผืน ขณะที่ช่างทอภูมิใจกับความแตกต่างเล็กๆ ที่ทำให้แต่ละผืนมีหนึ่งเดียวมาตลอด สีย้อมธรรมชาติที่พวกเธอทำจากเปลือกไม้และใบไม้ไม่เคยให้เฉดเดียวกันได้สองครั้ง ช่วงหนึ่งดูเหมือนข้อตกลงอาจล่ม แล้วเฟรยาก็เสนอสิ่งที่ทำให้ทุกคนประหลาดใจ แทนที่จะซ่อนความแตกต่าง บริษัทจะขายผ้าพันคอแต่ละผืนพร้อมการ์ดที่บอกชื่อผู้หญิงที่ทอ และพืชที่ใช้ทำสีของผืนนั้น",
+      "ผ้าพันคอขายหมดภายในเดือนเดียว ลูกค้าเขียนถึงบริษัทขอผ้าพันคอจากช่างทอคนที่ตัวเองชอบ และป้าของบัวซึ่งอายุเจ็ดสิบสี่ปีได้รับจดหมายจากนักศึกษาในเบอร์ลินที่ขอบคุณความอดทนของเธอ กลุ่มใช้รายได้ส่วนหนึ่งสอนทอผ้าให้วัยรุ่น ซึ่งหลายคนเคยวางแผนจะย้ายไปทำงานในเมือง บัวยังตรวจทุกสัญญาอย่างละเอียด แต่เธอเลิกคิดไปเองแล้วว่าคนนอกต้องการเปลี่ยนหมู่บ้านให้เป็นสิ่งที่มันไม่ใช่เสมอไป"
+    ],
+    "q": [
+      {
+        "q": "Why was Bua suspicious of the offer at first?",
+        "o": [
+          "The price was too low",
+          "She had heard of foreign buyers cancelling or demanding discounts",
+          "The company wanted to buy the looms"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What did Freja do before discussing money?",
+        "o": [
+          "Spent a week learning how the looms worked",
+          "Sent a lawyer to the village",
+          "Ordered a few sample scarves"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What was the main obstacle to the deal?",
+        "o": [
+          "The weavers could not work fast enough",
+          "Shipping costs to Denmark",
+          "Natural dyes never gave exactly the same colour"
+        ],
+        "a": 2
+      },
+      {
+        "q": "How did Freja solve the problem?",
+        "o": [
+          "By switching to chemical dyes",
+          "By presenting each scarf's differences as part of its story",
+          "By buying only white scarves"
+        ],
+        "a": 1
+      },
+      {
+        "q": "How did the group use some of the income?",
+        "o": [
+          "To teach weaving to teenagers",
+          "To open a shop in the city",
+          "To buy new machines"
+        ],
+        "a": 0
+      }
+    ]
+  },
+  {
+    "id": 119,
+    "level": "C1",
+    "emoji": "🏃",
+    "title": "Kilometre Thirty",
+    "titleTh": "กิโลเมตรที่สามสิบ",
+    "en": [
+      "Somchai had run his first marathon at fifty-eight, mainly to prove to his doctor that he was not as unhealthy as the blood tests suggested. By sixty-five he had finished eleven of them, and he talked about running with the zeal of a convert. So when his daughter, Fon, announced that she wanted to run the Bangkok marathon with him, he was overjoyed, and immediately produced a training plan so detailed that it filled four pages.",
+      "The plan did not survive the first month. Fon worked long hours at a hospital and could rarely run at the times her father had scheduled. Whenever she missed a session, he sent her messages full of statistics about lost fitness, and gradually she began to dread opening them. One evening she told him, more sharply than she intended, that she wanted to run with her father, not with a coach. Somchai was hurt. He spent several days barely speaking, then admitted to his wife that he had turned something meant to bring them together into another thing Fon could fail at.",
+      "They began again, more modestly. Some weeks they ran together twice; some weeks not at all. On race day, at around kilometre thirty, where runners say the real marathon begins, Fon's legs started to cramp. Somchai, who could have finished well ahead, slowed to a walk beside her without a word. They crossed the line together, forty minutes slower than either of them had hoped. He later said it was the only one of his twelve marathons whose finishing time he could not remember, and the only one he would never forget."
+    ],
+    "th": [
+      "สมชายวิ่งมาราธอนครั้งแรกตอนอายุห้าสิบแปด ส่วนใหญ่เพื่อพิสูจน์ให้หมอเห็นว่าเขาไม่ได้สุขภาพแย่อย่างที่ผลเลือดบอก พออายุหกสิบห้าเขาวิ่งจบไปแล้วสิบเอ็ดรายการ และพูดถึงการวิ่งด้วยความคลั่งไคล้แบบคนที่เพิ่งค้นพบศรัทธา เมื่อฝนลูกสาวประกาศว่าอยากวิ่งมาราธอนกรุงเทพฯ กับเขา เขาจึงดีใจมาก และร่างแผนซ้อมละเอียดจนยาวสี่หน้าออกมาทันที",
+      "แผนนั้นอยู่ไม่รอดถึงเดือนแรก ฝนทำงานที่โรงพยาบาลหลายชั่วโมง และแทบไม่เคยวิ่งได้ตรงเวลาที่พ่อกำหนด ทุกครั้งที่เธอขาดซ้อม เขาจะส่งข้อความเต็มไปด้วยตัวเลขสถิติว่าความฟิตลดลงเท่าไร จนเธอเริ่มกลัวการเปิดอ่าน เย็นวันหนึ่งเธอบอกเขาด้วยน้ำเสียงแข็งกว่าที่ตั้งใจว่าเธออยากวิ่งกับพ่อ ไม่ใช่กับโค้ช สมชายเสียใจ เขาแทบไม่พูดอะไรอยู่หลายวัน แล้วจึงยอมรับกับภรรยาว่าเขาทำให้สิ่งที่ควรทำให้พ่อลูกใกล้กันกลายเป็นอีกเรื่องหนึ่งที่ฝนอาจทำพลาด",
+      "พวกเขาเริ่มใหม่แบบพอประมาณ บางสัปดาห์ได้วิ่งด้วยกันสองครั้ง บางสัปดาห์ไม่ได้วิ่งเลย ในวันแข่ง ราวกิโลเมตรที่สามสิบ ซึ่งนักวิ่งบอกว่าเป็นจุดที่มาราธอนจริงๆ เริ่มต้น ขาของฝนเริ่มเป็นตะคริว สมชายซึ่งเข้าเส้นชัยได้ก่อนนานแล้วถ้าวิ่งต่อ ชะลอลงมาเดินข้างเธอโดยไม่พูดอะไรสักคำ ทั้งคู่เข้าเส้นชัยพร้อมกัน ช้ากว่าที่ทั้งสองหวังไว้สี่สิบนาที ภายหลังเขาบอกว่ามันเป็นมาราธอนรายการเดียวในสิบสองรายการที่เขาจำเวลาเข้าเส้นชัยไม่ได้ และเป็นรายการเดียวที่เขาจะไม่มีวันลืม"
+    ],
+    "q": [
+      {
+        "q": "Why did Somchai start running marathons?",
+        "o": [
+          "His daughter asked him to",
+          "To show his doctor he was healthier than his tests suggested",
+          "To win prize money"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Why did the four-page plan fail?",
+        "o": [
+          "Fon's long working hours made the schedule impossible",
+          "Somchai got injured",
+          "The race was cancelled"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What did Fon mean when she said she wanted to run with her father, not a coach?",
+        "o": [
+          "She wanted a professional coach instead",
+          "She wanted to run alone",
+          "She wanted companionship, not pressure"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What did Somchai do when Fon's legs cramped?",
+        "o": [
+          "Called for medical help",
+          "Slowed down and walked beside her",
+          "Finished first and waited at the line"
+        ],
+        "a": 1
+      },
+      {
+        "q": "Why was this marathon special to him?",
+        "o": [
+          "It was his fastest time",
+          "It was his first marathon abroad",
+          "He shared it with his daughter, not because of the time"
+        ],
+        "a": 2
+      }
+    ]
+  },
+  {
+    "id": 120,
+    "level": "C1",
+    "emoji": "🔋",
+    "title": "The Second Life of Batteries",
+    "titleTh": "ชีวิตที่สองของแบตเตอรี่",
+    "en": [
+      "Arthit's start-up had a simple pitch: old electric-scooter batteries, which most companies simply dumped, still held enough charge to power street lights in villages without reliable electricity. Investors loved it. Within eighteen months the company had installed lights in forty villages, and Arthit was invited to speak at conferences about the circular economy. It was at one of these conferences that a chemical engineer asked him, rather bluntly, what happened to the batteries when they finally died.",
+      "Arthit realised, with growing discomfort, that he did not know. The contracts said the batteries would be returned for proper recycling, but when he visited the villages himself, he found dead batteries piled behind a school and, in one case, buried in a field. The local technicians had never been trained to handle them, and nobody had budgeted for collecting them. In giving the batteries a second life, the company had simply moved the waste problem from a city warehouse to places with fewer resources to cope with it.",
+      "His board advised him to fix the problem quietly. Arthit chose instead to publish a report describing what had gone wrong, and to slow the company's expansion for a year while it built a collection network. Two investors withdrew. However, a government agency, impressed by the report, offered a grant to develop the network into a national model. Arthit still gives talks, but they are different now. He spends less time on the clever idea and more on the questions he wishes someone had made him answer at the start."
+    ],
+    "th": [
+      "สตาร์ทอัปของอาทิตย์มีจุดขายง่ายๆ แบตเตอรี่สกู๊ตเตอร์ไฟฟ้าเก่าซึ่งบริษัทส่วนใหญ่ทิ้งไปเฉยๆ ยังมีไฟเหลือพอจะจ่ายให้ไฟถนนในหมู่บ้านที่ไฟฟ้าไม่แน่นอน นักลงทุนชอบมาก ภายในสิบแปดเดือนบริษัทติดตั้งไฟไปแล้วสี่สิบหมู่บ้าน และอาทิตย์ได้รับเชิญไปพูดตามงานสัมมนาเรื่องเศรษฐกิจหมุนเวียน ในงานหนึ่งนั้นเอง วิศวกรเคมีคนหนึ่งถามเขาตรงๆ ว่าเมื่อแบตเตอรี่หมดอายุจริงๆ แล้วจะเกิดอะไรขึ้นกับมัน",
+      "อาทิตย์ตระหนักด้วยความอึดอัดที่เพิ่มขึ้นเรื่อยๆ ว่าเขาไม่รู้ สัญญาเขียนว่าแบตเตอรี่จะถูกส่งกลับไปรีไซเคิลอย่างถูกวิธี แต่เมื่อเขาไปดูหมู่บ้านด้วยตัวเอง เขาพบแบตเตอรี่ที่ตายแล้วกองอยู่หลังโรงเรียน และในที่หนึ่งถูกฝังไว้ในทุ่งนา ช่างในพื้นที่ไม่เคยได้รับการอบรมเรื่องการจัดการมัน และไม่มีใครตั้งงบไว้สำหรับเก็บกลับ การให้ชีวิตที่สองแก่แบตเตอรี่จึงเป็นเพียงการย้ายปัญหาขยะจากโกดังในเมือง ไปยังที่ที่มีทรัพยากรรับมือน้อยกว่า",
+      "คณะกรรมการแนะนำให้เขาแก้ปัญหาแบบเงียบๆ แต่อาทิตย์เลือกเผยแพร่รายงานที่อธิบายว่าเกิดความผิดพลาดอะไรขึ้น และชะลอการขยายบริษัทไปหนึ่งปีเพื่อสร้างเครือข่ายเก็บแบตเตอรี่ นักลงทุนสองรายถอนตัว แต่หน่วยงานรัฐแห่งหนึ่งที่ประทับใจรายงานนั้น เสนอทุนให้พัฒนาเครือข่ายนี้เป็นต้นแบบระดับประเทศ อาทิตย์ยังไปพูดตามงานต่างๆ แต่เนื้อหาเปลี่ยนไปแล้ว เขาใช้เวลากับไอเดียเก๋ๆ น้อยลง และพูดถึงคำถามที่เขาอยากให้มีคนบังคับให้เขาตอบตั้งแต่แรกมากขึ้น"
+    ],
+    "q": [
+      {
+        "q": "What was the original idea of Arthit's company?",
+        "o": [
+          "Making new batteries for scooters",
+          "Using old scooter batteries to power village street lights",
+          "Selling electric scooters in villages"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What question made Arthit uncomfortable?",
+        "o": [
+          "How much the lights cost",
+          "Who his investors were",
+          "What happened to the batteries when they died"
+        ],
+        "a": 2
+      },
+      {
+        "q": "What did he find in the villages?",
+        "o": [
+          "Dead batteries piled up or buried",
+          "Lights that had never been switched on",
+          "Villagers selling the batteries"
+        ],
+        "a": 0
+      },
+      {
+        "q": "What does the story suggest the company had really done?",
+        "o": [
+          "Solved the waste problem completely",
+          "Moved the waste problem somewhere less able to deal with it",
+          "Made the batteries last forever"
+        ],
+        "a": 1
+      },
+      {
+        "q": "What was one result of publishing the report?",
+        "o": [
+          "The company closed down",
+          "Every investor withdrew",
+          "A government agency offered a grant"
+        ],
+        "a": 2
+      }
+    ]
   }
 );
