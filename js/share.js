@@ -99,15 +99,40 @@ async function shareProgress() {
 }
 
 /* ---------- year in review ---------- */
-// Everything comes from data already kept: hist / chist / snap / read / ach / prog.
+// Everything comes from data already kept: hist / chist / snap / read / ach / prog, and since 1.259 also act (time, % right,
+// games, hours), S.mock (TOEIC mock) and the mastered column of snap.
+// Time-of-day slots: the same as HOUR_SLOTS of the stats page (data/app/stats.js, lazy-loaded, so not used from here).
+const YEAR_SLOTS = [[0, 6, 'ดึก 00–06 น.'], [6, 9, 'เช้า 06–09 น.'], [9, 12, 'สาย 09–12 น.'], [12, 15, 'บ่าย 12–15 น.'], [15, 18, 'เย็น 15–18 น.'], [18, 21, 'ค่ำ 18–21 น.'], [21, 24, 'กลางคืน 21–24 น.']];
+const YEAR_SLOT_MIN = 50, YEAR_ACC_MIN = 20, YEAR_GAME_MIN = 10; // answers before a slot's % / the year's % / a favourite game shows
 function yearStats(y) {
   const pre = String(y), keys = Object.keys(S.hist).filter((k) => k.startsWith(pre) && S.hist[k] > 0).sort();
   let longest = 0, run = 0, prev = null;
   for (const k of keys) { run = prev && dayDiff(k, prev) === 1 ? run + 1 : 1; longest = Math.max(longest, run); prev = k; }
   const total = keys.reduce((a, k) => a + S.hist[k], 0), cards = keys.reduce((a, k) => a + (S.chist[k] || 0), 0);
   const busiest = keys.reduce((b, k) => (!b || S.hist[k] > S.hist[b] ? k : b), null);
+  // 1.259: started during this year (no day before it) → the slides say "since you started" and count the days since then
+  const first = keys[0] || null, fresh = !!first && first > pre + '-01-01' && !Object.keys(S.hist).some((k) => k < first && S.hist[k] > 0);
+  const end = today() < pre + '-12-31' ? today() : pre + '-12-31', span = fresh ? Math.max(1, dayDiff(end, first) + 1) : null;
   const snaps = Object.keys(S.snap).sort(), inY = snaps.filter((k) => k.startsWith(pre)), before = snaps.filter((k) => k < pre + '-01-01');
-  const learned = inY.length ? S.snap[inY[inY.length - 1]][2] - (before.length ? S.snap[before[before.length - 1]][2] : 0) : null;
+  const gain = (i) => (inY.length ? (S.snap[inY[inY.length - 1]][i] || 0) - (before.length ? S.snap[before[before.length - 1]][i] || 0 : 0) : null);
+  const learned = gain(2), mastered = gain(3);
+  // activity log (1.158+): time, judged/right, answers per game and per hour; actFrom = its first day this year
+  let sec = 0, jd = 0, ok = 0, actFrom = null, actDays = 0;
+  const g = {}, h = Array(24).fill(0), hj = Array(24).fill(0), hr = Array(24).fill(0);
+  for (const k of Object.keys(S.act).filter((x) => x.startsWith(pre)).sort()) {
+    const a = actDay(k); if (!a) continue;
+    if (!actFrom) actFrom = k;
+    actDays++; sec += a.sec; jd += a.jd; ok += a.ok;
+    for (const [id, v] of Object.entries(a.x.g || {})) if (typeof GAMES !== 'undefined' && GAMES[id] && Array.isArray(v)) g[id] = (g[id] || 0) + (+v[0] || 0);
+    if (Array.isArray(a.x.h)) a.x.h.forEach((v, i) => { if (i < 24) h[i] += +v || 0; });
+    if (Array.isArray(a.x.hj) && Array.isArray(a.x.hr)) a.x.hj.forEach((v, i) => { if (i < 24) { hj[i] += +v || 0; hr[i] += +a.x.hr[i] || 0; } });
+  }
+  const games = Object.entries(g).filter(([, n]) => n >= YEAR_GAME_MIN).sort((a, b) => b[1] - a[1]);
+  const slots = YEAR_SLOTS.map(([a, b, t]) => { let n = 0, j = 0, r = 0; for (let i = a; i < b; i++) { n += h[i]; j += hj[i]; r += hr[i]; } return { t, n, j, r }; });
+  const busy = slots.reduce((b, x) => (x.n > (b ? b.n : 0) ? x : b), null);
+  const judged = slots.filter((x) => x.j >= YEAR_SLOT_MIN);
+  const sharp = judged.length >= 2 ? judged.reduce((b, x) => (x.r / x.j > b.r / b.j ? x : b)) : null;
+  const mock = (S.mock || []).filter((x) => ymd(new Date(x.t)).startsWith(pre)).map((x) => x.L + x.R);
   // Most forgotten words: the year's own tally once the whole year was logged (missY, from 1.155.2), else the all-time count
   // (p.x, which also holds earlier years: the slide says so).
   const yl = S.missY[pre], whole = !!S.missYFrom && S.missYFrom <= pre + '-01-01';
@@ -125,8 +150,15 @@ function yearStats(y) {
     medals: Object.values(S.ach).filter((d) => String(d).startsWith(pre)).length,
     xp: Object.entries(S.xpWeek).filter(([k]) => k.startsWith(pre)).reduce((a, [, v]) => a + v, 0),
     top, topAll,
+    fresh, first, span, mastered,
+    mins: Math.round(sec / 60), actDays, timeFrom: actFrom && first && actFrom > first ? actFrom : null,
+    acc: jd >= YEAR_ACC_MIN ? Math.round(ok / jd * 100) : null,
+    fav: games.slice(0, 3), busy: busy && busy.n >= YEAR_SLOT_MIN ? busy : null, sharp,
+    mock: mock.length ? { n: mock.length, best: Math.max(...mock), first: mock[0], last: mock[mock.length - 1] } : null,
   };
 }
+// 754 → "12 ชม. 34 นาที", 45 → "45 นาที"
+const yearTime = (m) => (m >= 60 ? `${Math.floor(m / 60).toLocaleString()} ชม.${m % 60 ? ` ${m % 60} นาที` : ''}` : `${m} นาที`);
 // The year to show on home: from 15 Dec this year, and during 1–10 Jan the year that just ended.
 function yearToShow() {
   const d = new Date(), m = d.getMonth(), day = d.getDate();
@@ -135,17 +167,28 @@ function yearToShow() {
   return null;
 }
 function yearSlides(s) {
+  const day = (k) => thDate(Date.parse(k + 'T12:00:00'));
   const slides = [
-    { e: '🎊', big: `ปี ${s.y + 543}`, line: `มาดูกันว่าคุณเก่งขึ้นแค่ไหนในปีนี้` },
-    { e: '📅', big: `${s.days} วัน`, line: `ที่คุณมาเรียน${s.longest > 1 ? ` · ต่อเนื่องยาวสุด ${s.longest} วัน 🔥` : ''}` },
-    { e: '✍️', big: s.total.toLocaleString(), line: `ข้อที่ทำทั้งหมด (แฟลชการ์ด ${s.cards.toLocaleString()} · เกม ${s.games.toLocaleString()})` },
+    { e: '🎊', big: `ปี ${s.y + 543}`, line: s.fresh ? `ตั้งแต่เริ่มเรียนเมื่อ ${day(s.first)} มาดูกันว่าคุณเก่งขึ้นแค่ไหน` : `มาดูกันว่าคุณเก่งขึ้นแค่ไหนในปีนี้` },
+    { e: '📅', big: `${s.days} วัน`, line: `ที่คุณมาเรียน${s.fresh && s.span > s.days ? ` (จาก ${s.span} วันนับตั้งแต่เริ่ม)` : ''}${s.longest > 1 ? ` · ต่อเนื่องยาวสุด ${s.longest} วัน 🔥` : ''}` },
   ];
-  if (s.learned != null && s.learned > 0) slides.push({ e: '🌱', big: `+${s.learned.toLocaleString()}`, line: 'คำใหม่ที่เริ่มเรียนในปีนี้' });
-  if (s.busiest) slides.push({ e: '⚡', big: `${s.busiestN} ข้อ`, line: `ขยันที่สุดในวันเดียว คือ ${thDate(Date.parse(s.busiest + 'T12:00:00'))}` });
+  if (s.mins > 0) {
+    slides.push({ e: '⏱️', big: yearTime(s.mins), line: `เวลาที่ตั้งใจเรียน (นับตอนทำข้อต่างๆ)${s.actDays > 1 ? ` · เฉลี่ยวันละ ${Math.max(1, Math.round(s.mins / s.actDays))} นาทีในวันที่มาเรียน` : ''}${s.timeFrom ? ` · เริ่มนับเมื่อ ${day(s.timeFrom)}` : ''}` });
+  }
+  slides.push({ e: '✍️', big: s.total.toLocaleString(), line: `ข้อที่ทำทั้งหมด (แฟลชการ์ด ${s.cards.toLocaleString()} · เกม ${s.games.toLocaleString()})${s.acc != null ? ` · ตอบถูก ${s.acc}%` : ''}` });
+  if (s.learned != null && s.learned > 0) slides.push({ e: '🌱', big: `+${s.learned.toLocaleString()}`, line: s.fresh ? 'คำที่เริ่มเรียนไปแล้ว' : 'คำใหม่ที่เริ่มเรียนในปีนี้' });
+  if (s.mastered != null && s.mastered > 0) slides.push({ e: '🏆', big: `${s.mastered.toLocaleString()} คำ`, line: `${s.fresh ? 'ที่จำได้แล้ว' : 'ที่จำได้แล้วในปีนี้'} (ทบทวนจนเว้นได้ 16 วันขึ้นไป)` });
+  if (s.busiest) slides.push({ e: '⚡', big: `${s.busiestN} ข้อ`, line: `ขยันที่สุดในวันเดียว คือ ${day(s.busiest)}` });
+  if (s.fav.length) {
+    const [id, n] = s.fav[0], rest = s.fav.slice(1).map(([x]) => GAMES[x].name);
+    slides.push({ e: GAMES[id].icon, big: GAMES[id].name, line: `เกมที่เล่นบ่อยที่สุด (${n.toLocaleString()} ข้อ)${rest.length ? ' · รองลงมา ' + rest.join(', ') : ''}` });
+  }
+  if (s.busy) slides.push({ e: '🕗', big: s.busy.t, line: `ช่วงที่คุณมาเรียนบ่อยที่สุด${s.sharp ? ` · ตอบแม่นที่สุดช่วง${s.sharp.t.split(' ')[0]} (${Math.round(s.sharp.r / s.sharp.j * 100)}%)` : ''}` });
   if (s.stories) slides.push({ e: '📖', big: `${s.stories} เรื่อง`, line: 'เรื่องสั้นที่อ่านจบ' });
-  if (s.medals) slides.push({ e: '🏅', big: `${s.medals} เหรียญ`, line: 'ที่ได้ในปีนี้' });
+  if (s.mock) slides.push({ e: '🏁', big: `${s.mock.best}/990`, line: `คะแนนสอบ TOEIC จำลองที่ดีที่สุด (คะแนนคร่าวๆ)${s.mock.n > 1 ? ` · ทำ ${s.mock.n} ครั้ง · ครั้งแรก ${s.mock.first} → ล่าสุด ${s.mock.last}` : ''}` });
+  if (s.medals) slides.push({ e: '🏅', big: `${s.medals} เหรียญ`, line: s.fresh ? 'ที่ได้มาแล้ว' : 'ที่ได้ในปีนี้' });
   if (s.top.length) slides.push({ e: '🐢', big: s.top[0][0], line: `${s.topAll ? `คำที่ลืมบ่อยที่สุด (${s.top[0][1].x} ครั้ง นับตั้งแต่เริ่มเรียน)` : `คำที่ลืมบ่อยที่สุดในปีนี้ (${s.top[0][1].x} ครั้ง)`}${s.top.length > 1 ? ' · ตามด้วย ' + s.top.slice(1, 4).map(([w]) => w).join(', ') : ''}` });
-  slides.push({ e: '🚀', big: 'ปีหน้าไปต่อ!', line: `Lv.${levelOf(S.xp)} · ${(S.xp || 0).toLocaleString()} XP` });
+  slides.push({ e: '🚀', big: 'ปีหน้าไปต่อ!', line: `Lv.${levelOf(S.xp)} · ${(S.xp || 0).toLocaleString()} XP${!s.fresh && s.xp > 0 && s.xp < (S.xp || 0) ? ` (ปีนี้ +${s.xp.toLocaleString()} XP)` : ''}` });
   return slides;
 }
 // A slide's caption cut into phrases at " · " and "(" (outside brackets): each phrase is an inline-block, so a line break
@@ -184,7 +227,8 @@ function renderYear(arg) {
     on('#yDone', () => go('stats'));
     on('#yShare', async () => {
       const build = (tpl, art) => drawCard({ title: `สรุปปี ${s.y + 543}`, sub: 'ศัพท์ต้องรู้', hero: `${s.days}`, heroLabel: 'วันที่มาเรียน',
-        tiles: [[s.longest, 'สตรีคยาวสุด (วัน)'], [s.total.toLocaleString(), 'ข้อที่ทำ'], [s.learned != null ? '+' + s.learned.toLocaleString() : '–', 'คำใหม่'], [s.stories, 'เรื่องสั้นที่อ่าน']] }, tpl, art);
+        tiles: [[s.longest, 'สตรีคยาวสุด (วัน)'], [s.total.toLocaleString(), 'ข้อที่ทำ'], [s.learned != null ? '+' + s.learned.toLocaleString() : '–', 'คำใหม่'],
+          s.mins >= 60 ? [Math.round(s.mins / 60).toLocaleString(), 'ชั่วโมงที่เรียน'] : [s.stories, 'เรื่องสั้นที่อ่าน']] }, tpl, art);
       await shareWithPicker(build, `essential-vocab-year-${s.y}.png`, `สรุปปี ${s.y + 543}`, () => toast('บันทึกภาพสรุปปีแล้ว ✅'));
     });
   };

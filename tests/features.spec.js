@@ -1099,7 +1099,7 @@ test('1.66: level test (gate, pass, medal), share card, year in review', async (
   // year in review
   await page.evaluate(() => { const y = new Date().getFullYear(); S.hist[`${y}-02-03`] = 12; S.hist[`${y}-02-04`] = 30; S.chist[`${y}-02-04`] = 10; go('year', y); });
   await expect(page.locator('.year-slide')).toContainText('ปี');
-  for (let i = 0; i < 12 && await page.locator('#yNext').count(); i++) await page.locator('#yNext').click();
+  for (let i = 0; i < 20 && await page.locator('#yNext').count(); i++) await page.locator('#yNext').click();
   await expect(page.locator('#yShare')).toBeVisible();
   expect(errors).toEqual([]);
 });
