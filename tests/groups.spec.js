@@ -7,7 +7,7 @@ const extraLoaded = (page) => page.evaluate(() => [...new Set(W.map((w) => w.g))
 
 test('extra word files load on demand and stay loaded once used', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1', 'PET'] }, prog: { cat: { b: 1, d: 1, e: 2.5, i: 1 } } });
-  expect((await extraLoaded(page)).length).toBe(21); // no list yet: everything
+  expect((await extraLoaded(page)).length).toBe(22); // no list yet: everything
   await page.evaluate(() => { save(); flushSave(); });
   expect(JSON.parse(await page.evaluate(() => localStorage.getItem('o3k.gx')))).toEqual(['PET']);
 
@@ -18,7 +18,7 @@ test('extra word files load on demand and stay loaded once used', async ({ page 
   // settings still shows every group with its size; picking one that is not loaded restarts with it
   await page.evaluate(() => go('settings'));
   await page.evaluate(() => { document.querySelector('details[data-g="lv"]').open = true; });
-  expect(await page.locator('#lvlsX .chip').count()).toBe(21);
+  expect(await page.locator('#lvlsX .chip').count()).toBe(22);
   await expect(page.locator('#lvlsX .chip[data-v="SPC"]')).toContainText('210 คำ');
   await Promise.all([page.waitForEvent('load'), page.locator('#lvlsX .chip[data-v="SPC"]').click()]);
   await page.waitForFunction(() => typeof W !== 'undefined');
@@ -29,7 +29,7 @@ test('extra word files load on demand and stay loaded once used', async ({ page 
   await page.evaluate(() => { S.prog.mascara = { b: 1, d: 1, e: 2.5, i: 1 }; gxNote.map = null; save(); flushSave(); });
   expect(await page.evaluate(() => localStorage.getItem('o3k.gx'))).toBe(null);
   await page.reload(); await page.waitForFunction(() => typeof W !== 'undefined');
-  expect((await extraLoaded(page)).length).toBe(21);
+  expect((await extraLoaded(page)).length).toBe(22);
   await page.evaluate(() => { save(); flushSave(); });
   expect(JSON.parse(await page.evaluate(() => localStorage.getItem('o3k.gx')))).toEqual(['PET', 'STY', 'SPC']);
   expect(errors).toEqual([]);
@@ -40,11 +40,11 @@ test('settings lists the extra groups by category, one button turns a whole cate
   await page.evaluate(() => go('settings'));
   await page.evaluate(() => { document.querySelector('details[data-g="lv"]').open = true; });
   expect(await page.locator('#lvlsX .lvx-cat').count()).toBe(4);
-  expect(await page.locator('#lvlsX .lvx-cat .chip').count()).toBe(21);
+  expect(await page.locator('#lvlsX .lvx-cat .chip').count()).toBe(22);
   const fun = page.locator('.lvx-all[data-cat="fun"]');
   await expect(fun).toHaveText('เลือกทั้งหมวด');
   await fun.click();
-  expect(await page.evaluate(() => S.settings.levels)).toEqual(['A1', 'FIT', 'SPC', 'ENT']);
+  expect(await page.evaluate(() => S.settings.levels)).toEqual(['A1', 'FIT', 'SPC', 'ENT', 'GAME']);
   await expect(fun).toHaveText('เอาออกทั้งหมวด');
   await expect(page.locator('#lvlsX .chip[data-v="SPC"]')).toHaveClass(/\bon\b/);
   await fun.click();
@@ -63,9 +63,9 @@ test('stats: extra groups being studied show open, the others fold, unloaded one
   });
   expect(r.loaded).toEqual(['PET']);
   expect(r.head).toEqual(['📚 ชุดเสริมที่เรียนอยู่']);
-  expect(r.sum).toContain('ชุดเสริมอื่น 20 หมวด');
-  expect(r.idle).toBe(20);
-  expect(r.box).toContain('21 หมวด');
+  expect(r.sum).toContain('ชุดเสริมอื่น 21 หมวด');
+  expect(r.idle).toBe(21);
+  expect(r.box).toContain('22 หมวด');
   await page.locator('details.lv-extra summary').click();
   await page.locator('.ex-idle').first().click();
   await expect(page.locator('#lvlsX')).toBeAttached();

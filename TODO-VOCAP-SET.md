@@ -31,7 +31,7 @@
 - [x] ⭐ **🎬 หนัง / เพลง / บันเทิง** (เสร็จ: 1.248.0 — กลุ่ม `ENT` 212 คำ `data/words/entertainment.js` แถวลงท้าย `'M'`) (~16/30) — ยังไม่มี: sequel, spoiler, soundtrack, encore, lyrics, subtitle, premiere, chorus, box office, chord, tempo, flute, saxophone, ukulele, karaoke · ใช้ตอนดูซีรีส์ ฟังเพลง หรือเล่นดนตรี
 - [x] ⭐ **🌱 สวน / เกษตร** (เสร็จ: 1.263.0 — กลุ่ม `GARD` 186 คำ `data/words/garden.js` แถวลงท้าย `'N'`) (~17/30) — ยังไม่มี: prune, rake, hose, shovel, bloom, shrub, trowel, tractor, orchard, plough, livestock, barn · คนไทยปลูกต้นไม้กันเยอะ และงานเกษตรก็เป็นอาชีพใหญ่ของประเทศ
 - [x] ⭐ **🚨 ภัยใกล้ตัว / มิจฉาชีพ / ตำรวจ** (เสร็จ: 1.249.0 — กลุ่ม `CRM` 216 คำ `data/words/crime.js` แถวลงท้าย `'R'`) (9/15) — ยังไม่มี: scam, pickpocket, burglar, alibi, handcuffs, police station · ใช้แจ้งความตอนอยู่ต่างประเทศหรือตอนช่วยนักท่องเที่ยว และเรื่องแก๊งหลอกลวงก็ใกล้ตัวคนไทยมาก · ระวังซ้ำกับชุดสำเร็จรูป "สัญญา / กฎหมายใกล้ตัว" (ข้างล่าง)
-- [ ] 💡 **🎮 เกม / อีสปอร์ต** (9/15) — ยังไม่มี: respawn, loot, multiplayer, joystick, glitch, spawn · วัยรุ่นน่าจะชอบ · ใส่แต่คำที่ใช้กันนาน สแลงในเกมให้อยู่ในสมุดวลี `chat`
+- [x] 💡 **🎮 เกม / อีสปอร์ต** (เสร็จ: 1.264.0 — กลุ่ม `GAME` 167 คำ `data/words/gaming.js` แถวลงท้าย `'J'` · สแลงที่มาไวไปไวยังอยู่ในสมุดวลี `chat`) (9/15) — ยังไม่มี: respawn, loot, multiplayer, joystick, glitch, spawn · วัยรุ่นน่าจะชอบ · ใส่แต่คำที่ใช้กันนาน สแลงในเกมให้อยู่ในสมุดวลี `chat`
 
 ## 📦 ชุดสำเร็จรูป (คลังมีคำเกือบครบแล้ว เพิ่มใน `data/sets/presets.js` + คำของชุดเอง `own` ไม่กี่คำ)
 - [ ] ⭐ **🛎️ งานโรงแรม / ไกด์ (มุมพนักงาน)** (11/16) — `own`: housekeeping, turndown, bellboy, souvenir, upsell · ชุด `hotel` ที่มีตอนนี้เป็นมุมของแขก แต่งานบริการเป็นอาชีพใหญ่ของไทย ควรมีชุดที่พนักงานต้อนรับ / แม่บ้าน / ไกด์ / สปาใช้

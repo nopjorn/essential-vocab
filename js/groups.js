@@ -15,6 +15,7 @@ const GROUPS_X = [
   ['HOME', 'W', 'งานบ้าน/งานซ่อม', '🧹', 'ชุดบ้าน งานซ่อม และทำความสะอาด', 'house', 'life', 242],
   ['THAI', 'U', 'วัฒนธรรมไทย/เทศกาล', '🙏', 'ชุดวัฒนธรรมไทย ศาสนา และเทศกาล', 'culture', 'world', 197],
   ['GARD', 'N', 'สวน/เกษตร', '🌱', 'ชุดสวนและเกษตร', 'garden', 'life', 186],
+  ['GAME', 'J', 'เกม/อีสปอร์ต', '🎮', 'ชุดเกมและอีสปอร์ต', 'gaming', 'fun', 167],
 ].map(([g, mark, name, icon, rare, file, cat, n]) => ({ g, mark, name, icon, rare, file, cat, n }));
 // Categories of the extra groups (1.252): settings shows the chips under these headings, with a button that turns on the whole category.
 const GX_CATS = [['work', '💼 งานและการเรียน'], ['life', '🏠 ชีวิตประจำวัน'], ['world', '🌍 สังคมและข่าว'], ['fun', '🎉 งานอดิเรก']];
