@@ -64,7 +64,7 @@ test('match game: right and wrong pairs, three rounds', async ({ page }) => {
 });
 
 test('multiple-choice options never include a second right answer (no shared Thai meaning)', async ({ page }) => {
-  test.setTimeout(180000); // checks every word × 4 option sets; grows with the word list (9,436 words in 1.249)
+  test.setTimeout(300000); // checks every word × 4 option sets; grows with the word list (9,436 words in 1.249, ~10,500 in 1.264; 1.8 min alone on a PC)
   const errors = await openApp(page, { settings: { levels: ['A1'] } });
   const bad = await page.evaluate(() => {
     const out = [];

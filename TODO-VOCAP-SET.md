@@ -23,7 +23,7 @@
 - [x] 🔥 **🐶 สัตว์เลี้ยง** (เสร็จ: 1.244.0 — กลุ่ม `PET` 172 คำ `data/words/pets.js` แถวลงท้าย `'D'`) (4/15) — ยังไม่มี: leash, kennel, vet, groom, puppy, kitten, neuter, paw, flea · คนเลี้ยงหมาแมวเยอะมาก ใช้ทั้งที่คลินิกสัตว์ ร้านอาบน้ำตัดขน และคลิปสัตว์เลี้ยง
 - [x] ⭐ **💄 ความงาม / แฟชั่น / เสื้อผ้า** (เสร็จ: 1.245.0 — กลุ่ม `STY` 277 คำ `data/words/beauty.js` แถวลงท้าย `'L'`) (6/16) — ยังไม่มี: moisturizer, lipstick, mascara, shampoo, perfume, zipper, hem, collar, hairdresser · สกินแคร์ เครื่องสำอาง ร้านทำผม ตัดเย็บ/แก้เสื้อผ้า
 - [x] ⭐ **🚗 รถยนต์ / ขับรถ** (เสร็จ: 1.260.0 — กลุ่ม `CAR` 265 คำ `data/words/cars.js` แถวลงท้าย `'V'` · crossroads, traffic light, rush hour คงเป็นคำของชุดเองในชุดสำเร็จรูป `transport`) (7/16) — ยังไม่มี: windshield, steering wheel, seatbelt, bumper, speedometer, pedal, honk, roundabout, flat tire · เช่ารถเที่ยวต่างประเทศ อู่ซ่อมรถ ประกันรถ
-- [ ] ⭐ **🏠 บ้าน / ซ่อมแซม / ทำความสะอาด** (8/16) — ยังไม่มี: faucet, screwdriver, hammer, mop, detergent, bleach, mould, fuse · เรียกช่าง แจ้งซ่อมกับเจ้าของห้อง ของใช้ทำความสะอาด
+- [x] ⭐ **🏠 บ้าน / ซ่อมแซม / ทำความสะอาด** (เสร็จ: 1.261.0 — กลุ่ม `HOME` 242 คำ `data/words/house.js` แถวลงท้าย `'W'` ชิป "งานบ้าน/งานซ่อม" · move in, move out คงเป็นคำของชุดเองในชุดสำเร็จรูป `rent`) (8/16) — ยังไม่มี: faucet, screwdriver, hammer, mop, detergent, bleach, mould, fuse · เรียกช่าง แจ้งซ่อมกับเจ้าของห้อง ของใช้ทำความสะอาด
 - [ ] 💡 **🙏 วัฒนธรรมไทย / ศาสนา / เทศกาล** (9/16) — ยังไม่มี: alms, shrine, incense, ordination, lantern, amulet · ใช้อธิบายวัด ทำบุญ สงกรานต์ ลอยกระทงให้ชาวต่างชาติฟัง (คู่กับสมุดวลี `thaitalk`)
 
 **รอบ 3 (คุยกันเมื่อ 2026-11-13 หลังออก 1.246.1 — เทียบกับคลัง 8,798 คำ รวม FAM PET STY แล้ว):**
