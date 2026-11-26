@@ -11,7 +11,7 @@ module.exports = defineConfig({
   testDir: 'tests',
   timeout: 90000,
   fullyParallel: true,
-  workers: process.env.CI ? 2 : 4,
+  workers: 4, // 1.264.5: CI too (GitHub's runners for public repos have 4 CPUs; it used 2)
   reporter: process.env.CI ? [['list'], ['github']] : 'list',
   use: {
     baseURL: 'http://localhost:8765/',

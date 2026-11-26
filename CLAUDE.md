@@ -1,7 +1,7 @@
 # Notes for Claude
 
 "ศัพท์ต้องรู้" (Essential Vocab) — a vocabulary trainer for the Oxford 3000/5000 word lists: a static, vanilla-JS PWA hosted on GitHub Pages
-(`https://nopjorn.github.io/essential-vocab/`, repo root of `master`). Since 1.264.2 the "Tests" workflow deploys it (jobs `pages` = upload, then `deploy`; Pages source = GitHub Actions) only after all 3 test shards pass: a red run never reaches users.
+(`https://nopjorn.github.io/essential-vocab/`, repo root of `master`). Since 1.264.2 the "Tests" workflow deploys it (job `pages` packs the files while the tests run, then `deploy`; Pages source = GitHub Actions) only after every test shard passes: a red run never reaches users.
 Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and** landscape. The owner talks in Thai; reply in Thai.
 
 ## Release rules (every push)
@@ -101,8 +101,9 @@ Details: `docs/notes/state-learning.md`. The rules that always apply:
   `PW_CHROMIUM=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`; the config starts `python3 tests/serve.py 8765` itself).
   Run the whole suite locally only for wide changes (shared CSS, app.js core, boot.js, sw.js, helpers.js, many screens).
   CI (GitHub Actions "Tests") always runs the whole suite on every push to `master` and gates the deploy; it must stay green.
-  Since 1.233 it runs in 3 shards (`--shard=n/3`, one job each, Chromium cached) and a newer push cancels the older run.
-  To run one shard locally: `npx playwright test --shard=1/3`.
+  It runs in 6 shards since 1.264.5 (3 since 1.233; `--shard=n/6`, one job each, Chromium cached, 4 workers per job as the
+  public-repo runners have 4 CPUs) and a newer push cancels the older run. Push → live takes about 3 min.
+  To run one shard locally: `npx playwright test --shard=1/6`.
 - Time zone (1.264.2): `playwright.config.js` pins Node (`process.env.TZ`) and the browser (`timezoneId`) to UTC, like CI, so date
   tests behave the same on the Thai PC at any hour. A test that needs another zone sets `test.use({ timezoneId })` itself.
 - Windows fonts are a little bigger than CI's Linux fonts: a layout test that compares sizes must not assume the Linux metrics

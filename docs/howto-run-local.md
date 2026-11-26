@@ -88,7 +88,7 @@ npm test                       # รันทั้งหมด
   npx playwright test tests/games.spec.js
   npx playwright test -g "ชื่อเทสต์บางส่วน"
   ```
-- รันแบบแบ่งส่วนเหมือน CI: `npx playwright test --shard=1/3`
+- รันแบบแบ่งส่วนเหมือน CI: `npx playwright test --shard=1/6` (CI แบ่ง 6 ส่วนตั้งแต่ 1.264.5)
 - ดูการทำงานของเทสต์แบบมีหน้าต่าง: `npx playwright test --ui`
 - ผลรายงานอยู่ใน `test-results/` และ `playwright-report/` (ทั้งสองโฟลเดอร์อยู่ใน `.gitignore` แล้ว)
 - เทสต์ทุกตัวนับเวลาเป็น UTC เหมือน CI (ตั้งไว้ใน config ตั้งแต่ 1.264.2) จึงรันตอนไหนก็ได้ ไม่ล้มหลอกหลังเที่ยงคืน
