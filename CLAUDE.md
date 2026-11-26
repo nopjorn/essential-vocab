@@ -101,13 +101,20 @@ Details: `docs/notes/state-learning.md`. The rules that always apply:
   `PW_CHROMIUM=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`; the config starts `python3 tests/serve.py 8765` itself).
   Run the whole suite locally only for wide changes (shared CSS, app.js core, boot.js, sw.js, helpers.js, many screens).
   CI (GitHub Actions "Tests") always runs the whole suite on every push to `master` and gates the deploy; it must stay green.
-  It runs in 6 shards since 1.264.5 (3 since 1.233; one job each, Chromium cached, 4 workers per job as the public-repo
-  runners have 4 CPUs) and a newer push cancels the older run. Push → live took 2 min 47 s in 1.264.5 (5 min before).
-  Since 1.264.6 the parts are balanced by time, not count: `tests/shard.js <part> <parts>` prints a part's `file:line`
-  locations from `tests/durations.json` (longest first to the emptiest part; data.spec checks with Playwright that the parts
-  run every test exactly once). Rebuild the times with `node tools/test-durations.js` (newest green run, needs `gh`) after
-  adding many tests or when the "part n/6: … s" lines in the CI log drift apart. To run one part locally:
-  `npx playwright test $(node tests/shard.js 1 6)`; `node tests/shard.js plan 6` shows the split.
+  It runs in 12 parts since 1.264.7 (3 since 1.233, 6 in 1.264.5; one job each, 4 workers per job as the public-repo
+  runners have 4 CPUs) and a newer push cancels the older run. Push → live: 5 min in 1.264.4, 2 min 33 s in 1.264.6.
+  Each job (1.264.7) restores node_modules + Chromium from one cache and runs on the runner's own Node (no setup-node /
+  npm ci), and installs the only part of `install-deps` the runner lacks, 9 font packages, from cached .deb files
+  (`FONT_PKGS` in test.yml; same fonts and fontconfig rules, checked on a test branch).
+  The parts are balanced by time, not count (1.264.6): `node tests/shard.js run <part> <parts>` deals the tests out from
+  `tests/durations.json` (longest first to the emptiest part) and runs its part with one `--grep` on the full test names,
+  so a loop's tests can land in different parts; data.spec checks with Playwright that the parts run every test exactly
+  once. Rebuild the times with `node tools/test-durations.js` (newest green run, needs `gh`) after adding or changing many
+  tests, or when the "part n/12: … s" lines / job times in the CI log drift apart. Locally: `node tests/shard.js run 1 12`,
+  `node tests/shard.js plan 12` shows the split. Keep single tests short (the longest one sets the floor of a part).
+- The app pauses after each answer so the user sees it (0.6–1.5 s; `setTimeout` in play.js, stats.js, adventure.js, …).
+  A test that answers many questions skips those pauses with Playwright's clock (1.264.7): `await page.clock.install()`
+  before the quiz, `await page.clock.fastForward(1600)` after each answer (features.spec monthly / level test, adventure).
 - Time zone (1.264.2): `playwright.config.js` pins Node (`process.env.TZ`) and the browser (`timezoneId`) to UTC, like CI, so date
   tests behave the same on the Thai PC at any hour. A test that needs another zone sets `test.use({ timezoneId })` itself.
 - Windows fonts are a little bigger than CI's Linux fonts: a layout test that compares sizes must not assume the Linux metrics

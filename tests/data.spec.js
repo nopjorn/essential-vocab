@@ -1079,28 +1079,33 @@ test('GROUPS_X table matches the word files and styles', () => {
   }
 });
 
-// 1.264.6: CI runs the suite in parts chosen by tests/shard.js (balanced by tests/durations.json). Playwright itself lists
-// what each part's file:line arguments select (file names count as a regular expression there): together the parts must
-// run every test exactly once, or a test could slip past the check that guards the deploy.
-test('the CI parts from tests/shard.js run every test exactly once', () => {
+// 1.264.6: CI runs the suite in parts chosen by tests/shard.js (balanced by tests/durations.json; each part picks its tests
+// with one --grep pattern on their full names since 1.264.7). Playwright itself lists what each pattern selects: together
+// the parts must run every test exactly once, or a test could slip past the check that guards the deploy.
+test('the CI parts from tests/shard.js run every test exactly once', async () => {
   test.setTimeout(60000);
-  const { execFileSync } = require('child_process');
-  const run = (args) => execFileSync(process.execPath, args, { cwd: root, encoding: 'utf8', maxBuffer: 64 << 20 });
+  const { execFileSync, execFile } = require('child_process');
+  const opts = { cwd: root, encoding: 'utf8', maxBuffer: 64 << 20 };
   const cli = path.join(root, 'node_modules', '@playwright', 'test', 'cli.js');
-  const ids = (args) => {
+  const names = (json) => {
     const out = [];
     const walk = (s, t) => {
       for (const sp of s.specs || []) sp.tests.forEach((x, i) => out.push(`${sp.file}:${sp.line} › ${[...t, sp.title].join(' › ')} #${i}`));
       for (const c of s.suites || []) walk(c, [...t, c.title]);
     };
-    for (const s of JSON.parse(run([cli, 'test', ...args, '--list', '--reporter=json'])).suites) walk(s, []);
+    for (const s of JSON.parse(json).suites) walk(s, []);
     return out;
   };
-  const n = /shard: \[([\d, ]+)\]/.exec(read('.github/workflows/test.yml'))[1].split(',').length;
-  const plan = JSON.parse(run([path.join(root, 'tests', 'shard.js'), 'json', String(n)]));
+  // the parts' lists run side by side (one after another they took ~15 s)
+  const list = (args) => new Promise((ok, no) => execFile(process.execPath, [cli, 'test', ...args, '--list', '--reporter=json'], opts, (e, out) => (e ? no(e) : ok(names(out)))));
+  const yml = read('.github/workflows/test.yml');
+  const n = /shard: \[([\d, ]+)\]/.exec(yml)[1].split(',').length;
+  expect(yml).toContain('node tests/shard.js run ${{ matrix.shard }} ${{ strategy.job-total }}');
+  const plan = JSON.parse(execFileSync(process.execPath, [path.join(root, 'tests', 'shard.js'), 'json', String(n)], opts));
   expect(plan.length).toBe(n);
-  expect(read('.github/workflows/test.yml')).toContain('node tests/shard.js ${{ matrix.shard }} ${{ strategy.job-total }}');
-  const all = ids([]), got = plan.flatMap((locs) => { expect(locs.length).toBeGreaterThan(0); return ids(locs); });
+  const [all, ...parts] = await Promise.all([list([]), ...plan.map((re) => list(['--grep', re]))]);
+  parts.forEach((p) => expect(p.length).toBeGreaterThan(0));
+  const got = parts.flat();
   expect(got.length).toBe(all.length);
   expect([...new Set(got)].sort()).toEqual([...all].sort());
 });

@@ -1,17 +1,20 @@
-// Balanced CI parts (1.264.6): `node tests/shard.js <part> <parts>` prints the test locations (file:line) of one part.
-// Playwright's own --shard cuts the test list into equal counts in file order, so heavy files bunched up (1.264.5: the
-// parts took 69–114 s). Here every location gets its time from tests/durations.json (rebuild it with
-// tools/test-durations.js now and then; a test not in it counts as the median), and the locations are dealt out longest
-// first, each to the part with the least time so far. Every part works this out from the same list, so together the
-// parts run each test exactly once (data.spec checks that with Playwright itself). `node tests/shard.js plan <parts>` prints
-// the whole split; `node tests/shard.js json <parts>` prints every part's locations as JSON (for that check).
-const { execFileSync } = require('child_process');
+// Balanced CI parts (1.264.6; by test name since 1.264.7). Playwright's own --shard cuts the test list into equal counts in
+// file order, so heavy files bunched up (1.264.5: the parts took 69–114 s). Here every test gets its time from
+// tests/durations.json (rebuild it with tools/test-durations.js now and then; a test not in it counts as the median) and
+// the tests are dealt out longest first, each to the part with the least time so far. A part picks its tests with --grep
+// on their full names (file, describe, title), so the tests a loop makes on one line can go to different parts.
+// Every part works this out from the same list, so together they run each test exactly once (data.spec checks that
+// with Playwright itself).
+//   node tests/shard.js run <part> <parts> [more playwright args]   run one part (CI; works the same in PowerShell)
+//   node tests/shard.js plan <parts>                                 print the split
+//   node tests/shard.js json <parts>                                 every part's --grep pattern, as JSON
+const { execFileSync, spawnSync } = require('child_process');
 const path = require('path');
 
-const [a, b] = process.argv.slice(2);
-const parts = Number(b), part = a === 'plan' || a === 'json' ? 0 : Number(a);
-if (!(parts >= 1 && part >= 0 && part <= parts)) {
-  console.error('usage: node tests/shard.js <part> <parts>  |  node tests/shard.js plan|json <parts>');
+const [mode, ...rest] = process.argv.slice(2);
+const part = mode === 'run' ? Number(rest.shift()) : 0, parts = Number(rest.shift());
+if (!['run', 'plan', 'json'].includes(mode) || !(parts >= 1) || (mode === 'run' && !(part >= 1 && part <= parts))) {
+  console.error('usage: node tests/shard.js run <part> <parts> [args]  |  plan <parts>  |  json <parts>');
   process.exit(2);
 }
 const cli = path.join(__dirname, '..', 'node_modules', '@playwright', 'test', 'cli.js');
@@ -19,36 +22,35 @@ const list = JSON.parse(execFileSync(process.execPath, [cli, 'test', '--list', '
 const dur = require('./durations.json');
 const known = Object.values(dur).sort((x, y) => x - y), median = known[known.length >> 1] || 1;
 
-// One unit per location: tests made in a loop share their line (responsive.spec's sizes), so they go together.
-const units = new Map();
-let total = 0, guessed = 0;
-const walk = (suite, titles) => {
+// Playwright matches --grep against "<project> <file> <describe…> <title>" (no project name here, so it starts with spaces).
+const tests = [];
+let guessed = 0;
+const walk = (suite, file, titles) => {
   for (const spec of suite.specs || []) {
-    const loc = `tests/${spec.file}:${spec.line}`;
-    const u = units.get(loc) || units.set(loc, { loc, sec: 0, n: 0 }).get(loc);
-    const t = dur[`tests/${spec.file} › ${[...titles, spec.title].join(' › ')}`];
-    if (t === undefined) guessed += spec.tests.length;
-    u.sec += (t === undefined ? median : t) * spec.tests.length;
-    u.n += spec.tests.length; total += spec.tests.length;
+    const t = dur[`tests/${file} › ${[...titles, spec.title].join(' › ')}`];
+    if (t === undefined) guessed++;
+    tests.push({ name: [file, ...titles, spec.title].join(' '), sec: (t === undefined ? median : t) * spec.tests.length });
   }
-  for (const child of suite.suites || []) walk(child, [...titles, child.title]);
+  for (const child of suite.suites || []) walk(child, file, [...titles, child.title]);
 };
-for (const file of list.suites) walk(file, []);
+for (const file of list.suites) walk(file, file.title, []);
 
-const bins = Array.from({ length: parts }, () => ({ sec: 0, n: 0, locs: [] }));
-for (const u of [...units.values()].sort((x, y) => y.sec - x.sec || (x.loc < y.loc ? -1 : 1))) {
+const bins = Array.from({ length: parts }, () => ({ sec: 0, names: [] }));
+for (const t of tests.sort((x, y) => y.sec - x.sec || (x.name < y.name ? -1 : 1))) {
   const bin = bins.reduce((best, x) => (x.sec < best.sec ? x : best), bins[0]);
-  bin.sec += u.sec; bin.n += u.n; bin.locs.push(u.loc);
+  bin.sec += t.sec; bin.names.push(t.name);
 }
-if (bins.reduce((s, x) => s + x.n, 0) !== total) throw new Error('shard.js: the parts do not add up to the test list');
-const line = (x, i) => `part ${i + 1}/${parts}: ${x.n} tests, ~${Math.round(x.sec)} s of test time`;
-if (a === 'json') { console.log(JSON.stringify(bins.map((x) => x.locs.sort()))); process.exit(0); }
-if (!part) {
+if (bins.some((x) => !x.names.length)) { console.error(`shard.js: more parts (${parts}) than tests`); process.exit(1); } // an empty pattern would run everything
+const esc = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+const grep = (x) => `/(?:^|\\s)(?:${x.names.sort().map(esc).join('|')})$/`; // /…/ form: case-sensitive (a bare pattern gets "gi")
+const line = (x, i) => `part ${i + 1}/${parts}: ${x.names.length} tests, ~${Math.round(x.sec)} s of test time`;
+if (mode === 'json') { console.log(JSON.stringify(bins.map(grep))); process.exit(0); }
+if (mode === 'plan') {
   bins.forEach((x, i) => console.log(line(x, i)));
-  console.log(`${total} tests, ${guessed} without a time in tests/durations.json (counted as ${median} s)`);
+  console.log(`${tests.length} tests, ${guessed} without a time in tests/durations.json (counted as ${median} s)`);
   process.exit(0);
 }
 const mine = bins[part - 1];
-if (!mine.locs.length) { console.error(`shard.js: part ${part}/${parts} got no tests`); process.exit(1); } // an empty list would run everything
-console.error(`${line(mine, part - 1)} (${guessed} of ${total} tests without a time)`);
-console.log(mine.locs.sort().join('\n'));
+console.log(`${line(mine, part - 1)} (${guessed} of ${tests.length} tests without a time)`);
+const r = spawnSync(process.execPath, [cli, 'test', '--grep', grep(mine), ...rest], { stdio: 'inherit' });
+process.exit(r.status === null ? 1 : r.status);

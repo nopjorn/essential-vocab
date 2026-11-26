@@ -30,11 +30,13 @@ test('adventure: stop quiz gives a stamp on a pass, none on a fail; 5 stamps com
       }, good);
       const before = await page.evaluate(() => { const q = document.querySelector('.q-prompt'); return q ? q.textContent : ''; });
       await page.locator('.opt').nth(idx).click();
+      await page.clock.fastForward(1500); // 1.264.7: skip the 0.6 / 1.4 s the app shows the answer for (35 answers here)
       // wait for the next question or the stop's result (a fixed wait was flaky on a slow CI runner)
       await expect.poll(() => page.evaluate((b) => { const q = document.querySelector('.q-prompt'); return !!document.querySelector('.result-emoji, #advAgain, #advNext') || (!!q && q.textContent !== b && !document.querySelector('.opt.correct, .opt.wrong')); }, before), { timeout: 15000 }).toBe(true);
     }
   };
   // a failed stop: no stamp
+  await page.clock.install();
   await page.locator('[data-stop="0"]').click();
   await answerStop(false);
   await expect(page.locator('#advAgain')).toBeVisible();

@@ -183,6 +183,9 @@ test('stats: year heatmap levels, tap a day; monthly test with right and wrong a
   await expect(page.locator('#toast')).toContainText('80 ข้อ');
   // monthly test: 30 questions, wrong on even, right on odd
   await page.locator('[data-go="mtest"]').first().click();
+  // 1.264.7: after each answer the app shows it for 0.65 s (right) or 1.5 s (wrong) before the next question; Playwright's
+  // clock skips that pause instead of sitting through it (it was 32 of this test's 42 s)
+  await page.clock.install();
   await page.locator('#mtGo').click();
   for (let k = 0; k < 30; k++) {
     await expect(page.locator('.options .opt')).toHaveCount(4);
@@ -195,6 +198,7 @@ test('stats: year heatmap levels, tap a day; monthly test with right and wrong a
     }, k % 2 === 1);
     await page.locator('.options .opt').nth(idx).click();
     await expect(page.locator('.opt.correct')).toHaveCount(1);
+    await page.clock.fastForward(1600);
     await expect(page.locator('#title')).toContainText(k === 29 ? 'ผล' : `${k + 2}/30`, { timeout: 4000 });
   }
   await expect(page.locator('.result-emoji')).toBeVisible();
@@ -1068,19 +1072,18 @@ test('1.66: level test (gate, pass, medal), share card, year in review', async (
   });
   await expect(page.locator('[data-lt="A1"]')).toBeEnabled();
   await page.locator('[data-lt="A1"]').click();
+  // 1.264.7: the asked word comes from the app (runMonthTest.cur, as in the monthly test) and Playwright's clock skips the
+  // 0.65 s the app shows each answer for, instead of fixed waits (250 + 700 ms × 30 questions)
+  await page.clock.install();
   await page.locator('#mtGo').click();
   for (let i = 0; i < 30; i++) {
-    await page.waitForTimeout(250);
-    const idx = await page.evaluate(() => {
-      const t = document.querySelector('.q-prompt .word, .q-prompt .th'), isEn = !!document.querySelector('.q-prompt .word');
-      const said = (window.__said || []).slice(-1)[0], sw = typeof said === 'string' ? said : said && said.text;
-      const rows = t ? W.filter((x) => (isEn ? x.w === t.textContent : x.t === t.textContent)) : W.filter((x) => x.w === sw);
-      const toTh = !t || isEn, good = new Set(rows.map((x) => (toTh ? x.t : x.w)));
-      return [...document.querySelectorAll('.opt')].findIndex((o) => good.has(o.textContent));
-    });
+    await expect(page.locator('.options .opt')).toHaveCount(4);
+    const idx = await page.evaluate(() => { const w = runMonthTest.cur; return [...document.querySelectorAll('.options .opt')].findIndex((o) => o.textContent === w.t || o.textContent === w.w); });
     expect(idx).toBeGreaterThanOrEqual(0);
-    await page.locator('.opt').nth(idx).click();
-    await page.waitForTimeout(700);
+    await page.locator('.options .opt').nth(idx).click();
+    await expect(page.locator('.opt.correct')).toHaveCount(1);
+    await page.clock.fastForward(1600);
+    if (i < 29) await expect(page.locator('#title')).toContainText(`${i + 2}/30`);
   }
   await expect(page.locator('.result-emoji')).toBeVisible();
   expect(await page.evaluate(() => pct(S.ltest.A1))).toBeGreaterThanOrEqual(80);

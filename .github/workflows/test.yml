@@ -17,28 +17,38 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6] # 1.233.0: 3 parallel parts (about 12 min in one job before); 1.264.5: 6 parts, 4 workers each
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] # 1.233.0: 3 parts (12 min in one job before); 1.264.5: 6; 1.264.7: 12
+    env:
+      # 1.264.7: of everything `npx playwright install-deps chromium` sets up, the runner lacks only these font packages
+      # (Loma for Thai among them; the layout and contrast tests depend on the fonts). Checked on a test branch: the same
+      # 35 font families and fontconfig rules either way, the font tests pass in CI mode. Bump FONT_KEY to download again.
+      FONT_PKGS: fonts-freefont-ttf fonts-ipafont-gothic fonts-tlwg-loma-otf fonts-unifont fonts-wqy-zenhei xfonts-cyrillic xfonts-encodings xfonts-scalable xfonts-utils
+      FONT_KEY: 1
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
+      # 1.264.7: node_modules and Chromium come from one cache keyed by package-lock.json and run on the runner's own
+      # Node (22), so there is no setup-node / npm ci step; a miss (new Playwright) installs both once.
       - uses: actions/cache@v4
-        id: pw-cache
+        id: deps
         with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - run: npx playwright install --with-deps chromium
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-      - run: npx playwright install-deps chromium
-        if: steps.pw-cache.outputs.cache-hit == 'true'
+          path: |
+            node_modules
+            ~/.cache/ms-playwright
+          key: deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npm ci && npx playwright install chromium
+        if: steps.deps.outputs.cache-hit != 'true'
+      # the font .deb files are cached too: dpkg takes 3 s, apt-get update + install-deps took 14–34 s
+      - uses: actions/cache@v4
+        id: fonts
+        with:
+          path: ~/font-debs
+          key: font-debs-${{ runner.os }}-${{ env.FONT_KEY }}
+      - run: mkdir -p ~/font-debs && cd ~/font-debs && sudo apt-get update -qq && apt-get download $FONT_PKGS
+        if: steps.fonts.outputs.cache-hit != 'true'
+      - run: sudo dpkg -i ~/font-debs/*.deb > /dev/null
       # 1.264.6: parts balanced by each test's time (tests/shard.js + tests/durations.json) instead of Playwright's
-      # equal-count --shard. bash -e stops here if shard.js fails (an empty argument list would run every test).
-      - run: |
-          LOCS=$(node tests/shard.js ${{ matrix.shard }} ${{ strategy.job-total }})
-          npx playwright test $LOCS
+      # equal-count --shard; since 1.264.7 each part picks its tests by name, so a loop's tests can be split up.
+      - run: node tests/shard.js run ${{ matrix.shard }} ${{ strategy.job-total }}
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
