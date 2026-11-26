@@ -112,20 +112,21 @@ test('keyboard: arrows grade flashcards, Esc closes sheet / leaves a session / g
   expect(await page.evaluate(() => Object.values(S.prog).some((p) => p.x >= 1 || p.b === 0))).toBe(true);
   const party = () => page.evaluate(() => document.querySelectorAll('.celebrate').forEach((e) => e.remove())); // the first-answer streak party has its own keys
   const kp = async (k) => { await party(); await page.keyboard.press(k); };
+  // a late celebration (the first-answer party, or the first medal from the batched save; it showed up late with 4 workers
+  // on CI, 1.264.5) owns the keys while it is up: press again, but only while the key has not done its job yet
+  const kpUntil = (k, done) => expect.poll(async () => { if (!(await done())) await kp(k); return done(); }, { timeout: 10000 }).toBe(true);
+  const route = (r) => async () => (await page.locator('#view').getAttribute('data-route')) === r;
+  const count = (sel, n) => async () => (await page.locator(sel).count()) === n;
   await party();
   // ✕ leaves the session (a late celebration can take the first Esc for itself: it owns its keys, so try again)
   await expect.poll(async () => { await kp('Escape'); return page.locator('#view').getAttribute('data-route'); }, { timeout: 10000 }).toBe('home');
   // ⌥3 = games, ⌥6 = settings
-  await kp('Alt+Digit3');
-  await expect(page.locator('#view')).toHaveAttribute('data-route', 'games');
-  await kp('Alt+Digit6');
-  await expect(page.locator('#view')).toHaveAttribute('data-route', 'settings');
+  await kpUntil('Alt+Digit3', route('games'));
+  await kpUntil('Alt+Digit6', route('settings'));
   // ? opens the list, Esc closes it
-  await kp('Shift+Slash');
-  await expect(page.locator('.keys-sheet')).toHaveCount(1);
+  await kpUntil('Shift+Slash', count('.keys-sheet', 1));
   expect(await page.locator('.keys-sheet kbd').count()).toBeGreaterThan(8);
-  await kp('Escape');
-  await expect(page.locator('.keys-sheet')).toHaveCount(0);
+  await kpUntil('Escape', count('.keys-sheet', 0));
   await page.evaluate(() => { document.querySelector('details[data-g="input"]').open = true; });
   await page.click('#keysBtn');
   await expect(page.locator('.keys-sheet')).toHaveCount(1);
@@ -135,22 +136,18 @@ test('keyboard: arrows grade flashcards, Esc closes sheet / leaves a session / g
   await page.evaluate(() => go('list'));
   await page.evaluate(() => openSheet(W[0]));
   await expect(page.locator('.sheet-wrap')).toHaveCount(1);
-  await kp('Escape');
-  await expect(page.locator('.sheet-wrap')).toHaveCount(0);
+  await kpUntil('Escape', count('.sheet-wrap', 0));
   await page.evaluate(() => go('read'));
   const id = await page.evaluate(() => loadStories().then(() => STORIES[0].id));
   await page.evaluate((id) => go('read', id), id);
   await expect(page.locator('#rText')).toHaveCount(1);
-  await kp('Meta+BracketLeft');
-  await expect(page.locator('#rText')).toHaveCount(0);
+  await kpUntil('Meta+BracketLeft', count('#rText', 0));
   await page.evaluate((id) => go('read', id), id);
   // the book keeps Esc for itself: closing it does not also leave the story
   await page.click('#rBook');
-  await kp('Escape');
-  await expect(page.locator('.book')).toHaveCount(0);
+  await kpUntil('Escape', count('.book', 0));
   await expect(page.locator('#rText')).toHaveCount(1);
-  await kp('Escape');
-  await expect(page.locator('#rText')).toHaveCount(0);
+  await kpUntil('Escape', count('#rText', 0));
   // typing in a field: Alt+digit and ? do nothing
   await page.evaluate(() => go('list'));
   const inp = page.locator('#view input').first();
