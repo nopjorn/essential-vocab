@@ -35,6 +35,31 @@ test('extra word files load on demand and stay loaded once used', async ({ page 
   expect(errors).toEqual([]);
 });
 
+test('picking an extra group that is not loaded comes back to the same page after the restart (1.264.1)', async ({ page }) => {
+  await page.addInitScript(() => { if (!sessionStorage.getItem('gxSeed')) { localStorage.setItem('o3k.gx', '["PET"]'); sessionStorage.setItem('gxSeed', '1'); } });
+  const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1', 'PET'] } });
+  const restarted = () => page.waitForFunction(() => typeof go === 'function' && document.querySelector('#view').children.length);
+  // word list: back on the list, filtered to that group
+  await page.evaluate(() => go('list'));
+  await page.locator('#lvXBtn').click();
+  await Promise.all([page.waitForEvent('load'), page.locator('#lvX .chip[data-v="SPC"]').click()]);
+  await restarted();
+  expect(await page.evaluate(() => [current, listFilter.lv, LEVELS_EXTRA])).toEqual(['list', 'SPC', ['PET', 'SPC']]);
+  await expect(page.locator('#lvXBtn')).toContainText(await page.evaluate(() => LV_LABEL.SPC));
+  await expect(page.locator('#cnt b')).toHaveText('210 คำ');
+  // settings: back on settings with the chip on screen and on
+  await page.evaluate(() => go('settings'));
+  await Promise.all([page.waitForEvent('load'), page.locator('#lvlsX .chip[data-v="GAME"]').click()]);
+  await restarted();
+  expect(await page.evaluate(() => [current, LEVELS_EXTRA, S.settings.levels])).toEqual(['settings', ['PET', 'SPC', 'GAME'], ['A1', 'PET', 'GAME']]);
+  await expect(page.locator('#lvlsX .chip[data-v="GAME"]')).toBeInViewport();
+  await expect(page.locator('#lvlsX .chip[data-v="GAME"]')).toHaveClass(/\bon\b/);
+  // only once: a plain reload opens the start page again
+  await page.reload(); await restarted();
+  expect(await page.evaluate(() => current)).toBe('home');
+  expect(errors).toEqual([]);
+});
+
 test('settings lists the extra groups by category, one button turns a whole category on and off (1.252)', async ({ page }) => {
   const errors = await openApp(page, { placedAt: '2026-01-01', settings: { levels: ['A1'] } });
   await page.evaluate(() => go('settings'));

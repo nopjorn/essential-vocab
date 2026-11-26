@@ -9,7 +9,17 @@ actEvent('open');
 const goParam = (() => { try { return new URLSearchParams(location.search).get('go') || ''; } catch (e) { return ''; } })();
 if (goParam) try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}
 const GO_SHORT = ['cards', 'games', 'list', 'stats'];
-go(GO_SHORT.includes(goParam) ? goParam : ['home', 'feed', 'cards'].includes(S.settings.start) ? S.settings.start : 'home');
+// Restarted by gxOpen() to load an extra word group (1.264.1): back on the page it was picked on, not the start page.
+// The word list shows that group straight away; settings scrolls to its chip.
+const gxBack = (() => {
+  try {
+    const v = JSON.parse(sessionStorage.getItem('o3k.gxBack') || 'null'); sessionStorage.removeItem('o3k.gxBack');
+    return v && !GO_SHORT.includes(goParam) && ['list', 'settings'].includes(v.r) && GROUPS_X.some((x) => x.g === v.g) ? v : null;
+  } catch (e) { return null; }
+})();
+if (gxBack && gxBack.r === 'list' && LEVELS_EXTRA.includes(gxBack.g)) listFilter.lv = gxBack.g;
+go(GO_SHORT.includes(goParam) ? goParam : gxBack ? gxBack.r : ['home', 'feed', 'cards'].includes(S.settings.start) ? S.settings.start : 'home');
+if (gxBack && gxBack.r === 'settings') { const c = view.querySelector(`#lvlsX .chip[data-v="${gxBack.g}"]`); if (c) c.scrollIntoView({ block: 'center' }); }
 if (goParam === 'search' && typeof openSearch === 'function') setTimeout(openSearch, 0);
 // Ask the browser not to evict our localStorage under storage pressure / inactivity.
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
