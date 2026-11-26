@@ -73,8 +73,8 @@
 
 ## เปิดใช้งานผ่าน GitHub Pages
 1. ไปที่ **Settings → Pages** ของ repo นี้
-2. ที่ **Build and deployment** เลือก Source = `Deploy from a branch`, Branch = `master` และโฟลเดอร์ `/ (root)` แล้วกด Save
-3. รอประมาณ 1 นาที แล้วเปิด `https://<username>.github.io/essential-vocab/`
+2. ที่ **Build and deployment** เลือก Source = `GitHub Actions` (ตั้งแต่ 1.264.2 workflow "Tests" ใน `.github/workflows/test.yml` จะขึ้นเว็บให้เองหลังเทสต์ผ่านครบทุกส่วน ถ้าเทสต์ไม่ผ่าน เว็บยังเป็นเวอร์ชันเดิม)
+3. push ไป `master` แล้วรอประมาณ 7 นาที (เทสต์ราว 6 นาที + ขึ้นเว็บ) แล้วเปิด `https://<username>.github.io/essential-vocab/`
 
 ## ติดตั้งบน iPhone
 เปิดลิงก์ด้วย **Safari** → กดปุ่ม **แชร์** → **เพิ่มไปยังหน้าจอโฮม**
@@ -119,6 +119,7 @@
 
 | เวอร์ชัน | สิ่งที่เปลี่ยน |
 |---|---|
+| 1.264.2 | งานเบื้องหลัง: เวอร์ชันใหม่จะขึ้นเว็บหลังระบบทดสอบอัตโนมัติผ่านครบแล้วเท่านั้น ถ้ามีอะไรพัง ผู้ใช้ยังได้เวอร์ชันเดิมที่ใช้งานได้ (อัปเดตถึงเครื่องช้าลงราว 6 นาทีหลังปล่อย) · เทสต์บนเครื่องที่ใช้พัฒนาไม่ล้มหลอกตอนหลังเที่ยงคืนหรือเพราะฟอนต์ของ Windows อีก ปล่อยเวอร์ชันใหม่ได้เร็วขึ้น |
 | 1.264.1 | แก้: ในหน้าคำศัพท์ พอเลือกชุดเสริมที่ยังไม่เคยเปิด (ปุ่ม 📚 ชุดเสริม) แอปโหลดใหม่แล้วเด้งกลับไปหน้าแรก ตอนนี้กลับมาที่คลังคำพร้อมแสดงคำของชุดนั้นเลย · เปิดชุดเสริมในตั้งค่าก็กลับมาที่หน้าตั้งค่าตรงชิปเดิม |
 | 1.264.0 | ชุดเสริมใหม่ 🎮 เกม/อีสปอร์ต 167 คำ ไว้เล่นเกมภาษาอังกฤษ ดูสตรีมและการแข่งอีสปอร์ต และคุยกับเพื่อนร่วมทีมต่างชาติ ไม่ซ้ำกับชุดอื่น: เครื่องเล่นและอุปกรณ์ (video game, game console, gamepad, joystick, thumbstick, gaming headset, graphics card, vr headset) แนวเกม (battle royale, first-person shooter, role-playing game, strategy game, platformer, open world, co-op) ระหว่างเล่น (level up, experience points, health bar, power-up, potion, respawn, spawn, loot, save point, game over, final boss) เล่นออนไลน์ (multiplayer, matchmaking, ranked, laggy, ping, frame rate, patch notes, cross-platform) ภาษาเกมเมอร์ที่ใช้กันนาน (noob, nerf, buff, meta, overpowered, rage quit, trash talk, tier list) อีสปอร์ต (pro player, scrim, bootcamp, playoffs, grand final, prize pool, shoutcaster, roster) และเกมกระดาน ไพ่ และปาร์ตี้ (board game, card game, checkmate, poker, shuffle, escape room, claw machine) · เปิดได้ที่ ⚙️ ตั้งค่า → ระดับคำศัพท์ → ชิป เกม/อีสปอร์ต (หมวด 🎉 งานอดิเรก) |
 | 1.263.0 | ชุดเสริมใหม่ 🌱 สวน/เกษตร 186 คำ ไว้ปลูกต้นไม้ ทำสวนหลังบ้าน อ่านคลิปเกษตร และเล่าเรื่องการทำนาทำไร่ให้ชาวต่างชาติฟัง ไม่ซ้ำกับชุดอื่น: เครื่องมือทำสวน (shovel, spade, trowel, rake, hoe, watering can, wheelbarrow, pruning shears, lawn mower) ปลูกและดูแล (sow, germinate, prune, repot, mulch, weeding, fertilize, overwater, root rot) ส่วนของพืชและต้นไม้ (bud, petal, thorn, pollen, sap, shrub, vine, evergreen) ดอกไม้และต้นไม้ (orchid, frangipani, hibiscus, bougainvillea, sunflower, bonsai, bamboo, rubber tree) แมลงศัตรูพืช (aphid, mealybug, caterpillar, snail, locust) ทำนา (paddy field, rice seedlings, rice terraces, thresh, winnow, husk, rice mill, water buffalo, scarecrow) สวนและไร่ (orchard, rubber plantation, rubber tapping, oil palm, sugarcane, cash crop) เครื่องจักร (tractor, tiller, combine harvester, farm drone) ปศุสัตว์ (livestock, poultry, chicken coop, pigsty, rooster, hen, graze, herd) และเกษตรสมัยใหม่ (hydroponics, smart farm, organic farming, aquaculture, beekeeping) · เปิดได้ที่ ⚙️ ตั้งค่า → ระดับคำศัพท์ → ชิป สวน/เกษตร (หมวด 🏠 ชีวิตประจำวัน) |

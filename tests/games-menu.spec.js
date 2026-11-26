@@ -92,8 +92,16 @@ test('the other play pages sit right under the pick: a sideways strip on a phone
 test('top of the menu: source and difficulty as two pills, the difficulty pill opens just that setting, a two-button view switch, chips fade', async ({ page }) => {
   const errors = await openApp(page, { settings: { levels: ['A1'] } });
   await page.evaluate(() => { S.gacc = { a: 0.85, n: 40 }; go('games'); });
-  const box = await page.evaluate(() => { const r = (s) => view.querySelector(s).getBoundingClientRect(); return { a: Math.round(r('#srcBtn').top), b: Math.round(r('#gDiffSet').top) }; });
-  expect(box.a).toBe(box.b); // one row at 440 px
+  // One row at 440 px whenever both pills fit side by side. With CI's Linux fonts they do (and must); Windows fonts make them
+  // 1 px too wide, so there the second one wraps, which is the right layout for that width (font, not a layout bug).
+  const box = await page.evaluate(() => {
+    const el = (s) => view.querySelector(s), top = (s) => Math.round(el(s).getBoundingClientRect().top);
+    const natural = (s) => { const e = el(s), css = e.style.cssText; e.style.flex = 'none'; e.style.width = 'max-content'; const w = e.getBoundingClientRect().width; e.style.cssText = css; return w; };
+    const row = el('.src-row');
+    return { a: top('#srcBtn'), b: top('#gDiffSet'), fit: natural('#srcBtn') + parseFloat(getComputedStyle(row).columnGap) + natural('#gDiffSet') <= row.clientWidth };
+  });
+  if (process.env.CI) expect(box.fit).toBe(true);
+  if (box.fit) expect(box.a).toBe(box.b); else expect(box.b).toBeGreaterThan(box.a);
   await expect(page.locator('#srcBtn')).toContainText('ระดับ A1');
   await expect(page.locator('#gDiffSet')).toHaveAttribute('aria-label', /ความยากเกมตัวเลือก: ⭐⭐ .*แม่น 85%/);
   // view switch: two labelled buttons, the current one pressed

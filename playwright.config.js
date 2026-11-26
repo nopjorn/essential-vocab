@@ -2,6 +2,11 @@
 // Locally in the Claude cloud container set PW_CHROMIUM=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome.
 const { defineConfig } = require('@playwright/test');
 
+// 1.264.2: every run counts time in UTC, like CI (GitHub runners). Tests build dates with toISOString() (a UTC day) while the app
+// counts days in the browser's local time, so on a PC in Thailand (UTC+7) the two were a day apart from midnight to 7 am.
+// TZ = this Node process and the workers it starts; timezoneId (below) = the browser.
+process.env.TZ = 'UTC';
+
 module.exports = defineConfig({
   testDir: 'tests',
   timeout: 90000,
@@ -11,6 +16,7 @@ module.exports = defineConfig({
   use: {
     baseURL: 'http://localhost:8765/',
     viewport: { width: 440, height: 956 },
+    timezoneId: 'UTC',
     serviceWorkers: 'block',
     launchOptions: { executablePath: process.env.PW_CHROMIUM || undefined, args: ['--headless=new'] },
   },

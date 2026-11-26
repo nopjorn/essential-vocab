@@ -1,7 +1,7 @@
 # Notes for Claude
 
 "ศัพท์ต้องรู้" (Essential Vocab) — a vocabulary trainer for the Oxford 3000/5000 word lists: a static, vanilla-JS PWA hosted on GitHub Pages
-(`https://nopjorn.github.io/essential-vocab/`, branch `master`, repo root).
+(`https://nopjorn.github.io/essential-vocab/`, repo root of `master`). Since 1.264.2 the "Tests" workflow deploys it (job `deploy`, Pages source = GitHub Actions) only after all 3 test shards pass: a red run never reaches users.
 Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and** landscape. The owner talks in Thai; reply in Thai.
 
 ## Release rules (every push)
@@ -9,7 +9,7 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
   (`o3k-<same version>`), and add a row to the changelog table at the end of `README.md` **and** to the top of `data/app/changelog.js` (shown in-app; a test checks both match).
   Tell the user the new version number.
 - Patch (x.y.Z) for small fixes, minor (x.Y.0) for new features.
-- Push directly to `master` (no PRs unless asked).
+- Push directly to `master` (no PRs unless asked). After pushing, wait for the "Tests" run (`gh run watch`, about 6–7 min) and tell the user whether it is green and deployed; if it fails, the site stays on the previous version: fix it with a follow-up push.
 - Tag every release: annotated tag `v<version>` on the release commit (message = commit subject), then `git push origin v<version>`. If a version gets a follow-up commit with the same number, move the tag (`git tag -f -a` + `git push -f origin v<version>`).
 - When adding or changing a feature, add/update its row in the matching `docs/notes/*.md` file (see the Files section).
 - The in-app manual (`GUIDE` / `renderGuideBody()` in `data/app/guide.js`, lazy-loaded by `loadGuide()`/`renderGuide()` in `js/guide.js`, route `guide`) describes every feature
@@ -96,10 +96,17 @@ Details: `docs/notes/state-learning.md`. The rules that always apply:
 ## Testing
 - **On Windows (the owner's PC)**: no `PW_CHROMIUM`, no `/opt/...`; plain `npx playwright test` (config uses `python3`, which exists on the PC). Full steps: `docs/howto-run-local.md`. Checkouts are CRLF (`core.autocrlf=true`), so a test regex that matches a line break in a source file must accept `\r?\n`. Running the app locally needs `config.js` with `url: ''` (restore it before committing; `git diff config.js` must be empty).
 - `@playwright/test` is pinned to 1.63.0 (same Chromium build as the container's `/opt/pw-browsers/chromium-1243`; 1.56 could not see or route a service worker's own requests).
-- Run before every push: `npm ci` (once) then `PW_CHROMIUM=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome npm test`
-  (the config starts `python3 -m http.server 8765` itself). CI (GitHub Actions "Tests") runs the same suite on every
-  push to `master`; it must stay green. Since 1.233 it runs in 3 shards (`--shard=n/3`, one job each, Chromium cached) and a newer
-  push cancels the older run. To run one shard locally: `npx playwright test --shard=1/3`.
+- Before every push (1.264.2): `npm ci` (once), then run `tests/data.spec.js` plus the spec files that cover what changed, e.g.
+  `npx playwright test tests/data.spec.js tests/groups.spec.js tests/gaming.spec.js` (in the cloud container prefix
+  `PW_CHROMIUM=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`; the config starts `python3 -m http.server 8765` itself).
+  Run the whole suite locally only for wide changes (shared CSS, app.js core, boot.js, sw.js, helpers.js, many screens).
+  CI (GitHub Actions "Tests") always runs the whole suite on every push to `master` and gates the deploy; it must stay green.
+  Since 1.233 it runs in 3 shards (`--shard=n/3`, one job each, Chromium cached) and a newer push cancels the older run.
+  To run one shard locally: `npx playwright test --shard=1/3`.
+- Time zone (1.264.2): `playwright.config.js` pins Node (`process.env.TZ`) and the browser (`timezoneId`) to UTC, like CI, so date
+  tests behave the same on the Thai PC at any hour. A test that needs another zone sets `test.use({ timezoneId })` itself.
+- Windows fonts are a little bigger than CI's Linux fonts: a layout test that compares sizes must not assume the Linux metrics
+  (see games-menu.spec "top of the menu" and cards-hub.spec "swipe up", which stay strict only when `process.env.CI` is set).
 - Size budget (1.233, `data.spec.js`): app.js ≤ 210 KB, style.css ≤ 330 KB, each eager `js/*.js` ≤ 125 KB, all start-up scripts
   except the word lists ≤ 1500 KB. Over a limit → move the new part into its own (preferably lazy-loaded) file instead of raising it.
 - `tests/data.spec.js` (no browser): version in app.js/sw.js/README, sw.js file list, word rows, families, pairs,
