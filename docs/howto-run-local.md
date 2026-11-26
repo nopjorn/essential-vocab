@@ -88,7 +88,7 @@ npm test                       # รันทั้งหมด
   npx playwright test tests/games.spec.js
   npx playwright test -g "ชื่อเทสต์บางส่วน"
   ```
-- รันแบบแบ่งส่วนเหมือน CI: `npx playwright test --shard=1/6` (CI แบ่ง 6 ส่วนตั้งแต่ 1.264.5)
+- รันแบบแบ่งส่วนเหมือน CI (6 ส่วนที่เกลี่ยตามเวลาของแต่ละเทสต์ ตั้งแต่ 1.264.6): ใน PowerShell `npx playwright test $(node tests/shard.js 1 6)` · ดูว่าแต่ละส่วนได้อะไร: `node tests/shard.js plan 6` · อัปเดตเวลาของเทสต์จาก CI รอบล่าสุด: `node tools/test-durations.js`
 - ดูการทำงานของเทสต์แบบมีหน้าต่าง: `npx playwright test --ui`
 - ผลรายงานอยู่ใน `test-results/` และ `playwright-report/` (ทั้งสองโฟลเดอร์อยู่ใน `.gitignore` แล้ว)
 - เทสต์ทุกตัวนับเวลาเป็น UTC เหมือน CI (ตั้งไว้ใน config ตั้งแต่ 1.264.2) จึงรันตอนไหนก็ได้ ไม่ล้มหลอกหลังเที่ยงคืน

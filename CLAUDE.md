@@ -101,9 +101,13 @@ Details: `docs/notes/state-learning.md`. The rules that always apply:
   `PW_CHROMIUM=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`; the config starts `python3 tests/serve.py 8765` itself).
   Run the whole suite locally only for wide changes (shared CSS, app.js core, boot.js, sw.js, helpers.js, many screens).
   CI (GitHub Actions "Tests") always runs the whole suite on every push to `master` and gates the deploy; it must stay green.
-  It runs in 6 shards since 1.264.5 (3 since 1.233; `--shard=n/6`, one job each, Chromium cached, 4 workers per job as the
-  public-repo runners have 4 CPUs) and a newer push cancels the older run. Push → live took 2 min 47 s in 1.264.5 (5 min before).
-  To run one shard locally: `npx playwright test --shard=1/6`.
+  It runs in 6 shards since 1.264.5 (3 since 1.233; one job each, Chromium cached, 4 workers per job as the public-repo
+  runners have 4 CPUs) and a newer push cancels the older run. Push → live took 2 min 47 s in 1.264.5 (5 min before).
+  Since 1.264.6 the parts are balanced by time, not count: `tests/shard.js <part> <parts>` prints a part's `file:line`
+  locations from `tests/durations.json` (longest first to the emptiest part; data.spec checks with Playwright that the parts
+  run every test exactly once). Rebuild the times with `node tools/test-durations.js` (newest green run, needs `gh`) after
+  adding many tests or when the "part n/6: … s" lines in the CI log drift apart. To run one part locally:
+  `npx playwright test $(node tests/shard.js 1 6)`; `node tests/shard.js plan 6` shows the split.
 - Time zone (1.264.2): `playwright.config.js` pins Node (`process.env.TZ`) and the browser (`timezoneId`) to UTC, like CI, so date
   tests behave the same on the Thai PC at any hour. A test that needs another zone sets `test.use({ timezoneId })` itself.
 - Windows fonts are a little bigger than CI's Linux fonts: a layout test that compares sizes must not assume the Linux metrics
