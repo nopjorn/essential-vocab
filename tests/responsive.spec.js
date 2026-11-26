@@ -16,9 +16,24 @@ for (const [w, h] of SIZES) {
     const screens = [...ROUTES.map((r) => [r, `go('${r}')`]), ['cards hub', "go('cards', 'hub')"], ['families', 'renderFamilies()'], ['adventure', 'renderAdventure()'], ['fun', "go('fun')"], ['tower', "go('tower')"], ['tower run', 'runTower(1)'], ['coin shop', "go('coinshop')"], ['crossword', "go('puzzle', 'cw')"], ['ladder', "go('puzzle', 'lad')"], ['album', "go('album')"], ['garden', "go('garden')"], ['cases', "go('cases')"], ['case', "loadCases().then(() => runCase('cake'))"], ['cafe', "go('cafe')"], ['cafe day', "loadEmoji().then(() => runCafe())"], ['room', "go('room')"], ['paths', "go('paths')"], ['path', "loadPaths().then(() => runPath('trip'))"], ['pic', "go('pic')"], ['build', 'runBuild()'], ['real game', "startGame('real')"], ['pairs', 'renderPairs()'], ['wform', "startGame('wform')"], ['hand game', "startGame('hand')"],
       ['deck edit', 'renderDeckEdit()'], ['idioms', 'renderIdioms()'], ['irregular', 'renderIrregular()'], ['dep prep', 'renderDepPrep()'], ['mistakes', 'renderMistakes()'], ['gram pat', 'renderGramPat()'], ['ipa chart', 'renderIpa()'], ['situations', 'renderSit()'], ['situation', "renderSit('restaurant')"], ['sit game', "startGame('sit')"],
       ['deck page', "go('decks', 'd1')"], ['games with sets', "gameSource = 'deck'; gameDecks = ['d1', 'd2']; go('games')"], ['set study', "go('cards', { deck: 'd1' })"], ['set game', "gameDecks = ['d1']; startGame('en2th')"]];
+    // 1.264.3: wait until each screen is drawn instead of a fixed 150 ms (25 sizes × ~60 screens = 3.8 min of sleeping):
+    // no script the page loaded on demand still on its way (counted by __pend), then two frames.
+    await page.evaluate(() => {
+      window.__pend = 0;
+      new MutationObserver((ms) => {
+        for (const m of ms) for (const n of m.addedNodes) {
+          if (n.tagName !== 'SCRIPT' || !n.src) continue;
+          window.__pend++;
+          let done = false;
+          const end = () => { if (!done) { done = true; window.__pend--; } };
+          n.addEventListener('load', end); n.addEventListener('error', end);
+        }
+      }).observe(document.documentElement, { childList: true, subtree: true });
+    });
     for (const [name, js] of screens) {
       await page.evaluate(js);
-      await page.waitForTimeout(150);
+      await page.waitForFunction(() => window.__pend === 0);
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       const over = await page.evaluate(() => {
         const v = document.querySelector('#view');
         return { doc: document.documentElement.scrollWidth - innerWidth, view: v.scrollWidth - v.clientWidth };

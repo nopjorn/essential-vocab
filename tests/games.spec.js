@@ -63,18 +63,24 @@ test('match game: right and wrong pairs, three rounds', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+// 1.264.3: checking every word × 4 option sets took 3.4 min on the PC (~10,500 words) and grew with the square of the word count
+// (each distractors() call scans every word). Now: every word of the newest extra group (what a release usually adds) plus a
+// seventh of all the others that moves on by one each day, so a week of runs still covers every word.
 test('multiple-choice options never include a second right answer (no shared Thai meaning)', async ({ page }) => {
-  test.setTimeout(300000); // checks every word × 4 option sets; grows with the word list (9,436 words in 1.249, ~10,500 in 1.264; 1.8 min alone on a PC)
+  test.setTimeout(120000);
   const errors = await openApp(page, { settings: { levels: ['A1'] } });
-  const bad = await page.evaluate(() => {
-    const out = [];
-    for (const w of W) for (const hard of [false, true]) for (const field of ['w', 't']) {
+  const r = await page.evaluate((day) => {
+    const newest = GROUPS_X[GROUPS_X.length - 1].g, out = [];
+    const pick = W.filter((w, i) => w.g === newest || (i + day) % 7 === 0);
+    for (const w of pick) for (const hard of [false, true]) for (const field of ['w', 't']) {
       const d = distractors(w, 3, field, hard);
       if (d.length < 3) out.push(`${w.w}: only ${d.length} options`);
       for (const x of d) if (sharesMeaning(w, x)) out.push(`${w.w} (${w.t}) ~ ${x.w} (${x.t})`);
     }
-    return out;
-  });
-  expect(bad.slice(0, 10)).toEqual([]);
+    return { out, newest: pick.filter((w) => w.g === newest).length, n: pick.length, all: W.length };
+  }, Math.floor(Date.now() / 864e5));
+  expect(r.newest).toBeGreaterThan(100); // the newest group's word file is loaded and checked in full
+  expect(r.n).toBeGreaterThan(r.all / 7);
+  expect(r.out.slice(0, 10)).toEqual([]);
   expect(errors).toEqual([]);
 });
