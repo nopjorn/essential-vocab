@@ -1,4 +1,4 @@
-// Browser tests: `npm test` (serves the repo on :8765 with Python's static server).
+// Browser tests: `npm test` (serves the repo on :8765 with tests/serve.py, Python's static server with a longer queue).
 // Locally in the Claude cloud container set PW_CHROMIUM=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome.
 const { defineConfig } = require('@playwright/test');
 
@@ -21,7 +21,7 @@ module.exports = defineConfig({
     launchOptions: { executablePath: process.env.PW_CHROMIUM || undefined, args: ['--headless=new'] },
   },
   webServer: {
-    command: 'python3 -m http.server 8765',
+    command: 'python3 tests/serve.py 8765', // http.server with a long listen queue (1.264.4, see the file)
     url: 'http://localhost:8765/index.html',
     reuseExistingServer: true,
     stderr: 'ignore', // request log

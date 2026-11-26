@@ -98,7 +98,7 @@ Details: `docs/notes/state-learning.md`. The rules that always apply:
 - `@playwright/test` is pinned to 1.63.0 (same Chromium build as the container's `/opt/pw-browsers/chromium-1243`; 1.56 could not see or route a service worker's own requests).
 - Before every push (1.264.2): `npm ci` (once), then run `tests/data.spec.js` plus the spec files that cover what changed, e.g.
   `npx playwright test tests/data.spec.js tests/groups.spec.js tests/gaming.spec.js` (in the cloud container prefix
-  `PW_CHROMIUM=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`; the config starts `python3 -m http.server 8765` itself).
+  `PW_CHROMIUM=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`; the config starts `python3 tests/serve.py 8765` itself).
   Run the whole suite locally only for wide changes (shared CSS, app.js core, boot.js, sw.js, helpers.js, many screens).
   CI (GitHub Actions "Tests") always runs the whole suite on every push to `master` and gates the deploy; it must stay green.
   Since 1.233 it runs in 3 shards (`--shard=n/3`, one job each, Chromium cached) and a newer push cancels the older run.
@@ -107,6 +107,9 @@ Details: `docs/notes/state-learning.md`. The rules that always apply:
   tests behave the same on the Thai PC at any hour. A test that needs another zone sets `test.use({ timezoneId })` itself.
 - Windows fonts are a little bigger than CI's Linux fonts: a layout test that compares sizes must not assume the Linux metrics
   (see games-menu.spec "top of the menu" and cards-hub.spec "swipe up", which stay strict only when `process.env.CI` is set).
+- Test server (1.264.4): `tests/serve.py` = `http.server` with a 256-connection listen queue. The stock `python3 -m http.server`
+  queues 5 and Windows refuses the rest (`ERR_CONNECTION_REFUSED`), which broke offline.spec (service worker install) and made
+  `openApp` time out under parallel load. `reuseExistingServer` is on, so stop any stock server on 8765 before a run.
 - Size budget (1.233, `data.spec.js`): app.js ≤ 210 KB, style.css ≤ 330 KB, each eager `js/*.js` ≤ 125 KB, all start-up scripts
   except the word lists ≤ 1500 KB. Over a limit → move the new part into its own (preferably lazy-loaded) file instead of raising it.
 - `tests/data.spec.js` (no browser): version in app.js/sw.js/README, sw.js file list, word rows, families, pairs,
@@ -117,8 +120,8 @@ Details: `docs/notes/state-learning.md`. The rules that always apply:
   (`window.__said`) and recognition (hears `window.__heard`), collects `pageerror`s (assert none).
 - One-off scripts (screenshots etc.) go in the scratchpad (`pw/`), using
   `executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome'`, `args: ['--headless=new']`,
-  viewport 440×956. Manual serve: `nohup python3 -m http.server 8765 >/dev/null 2>&1 &`; stop with
-  `kill $(pgrep -f "[h]ttp.server 8765")` (`pkill -f` kills the calling shell).
+  viewport 440×956. Manual serve: `nohup python3 tests/serve.py 8765 >/dev/null 2>&1 &`; stop with
+  `kill $(pgrep -f "[s]erve.py 8765")` (`pkill -f` kills the calling shell).
 - Seed state by writing `localStorage['oxford3000.v1']` and reloading; app functions
   (`go`, `questEvent`, `W`, …) are globals and can be called via `page.evaluate`.
 - Speech recognition mock must replace **both** `window.SpeechRecognition` and

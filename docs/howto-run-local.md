@@ -16,14 +16,15 @@
 
 ```powershell
 cd D:\Applications\GitHubApp\essential-vocab
-python -m http.server 8765
+python tests/serve.py 8765
 ```
 
 จากนั้นเปิด **http://localhost:8765/** ในเบราว์เซอร์
 
 - หยุดเซิร์ฟเวอร์: กด `Ctrl + C` ในหน้าต่างที่รันอยู่
-- พอร์ต `8765` เป็นพอร์ตเดียวกับที่ชุดทดสอบใช้ จึงรันเซิร์ฟเวอร์ค้างไว้แล้วสั่ง `npm test` ได้เลย (config จะใช้เซิร์ฟเวอร์เดิมซ้ำ)
-- ถ้าพอร์ตถูกใช้อยู่แล้ว ให้เปลี่ยนเลขพอร์ต (เช่น `python -m http.server 8080`) หรือดูว่าใครใช้อยู่:
+- `tests/serve.py` คือ `python -m http.server` ที่รับคิวการเชื่อมต่อได้ 256 แทน 5 (1.264.4) ตัวเดิมบน Windows จะปฏิเสธการเชื่อมต่อที่เกินคิวทันที เวลาเทสต์หลายตัวโหลดแอปพร้อมกันหรือ service worker โหลด ~300 ไฟล์ตอนติดตั้ง ไฟล์จะหายจนเทสต์หมดเวลา
+- พอร์ต `8765` เป็นพอร์ตเดียวกับที่ชุดทดสอบใช้ จึงรัน `tests/serve.py` ค้างไว้แล้วสั่ง `npm test` ได้เลย (config จะใช้เซิร์ฟเวอร์เดิมซ้ำ) **แต่อย่าเปิด `python -m http.server 8765` ตัวเดิมค้างไว้ตอนรันเทสต์** เพราะ config จะใช้ตัวนั้นแทน
+- ถ้าพอร์ตถูกใช้อยู่แล้ว ให้เปลี่ยนเลขพอร์ต (เช่น `python tests/serve.py 8080`) หรือดูว่าใครใช้อยู่:
   ```powershell
   Get-NetTCPConnection -LocalPort 8765 -State Listen
   ```
@@ -78,7 +79,7 @@ npx playwright install chromium  # ครั้งแรก หรือเม�
 npm test                       # รันทั้งหมด
 ```
 
-- config ([playwright.config.js](../playwright.config.js)) เปิด `python3 -m http.server 8765` ให้เอง จึงต้องมีคำสั่ง `python3` ใน PATH (เช็กด้วย `python3 --version`) ถ้ามีเซิร์ฟเวอร์รันอยู่ที่พอร์ต 8765 แล้วจะใช้ตัวนั้นต่อ
+- config ([playwright.config.js](../playwright.config.js)) เปิด `python3 tests/serve.py 8765` ให้เอง จึงต้องมีคำสั่ง `python3` ใน PATH (เช็กด้วย `python3 --version`) ถ้ามีเซิร์ฟเวอร์รันอยู่ที่พอร์ต 8765 แล้วจะใช้ตัวนั้นต่อ
 - ถ้า Playwright แจ้งว่าไม่พบเบราว์เซอร์เวอร์ชันที่ต้องการ และไม่อยากดาวน์โหลดใหม่ ให้ชี้ไปที่ Chromium ที่ติดตั้งไว้แล้วใน `%LOCALAPPDATA%\ms-playwright\chromium-<เลข>\chrome-win64\chrome.exe` ด้วย `$env:PW_CHROMIUM = '...'` (ใช้ได้กับชุดทดสอบนี้)
 - **ไม่ต้องตั้ง `PW_CHROMIUM` เป็นปกติ** — ตัวแปรนี้ใช้เฉพาะในเครื่อง container ของ Claude (ตามที่เขียนใน [CLAUDE.md](../CLAUDE.md)) บน Windows ให้ Playwright ใช้เบราว์เซอร์ที่ติดตั้งเอง
 - รันเฉพาะไฟล์ / เฉพาะเทสต์:

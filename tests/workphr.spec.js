@@ -35,7 +35,8 @@ for (const mode of ['fill', 'pick']) {
     expect(await page.evaluate(() => window.__said.at(-1))).toBe(r.plain);
     await view.locator('#nextQ').click();
     const b = await right();
-    await view.locator('.opt').filter({ hasNotText: b }).first().click();
+    // exact match: the options can all contain the answer (discuss / discussing / discussion / discuss about, 1.264.4)
+    await view.locator('.opt').filter({ hasNotText: new RegExp(`^${b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }).first().click();
     await expect(view.locator('.opt.wrong')).toHaveCount(1);
     await expect(view.locator('.opt.correct')).toHaveText(b);
     await page.evaluate(() => flushSave());
