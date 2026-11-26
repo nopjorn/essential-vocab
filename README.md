@@ -74,7 +74,7 @@
 ## เปิดใช้งานผ่าน GitHub Pages
 1. ไปที่ **Settings → Pages** ของ repo นี้
 2. ที่ **Build and deployment** เลือก Source = `GitHub Actions` (ตั้งแต่ 1.264.2 workflow "Tests" ใน `.github/workflows/test.yml` จะขึ้นเว็บให้เองหลังเทสต์ผ่านครบทุกส่วน ถ้าเทสต์ไม่ผ่าน เว็บยังเป็นเวอร์ชันเดิม)
-3. push ไป `master` แล้วรอประมาณ 3 นาที (เทสต์ 6 ส่วนพร้อมกันราว 2.5 นาที + ขึ้นเว็บ) แล้วเปิด `https://<username>.github.io/essential-vocab/`
+3. push ไป `master` แล้วรอประมาณ 2 นาที (เทสต์ 12 ส่วนพร้อมกันราว 1.5 นาที + ขึ้นเว็บ) แล้วเปิด `https://<username>.github.io/essential-vocab/`
 
 ## ติดตั้งบน iPhone
 เปิดลิงก์ด้วย **Safari** → กดปุ่ม **แชร์** → **เพิ่มไปยังหน้าจอโฮม**

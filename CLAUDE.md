@@ -9,7 +9,7 @@ Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and**
   (`o3k-<same version>`), and add a row to the changelog table at the end of `README.md` **and** to the top of `data/app/changelog.js` (shown in-app; a test checks both match).
   Tell the user the new version number.
 - Patch (x.y.Z) for small fixes, minor (x.Y.0) for new features.
-- Push directly to `master` (no PRs unless asked). After pushing, wait for the "Tests" run (`gh run watch`, about 3 min) and tell the user whether it is green and deployed; if it fails, the site stays on the previous version: fix it with a follow-up push.
+- Push directly to `master` (no PRs unless asked). After pushing, wait for the "Tests" run (`gh run watch`, about 2 min) and tell the user whether it is green and deployed; if it fails, the site stays on the previous version: fix it with a follow-up push.
 - Tag every release: annotated tag `v<version>` on the release commit (message = commit subject), then `git push origin v<version>`. If a version gets a follow-up commit with the same number, move the tag (`git tag -f -a` + `git push -f origin v<version>`).
 - When adding or changing a feature, add/update its row in the matching `docs/notes/*.md` file (see the Files section).
 - The in-app manual (`GUIDE` / `renderGuideBody()` in `data/app/guide.js`, lazy-loaded by `loadGuide()`/`renderGuide()` in `js/guide.js`, route `guide`) describes every feature
@@ -102,7 +102,7 @@ Details: `docs/notes/state-learning.md`. The rules that always apply:
   Run the whole suite locally only for wide changes (shared CSS, app.js core, boot.js, sw.js, helpers.js, many screens).
   CI (GitHub Actions "Tests") always runs the whole suite on every push to `master` and gates the deploy; it must stay green.
   It runs in 12 parts since 1.264.7 (3 since 1.233, 6 in 1.264.5; one job each, 4 workers per job as the public-repo
-  runners have 4 CPUs) and a newer push cancels the older run. Push → live: 5 min in 1.264.4, 2 min 33 s in 1.264.6.
+  runners have 4 CPUs) and a newer push cancels the older run. Push → live: 5 min in 1.264.4, 2 min 33 s in 1.264.6, 1 min 51 s in 1.264.7 (with empty caches).
   Each job (1.264.7) restores node_modules + Chromium from one cache and runs on the runner's own Node (no setup-node /
   npm ci), and installs the only part of `install-deps` the runner lacks, 9 font packages, from cached .deb files
   (`FONT_PKGS` in test.yml; same fonts and fontconfig rules, checked on a test branch).
