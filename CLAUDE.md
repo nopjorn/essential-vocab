@@ -1,7 +1,7 @@
 # Notes for Claude
 
 "ศัพท์ต้องรู้" (Essential Vocab) — a vocabulary trainer for the Oxford 3000/5000 word lists: a static, vanilla-JS PWA hosted on GitHub Pages
-(`https://nopjorn.github.io/essential-vocab/`, repo root of `master`). Since 1.264.2 the "Tests" workflow deploys it (job `deploy`, Pages source = GitHub Actions) only after all 3 test shards pass: a red run never reaches users.
+(`https://nopjorn.github.io/essential-vocab/`, repo root of `master`). Since 1.264.2 the "Tests" workflow deploys it (jobs `pages` = upload, then `deploy`; Pages source = GitHub Actions) only after all 3 test shards pass: a red run never reaches users.
 Main targets: iPhone 17 Pro Max and iPad (M5), home-screen app, portrait **and** landscape. The owner talks in Thai; reply in Thai.
 
 ## Release rules (every push)

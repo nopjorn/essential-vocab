@@ -44,24 +44,32 @@ jobs:
 
   # 1.264.2: the site goes live only after all 3 test parts pass (Settings → Pages → Source = "GitHub Actions";
   # before, Pages published every push to master straight away, even one that failed the tests).
-  # A failed or cancelled run leaves the version that is already live. Rerun this job to deploy again.
-  deploy:
+  # A failed or cancelled run leaves the version that is already live. Rerun the failed jobs to deploy again.
+  # Upload and deploy are two jobs, as in GitHub's own Pages workflow: deploy-pages in the same job as the upload found
+  # no artifact 0.35 s after it was finalised (1.264.2, first try).
+  pages:
     needs: test
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: . # the repo root, as before (the action leaves out .git and .github)
+  deploy:
+    needs: pages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: . # the repo root, as before (the action leaves out .git and .github)
       - id: deployment
         uses: actions/deploy-pages@v4
