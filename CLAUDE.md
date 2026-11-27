@@ -97,7 +97,7 @@ Details: `docs/notes/state-learning.md`. The rules that always apply:
 - **On Windows (the owner's PC)**: no `PW_CHROMIUM`, no `/opt/...`; plain `npx playwright test` (config uses `python3`, which exists on the PC). Full steps: `docs/howto-run-local.md`. Checkouts are CRLF (`core.autocrlf=true`), so a test regex that matches a line break in a source file must accept `\r?\n`. Running the app locally needs `config.js` with `url: ''` (restore it before committing; `git diff config.js` must be empty).
 - `@playwright/test` is pinned to 1.63.0 (same Chromium build as the container's `/opt/pw-browsers/chromium-1243`; 1.56 could not see or route a service worker's own requests).
 - Before every push (1.264.8): `npm ci` (once), then run only `npx playwright test tests/data.spec.js` (no browser, about
-  25 s on the PC: version / changelog / sw.js list / word rows / CI parts). Browser specs are left to CI (GitHub Actions
+  30 s on the PC: version / changelog / sw.js list / word rows / CI parts / test server). Browser specs are left to CI (GitHub Actions
   "Tests"), which runs the whole suite on every push to `master` and deploys only when every part passes, so a red run never
   reaches users: when it fails, the site stays on the previous version; fix it with a follow-up push. Still run browser
   specs locally first when (a) a test was added or changed: run it until it passes, e.g.
@@ -105,15 +105,19 @@ Details: `docs/notes/state-learning.md`. The rules that always apply:
   helpers.js, many screens): the spec files that cover it, or the whole suite. In the cloud container prefix
   `PW_CHROMIUM=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`; the config starts `python3 tests/serve.py 8765` itself.
   The CI suite runs in 16 parts since 1.264.8 (3 since 1.233, 6 in 1.264.5, 12 in 1.264.7; one job each, 4 workers per job
-  as the public-repo runners have 4 CPUs; 16 + pages + deploy = 18 of the 20 jobs a free account runs at once) and a newer
-  push cancels the older run. Push → live: 5 min in 1.264.4, 2 min 33 s in 1.264.6, 1 min 41–51 s in 1.264.7.
-  Each job (1.264.7) restores node_modules + Chromium from one cache and runs on the runner's own Node (no setup-node /
+  as the public-repo runners have 4 CPUs) plus a `data` job that runs `tests/data.spec.js` alone (1.264.9): 16 + data +
+  pages = 18 jobs at once, deploy after them (a free account runs up to 20), and a newer push cancels the older run.
+  Push → live: 5 min in 1.264.4, 2 min 33 s in 1.264.6, 1 min 41–51 s in 1.264.7, 1 min 21 s in 1.264.8.
+  Each test job (1.264.7) restores node_modules + Chromium's headless shell (only that since 1.264.9, `install --only-shell`:
+  the tests launch headless; cache key `deps-shell-…`) from one cache and runs on the runner's own Node (no setup-node /
   npm ci), and installs the only part of `install-deps` the runner lacks, 9 font packages, from cached .deb files
-  (`FONT_PKGS` in test.yml; same fonts and fontconfig rules, checked on a test branch).
+  (`FONT_PKGS` in test.yml; same fonts and fontconfig rules, checked on a test branch). The `data` job only restores that
+  cache (`actions/cache/restore`): a save from a job without the browser would leave it out of the shared cache.
   The parts are balanced by time, not count (1.264.6): `node tests/shard.js run <part> <parts>` deals the tests out from
   `tests/durations.json` (longest first to the emptiest part) and runs its part with one `--grep` on the full test names,
   so a loop's tests can land in different parts; data.spec checks with Playwright that the parts run every test exactly
-  once. Rebuild the times with `node tools/test-durations.js` (newest green run, needs `gh`) after adding or changing many
+  once. data.spec.js itself is left out of the parts (`ELSEWHERE` in shard.js, 1.264.9): that check starts 17 Playwright
+  processes at once and slowed the other tests of its part by half. Rebuild the times with `node tools/test-durations.js` (newest green run, needs `gh`) after adding or changing many
   tests, or when the "part n/16: … s" lines / job times in the CI log drift apart. Locally: `node tests/shard.js run 1 16`,
   `node tests/shard.js plan 16` shows the split. Keep single tests short (the longest one sets the floor of a part: with 16
   parts a part gets about 27 s per worker, so split a test that runs over ~12 s on CI, as games.spec does with the
@@ -131,6 +135,11 @@ Details: `docs/notes/state-learning.md`. The rules that always apply:
 - Test server (1.264.4): `tests/serve.py` = `http.server` with a 256-connection listen queue. The stock `python3 -m http.server`
   queues 5 and Windows refuses the rest (`ERR_CONNECTION_REFUSED`), which broke offline.spec (service worker install) and made
   `openApp` time out under parallel load. `reuseExistingServer` is on, so stop any stock server on 8765 before a run.
+  Since 1.264.9 it also sends index.html's CSP as an HTTP header and drops the `<meta>` (word for word the same policy:
+  data.spec "the test server sends…", app.spec "content security policy is in force"). Chromium does not fetch ahead
+  while a page holds a CSP `<meta>`, so the ~80 scripts loaded one after another: openApp took ~1 s, ~0.65 s with the
+  header (measured on the PC). GitHub Pages cannot send headers, so the real app keeps the `<meta>` (Chrome users load
+  it one script at a time; Safari not measured).
 - Size budget (1.233, `data.spec.js`): app.js ≤ 210 KB, style.css ≤ 330 KB, each eager `js/*.js` ≤ 125 KB, all start-up scripts
   except the word lists ≤ 1500 KB. Over a limit → move the new part into its own (preferably lazy-loaded) file instead of raising it.
 - `tests/data.spec.js` (no browser): version in app.js/sw.js/README, sw.js file list, word rows, families, pairs,

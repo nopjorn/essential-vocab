@@ -4,6 +4,24 @@ const { openApp, readState } = require('./helpers');
 
 const ROUTES = ['home', 'cards', 'feed', 'games', 'list', 'stats', 'settings', 'guide', 'homeset', 'wotdset', 'read', 'placement', 'changelog', 'mtest', 'ltest', 'year', 'mascot', 'event', 'riddle', 'duel', 'map', 'wsearch', 'decks', 'adv', 'fun', 'tower', 'coinshop', 'puzzle', 'album', 'garden', 'cases', 'cafe', 'room', 'paths', 'pic', 'build', 'ref', 'print', 'mine', 'toeic'];
 
+// 1.264.8: the test server sends the CSP as a header (tests/serve.py); it must still be in force in the tests, and the
+// scripts now load side by side (not one after another, as Chromium does while a page holds a CSP <meta>)
+test('content security policy is in force: an inline script added by the page is refused; scripts load side by side', async ({ page }) => {
+  const errors = await openApp(page);
+  const r = await page.evaluate(() => new Promise((done) => {
+    document.addEventListener('securitypolicyviolation', (e) => done({ blocked: e.violatedDirective, ran: !!window.__inl }), { once: true });
+    const s = document.createElement('script'); s.textContent = 'window.__inl = 1'; document.head.append(s);
+    setTimeout(() => done({ blocked: null, ran: !!window.__inl }), 2000);
+  }));
+  expect(r).toEqual({ blocked: 'script-src-elem', ran: false });
+  const starts = await page.evaluate(() => {
+    const at = (f) => performance.getEntriesByType('resource').find((x) => x.name.includes(f)).startTime;
+    return [at('data/words/a2.js'), at('js/boot.js')];
+  });
+  expect(starts[1] - starts[0]).toBeLessThan(150); // one after another this was ~450 ms on the PC
+  expect(errors).toEqual([]);
+});
+
 test('every screen renders without errors and shows the version', async ({ page }) => {
   const errors = await openApp(page);
   const version = await page.evaluate(() => APP_VERSION);

@@ -4,7 +4,7 @@
 // the tests are dealt out longest first, each to the part with the least time so far. A part picks its tests with --grep
 // on their full names (file, describe, title), so the tests a loop makes on one line can go to different parts.
 // Every part works this out from the same list, so together they run each test exactly once (data.spec checks that
-// with Playwright itself).
+// with Playwright itself). Files in ELSEWHERE are left out: CI runs them in a job of their own.
 //   node tests/shard.js run <part> <parts> [more playwright args]   run one part (CI; works the same in PowerShell)
 //   node tests/shard.js plan <parts>                                 print the split
 //   node tests/shard.js json <parts>                                 every part's --grep pattern, as JSON
@@ -33,7 +33,10 @@ const walk = (suite, file, titles) => {
   }
   for (const child of suite.suites || []) walk(child, file, [...titles, child.title]);
 };
-for (const file of list.suites) walk(file, file.title, []);
+// 1.264.8: data.spec runs in test.yml's "data" job beside the parts (no browser and no fonts needed). Its check of these
+// parts starts 17 Playwright processes at once, which slowed the 3 other workers of whichever part it landed in.
+const ELSEWHERE = ['data.spec.js'];
+for (const file of list.suites) if (!ELSEWHERE.includes(file.title)) walk(file, file.title, []);
 
 const bins = Array.from({ length: parts }, () => ({ sec: 0, names: [] }));
 for (const t of tests.sort((x, y) => y.sec - x.sec || (x.name < y.name ? -1 : 1))) {

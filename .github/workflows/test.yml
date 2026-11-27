@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] # 1.233.0: 3 parts (12 min in one job before); 1.264.5: 6; 1.264.7: 12; 1.264.8: 16 (+ pages + deploy = 18 of the 20 jobs a free account runs at once)
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] # 1.233.0: 3 parts (12 min in one job before); 1.264.5: 6; 1.264.7: 12; 1.264.8: 16 (+ data + pages = 18 at once; deploy starts after them; a free account runs up to 20)
     env:
       # 1.264.7: of everything `npx playwright install-deps chromium` sets up, the runner lacks only these font packages
       # (Loma for Thai among them; the layout and contrast tests depend on the fonts). Checked on a test branch: the same
@@ -28,14 +28,16 @@ jobs:
       - uses: actions/checkout@v4
       # 1.264.7: node_modules and Chromium come from one cache keyed by package-lock.json and run on the runner's own
       # Node (22), so there is no setup-node / npm ci step; a miss (new Playwright) installs both once.
+      # 1.264.8: only Chromium's headless shell, the one the tests launch (headless: true); the full browser was in the
+      # cache unused. "shell" in the key keeps this cache apart from the old one.
       - uses: actions/cache@v4
         id: deps
         with:
           path: |
             node_modules
             ~/.cache/ms-playwright
-          key: deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - run: npm ci && npx playwright install chromium
+          key: deps-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npm ci && npx playwright install --only-shell chromium
         if: steps.deps.outputs.cache-hit != 'true'
       # the font .deb files are cached too: dpkg takes 3 s, apt-get update + install-deps took 14–34 s
       - uses: actions/cache@v4
@@ -56,6 +58,26 @@ jobs:
           path: test-results/
           retention-days: 7
 
+  # 1.264.8: tests/data.spec.js (no browser, no fonts) in a job of its own beside the parts: its check that the parts run
+  # every test once starts 17 Playwright processes at once and slowed the other tests of the part it was in.
+  # tests/shard.js leaves this file out of the parts. Restore-only cache: on a miss this job installs node_modules alone,
+  # and a save from here would leave Chromium out of the cache the test jobs share.
+  data:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache/restore@v4
+        id: deps
+        with:
+          path: |
+            node_modules
+            ~/.cache/ms-playwright
+          key: deps-shell-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npm ci
+        if: steps.deps.outputs.cache-hit != 'true'
+      - run: npx playwright test tests/data.spec.js
+
   # 1.264.2: the site goes live only after every test part passes (Settings → Pages → Source = "GitHub Actions";
   # before, Pages published every push to master straight away, even one that failed the tests).
   # A failed or cancelled run leaves the version that is already live. Rerun the failed jobs to deploy again.
@@ -74,7 +96,7 @@ jobs:
         with:
           path: . # the repo root, as before (the action leaves out .git and .github)
   deploy:
-    needs: [test, pages]
+    needs: [test, data, pages]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -87,3 +109,5 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          reporting_interval: 1000 # 1.264.8: check the deployment every 1 s, not 5 (it was done before the first check)

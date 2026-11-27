@@ -187,8 +187,12 @@ test('stats: year heatmap levels, tap a day; monthly test with right and wrong a
   }, `(${seededProgress})(60)`);
   await expect(page.locator('.hm-sum')).toContainText('4');
   for (const lv of [1, 2, 3, 4]) await expect(page.locator(`#hm .hm-${lv}`)).toHaveCount(1);
-  await page.locator('#hm .hm-4').click();
-  await expect(page.locator('#toast')).toContainText('80 ข้อ');
+  // 1.264.9: tap again until the toast says it: the medals this progress earns pop up 1.1 s after the batched save and
+  // can land on top of the day's toast (more often since the app starts faster in the tests)
+  await expect(async () => {
+    await page.locator('#hm .hm-4').click();
+    await expect(page.locator('#toast')).toContainText('80 ข้อ', { timeout: 1000 });
+  }).toPass({ timeout: 10000 });
   // monthly test: 30 questions, wrong on even, right on odd
   await page.locator('[data-go="mtest"]').first().click();
   // 1.264.7: after each answer the app shows it for 0.65 s (right) or 1.5 s (wrong) before the next question; Playwright's

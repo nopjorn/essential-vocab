@@ -1036,6 +1036,20 @@ test('content security policy: the inline theme script is allowed by hash, and n
   expect(html).not.toMatch(/\son[a-z]+="/); // no inline event handlers
 });
 
+// 1.264.8: tests/serve.py moves the CSP <meta> into a header (Chromium fetches the scripts side by side then); the policy
+// must stay word for word the one in index.html, and the rest of the page the same
+test('the test server sends index.html with its own CSP as a header', async () => {
+  const html = read('index.html');
+  const csp = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)">/)[1];
+  for (const url of ['http://localhost:8765/index.html', 'http://localhost:8765/', 'http://localhost:8765/index.html?v=1']) {
+    const res = await fetch(url);
+    expect(res.headers.get('content-security-policy'), url).toBe(csp);
+    const body = await res.text();
+    expect(body).not.toContain('http-equiv="Content-Security-Policy"');
+    expect(body).toBe(html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\r?\n?/, ''));
+  }
+});
+
 test('the reminder edge function only answers the cron job (service-role key)', () => {
   const src = read('supabase/functions/daily-reminder/index.ts');
   expect(src).toContain("req.headers.get('Authorization') !== `Bearer ${SERVICE_KEY}`");
@@ -1101,9 +1115,14 @@ test('the CI parts from tests/shard.js run every test exactly once', async () =>
   const yml = read('.github/workflows/test.yml');
   const n = /shard: \[([\d, ]+)\]/.exec(yml)[1].split(',').length;
   expect(yml).toContain('node tests/shard.js run ${{ matrix.shard }} ${{ strategy.job-total }}');
+  // 1.264.8: this file runs in a job of its own ("data"), which the deploy waits for too
+  expect(yml).toMatch(/\n  data:\r?\n[\s\S]*?\n      - run: npx playwright test tests\/data\.spec\.js\r?\n/);
+  expect(yml).toContain('needs: [test, data, pages]');
   const plan = JSON.parse(execFileSync(process.execPath, [path.join(root, 'tests', 'shard.js'), 'json', String(n)], opts));
   expect(plan.length).toBe(n);
-  const [all, ...parts] = await Promise.all([list([]), ...plan.map((re) => list(['--grep', re]))]);
+  const [listed, ...parts] = await Promise.all([list([]), ...plan.map((re) => list(['--grep', re]))]);
+  const all = listed.filter((x) => !x.startsWith('data.spec.js:'));
+  expect(listed.length - all.length).toBeGreaterThan(50); // (the names do start with the file)
   parts.forEach((p) => expect(p.length).toBeGreaterThan(0));
   const got = parts.flat();
   expect(got.length).toBe(all.length);
