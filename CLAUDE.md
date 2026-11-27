@@ -29,10 +29,10 @@ Core files below. Feature-by-feature notes (names, ids, state fields, tests) liv
 
 | File / feature | Notes |
 |---|---|
-| `index.html` | Shell: top bar, `#view`, tab bar |
+| `index.html` | Shell: top bar, `#view`, tab bar; a preload link per start-up script (1.264.10, Testing → Script preloads) |
 | `js/groups.js` | Extra word groups table `GROUPS_X` + lazy loader of their word files (1.251, loads before app.js) |
 | `app.js` | Core: `APP_VERSION`, data, storage/backup, quests, XP, achievements, helpers, speech, SRS, router (`go()`) |
-| `js/*.js` | The rest of the logic, one classic script per area (`home cards games feed reading words placement stats sync guide settings boot`), sections marked `/* ---------- name ---------- */`. They share globals (no modules, no build); `index.html` loads them after `app.js` and `boot.js` must stay last; `js/errlog.js` (1.224, device error log `o3k.errs`) is the exception: it loads first, before `config.js`. A new file goes in `index.html` **and** `sw.js` (a test checks) |
+| `js/*.js` | The rest of the logic, one classic script per area (`home cards games feed reading words placement stats sync guide settings boot`), sections marked `/* ---------- name ---------- */`. They share globals (no modules, no build); `index.html` loads them after `app.js` and `boot.js` must stay last; `js/errlog.js` (1.224, device error log `o3k.errs`) is the exception: it loads first, before `config.js`. A new file goes in `index.html` (its `<script>` **and** its `<link rel="preload">`, 1.264.10) **and** `sw.js` (tests check) |
 | `style.css` | Mobile-first styles; colour tokens on `:root` with dark mode |
 | `data/words/<level>.js` | `a1 a2 b1 b2 b2plus c1` (Oxford 5000-only rows in `b2plus`/`c1`), one row per line, each pushes onto `window.WORDS`: `[word, pos, level, ipa, thai, example, thaiExample, topicId, 5?, [[ex, thaiEx], …]?]` (4,957 rows total; app.js sorts them A–Z, topic id → `w.tp`; the optional trailing array → `w.xe` = extra examples for other meanings, shown as extra `exampleBox()` boxes, never used by games — A1 since 1.40, A2 1.41, B1 1.42, B2/B2+/C1 1.43) |
 | `data/<group>/*.js` | Layout of `data/`: every file lives in a group folder, nothing loose in `data/` (a test checks): `app/` (`changelog`, in-app manual `guide`, game engine `play`), `sets/` (`presets`, goal `tags`), `lexis/` (collocations, families, pairs, phrasal, synonyms, affixes, idioms, roots, ukus, situations, realtext), `grammar/` (irregular, depprep, grampat, mistakes), `toeic/` (`toeicp1`–`toeicp7`), `work/` (workphr, bizcol, register, emails), `phrasebook/` (the `PB` books in js/phrasebook.js + `roleplay`), `fun/` (emoji, cases, paths), plus `words/` and `stories/`. A new data file goes in the matching folder **and** in `sw.js` `DATA` (grouped by folder; a test checks); `sw.js` drops cached copies of paths no longer listed when a new worker activates |
@@ -135,11 +135,14 @@ Details: `docs/notes/state-learning.md`. The rules that always apply:
 - Test server (1.264.4): `tests/serve.py` = `http.server` with a 256-connection listen queue. The stock `python3 -m http.server`
   queues 5 and Windows refuses the rest (`ERR_CONNECTION_REFUSED`), which broke offline.spec (service worker install) and made
   `openApp` time out under parallel load. `reuseExistingServer` is on, so stop any stock server on 8765 before a run.
-  Since 1.264.9 it also sends index.html's CSP as an HTTP header and drops the `<meta>` (word for word the same policy:
-  data.spec "the test server sends…", app.spec "content security policy is in force"). Chromium does not fetch ahead
-  while a page holds a CSP `<meta>`, so the ~80 scripts loaded one after another: openApp took ~1 s, ~0.65 s with the
-  header (measured on the PC). GitHub Pages cannot send headers, so the real app keeps the `<meta>` (Chrome users load
-  it one script at a time; Safari not measured).
+  It serves index.html unchanged (1.264.9 sent its CSP as an HTTP header instead; 1.264.10 went back, see Script preloads).
+- Script preloads (1.264.10): Chromium fetches nothing ahead while a page holds a CSP `<meta>` (GitHub Pages cannot send
+  the CSP as a header), so the ~80 start-up scripts loaded one after another. index.html now has a `<link rel="preload"
+  as="script">` for each `<script src>` (same list and order, after style.css and before the inline theme script, which
+  waits for style.css; data.spec checks), and `js/groups.js` preloads the group word files before it `document.write`s
+  them. Measured in Chromium until the home screen shows: 2.3 → 1.6 s locally, 5.3 → 1.7 s with 40 ms delay per file;
+  through the service worker 0.9 → 0.7 s. WebKit (Safari, also Chrome on iOS) already fetched them side by side: same
+  time before and after. app.spec "content security policy is in force" checks every one came from its preload.
 - Size budget (1.233, `data.spec.js`): app.js ≤ 210 KB, style.css ≤ 330 KB, each eager `js/*.js` ≤ 125 KB, all start-up scripts
   except the word lists ≤ 1500 KB. Over a limit → move the new part into its own (preferably lazy-loaded) file instead of raising it.
 - `tests/data.spec.js` (no browser): version in app.js/sw.js/README, sw.js file list, word rows, families, pairs,

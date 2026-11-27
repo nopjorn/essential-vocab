@@ -27,6 +27,10 @@ const GX_ON = (() => {
   try { a = JSON.parse(localStorage.getItem(GX_KEY) || 'null'); } catch (e) { /* blocked */ }
   const all = !Array.isArray(a), on = new Set(all ? GROUPS_X.map((x) => x.g) : a);
   on.all = all;
-  for (const x of GROUPS_X) if (on.has(x.g)) document.write(`<script src="data/words/${x.file}.js"></script>`);
+  const files = GROUPS_X.filter((x) => on.has(x.g)).map((x) => `data/words/${x.file}.js`);
+  // 1.264.10: preload them all first, as index.html does its own scripts (with the page's CSP <meta>, Chromium fetches a
+  // written <script> only when the parser gets to it, so the group files came one after another)
+  for (const f of files) document.head.appendChild(Object.assign(document.createElement('link'), { rel: 'preload', as: 'script', href: f }));
+  for (const f of files) document.write(`<script src="${f}"></script>`);
   return on;
 })();

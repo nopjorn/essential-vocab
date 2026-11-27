@@ -40,6 +40,63 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="style.css">
+<!-- 1.264.10: Chromium fetches nothing ahead while the page holds a CSP <meta>, so the scripts at the end of <body> loaded one after another.
+     These preloads start them all at once; the script tags then run them in order (same list, data.spec checks). -->
+<link rel="preload" href="js/errlog.js" as="script">
+<link rel="preload" href="config.js" as="script">
+<link rel="preload" href="data/words/a1.js" as="script">
+<link rel="preload" href="data/words/a2.js" as="script">
+<link rel="preload" href="data/words/b1.js" as="script">
+<link rel="preload" href="data/words/b2.js" as="script">
+<link rel="preload" href="data/words/b2plus.js" as="script">
+<link rel="preload" href="data/words/c1.js" as="script">
+<link rel="preload" href="js/groups.js" as="script">
+<link rel="preload" href="data/sets/tags.js" as="script">
+<link rel="preload" href="app.js" as="script">
+<link rel="preload" href="js/icons.js" as="script">
+<link rel="preload" href="js/home.js" as="script">
+<link rel="preload" href="js/cards.js" as="script">
+<link rel="preload" href="js/games.js" as="script">
+<link rel="preload" href="js/feed.js" as="script">
+<link rel="preload" href="js/reading.js" as="script">
+<link rel="preload" href="js/words.js" as="script">
+<link rel="preload" href="js/lexis.js" as="script">
+<link rel="preload" href="js/lexis2.js" as="script">
+<link rel="preload" href="js/phrasebook.js" as="script">
+<link rel="preload" href="js/grammar.js" as="script">
+<link rel="preload" href="js/placement.js" as="script">
+<link rel="preload" href="js/riddle.js" as="script">
+<link rel="preload" href="js/duel.js" as="script">
+<link rel="preload" href="js/ear.js" as="script">
+<link rel="preload" href="js/map.js" as="script">
+<link rel="preload" href="js/wsearch.js" as="script">
+<link rel="preload" href="js/stats.js" as="script">
+<link rel="preload" href="js/sync.js" as="script">
+<link rel="preload" href="js/guide.js" as="script">
+<link rel="preload" href="js/settings.js" as="script">
+<link rel="preload" href="js/decks.js" as="script">
+<link rel="preload" href="js/share.js" as="script">
+<link rel="preload" href="js/mascot.js" as="script">
+<link rel="preload" href="js/events.js" as="script">
+<link rel="preload" href="js/scene.js" as="script">
+<link rel="preload" href="js/adventure.js" as="script">
+<link rel="preload" href="js/fun.js" as="script">
+<link rel="preload" href="js/tower.js" as="script">
+<link rel="preload" href="js/wboss.js" as="script">
+<link rel="preload" href="js/chain.js" as="script">
+<link rel="preload" href="js/puzzle.js" as="script">
+<link rel="preload" href="js/collect.js" as="script">
+<link rel="preload" href="js/cases.js" as="script">
+<link rel="preload" href="js/cafe.js" as="script">
+<link rel="preload" href="js/room.js" as="script">
+<link rel="preload" href="js/paths.js" as="script">
+<link rel="preload" href="js/create.js" as="script">
+<link rel="preload" href="js/kbd.js" as="script">
+<link rel="preload" href="js/onboard.js" as="script">
+<link rel="preload" href="js/search.js" as="script">
+<link rel="preload" href="js/toeic.js" as="script">
+<link rel="preload" href="js/tools.js" as="script">
+<link rel="preload" href="js/boot.js" as="script">
 <script>try { var t = localStorage.getItem('o3k.theme'); if (t === 'light' || t === 'dark' || t === 'black') document.documentElement.dataset.theme = t; var p = localStorage.getItem('o3k.palette'); if (p && /^[a-z]+$/.test(p) && p !== 'violet') document.documentElement.dataset.palette = p; } catch (e) {}</script>
 </head>
 <body>

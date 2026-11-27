@@ -1036,19 +1036,17 @@ test('content security policy: the inline theme script is allowed by hash, and n
   expect(html).not.toMatch(/\son[a-z]+="/); // no inline event handlers
 });
 
-// 1.264.8: tests/serve.py moves the CSP <meta> into a header (Chromium fetches the scripts side by side then); the policy
-// must stay word for word the one in index.html, and the rest of the page the same
-test('the test server sends index.html with its own CSP as a header', async () => {
+// 1.264.10: Chromium fetches nothing ahead while the page holds a CSP <meta>, so index.html preloads every script it loads
+// (same list, same order) before the inline theme script, which waits for style.css and would hold the preloads back
+test('index.html preloads every script it loads, in order, before the inline script', () => {
   const html = read('index.html');
-  const csp = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)">/)[1];
-  for (const url of ['http://localhost:8765/index.html', 'http://localhost:8765/', 'http://localhost:8765/index.html?v=1']) {
-    const res = await fetch(url);
-    expect(res.headers.get('content-security-policy'), url).toBe(csp);
-    const body = await res.text();
-    expect(body).not.toContain('http-equiv="Content-Security-Policy"');
-    expect(body).toBe(html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\r?\n?/, ''));
-  }
-});
+  const scripts = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]);
+  const preloads = [...html.matchAll(/<link rel="preload" href="([^"]+)" as="script">/g)];
+  expect(scripts.length).toBeGreaterThan(50);
+  expect(preloads.map((m) => m[1])).toEqual(scripts);
+  expect(html.indexOf('<link rel="stylesheet" href="style.css">')).toBeLessThan(preloads[0].index);
+  expect(preloads[preloads.length - 1].index).toBeLessThan(html.indexOf('<script>'));
+}); // app.spec "content security policy is in force…" checks in the browser that each one (group word files too) came from its preload
 
 test('the reminder edge function only answers the cron job (service-role key)', () => {
   const src = read('supabase/functions/daily-reminder/index.ts');
