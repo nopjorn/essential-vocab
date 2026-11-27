@@ -118,27 +118,30 @@ test('feed: special cards, boss, timer, fever, summary and double-tap like', asy
 
   const types = new Set();
   let fever = false, timed = false;
+  // 1.264.8: 4–6 round trips per card instead of about 12 and no fixed 200 ms wait (21 s on CI before). When card i comes into
+  // view the feed's observer starts its timer, fills a summary card and keeps 3 cards ready below it, so card i + 3 showing up
+  // means the observer has run; an answer marks the card in the click handler itself, so one read after click() sees it all.
   for (let i = 0; i < 42; i++) {
     const card = page.locator(`.fcard[data-n="${i}"]`);
-    await expect(card).toHaveCount(1);
     await page.evaluate((i) => { const f = document.querySelector('#feed'); f.scrollTop = document.querySelector(`.fcard[data-n="${i}"]`).offsetTop; }, i);
-    await page.waitForTimeout(200);
-    const type = await card.getAttribute('data-type');
-    types.add(type);
-    if (type === 'sum') await expect(card).toContainText('สรุปช่วงนี้');
-    if (await card.locator('.f-timer.run').count()) timed = true;
-    if (!(await card.locator('.opt').count())) continue;
-    const ok = type === 'boss' || ![3, 10, 38].includes(i);
-    const at = await card.locator('.opt').evaluateAll((els, ok) => {
-      const right = els[0].closest('.fcard')._right;
-      return els.findIndex((e) => (e.dataset.o === right) === ok);
-    }, ok);
-    await card.locator('.opt').nth(at).click();
-    await expect(card.locator('.f-reveal')).not.toBeEmpty();
-    await expect(card.locator('.opt.correct')).toHaveCount(1);
-    if (!ok) await expect(card.locator('.opt.wrong')).toHaveCount(1);
-    if (await card.locator('[data-hint]').count()) { await card.locator('[data-hint]').click(); await expect(card.locator('.thx').first()).toBeVisible(); }
-    if (await page.locator('#feed.fever').count()) fever = true;
+    await expect(page.locator(`.fcard[data-n="${i + 3}"]`)).toHaveCount(1);
+    const c = await page.evaluate((i) => {
+      const el = document.querySelector(`.fcard[data-n="${i}"]`), type = el.dataset.type, opts = [...el.querySelectorAll('.opt')];
+      const ok = type === 'boss' || ![3, 10, 38].includes(i);
+      return { type, ok, timed: !!el.querySelector('.f-timer.run'), n: opts.length, at: opts.findIndex((e) => (e.dataset.o === el._right) === ok) };
+    }, i);
+    types.add(c.type);
+    if (c.type === 'sum') await expect(card).toContainText('สรุปช่วงนี้');
+    if (c.timed) timed = true;
+    if (!c.n) continue;
+    await card.locator('.opt').nth(c.at).click();
+    const r = await page.evaluate((i) => {
+      const el = document.querySelector(`.fcard[data-n="${i}"]`);
+      return { reveal: el.querySelector('.f-reveal').textContent.trim() !== '', correct: el.querySelectorAll('.opt.correct').length, wrong: el.querySelectorAll('.opt.wrong').length, hint: !!el.querySelector('[data-hint]'), fever: !!document.querySelector('#feed.fever') };
+    }, i);
+    expect(r, `card ${i} (${c.type})`).toMatchObject({ reveal: true, correct: 1, wrong: c.ok ? 0 : 1 });
+    if (r.hint) { await card.locator('[data-hint]').click(); await expect(card.locator('.thx').first()).toBeVisible(); }
+    if (r.fever) fever = true;
   }
   for (const t of ['learn', 'fam', 'colloc', 'conf', 'story', 'sum', 'boss']) expect([...types], t).toContain(t);
   expect(timed).toBe(true);

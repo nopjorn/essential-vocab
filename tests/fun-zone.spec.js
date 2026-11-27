@@ -5,12 +5,16 @@ const { openApp, readState } = require('./helpers');
 const base = { placedAt: '2026-01-01', settings: { levels: ['A1', 'A2'] } };
 
 // Answer the funAsk() question on screen right (or wrong).
+// 1.264.8: after fastClock(page) the pause the app shows each answer for is skipped with Playwright's clock, not waited out.
 async function funAnswer(page, ok) {
   await expect(page.locator('.q-prompt')).toBeVisible();
   const k = await page.evaluate((ok) => { const i = funAsk.opts.indexOf(funAsk.cur); return ok ? i : [...document.querySelectorAll('.opt')].map((o) => +o.dataset.k).find((x) => x !== i && !document.querySelector(`.opt[data-k="${x}"]`).disabled); }, ok);
   await page.locator(`.opt[data-k="${k}"]`).click();
-  await page.waitForTimeout(ok ? 750 : 1600);
+  if (fast.has(page)) await page.clock.fastForward(ok ? 750 : 1600);
+  else await page.waitForTimeout(ok ? 750 : 1600);
 }
+const fast = new WeakSet();
+async function fastClock(page) { await page.clock.install(); fast.add(page); }
 
 test('fun hub: tiles open their pages, home card and games menu link to it', async ({ page }) => {
   const errors = await openApp(page, base);
@@ -54,6 +58,7 @@ test('coins: per-device buckets, merge keeps the larger numbers, shop buys an it
 
 test('tower: right answers clear floors (+coins), wrong ones cost hearts, a run ends at 0 hearts; boss floor saves a checkpoint', async ({ page }) => {
   const errors = await openApp(page, base);
+  await fastClock(page);
   await page.evaluate(() => go('tower'));
   await page.locator('#twGo').click();
   for (let k = 0; k < 6; k++) await funAnswer(page, true); // floors 1 and 2
@@ -339,6 +344,7 @@ test('weekly special tower: rule rotates by week, runs from floor 1 with its own
   const errors = await openApp(page, base);
   const ids = await page.evaluate(() => [0, 1, 2, 3].map((k) => twRule(ymd(new Date(Date.parse('2026-11-02T12:00:00') + k * 7 * DAY))).id));
   expect(new Set(ids).size).toBe(4);
+  await fastClock(page);
   await page.evaluate(() => go('tower'));
   await expect(page.locator('.tw-week')).toContainText('หอคอยพิเศษ');
   await page.locator('#twWk').click();

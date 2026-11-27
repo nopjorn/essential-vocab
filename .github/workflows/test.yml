@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] # 1.233.0: 3 parts (12 min in one job before); 1.264.5: 6; 1.264.7: 12
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] # 1.233.0: 3 parts (12 min in one job before); 1.264.5: 6; 1.264.7: 12; 1.264.8: 16 (+ pages + deploy = 18 of the 20 jobs a free account runs at once)
     env:
       # 1.264.7: of everything `npx playwright install-deps chromium` sets up, the runner lacks only these font packages
       # (Loma for Thai among them; the layout and contrast tests depend on the fonts). Checked on a test branch: the same

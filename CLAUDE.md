@@ -96,13 +96,17 @@ Details: `docs/notes/state-learning.md`. The rules that always apply:
 ## Testing
 - **On Windows (the owner's PC)**: no `PW_CHROMIUM`, no `/opt/...`; plain `npx playwright test` (config uses `python3`, which exists on the PC). Full steps: `docs/howto-run-local.md`. Checkouts are CRLF (`core.autocrlf=true`), so a test regex that matches a line break in a source file must accept `\r?\n`. Running the app locally needs `config.js` with `url: ''` (restore it before committing; `git diff config.js` must be empty).
 - `@playwright/test` is pinned to 1.63.0 (same Chromium build as the container's `/opt/pw-browsers/chromium-1243`; 1.56 could not see or route a service worker's own requests).
-- Before every push (1.264.2): `npm ci` (once), then run `tests/data.spec.js` plus the spec files that cover what changed, e.g.
-  `npx playwright test tests/data.spec.js tests/groups.spec.js tests/gaming.spec.js` (in the cloud container prefix
-  `PW_CHROMIUM=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`; the config starts `python3 tests/serve.py 8765` itself).
-  Run the whole suite locally only for wide changes (shared CSS, app.js core, boot.js, sw.js, helpers.js, many screens).
-  CI (GitHub Actions "Tests") always runs the whole suite on every push to `master` and gates the deploy; it must stay green.
-  It runs in 12 parts since 1.264.7 (3 since 1.233, 6 in 1.264.5; one job each, 4 workers per job as the public-repo
-  runners have 4 CPUs) and a newer push cancels the older run. Push → live: 5 min in 1.264.4, 2 min 33 s in 1.264.6, 1 min 51 s in 1.264.7 (with empty caches).
+- Before every push (1.264.8): `npm ci` (once), then run only `npx playwright test tests/data.spec.js` (no browser, about
+  25 s on the PC: version / changelog / sw.js list / word rows / CI parts). Browser specs are left to CI (GitHub Actions
+  "Tests"), which runs the whole suite on every push to `master` and deploys only when every part passes, so a red run never
+  reaches users: when it fails, the site stays on the previous version; fix it with a follow-up push. Still run browser
+  specs locally first when (a) a test was added or changed: run it until it passes, e.g.
+  `npx playwright test tests/gaming.spec.js -g "name"`, or (b) the change is wide (shared CSS, app.js core, boot.js, sw.js,
+  helpers.js, many screens): the spec files that cover it, or the whole suite. In the cloud container prefix
+  `PW_CHROMIUM=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`; the config starts `python3 tests/serve.py 8765` itself.
+  The CI suite runs in 16 parts since 1.264.8 (3 since 1.233, 6 in 1.264.5, 12 in 1.264.7; one job each, 4 workers per job
+  as the public-repo runners have 4 CPUs; 16 + pages + deploy = 18 of the 20 jobs a free account runs at once) and a newer
+  push cancels the older run. Push → live: 5 min in 1.264.4, 2 min 33 s in 1.264.6, 1 min 41–51 s in 1.264.7.
   Each job (1.264.7) restores node_modules + Chromium from one cache and runs on the runner's own Node (no setup-node /
   npm ci), and installs the only part of `install-deps` the runner lacks, 9 font packages, from cached .deb files
   (`FONT_PKGS` in test.yml; same fonts and fontconfig rules, checked on a test branch).
@@ -110,11 +114,16 @@ Details: `docs/notes/state-learning.md`. The rules that always apply:
   `tests/durations.json` (longest first to the emptiest part) and runs its part with one `--grep` on the full test names,
   so a loop's tests can land in different parts; data.spec checks with Playwright that the parts run every test exactly
   once. Rebuild the times with `node tools/test-durations.js` (newest green run, needs `gh`) after adding or changing many
-  tests, or when the "part n/12: … s" lines / job times in the CI log drift apart. Locally: `node tests/shard.js run 1 12`,
-  `node tests/shard.js plan 12` shows the split. Keep single tests short (the longest one sets the floor of a part).
+  tests, or when the "part n/16: … s" lines / job times in the CI log drift apart. Locally: `node tests/shard.js run 1 16`,
+  `node tests/shard.js plan 16` shows the split. Keep single tests short (the longest one sets the floor of a part: with 16
+  parts a part gets about 27 s per worker, so split a test that runs over ~12 s on CI, as games.spec does with the
+  distractor checks, 1.264.8).
 - The app pauses after each answer so the user sees it (0.6–1.5 s; `setTimeout` in play.js, stats.js, adventure.js, …).
   A test that answers many questions skips those pauses with Playwright's clock (1.264.7): `await page.clock.install()`
-  before the quiz, `await page.clock.fastForward(1600)` after each answer (features.spec monthly / level test, adventure).
+  before the quiz, `await page.clock.fastForward(1600)` after each answer (features.spec monthly / level test / story
+  shadowing, adventure, events, fun-zone `fastClock()`). The installed clock still runs in real time too, so after `click()`
+  (the answer is already in) don't check a mark the next question can replace (`.opt.correct` raced on the busy PC,
+  1.264.8): check the next question instead. A batched save (300 ms) is no longer covered by a fixed wait: `expect.poll` medals.
 - Time zone (1.264.2): `playwright.config.js` pins Node (`process.env.TZ`) and the browser (`timezoneId`) to UTC, like CI, so date
   tests behave the same on the Thai PC at any hour. A test that needs another zone sets `test.use({ timezoneId })` itself.
 - Windows fonts are a little bigger than CI's Linux fonts: a layout test that compares sizes must not assume the Linux metrics

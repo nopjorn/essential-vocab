@@ -67,21 +67,26 @@ test('match game: right and wrong pairs, three rounds', async ({ page }) => {
 // (each distractors() call scans every word). Now: every word of the newest extra group (what a release usually adds) plus a
 // seventh of all the others that moves on by one each day, so a week of runs still covers every word.
 // 1.264.7: the plain and the hard distractors are two tests, so they can run side by side (29 s as one on CI).
-for (const hard of [false, true]) test(`multiple-choice options never include a second right answer (no shared Thai meaning)${hard ? ', hard distractors' : ''}`, async ({ page }) => {
+// 1.264.8: the hard ones (27 s on CI, the longest test; each call scores and sorts every word) are four tests: English words (w)
+// or Thai meanings (t) as options × every other picked word (part 1/2 and 2/2). Together they still check the same words.
+const DISTRACTOR_RUNS = [[false, ['w', 't'], 0, 1], [true, ['w'], 0, 2], [true, ['w'], 1, 2], [true, ['t'], 0, 2], [true, ['t'], 1, 2]];
+for (const [hard, fields, part, parts] of DISTRACTOR_RUNS) test(`multiple-choice options never include a second right answer (no shared Thai meaning)${hard ? `, hard distractors, ${fields[0] === 'w' ? 'English' : 'Thai'} options, part ${part + 1}/${parts}` : ''}`, async ({ page }) => {
   test.setTimeout(120000);
   const errors = await openApp(page, { settings: { levels: ['A1'] } });
-  const r = await page.evaluate(([day, hard]) => {
+  const r = await page.evaluate(([day, hard, fields, part, parts]) => {
     const newest = GROUPS_X[GROUPS_X.length - 1].g, out = [];
-    const pick = W.filter((w, i) => w.g === newest || (i + day) % 7 === 0);
-    for (const w of pick) for (const field of ['w', 't']) {
+    let kn = 0, ko = 0; // every other word of the newest group and of the others, so each part gets half of both
+    const pick = W.filter((w, i) => (w.g === newest ? kn++ % parts === part : (i + day) % 7 === 0 && ko++ % parts === part));
+    for (const w of pick) for (const field of fields) {
       const d = distractors(w, 3, field, hard);
       if (d.length < 3) out.push(`${w.w}: only ${d.length} options`);
       for (const x of d) if (sharesMeaning(w, x)) out.push(`${w.w} (${w.t}) ~ ${x.w} (${x.t})`);
     }
-    return { out, newest: pick.filter((w) => w.g === newest).length, n: pick.length, all: W.length };
-  }, [Math.floor(Date.now() / 864e5), hard]);
-  expect(r.newest).toBeGreaterThan(100); // the newest group's word file is loaded and checked in full
-  expect(r.n).toBeGreaterThan(r.all / 7);
+    return { out, newest: pick.filter((w) => w.g === newest).length, newestAll: W.filter((w) => w.g === newest).length, n: pick.length, all: W.length };
+  }, [Math.floor(Date.now() / 864e5), hard, fields, part, parts]);
+  expect(r.newestAll).toBeGreaterThan(100); // the newest group's word file is loaded…
+  expect(r.newest).toBeGreaterThanOrEqual(Math.floor(r.newestAll / parts)); // …and checked in full (its share of it)
+  expect(r.n * parts).toBeGreaterThan(r.all / 7);
   expect(r.out.slice(0, 10)).toEqual([]);
   expect(errors).toEqual([]);
 });

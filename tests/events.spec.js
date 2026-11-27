@@ -21,16 +21,21 @@ test('event: home card, story + words page, quiz pass gives sticker, item, medal
   await expect(page.locator('.event-card')).toContainText('กิจกรรมฮาโลวีน');
   await page.locator('.event-card').click();
   await expect(page.locator('.evt-w')).toHaveCount(10);
+  // 1.264.8: Playwright's clock skips the pause after each answer (was a 1.4 s wait × 10 answers)
+  await page.clock.install();
   await page.locator('#eQuiz').click();
   // fail: answer wrong on purpose
   const answer = async (good) => {
+    await expect(page.locator('.q-prompt .word')).toBeVisible();
     const idx = await page.evaluate((good) => {
       const w = document.querySelector('.q-prompt .word').textContent, e = EVENTS[0], row = e.words.find((x) => x[0] === w);
       const opts = [...document.querySelectorAll('.opt')], k = opts.findIndex((o) => (o.textContent === row[2]) === good);
       return k;
     }, good);
     await page.locator('.opt').nth(idx).click();
-    await page.waitForTimeout(1400);
+    // the answer is in once click() returns; the clock jump shows the next question (the clock also runs in real time, so a
+    // check of the marked answer here could miss it on a busy machine)
+    await page.clock.fastForward(1400);
   };
   for (let i = 0; i < 5; i++) await answer(false);
   await expect(page.locator('.result-emoji')).toHaveText('💪');
@@ -39,8 +44,9 @@ test('event: home card, story + words page, quiz pass gives sticker, item, medal
   await page.locator('#eAgain').click();
   for (let i = 0; i < 5; i++) await answer(true);
   await expect(page.locator('.result-emoji')).toHaveText('🏆');
-  const s = await page.evaluate(() => ({ owned: S.owned, key: Object.keys(S.evt)[0], pass: Object.values(S.evt)[0].pass, medal: !!S.ach.evt1 }));
-  expect(s.owned).toContain('evt:pumpkin'); expect(s.pass).toBe(true); expect(s.key).toMatch(/^halloween-\d{4}$/); expect(s.medal).toBe(true);
+  const s = await page.evaluate(() => ({ owned: S.owned, key: Object.keys(S.evt)[0], pass: Object.values(S.evt)[0].pass }));
+  expect(s.owned).toContain('evt:pumpkin'); expect(s.pass).toBe(true); expect(s.key).toMatch(/^halloween-\d{4}$/);
+  await expect.poll(() => page.evaluate(() => !!S.ach.evt1)).toBe(true); // medals are checked in the batched save (300 ms)
   // the pumpkin hat is wearable
   await page.evaluate(() => go('mascot'));
   await page.locator('[data-eq="head:pumpkin"]').click();
